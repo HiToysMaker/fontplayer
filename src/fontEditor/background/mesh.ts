@@ -53,7 +53,6 @@ const mesh = (
   const right = left + mapCanvasWidth(fontWidth)
   const top = height + mapCanvasHeight(descender) - mapCanvasHeight(fontHeight)
   const bold = [0, 8, 16]
-  console.log('descender', descender)
   const bottom = top + mapCanvasHeight(fontHeight)
   for (let i = 0; i <= gaps; i++) {
     const x = left + mapCanvasWidth(fontWidth) / gaps * i

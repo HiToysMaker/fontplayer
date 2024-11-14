@@ -269,53 +269,18 @@ const plainCharacter = (character: ICharacterFile) => {
 }
 
 const instanceGlyph = (plainGlyph) => {
-	// console.time('part1')
 	plainGlyph.parameters = new ParametersMap(plainGlyph.parameters)
-	// console.timeEnd('part1')
-	
-	// console.time('part2')
 	plainGlyph.joints = plainGlyph.joints.map((joint) => {
 		return new Joint(joint.name, { x: joint.x, y: joint.y })
 	})
-	// console.timeEnd('part2')
-
-	// console.time('part3')
-	// if (plainGlyph.system_script) {
-	// 	plainGlyph.system_script = new Map(Object.entries(plainGlyph.system_script))
-	// }
-	// console.timeEnd('part3')
-
-	// console.time('part4')
-	// if (plainGlyph.glyph_script) {
-	// 	plainGlyph.glyph_script = new Map(Object.entries(plainGlyph.glyph_script))
-	// }
-	// console.timeEnd('part4')
-
-	// console.time('part5')
-	// if (plainGlyph.layout) {
-	// 	plainGlyph.layout = instanceGlyphLayout(plainGlyph.layout)
-	// }
-	// console.timeEnd('part5')
-
-	// console.time('part6')
 	plainGlyph.components = plainGlyph.components.length ? plainGlyph.components.map((component) => {
 		if (component.type === 'glyph') {
 			//@ts-ignore
 			component.value = instanceGlyph(component.value)
 			component.value.parent = plainGlyph
-			// component.value._o.getJoints().map((joint) => {
-			// 	joint.component = component
-			// })
 		}
 		return component
 	}) : []
-	// console.timeEnd('part6')
-
-	//-------
-	////console.log('execute', plainGlyph.script)
-	////debugger
-	//executeScript(plainGlyph)
-	//-------
 	
 	const glyphInstance = new CustomGlyph(plainGlyph)
 	if (plainGlyph.objData) {
@@ -328,9 +293,6 @@ const instanceCharacter = (plainCharacter) => {
 	if (!plainCharacter.script) {
 		plainCharacter.script = `function script_${plainCharacter.uuid.replaceAll('-', '_')} (character, constants, FP) {\n\t//Todo something\n}`
 	}
-	// if (plainCharacter.glyph_script) {
-	// 	plainCharacter.glyph_script = new Map(Object.entries(plainCharacter.glyph_script))
-	// }
 	plainCharacter.components = plainCharacter.components.length ? plainCharacter.components.map((component) => {
 		if (component.type === 'glyph') {
 			//@ts-ignore
@@ -344,7 +306,6 @@ const instanceCharacter = (plainCharacter) => {
 	}) : []
 	//@ts-ignore
 	const glyphInstance = new CustomGlyph(plainCharacter)
-	// executeCharacterScript(plainCharacter)
 	return plainCharacter
 }
 

@@ -42,56 +42,6 @@
   import { onBeforeRouteLeave } from 'vue-router'
   import { initGlyphEnvironment } from '../stores/glyph'
 
-  // import { initRenderer } from '../../fontEditor/stores/renderer'
-  // onMounted(() => {
-  //   initRenderer()
-  // })
-
-  // import { parse, create, toArrayBuffer, getBytes } from '../../fontTool'
-  // import { saveAs } from 'file-saver'
-  // import JSZip from 'jszip'
-  // import type { ITable } from '../../fontTool/table'
-
-  // onMounted(async () => {
-  //   const font1 = await parse('/font/OpenTypeSans-Medium.otf')
-  //   console.log(font1)
-  //   const _font = create(font1.characters, {
-  //     familyName: 'test111',
-  //     styleName: 'Medium',
-  //     unitsPerEm: 1000,
-  //     ascender: 800,
-  //     descender: -200,
-  //   })
-  //   const bytes1 = getBytes(font1.buffer as ArrayBuffer, font1.tables as Array<ITable>)
-  //   const bytes2 = getBytes(_font.bytes as Array<number>, _font.tables as Array<ITable>)
-  //   console.log(bytes1, bytes2)
-  //   debugger
-  //   const buffer = toArrayBuffer(_font) as ArrayBuffer
-  //   const dataView = new DataView(buffer)
-  //   const blob = new Blob([dataView], {type: 'font/opentype'})
-  //   // console.log(buffer)
-  //   // console.log(_font)
-  //   // const font2 = await parse('/font/test111.otf')
-  //   // debugger
-
-  //   // const _font = create(font1.characters, {
-  //   //   familyName: 'test111',
-  //   //   styleName: 'Medium',
-  //   //   unitsPerEm: 500,
-  //   //   ascender: 499,
-  //   //   descender: -1,
-  //   // })
-  //   // const buffer = toArrayBuffer(_font) as ArrayBuffer
-  //   // const dataView = new DataView(buffer)
-  //   // const blob = new Blob([dataView], {type: 'font/opentype'})
-  //   var zip = new JSZip()
-  //   // zip.file("Hello.otf", blob)
-  //   zip.file(`test111.otf`, blob)
-  //   //zip.file(`${selectedFile.value.name}.ttf`, blob)
-  //   zip.generateAsync({type:"blob"}).then(function(content: any) {
-  //     saveAs(content, "example.zip")
-  //   })
-  // })
   const svg = `
     <path class="path" d="" style="stroke-width: 4px; fill: rgba(0, 0, 0, 0)"/>
   `

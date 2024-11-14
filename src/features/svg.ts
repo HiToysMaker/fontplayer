@@ -491,8 +491,6 @@ const parsePathCommandsToComponents = (commands: Array<any>) => {
 			const flagS = command[5]
 			pointTo.x = type === 'a' ? pointAt.x + command[6] : command[6]
 			pointTo.y = type === 'a' ? pointAt.y + command[7] : command[7]
-			console.log('start: ', pointAt)
-			console.log('to: ', pointTo)
 			const beziers = convertEllipsePathToBeziers(
 				rx,
 				ry,
@@ -531,7 +529,6 @@ const parsePathCommandsToComponents = (commands: Array<any>) => {
 				}
 				contours[contourIndex].push(control1, control2, anchor2)
 			})
-			console.log('beziers: ', beziers)
 		}
 		pointAt.x = pointTo.x
 		pointAt.y = pointTo.y
@@ -745,7 +742,6 @@ const convertEllipsePathToBeziers = (
 	x2: number,
 	y2: number,
 ) => {
-	console.log('convert, radius: ', rx, ry, phi)
 	const clamp = (value: number, min: number, max: number) => {
 		return Math.min(Math.max(value, min), max)
 	}
@@ -806,9 +802,6 @@ const convertEllipsePathToBeziers = (
 	
 		var cx = Math.cos(phi)*cxp - Math.sin(phi)*cyp + (x1 + x2)/2
 		var cy = Math.sin(phi)*cxp + Math.cos(phi)*cyp + (y1 + y2)/2
-
-		console.log('start, end', x1, y1, x2, y2, Math.sin(phi)*cxp + Math.cos(phi)*cyp + (y1 + y2)/2)
-		console.log('cx, cy: ', cx, cy, x1p, cxp, y1p, cyp)
 	
 		var theta = svgAngle( 1,0, (x1p-cxp) / rX, (y1p - cyp)/rY )
 	
@@ -837,19 +830,6 @@ const convertEllipsePathToBeziers = (
 			delta -= 2 * Math.PI
 	
 		var n1 = theta, n2 = theta + delta
-
-		// while(n2 > Math.PI * 2) {
-		//   n2 -= Math.PI * 2
-		// }
-		// while (n2 < 0) {
-		//   n2 += Math.PI * 2
-		// }
-
-		console.log('theta, delta: ', theta, delta, ';  n1, n2: ', n1, n2)
-	
-		// E(n)
-		// cx +acosθcosη−bsinθsinη
-		// cy +asinθcosη+bcosθsinη
 		const E = (n: number) => {
 			var enx = cx + rx * Math.cos(phi) * Math.cos(n) - ry * Math.sin(phi) * Math.sin(n)
 			var eny = cy + rx * Math.sin(phi) * Math.cos(n) + ry * Math.cos(phi) * Math.sin(n)
@@ -864,8 +844,6 @@ const convertEllipsePathToBeziers = (
 			var edny = -1 * rx * Math.sin(phi) * Math.sin(n) + ry * Math.cos(phi) * Math.cos(n)
 			return {x: ednx, y: edny}
 		}
-	
-		console.log('E: ', E(theta), E(delta))
 
 		var n = []
 		n.push(n1)
@@ -912,7 +890,6 @@ const convertEllipsePathToBeziers = (
 	
 		var cps = []
 		for(var i = 0; i < n.length - 1; i++) {
-			console.log('test: ', n[i], n[i + 1], getCP(n[i],n[i+1]))
 			cps.push(getCP(n[i],n[i+1]))
 		}
 	

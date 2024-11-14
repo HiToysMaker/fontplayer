@@ -13,7 +13,6 @@ import { selectedFile } from '../stores/files'
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
-//const loadURL = serve({directory: '../../../dist'})
 const loadURL = serve({directory: '../dist'})
 
 let mainWindow: any
@@ -63,9 +62,6 @@ async function createWindow () {
   } else {
     await loadURL(mainWindow)
   }
-
-  // Open the DevTools.
-  // mainWindow.webContents.openDevTools()
 
   // 在主进程中处理剪贴板
   ipcMain.on('copy-to-clipboard', (event, text) => {

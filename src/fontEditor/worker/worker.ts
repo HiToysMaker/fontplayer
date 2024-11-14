@@ -355,11 +355,6 @@ const formatPoints = (points: Array<IPenPoint | IPoint>, options: {
 }
 
 onmessage = (e) => {
-	console.log("Message received from main script");
-	//const workerResult = `Result: ${e.data[0] * e.data[1]}`;
-	console.log("Posting message back to main script");
-	// postMessage(workerResult);
-
 	switch(e.data[0]) {
 		case WorkerEventType.ParseFont: {
 			const font = e.data[1]

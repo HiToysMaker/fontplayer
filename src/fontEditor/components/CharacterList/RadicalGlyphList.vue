@@ -28,9 +28,6 @@
   // render preview canvas for each character
   const renderPreviewCanvas = () => {
     console.time('timer2')
-    //loading.value = true
-    //for (let i = 0; i < radical_glyphs.value.length; i++) {
-    //}
 
     let i = 0
 

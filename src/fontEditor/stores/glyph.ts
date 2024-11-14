@@ -224,69 +224,6 @@ const enableMultiSelect: Ref<boolean> = ref(false)
 // init glyph environment
 const initGlyphEnvironment = async () => {
 	window.FP = FP
-	//const res = await fetch('/glyphs/test_li_glyphs.json')
-
-	// const res = await fetch('/glyphs/glyphs_v5_5.json')
-	// const data = await res.text()
-	// if (!data) return
-	// const plainGlyphs = JSON.parse(data)
-	// const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
-	// _glyphs.map((glyph) => {
-	//   addGlyph(glyph, Status.GlyphList)
-	// })
-
-	//loading.value = true
-	//console.time('timer1')
-	//let res = await fetch('/glyphs/stroke_glyphs_data_v3_v2.json')
-	//let data = await res.text()
-	//if (data) {
-	//	const obj = JSON.parse(data)
-	//	for (let n = 0; n < obj.constants.length; n++) {
-	//		if (!constantsMap.getByUUID(obj.constants[n].uuid)) {
-	//			constants.value.push(obj.constants[n])
-	//		}
-	//	}
-	//	let plainGlyphs = obj.glyphs
-	//	let _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
-	//	_glyphs.map((glyph) => {
-	//		addGlyph(glyph, Status.StrokeGlyphList)
-	//	})
-	//}
-
-	//res = await fetch('/glyphs/radical_glyphs_data_v3_v3.json')
-	//data = await res.text()
-	//if (data) {
-	//	const obj = JSON.parse(data)
-	//	for (let n = 0; n < obj.constants.length; n++) {
-	//		if (!constantsMap.getByUUID(obj.constants[n].uuid)) {
-	//			constants.value.push(obj.constants[n])
-	//		}
-	//	}
-	//	let plainGlyphs = obj.glyphs
-	//	let _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
-	//	_glyphs.map((glyph) => {
-	//		addGlyph(glyph, Status.RadicalGlyphList)
-	//	})
-	//}
-
-	//res = await fetch('/glyphs/comp_glyphs_data_v6.json')
-	//data = await res.text()
-	//if (data) {
-	//	const obj = JSON.parse(data)
-	//	for (let n = 0; n < obj.constants.length; n++) {
-	//		if (!constantsMap.getByUUID(obj.constants[n].uuid)) {
-	//			constants.value.push(obj.constants[n])
-	//		}
-	//	}
-	//	let plainGlyphs = obj.glyphs
-	//	let _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
-	//	_glyphs.map((glyph) => {
-	//		addGlyph(glyph, Status.CompGlyphList)
-	//	})
-	//}
-
-	//console.timeEnd('timer1')
-	//loading.value = false
 }
 
 // 获取指定uuid glyph，需要从四种字形类型中逐一遍历
@@ -1093,19 +1030,9 @@ const executeScript = (targetGlyph) => {
 	try {
 		const glyphInstance = new CustomGlyph(targetGlyph)
 		const _glyph = glyphInstance._glyph
-		//_glyph?.components?.map(component => {
-		//	if (component.type === 'glyph') {
-		//		// console.log('execute glyph component', component.uuid, _glyph)
-		//		executeScript(component.value)
-		//		// debugger
-		//	}
-		//})
 		for (let i = 0; i < targetGlyph.components.length; i++) {
 			if (targetGlyph.components[i].type === 'glyph') {
-				// console.log('sub glyph 1', targetGlyph.components[i].ox, _glyph.components[i].ox)
 				executeScript(targetGlyph.components[i].value)
-				// console.log('sub glyph 2', targetGlyph.components[i].ox, _glyph.components[i].ox)
-				// debugger
 			}
 		}
 		window.glyph = glyphInstance
@@ -1117,20 +1044,15 @@ const executeScript = (targetGlyph) => {
 		} catch (e) {
 			console.error(e)
 		}
-		// console.log('after root execute', window.glyph)
 		if (targetGlyph && targetGlyph.glyph_script) {
 			const keys = Object.keys(targetGlyph.glyph_script)
 			for (let i = 0; i < keys.length; i++) {
 				const script = targetGlyph.glyph_script[keys[i]]
-				// console.log('execute 1', script, keys[i])
 				const fn = new Function(`${script}`)
 				fn()
-				// console.log('after execute 1', _glyph)
-				// debugger
 			}
 		}
 
-		// console.log('execute 1', _glyph?.components)
 		targetGlyph?.components?.map(component => {
 			// @ts-ignore
 			window.comp_glyph = new CustomGlyph(component.value)
@@ -1138,11 +1060,9 @@ const executeScript = (targetGlyph) => {
 				const keys = Object.keys((component.value as ICustomGlyph).system_script)
 				for (let i = 0; i < keys.length; i++) {
 					const script = (component.value as ICustomGlyph).system_script[keys[i]]
-					// console.log('execute 2', script)
 					window.glyph = glyphInstance
 					const fn = new Function(`${script}`)
 					fn()
-					// console.log('after execute 2', script)
 				}
 			}
 			window.comp_glyph = null

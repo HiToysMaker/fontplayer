@@ -1,5 +1,4 @@
 const initWorker = () => {
-	console.log('init worker')
 	let worker = null
 	if (window.Worker) {
 		worker = new Worker(new URL('./worker.ts', import.meta.url))

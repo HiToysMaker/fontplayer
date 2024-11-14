@@ -151,18 +151,10 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       if (_points.length >= 4) {
         ctx.bezierCurveTo(_points[1].x, _points[1].y, _points[2].x, _points[2].y, _points[3].x, _points[3].y)
       }
-      // console.log('PEN-------')
-      // console.log(_points[0], _points[1], _points[2], _points[3])
       for (let i = 3; i < _points.length - 1; i += 3) {
         if (i + 3 >= _points.length) break
-        // console.log(_points[i], _points[i + 1], _points[i + 2], _points[i + 3])
         ctx.bezierCurveTo(_points[i + 1].x, _points[i + 1].y, _points[i + 2].x, _points[i + 2].y, _points[i + 3].x, _points[i + 3].y)
       }
-      // ctx.lineTo(_points[0].x, _points[0].y)
-      // if (closePath && fillColor) {
-      //   ctx.fill()
-      // }
-      // ctx.stroke()
       ctx.setTransform(1, 0, 0, 1, 0, 0)
     }
 
