@@ -1,0 +1,10 @@
+
+
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"moduleResolution": "node",
+		"resolveJsonModule": true,
+	},
+	"include": ["**/*.ts", "**/*.d.ts", "**/*.vue"]
+}

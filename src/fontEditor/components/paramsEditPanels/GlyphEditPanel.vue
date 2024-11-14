@@ -1,0 +1,831 @@
+<script setup lang="ts">
+	/**
+	 * 字形组件参数编辑面板
+	 */
+	/**
+	 * params editing panel for pen component
+	 */
+
+  import { editCharacterFile, getCharacterRatioLayout, modifyComponentForCurrentCharacterFile, selectedComponent, selectedComponentUUID, selectedFile, selectedItemByUUID, executeCharacterScript, modifySubComponent } from '../../stores/files'
+  import { getRatioOptions, ParameterType, getConstant, IParameter, IRingParameter, IParameter2, getRatioLayout, selectedParam, selectedParamType, constantGlyphMap, ConstantType, getGlyphByUUID, GlyphType, executeScript, getRatioLayout2 } from '../../stores/glyph'
+  import { editStatus, Status } from '../../stores/font'
+  import { useI18n } from 'vue-i18n'
+  import { canvas, dragOption, draggable, grid, GridType, checkJoints, checkRefLines } from '../../stores/global'
+  import { ComputedRef, Ref, computed, onMounted, onUnmounted, ref, watch } from 'vue'
+  import { emitter } from '../../Event/bus'
+	import RingController from '../../components/Widgets/RingController.vue'
+	import { editing as editingLayout } from '../../stores/glyphLayoutResizer'
+	import {
+    SubComponents,
+    SubComponentsRoot,
+    selectedSubComponent,
+		type IComponent,
+  } from '../../stores/files'
+	import { linkComponentsForJoints } from '../../programming/Joint'
+	import { setSelectGlobalParamDialogVisible, setSetAsGlobalParamDialogVisible } from '../../stores/dialogs'
+  const { tm, t } = useI18n()
+
+
+	const _selectedComponent: ComputedRef<any> = computed(() => {
+		let comp = selectedComponent.value
+    if (editCharacterFile.value.selectedComponentsTree && editCharacterFile.value.selectedComponentsTree.length) {
+			if (selectedSubComponent.value) {
+				comp = selectedSubComponent.value
+			} else {
+				comp = SubComponentsRoot.value
+			}
+    }
+    return comp
+  })
+
+	onUnmounted(() => {
+    draggable.value = false
+    dragOption.value = 'none'
+		checkJoints.value = false
+		checkRefLines.value = false
+  })
+
+	const controlType = ref(0)
+	const controlTypeOptions = [
+		{
+			value: 0,
+			key: 'widget',
+		},
+		{
+			value: 1,
+			key: 'number',
+		},
+	]
+  const size = ref(150)
+
+  const jointsCheckedMap = ref({})
+  _selectedComponent.value.value._o?.getJoints().map((joint) => {
+		if (joint) {
+			jointsCheckedMap.value[joint.name] = false
+		}
+  })
+
+  watch([_selectedComponent, selectedComponent], () => {
+    jointsCheckedMap.value = {}
+    _selectedComponent.value.value._o?.getJoints().map((joint) => {
+			if (joint) {
+				jointsCheckedMap.value[joint.name] = false
+			}
+    })
+  })
+
+  const handleChangeOX = (ox: number) => {
+		if (editCharacterFile.value.selectedComponentsTree && editCharacterFile.value.selectedComponentsTree.length) {
+			modifySubComponent({
+				ox,
+			})
+		} else {
+			modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
+				ox,
+			})
+		}
+  }
+
+  const handleChangeOY = (oy: number) => {
+		if (editCharacterFile.value.selectedComponentsTree && editCharacterFile.value.selectedComponentsTree.length) {
+			modifySubComponent({
+				oy,
+			})
+		} else {
+			modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
+				oy,
+			})
+		}
+  }
+
+  const handleChangeParameter = (parameter: IParameter | IParameter2, value: number) => {
+   	parameter.value = value
+		if (parameter.ratioed) {
+      if (!_selectedComponent.value.value.system_script) {
+        _selectedComponent.value.value.system_script = {}
+      }
+			if (editCharacterFile.value.selectedComponentsTree && editCharacterFile.value.selectedComponentsTree.length && selectedSubComponent.value) {
+				// 选种子字形组件
+				let layout = getRatioLayout2(SubComponentsRoot.value.value, parameter.ratio)
+				if (layout) {
+					const script = `window.comp_glyph.setParam('${parameter.name}',window.glyph.getRatioLayout('${parameter.ratio}') / ${layout} * ${value});`
+					_selectedComponent.value.value.system_script[parameter.name] = script
+				}
+			} else {
+				// 父级直接为字符
+				let layout = getCharacterRatioLayout(editCharacterFile.value, parameter.ratio)
+				if (layout) {
+					const script = `window.comp_glyph.setParam('${parameter.name}',window.character.getRatioLayout('${parameter.ratio}') / ${layout} * ${value});`
+					_selectedComponent.value.value.system_script[parameter.name] = script
+				}
+			}
+    }
+		executeScript(_selectedComponent.value.value)
+    executeCharacterScript(editCharacterFile.value)
+    _selectedComponent.value.value._o.getJoints().map((joint) => {
+      joint.component = _selectedComponent.value
+    })
+    emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
+    emitter.emit('renderCharacter', true)
+		if (checkJoints.value) {
+      _selectedComponent.value.value._o.renderJoints(canvas.value)
+    }
+    if (checkRefLines.value) {
+			_selectedComponent.value.value._o.renderRefLines(canvas.value)
+    }
+  }
+
+	const handleRatioOptionChange = (parameter: IParameter | IParameter2, value: string) => {
+    if (parameter.ratioed) {
+      if (!_selectedComponent.value.value.system_script) {
+        _selectedComponent.value.value.system_script = {}
+      }
+			if (editCharacterFile.value.selectedComponentsTree && editCharacterFile.value.selectedComponentsTree.length && selectedSubComponent.value) {
+				// 选种子字形组件
+				let layout = getRatioLayout2(SubComponentsRoot.value.value, parameter.ratio)
+				if (layout) {
+					const script = `window.comp_glyph.setParam('${parameter.name}',window.glyph.getRatioLayout('${parameter.ratio}') / ${layout} * ${parameter.value});`
+					_selectedComponent.value.value.system_script[parameter.name] = script
+				}
+			} else {
+				// 父级直接为字符
+				let layout = getCharacterRatioLayout(editCharacterFile.value, parameter.ratio)
+				if (layout) {
+					const script = `window.comp_glyph.setParam('${parameter.name}',window.character.getRatioLayout('${parameter.ratio}') / ${layout} * ${parameter.value});`
+					_selectedComponent.value.value.system_script[parameter.name] = script
+				}
+			}
+    }
+		executeScript(_selectedComponent.value.value)
+    executeCharacterScript(editCharacterFile.value)
+    emitter.emit('renderPreviewCanvasByUUID', _selectedComponent.value.value.uuid)
+    emitter.emit('renderCharacter')
+		if (checkJoints.value) {
+      _selectedComponent.value.value._o.renderJoints(canvas.value)
+    }
+    if (checkRefLines.value) {
+			_selectedComponent.value.value._o.renderRefLines(canvas.value)
+    }
+  }
+
+	watch([checkJoints, checkRefLines], () => {
+    emitter.emit('renderCharacter')
+		linkComponentsForJoints(selectedComponent.value)
+    if (checkJoints.value) {
+      _selectedComponent.value.value._o.renderJoints(canvas.value)
+    }
+    if (checkRefLines.value) {
+      _selectedComponent.value.value._o.renderRefLines(canvas.value)
+    }
+  })
+
+  watch(jointsCheckedMap, () => {
+    if (editStatus.value === Status.Edit) {
+      emitter.emit('renderCharacter')
+    } else if (editStatus.value === Status.Glyph) {
+      emitter.emit('renderGlyph')
+    }
+    _selectedComponent.value.value._o.renderJoints(canvas.value, {
+      type: 'selected',
+      joints: Object.keys(jointsCheckedMap.value).filter((name) => !!jointsCheckedMap.value[name]),
+    })
+  }, {
+    deep: true,
+  })
+
+  watch(dragOption, () => {
+    if (dragOption.value === 'layout' && (!editCharacterFile.value.selectedComponentsTree || !editCharacterFile.value.selectedComponentsTree.length)) {
+      grid.type = GridType.LayoutGrid
+    }
+  })
+
+  let collapsedMap: any = ref({})
+  onMounted(() => {
+    if (editStatus.value === Status.Edit) {
+      _selectedComponent.value.value.parameters?.parameters.map((param) => {
+        collapsedMap.value[param.uuid] = false
+      })
+    } else {
+
+    }
+  })
+
+	const onChange = (parameter, _radius: number, _degree: number, _params: Array<any>) => {
+    // radius.value.value = _radius
+    // degree.value.value = _degree
+    // params.value = Object.assign([], _params)
+    parameter.radius.value = _radius
+    parameter.degree.value = _degree
+    parameter.params = Object.assign([], _params)
+		executeScript(_selectedComponent.value.value)
+    executeCharacterScript(editCharacterFile.value)
+    emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
+    emitter.emit('renderCharacter', true)
+		if (checkJoints.value) {
+      _selectedComponent.value.value._o.renderJoints(canvas.value)
+    }
+    if (checkRefLines.value) {
+      _selectedComponent.value.value._o.renderRefLines(canvas.value)
+    }
+  }
+
+	const cancelGlobalParam = (parameter: IParameter) => {
+		const param = getConstant(parameter.value as string)
+		parameter.type = param.type
+		parameter.value = param.value
+		const arr = constantGlyphMap.get(param.uuid)
+		for (let i = 0; i < arr.length; i++) {
+			if (arr[i].parameterUUID === parameter.uuid) {
+				arr.splice(i, 1)
+				break
+			}
+		}
+	}
+
+	const setAsGlobalParam = (parameter: IParameter) => {
+		selectedParam.value = parameter
+		selectedParamType.value = 'glyph_components'
+		setSetAsGlobalParamDialogVisible(true)
+	}
+
+	const selectGlobalParam = (parameter: IParameter) => {
+		selectedParam.value = parameter
+		selectedParamType.value = 'glyph_components'
+		setSelectGlobalParamDialogVisible(true)
+	}
+
+
+	const updateGlobalParam = (parameter: IParameter) => {
+		const arr = constantGlyphMap.get(parameter.value as unknown as string)
+		for (let i = 0; i < arr.length; i++) {
+			const pair = arr[i]
+			let glyph = null
+			if (pair.constantType === ConstantType.Parameter) {
+				glyph = getGlyphByUUID(arr[i].glyphUUID)
+			} else if (pair.constantType === ConstantType.Component) {
+				const parentUUID = arr[i].parentUUID
+				let parent = null
+				if (pair.glyphType === GlyphType.Char) {
+					parent = selectedItemByUUID(selectedFile.value.characterList, parentUUID)
+				} else {
+					parent = getGlyphByUUID(parentUUID)
+				}
+				glyph = parent.value
+			}
+			if (!glyph) continue
+			executeScript(glyph)
+			emitter.emit('renderGlyphPreviewCanvasByUUID', glyph.uuid)
+		}
+	}
+</script>
+
+<template>
+  <div class="glyph-edit-panel">
+    <div class="character-glyph-edit-panel" v-if="editStatus === Status.Edit">
+			<div class="character-edit-panel">
+				<div class="name-wrap">
+					<div class="title">{{ t('panels.paramsPanel.componentName.title') }}</div>
+					<el-form
+						class="name-form"
+						label-width="80px"
+					>
+						<el-form-item :label="tm('panels.paramsPanel.componentName.label')">
+							<el-input
+								v-model="_selectedComponent.name"
+							/>
+						</el-form-item>
+					</el-form>
+				</div>
+				<div class="layout-wrap" v-if="_selectedComponent.value.layout">
+					<div class="title">{{ t('panels.paramsPanel.layout.title') }}</div>
+					<el-form
+						class="name-form"
+						label-width="80px"
+					>
+						<el-form-item :label="tm('panels.paramsPanel.layout.type')">
+							<el-input disabled v-model="_selectedComponent.value.layout.type"></el-input>
+						</el-form-item>
+						<el-form-item
+							v-for="key in Object.keys(_selectedComponent.value.layout.params)"
+							:label="key"
+						>
+							<el-input-number v-model="_selectedComponent.value.layout.params[key]"/>
+							<div class="ratio-item">
+								<font-awesome-icon class="ratio-icon" :class="{
+									selected: _selectedComponent.value.layout.ratioedMap && _selectedComponent.value.layout.ratioedMap[key].ratioed
+								}" @click="() => {
+									if (!_selectedComponent.value.layout.ratioedMap) {
+										_selectedComponent.value.layout.ratioedMap = new Map()
+									}
+									if (!_selectedComponent.value.layout.ratioedMap[key]) {
+										_selectedComponent.value.layout.ratioedMap.set(key, {ratioed: true})
+									}
+									_selectedComponent.value.layout.ratioedMap[key].ratioed = !_selectedComponent.value.layout.ratioedMap[key].ratioed
+								}" :icon="['fas', 'percent']" />
+								<el-select v-model="_selectedComponent.value.layout.ratioedMap[key].ratio" class="control-type-select" placeholder="Ratio" :disabled="!_selectedComponent.value.layout.ratioedMap || !_selectedComponent.value.layout.ratioedMap[key].ratioed">
+									<el-option
+										v-for="item in getRatioOptions(_selectedComponent.value)"
+										:key="item.key"
+										:label="item.label"
+										:value="item.value"
+									/>
+								</el-select>
+							</div>
+						</el-form-item>
+						<el-form-item label="编辑结构">
+							<el-switch v-model="editingLayout" />
+						</el-form-item>
+					</el-form>
+				</div>
+				<div class="interactive-settings">
+					<div class="title">交互设定</div>
+					<el-form
+						class="name-form"
+						label-width="80px"
+					>
+						<el-form-item label="拖拽设定">
+							<el-checkbox
+								v-model="draggable"
+								class="draggable-check"
+							>
+								可拖拽
+							</el-checkbox>
+						</el-form-item>
+						<el-form-item label="吸附设定">
+							<el-radio-group v-model="dragOption" class="radio-group">
+								<el-radio value="none" label="none">无</el-radio>
+								<el-radio value="default" label="default">默认标点</el-radio>
+								<el-radio
+									value="layout"
+									label="layout"
+									:disabled="!SubComponentsRoot || (!!SubComponentsRoot && !SubComponentsRoot.value.layout)"
+								>布局标点</el-radio>
+							</el-radio-group>
+						</el-form-item>
+					</el-form>
+				</div>
+				<div class="transform-wrap">
+					<div class="title">{{ t('panels.paramsPanel.transform.title') }}</div>
+					<el-form
+						class="transfom-form"
+						label-width="80px"
+					>
+						<el-form-item :label="tm('panels.paramsPanel.transform.x')">
+							<el-input-number
+								:model-value="_selectedComponent.ox"
+								:precision="1"
+								@change="handleChangeOX"
+							/>
+						</el-form-item>
+						<el-form-item :label="tm('panels.paramsPanel.transform.y')">
+							<el-input-number
+								:model-value="_selectedComponent.oy"
+								:precision="1"
+								@change="handleChangeOY"
+							/>
+						</el-form-item>
+					</el-form>
+				</div>
+			</div>
+			<div class="parameters-wrap">
+				<div class="title">{{ t('panels.paramsPanel.params.title') }}</div>
+				<el-form
+					class="parameters-form"
+					label-width="80px"
+				>
+					<el-form-item :label="tm('programming.joint')">
+						<el-switch
+							v-model="checkJoints"
+						/>
+					</el-form-item>
+					<el-form-item :label="tm('programming.refline')">
+						<el-switch
+							v-model="checkRefLines"
+						/>
+					</el-form-item>
+					<el-form-item :label="parameter.name" v-for="parameter in _selectedComponent.value.parameters.parameters">
+						<el-popover placement="right" :width="250" trigger="click">
+							<template #reference>
+								<el-icon class="more-btn"
+									:class="{
+										ring: parameter.type === ParameterType.RingController || (parameter.type === ParameterType.Constant && getConstant(parameter.value).type === ParameterType.RingController),
+										show: parameter.type === ParameterType.Number || (parameter.type === ParameterType.Constant && getConstant(parameter.value).type !== ParameterType.RingController) || controlType === 0
+									}"
+								><More /></el-icon>
+							</template>
+							<div class="param-btn-group">
+								<el-button
+									v-show="parameter.type === ParameterType.Constant"
+									@click="cancelGlobalParam(parameter)"
+								>取消全局变量</el-button>
+								<el-button
+									@click="setAsGlobalParam(parameter)"
+								>设为全局变量</el-button>
+								<el-button
+									@click="selectGlobalParam(parameter)"
+								>选择全局变量</el-button>
+								<el-button
+									v-show="parameter.type === ParameterType.Constant"
+									type="primary"
+									@click="updateGlobalParam(parameter)"
+								>更新全局变量</el-button>
+							</div>
+						</el-popover>
+						<div
+							class="global-param-note"
+							v-show="parameter.type === ParameterType.Constant"
+							:class="{
+								ring: parameter.type === ParameterType.Constant && getConstant(parameter.value).type === ParameterType.RingController
+							}"
+						>全局变量</div>
+						<div v-if="parameter.type === ParameterType.Number">
+							<el-input-number
+								:model-value="parameter.value"
+								:step="parameter.max <= 10 ? 0.01 : 1"
+								:min="parameter.min"
+								:max="parameter.max"
+								:precision="parameter.max <= 10 ? 2 : 0"
+								:disabled="parameter.type === ParameterType.Constant"
+								@change="(value) => handleChangeParameter(parameter, value)"
+							/>
+							<el-slider
+								:step="parameter.max <= 10 ? 0.01 : 1"
+								:min="parameter.min"
+								:max="parameter.max"
+								:precision="parameter.max <= 10 ? 2 : 0"
+								@input="(value) => handleChangeParameter(parameter, value)"
+								v-model="parameter.value" v-show="parameter.type === ParameterType.Number"
+							/>
+							<div class="down-menu-icon-wrap" @click="collapsedMap[parameter.uuid] = !collapsedMap[parameter.uuid]">
+								<font-awesome-icon :icon="['fas', 'arrow-down-wide-short']" />
+							</div>
+							<div class="down-menu" v-show="collapsedMap[parameter.uuid]">
+								<div class="ratio-item">
+									<font-awesome-icon class="ratio-icon" :class="{
+										selected: parameter.ratioed
+									}" @click="() => {
+										parameter.ratioed = !parameter.ratioed
+										if (!parameter.ratioed && _selectedComponent.value.system_script && _selectedComponent.value.system_script[parameter.name]) {
+											delete _selectedComponent.value.system_script[parameter.name]
+										}
+									}" :icon="['fas', 'percent']" />
+									<el-select
+										v-model="parameter.ratio" class="control-type-select" placeholder="Ratio" :disabled="!parameter.ratioed"
+										@change="(value) => handleRatioOptionChange(parameter, value)"
+									>
+										<el-option
+											v-for="item in getRatioOptions(_selectedComponent.value)"
+											:key="item.key"
+											:label="item.label"
+											:value="item.value"
+										/>
+									</el-select>
+								</div>
+							</div>
+						</div>
+						<div v-else-if="parameter.type === ParameterType.RingController">
+							<el-select v-model="controlType" class="control-type-select" :placeholder="tm('programming.controlType')">
+								<el-option
+									v-for="item in controlTypeOptions"
+									:key="item.key"
+									:label="tm(`programming.${item.key}`)"
+									:value="item.value"
+								/>
+							</el-select>
+							<div v-if="controlType === 0" class="ring-controller-wrap">
+								<ring-controller
+									:radius="(parameter.value as IRingParameter).radius"
+									:size="size"
+									:degree = "(parameter.value as IRingParameter).degree"
+									:params = "(parameter.value as IRingParameter).params"
+									:on-change="(_radius: number, _degree: number, _params: Array<any>) => onChange(parameter.value, _radius, _degree, _params)"
+								></ring-controller>
+							</div>
+							<div v-else-if="controlType === 1" class="number-controller-wrap">
+								<el-tabs type="border-card">
+									<el-tab-pane label="radius">
+										<el-form-item label="name" label-width="42px">
+											<el-input class="parameter-value" v-model="(parameter.value as IRingParameter).radius.name" disabled></el-input>
+										</el-form-item>
+										<el-form-item label="value" label-width="42px">
+											<el-input-number
+												class="parameter-value"
+												v-model="(parameter.value as IRingParameter).radius.value"
+												:min="(parameter.value as IRingParameter).radius.min"
+												:max="(parameter.value as IRingParameter).radius.max"
+												:precision="(parameter.value as IRingParameter).radius.max <= 10 ? 2 : 0"
+                      	:step="(parameter.value as IRingParameter).radius.max <= 10 ? 0.01 : 1"
+											></el-input-number>
+											<el-slider
+												@input="(value) => handleChangeParameter((parameter.value as IRingParameter).radius, value)"
+												v-model="(parameter.value as IRingParameter).radius.value"
+												:min="(parameter.value as IRingParameter).radius.min"
+												:max="(parameter.value as IRingParameter).radius.max"
+												:precision="(parameter.value as IRingParameter).radius.max <= 10 ? 2 : 0"
+                      	:step="(parameter.value as IRingParameter).radius.max <= 10 ? 0.01 : 1"
+											/>
+										</el-form-item>
+									</el-tab-pane>
+									<el-tab-pane label="degree">
+										<el-form-item label="name" label-width="42px">
+											<el-input class="parameter-value" v-model="(parameter.value as IRingParameter).degree.name" disabled></el-input>
+										</el-form-item>
+										<el-form-item label="value" label-width="42px">
+											<el-input-number
+												class="parameter-value"
+												v-model="(parameter.value as IRingParameter).degree.value"
+												:min="(parameter.value as IRingParameter).degree.min"
+												:max="(parameter.value as IRingParameter).degree.max"
+												:precision="parameter.max <= 10 ? 2 : 0"
+                      	:step="parameter.max <= 10 ? 0.01 : 1"
+											></el-input-number>
+											<el-slider
+												@input="(value) => handleChangeParameter((parameter.value as IRingParameter).degree, value)"
+												v-model="(parameter.value as IRingParameter).degree.value"
+												:min="(parameter.value as IRingParameter).degree.min"
+												:max="(parameter.value as IRingParameter).degree.max"
+												:precision="(parameter.value as IRingParameter).degree.max <= 10 ? 2 : 0"
+                      	:step="(parameter.value as IRingParameter).degree.max <= 10 ? 0.01 : 1"
+											/>
+										</el-form-item>
+									</el-tab-pane>
+									<el-tab-pane label="params">
+										<el-collapse>
+											<el-collapse-item v-for="param in (parameter.value as IRingParameter).params" :title="param.name" name="1">
+												<el-form-item label="name" label-width="42px">
+													<el-input class="parameter-value" v-model="param.name" disabled></el-input>
+												</el-form-item>
+												<el-form-item label="value" label-width="42px">
+													<el-input-number
+														class="parameter-value"
+														v-model="param.value"
+														:min="param.min"
+														:max="param.max"
+														:precision="param.max <= 10 ? 2 : 0"
+                      			:step="param.max <= 10 ? 0.01 : 1"
+													></el-input-number>
+													<el-slider
+														@input="(value) => handleChangeParameter(param, value)"
+														v-model="param.value"
+														:min="param.min"
+														:max="param.max"
+														:precision="param.max <= 10 ? 2 : 0"
+                      			:step="param.max <= 10 ? 0.01 : 1"
+													/>
+												</el-form-item>
+											</el-collapse-item>
+										</el-collapse>
+									</el-tab-pane>
+								</el-tabs>
+							</div>
+						</div>
+						<div v-else-if="parameter.type === ParameterType.Constant">
+							<div v-if="getConstant(parameter.value).type === ParameterType.Number">
+								<el-input-number
+									:model-value="getConstant(parameter.value).value"
+									:step="getConstant(parameter.value).max <= 10 ? 0.01 : 1"
+									:min="getConstant(parameter.value).min"
+									:max="getConstant(parameter.value).max"
+									:precision="getConstant(parameter.value).max <= 10 ? 2 : 0"
+									@change="(value) => handleChangeParameter(getConstant(parameter.value), value)"
+								/>
+								<el-slider
+									:model-value="getConstant(parameter.value).value"
+									:step="getConstant(parameter.value).max <= 10 ? 0.01 : 1"
+									:min="getConstant(parameter.value).min"
+									:max="getConstant(parameter.value).max"
+									:precision="getConstant(parameter.value).max <= 10 ? 2 : 0"
+									@input="(value) => handleChangeParameter(parameter, value)"
+									@change="(value) => handleChangeParameter(getConstant(parameter.value), value)"
+								/>
+							</div>
+							<div v-else-if="getConstant(parameter.value).type === ParameterType.RingController">
+								<el-select v-model="controlType" class="control-type-select" :placeholder="tm('programming.controlType')">
+									<el-option
+										v-for="item in controlTypeOptions"
+										:key="item.key"
+										:label="tm(`programming.${item.key}`)"
+										:value="item.value"
+									/>
+								</el-select>
+								<div v-if="controlType === 0" class="ring-controller-wrap">
+									<ring-controller
+										:radius="(getConstant(parameter.value).value as IRingParameter).radius"
+										:size="size"
+										:degree = "(getConstant(parameter.value).value as IRingParameter).degree"
+										:params = "(getConstant(parameter.value).value as IRingParameter).params"
+										:on-change="(_radius: number, _degree: number, _params: Array<any>) => onChange(getConstant(parameter.value).value, _radius, _degree, _params)"
+									></ring-controller>
+								</div>
+								<div v-else-if="controlType === 1" class="number-controller-wrap">
+									<el-tabs type="border-card">
+										<el-tab-pane label="radius">
+											<el-form-item label="name" label-width="42px">
+												<el-input class="parameter-value" :model-value="(getConstant(parameter.value).value as IRingParameter).radius.name" disabled></el-input>
+											</el-form-item>
+											<el-form-item label="value" label-width="42px">
+												<el-input-number
+													class="parameter-value"
+													:model-value="(getConstant(parameter.value).value as IRingParameter).radius.value"
+													:min="(getConstant(parameter.value).value as IRingParameter).radius.min"
+													:max="(getConstant(parameter.value).value as IRingParameter).radius.max"
+													:precision="(getConstant(parameter.value).value as IRingParameter).radius.max <= 10 ? 2 : 0"
+													:step="(getConstant(parameter.value).value as IRingParameter).radius.max <= 10 ? 0.01 : 1"
+													@change="(value) => handleChangeParameter(getConstant(parameter.value).value.radius, value)"
+												></el-input-number>
+												<el-slider
+													@input="(value) => handleChangeParameter(getConstant(parameter.value).value.radius, value)"
+													:model-value="(getConstant(parameter.value).value as IRingParameter).radius.value"
+													:min="(getConstant(parameter.value).value as IRingParameter).radius.min"
+													:max="(getConstant(parameter.value).value as IRingParameter).radius.max"
+													:precision="(getConstant(parameter.value).value as IRingParameter).radius.max <= 10 ? 2 : 0"
+													:step="(getConstant(parameter.value).value as IRingParameter).radius.max <= 10 ? 0.01 : 1"
+												/>
+											</el-form-item>
+										</el-tab-pane>
+										<el-tab-pane label="degree">
+											<el-form-item label="name" label-width="42px">
+												<el-input class="parameter-value" :model-value="(getConstant(parameter.value).value as IRingParameter).degree.name" disabled></el-input>
+											</el-form-item>
+											<el-form-item label="value" label-width="42px">
+												<el-input-number
+													class="parameter-value"
+													:model-value="(getConstant(parameter.value).value as IRingParameter).degree.value"
+													:min="(getConstant(parameter.value).value as IRingParameter).degree.min"
+													:max="(getConstant(parameter.value).value as IRingParameter).degree.max"
+													:precision="(getConstant(parameter.value).value as IRingParameter).degree.max <= 10 ? 2 : 0"
+													:step="(getConstant(parameter.value).value as IRingParameter).degree.max <= 10 ? 0.01 : 1"
+													@change="(value) => handleChangeParameter(getConstant(parameter.value).value.degree, value)"
+												></el-input-number>
+												<el-slider
+													@input="(value) => handleChangeParameter(getConstant(parameter.value).value.degree, value)"
+													:model-value="(getConstant(parameter.value).value as IRingParameter).degree.value"
+													:min="(getConstant(parameter.value).value as IRingParameter).degree.min"
+													:max="(getConstant(parameter.value).value as IRingParameter).degree.max"
+													:precision="(getConstant(parameter.value).value as IRingParameter).degree.max <= 10 ? 2 : 0"
+													:step="(getConstant(parameter.value).value as IRingParameter).degree.max <= 10 ? 0.01 : 1"
+												/>
+											</el-form-item>
+										</el-tab-pane>
+										<el-tab-pane label="params">
+											<el-collapse>
+												<el-collapse-item v-for="param in (getConstant(parameter.value).value as IRingParameter).params" :title="param.name" name="1">
+													<el-form-item label="name" label-width="42px">
+														<el-input class="parameter-value" :model-value="param.name" disabled></el-input>
+													</el-form-item>
+													<el-form-item label="value" label-width="42px">
+														<el-input-number
+															class="parameter-value test"
+															:model-value="param.value"
+															:min="param.min"
+															:max="param.max"
+															:precision="param.max <= 10 ? 2 : 0"
+															:step="param.max <= 10 ? 0.01 : 1"
+															@change="(value) => handleChangeParameter(param, value)"
+														></el-input-number>
+														<el-slider
+															@input="(value) => handleChangeParameter(param, value)"
+															v-model="param.value"
+															:min="param.min"
+															:max="param.max"
+															:precision="param.max <= 10 ? 2 : 0"
+															:step="param.max <= 10 ? 0.01 : 1"
+														/>
+													</el-form-item>
+												</el-collapse-item>
+											</el-collapse>
+										</el-tab-pane>
+									</el-tabs>
+								</div>
+							</div>
+						</div>
+					</el-form-item>
+				</el-form>
+			</div>
+			<div class="joints-wrap">
+				<div class="title">{{ t('panels.paramsPanel.joints.title') }}</div>
+				<el-form
+					class="joints-form"
+					label-width="80px"
+				>
+					<el-checkbox
+						v-model="jointsCheckedMap[joint.name]"
+						:label="joint.name"
+						v-for="joint in (_selectedComponent.value._o? _selectedComponent.value._o?.getJoints() : [])"
+					/>
+				</el-form>
+			</div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+  .glyph-edit-panel {
+    width: 100%;
+    height: 100%;
+    .el-input {
+      width: 150px;
+    }
+  }
+
+	.ratio-item {
+		margin-top: 5px;
+	}
+
+	.ratio-icon {
+    position: absolute;
+    width: 32px;
+    top: 12px;
+    left: -40px;
+    color: var(--light-5);
+    cursor: pointer;
+    &:hover, &.selected {
+      color: var(--light-3);
+    }
+  }
+  .down-menu-icon-wrap {
+    width: 32px;
+    position: absolute;
+    left: -32px;
+    top: 38px;
+    color: var(--light-5);
+    cursor: pointer;
+    &:hover {
+      color: var(--light-3);
+    }
+  }
+
+	.global-param-note {
+    position: absolute;
+    left: -63px;
+    font-size: small;
+    top: 20px;
+    color: #7a2703;
+		font-weight: bold;
+	}
+
+	.more-btn {
+		position: absolute;
+		display: none;
+		left: -55px;
+    top: 45px;
+    color: var(--light-5);
+		&:hover {
+			color: white;
+		}
+		&.ring {
+			left: -32px;
+		}
+		&.show {
+			display: block;
+		}
+	}
+
+  .title {
+    height: 36px;
+    line-height: 36px;
+    padding: 0 10px;
+    border-bottom: 1px solid #dcdfe6;
+  }
+
+  .el-form {
+    margin: 10px 0;
+  }
+  .el-checkbox {
+    display: flex;
+    margin: 0 20px;
+    color: var(--light-3);
+  }
+	.el-slider {
+		margin: 5px 0;
+    margin-right: 20px;
+	}
+  .el-select {
+    width: 150px;
+  }
+	:deep(.el-slider__button) {
+		border-radius: 0;
+    width: 14px;
+    height: 14px;
+	}
+  .ring-controller-wrap {
+    display: flex;
+    margin: 20px 0;
+  }
+  .el-tabs {
+    width: 216px;
+    margin-left: -67px !important;
+    margin: 20px 0;
+    .el-form-item {
+      margin: 5px 0;
+    }
+  }
+  .radio-group {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+  }
+  .draggable-check {
+    margin-left: 0;
+  }
+</style>

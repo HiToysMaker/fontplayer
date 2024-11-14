@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/fontPlayer-logo.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>字玩</title>
+    <script src="/lib/opencv.js"></script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="glyph-template">
+      <div class="glyph">
+        <span class="preview">
+          <div class="empty-line-1"></div>
+          <div class="empty-line-2"></div>
+          <canvas
+            class="preview-canvas"
+            width="100"
+            height="100"
+          ></canvas>
+        </span>
+        <span class="info">
+          <span class="name"></span>
+        </span>
+        <span class="icon-group">
+          <span class="copy-icon"></span>
+          <span class="edit-icon"></span>
+          <span class="delete-icon"></span>
+        </span>
+      </div>
+    </div>
+    <div id="default-glyph-template">
+      <div class="default-glyph">
+        <div class="add-glyph-btn-wrapper"></div>
+      </div>
+    </div>
+    <div id="character-template">
+      <div class="character">
+        <span class="preview">
+          <div class="empty-line-1"></div>
+          <div class="empty-line-2"></div>
+          <canvas
+            class="preview-canvas" 
+            width="100"
+            height="100"
+          ></canvas>
+        </span>
+        <span class="info">
+          <span class="text"></span>
+          <span class="unicode"></span>
+        </span>
+        <span class="icon-group">
+          <span class="copy-icon"></span>
+          <span class="edit-icon"></span>
+          <span class="delete-icon"></span>
+        </span>
+      </div>
+    </div>
+    <div id="default-character-template">
+      <div class="default-character">
+        <div class="add-text-btn-wrapper"></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

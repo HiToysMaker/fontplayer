@@ -1,0 +1,18 @@
+{
+	"compilerOptions": {
+		"module": "commonjs",
+		"noImplicitAny": false,
+		"sourceMap": true,
+		"skipLibCheck": true,   // 跳过库文件的类型检查
+    "noEmitOnError": false, // 允许在有错误时仍然输出
+    "strict": false,          // 禁用所有严格类型检查
+		"outDir": "dist/electron",
+		"baseUrl": ".",
+		"paths": {
+			"*": ["node_modules/*"]
+		}
+	},
+	"include": [
+		"src/fontEditor/main/*"
+	]
+}
