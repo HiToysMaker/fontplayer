@@ -8,7 +8,7 @@
 ### 运行程序
 首先安装依赖：
 ```
-npm run dev
+npm run install
 ```
 运行程序：
 ```
