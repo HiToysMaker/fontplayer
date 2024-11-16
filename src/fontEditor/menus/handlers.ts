@@ -1692,10 +1692,10 @@ const importTemplate1 = async () => {
 		setEditStatus(Status.CharacterList)
 		total.value = 0
 		loading.value = true
-		let charRes = await fetch('/templates/template1.json')
+		let charRes = await fetch('/fontplayer_demo/templates/template1.json')
 		let charData = await charRes.text()
 		console.time('timer1')
-		let res = await fetch('/glyphs/stroke_glyphs_data_v7_v4.json')
+		let res = await fetch('/fontplayer_demo/glyphs/stroke_glyphs_data_v7_v4.json')
 		let data = await res.text()
 		if (data) {
 			const obj = JSON.parse(data)
@@ -1711,7 +1711,7 @@ const importTemplate1 = async () => {
 			})
 		}
 	
-		res = await fetch('/glyphs/radical_glyphs_test_1.json')
+		res = await fetch('/fontplayer_demo/glyphs/radical_glyphs_test_1.json')
 		data = await res.text()
 		if (data) {
 			const obj = JSON.parse(data)
@@ -1727,7 +1727,7 @@ const importTemplate1 = async () => {
 			})
 		}
 	
-		res = await fetch('/glyphs/comp_glyphs_data_v7_v4.json')
+		res = await fetch('/fontplayer_demo/glyphs/comp_glyphs_data_v7_v4.json')
 		data = await res.text()
 		if (data) {
 			const obj = JSON.parse(data)

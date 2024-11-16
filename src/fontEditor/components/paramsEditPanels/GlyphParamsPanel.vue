@@ -16,6 +16,7 @@
 	import { CustomGlyph } from '../../programming/CustomGlyph'
   import { setSelectGlobalParamDialogVisible, setSetAsGlobalParamDialogVisible } from '../../stores/dialogs'
 	import { selectedFile, selectedItemByUUID } from '../../stores/files'
+  import { More } from '@element-plus/icons-vue'
   const { t, tm } = useI18n()
   const checkJoints = ref(false)
   const checkRefLines = ref(false)

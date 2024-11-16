@@ -22,6 +22,7 @@
 		modifySubComponent,
   } from '../../stores/glyph'
 	import { linkComponentsForJoints } from '../../programming/Joint'
+	import { More } from '@element-plus/icons-vue'
 
 
 	const _selectedComponent: ComputedRef<any> = computed(() => {

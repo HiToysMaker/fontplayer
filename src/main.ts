@@ -5,7 +5,8 @@ import router from './router'
 
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
-import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+// import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+import { Files, Edit, Upload, Download, Tickets, Setting, List } from '@element-plus/icons-vue'
 
 import { i18n } from './i18n'
 
@@ -13,9 +14,30 @@ import './assets/main.css'
 
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { fas } from '@fortawesome/free-solid-svg-icons'
-import { far } from '@fortawesome/free-regular-svg-icons'
-import { fab } from '@fortawesome/free-brands-svg-icons'
+
+// import { fas } from '@fortawesome/free-solid-svg-icons'
+// import { far } from '@fortawesome/free-regular-svg-icons'
+// import { fab } from '@fortawesome/free-brands-svg-icons'
+
+import {
+	faArrowPointer,
+	faCircle,
+	faPercent,
+	faArrowDownWideShort,
+	faPenNib,
+	faSquare,
+	faDrawPolygon,
+	faImage,
+	faFont,
+	faTerminal,
+	faSliders,
+	faTableCells,
+} from '@fortawesome/free-solid-svg-icons'
+import {
+	faHand,
+	faSquare as faSquare_regular,
+	faCircle as faCircle_regular,
+} from '@fortawesome/free-regular-svg-icons'
 
 import { initGlyphEnvironment } from './fontEditor/stores/glyph'
 
@@ -127,15 +149,40 @@ declare global {
 
 // await initGlyphEnvironment()
 
-library.add(fas, far, fab)
+// library.add(fas, far, fab)
+
+library.add(
+	faArrowPointer,
+	faCircle,
+	faPercent,
+	faArrowDownWideShort,
+	faPenNib,
+	faSquare,
+	faDrawPolygon,
+	faImage,
+	faFont,
+	faTerminal,
+	faSliders,
+	faTableCells,
+	faHand,
+	faSquare_regular,
+	faCircle_regular,
+)
 
 const app = createApp(App)
 
 app.component('font-awesome-icon', FontAwesomeIcon)
 app.use(ElementPlus)
-for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
-  app.component(key, component)
-}
+// for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+//   app.component(key, component)
+// }
+app.component('Files', Files)
+app.component('Edit', Edit)
+app.component('Upload', Upload)
+app.component('Download', Download)
+app.component('Tickets', Tickets)
+app.component('Setting', Setting)
+app.component('List', List)
 app.use(router)
 app.use(i18n)
 

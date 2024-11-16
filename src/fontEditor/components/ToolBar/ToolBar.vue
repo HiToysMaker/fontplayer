@@ -14,6 +14,7 @@
   import { constants, editGlyph, executeScript } from '../../stores/glyph'
   import { emitter } from '../../Event/bus'
   import { ENV } from '../../stores/system'
+  import { Grid } from '@element-plus/icons-vue'
 
   // 切换工具
   // switch tool

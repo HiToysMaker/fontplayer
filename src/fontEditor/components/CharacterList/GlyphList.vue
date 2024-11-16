@@ -21,6 +21,7 @@
 	import { emitter } from '../../Event/bus'
 	import { renderPreview2 } from '../../canvas/canvas'
 	import { loaded, total, loading } from '../../stores/global'
+	import { Close, Plus } from '@element-plus/icons-vue'
 
 	const timerMap = new Map()
 

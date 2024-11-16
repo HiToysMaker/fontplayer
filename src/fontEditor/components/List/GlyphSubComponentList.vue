@@ -21,6 +21,7 @@
   import { ref, type Ref, reactive } from 'vue'
   import { useI18n } from 'vue-i18n'
 	import { setTool } from '../../stores/global'
+  import { ArrowLeftBold, Lock, Unlock, Hide, View } from '@element-plus/icons-vue'
   const { t } = useI18n()
 
   const popoverVisibleMap: any = reactive((() => {

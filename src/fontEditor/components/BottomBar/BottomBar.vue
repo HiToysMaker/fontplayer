@@ -14,6 +14,7 @@
   import { useI18n } from 'vue-i18n'
   import { editGlyphUUID, modifyGlyph } from '../../stores/glyph'
   import { emitter } from '../../Event/bus'
+  import { ZoomOut, ZoomIn } from '@element-plus/icons-vue'
   const { t } = useI18n()
 
   // 移动画布时，显示的移动坐标

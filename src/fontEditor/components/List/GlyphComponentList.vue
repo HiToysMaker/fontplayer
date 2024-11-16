@@ -32,6 +32,7 @@
   import { genUUID } from '../../../utils/string'
   import { useI18n } from 'vue-i18n'
   import { setTool } from '../../stores/global'
+  import { CircleCheck, CircleClose, Lock, Unlock, Hide, View } from '@element-plus/icons-vue'
   const { t } = useI18n()
 
   const popoverVisibleMap: any = reactive((() => {

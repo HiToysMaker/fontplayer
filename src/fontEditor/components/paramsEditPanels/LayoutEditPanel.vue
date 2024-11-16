@@ -20,6 +20,7 @@
 		parseLayout, parseValue
 	} from '../../../features/layout'
 	import { DocumentCopy, Edit } from '@element-plus/icons-vue'
+	import { Plus } from '@element-plus/icons-vue'
 
 	interface LayoutNode {
 		id: string;

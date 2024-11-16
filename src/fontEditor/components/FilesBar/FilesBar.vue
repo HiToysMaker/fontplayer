@@ -10,6 +10,7 @@
   import { editGlyph, stroke_glyphs, radical_glyphs, comp_glyphs, glyphs } from '../../stores/glyph'
   import { editStatus, Status } from '../../stores/font'
   import { setCloseFileTipDialogVisible, setFontSettingsDialogVisible } from '../../stores/dialogs'
+  import { Close, Search, InfoFilled, Tools } from '@element-plus/icons-vue'
 
   // 关闭文件
   // close file

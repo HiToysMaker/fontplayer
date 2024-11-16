@@ -1,7 +1,8 @@
 # 字玩FontPlayer
 一款开源的字体设计工具。
 
-在线体验：www.font-player.com
+官网：www.font-player.com
+在线体验：https://toysmaker.github.io/fontplayer_demo/
 
 桌面版下载：
 

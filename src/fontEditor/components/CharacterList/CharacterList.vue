@@ -20,6 +20,7 @@
 	import { renderPreview2 } from '../../canvas/canvas'
 	import { executeScript } from '../../stores/glyph'
 	import { loaded, loading, total } from '../../stores/global'
+	import { Close, Plus } from '@element-plus/icons-vue'
 
 	const timerMap = new Map()
 

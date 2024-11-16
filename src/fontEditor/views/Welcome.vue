@@ -12,6 +12,7 @@
 	import { loading, loaded, total } from '../../fontEditor/stores/global'
 	import { initGlyphEnvironment } from '../../fontEditor/stores/glyph'
 	import { onMounted } from 'vue'
+	import { DocumentAdd, FolderOpened, Files, Switch } from '@element-plus/icons-vue'
 
 	import { useI18n } from 'vue-i18n'
   const { t } = useI18n()

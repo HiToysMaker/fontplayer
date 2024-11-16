@@ -4,6 +4,7 @@
 	import { GlyphLayout, IConstant, IParameter, IRingParameter, ParameterType } from '../../fontEditor/stores/glyph'
 	import { genUUID } from '../../utils/string'
 	import * as monaco from 'monaco-editor'
+	import { Edit, SortDown, SortUp, Close } from '@element-plus/icons-vue'
   const { t, tm } = useI18n()
 
 	const constants: Ref<Array<IConstant>> = ref([])

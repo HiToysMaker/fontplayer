@@ -23,6 +23,7 @@
   } from '../../stores/files'
 	import { linkComponentsForJoints } from '../../programming/Joint'
 	import { setSelectGlobalParamDialogVisible, setSetAsGlobalParamDialogVisible } from '../../stores/dialogs'
+	import { More } from '@element-plus/icons-vue'
   const { tm, t } = useI18n()
 
 

@@ -44,6 +44,7 @@
   } from '../../../utils/canvas'
   import * as R from 'ramda'
   import { emitter } from '../../Event/bus'
+  import { ArrowLeftBold, ArrowRightBold } from '@element-plus/icons-vue'
 
   const previewCanvas1: Ref<HTMLCanvasElement | null> = ref(null)
   const previewCanvas2: Ref<HTMLCanvasElement | null> = ref(null)
