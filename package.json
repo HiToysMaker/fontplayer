@@ -5,15 +5,18 @@
   "main": "./dist-electron/main.js",
   "build": {
     "appId": "com.fontplayer.app",
+    "productName": "字玩",
     "files": [
       "dist/**/*",
       "dist-electron/**/*"
     ],
     "mac": {
-      "target": "dmg"
+      "target": "dmg",
+      "icon": "./public/fontPlayer-logo.icns"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "./public/fontPlayer-logo.ico"
     }
   },
   "scripts": {

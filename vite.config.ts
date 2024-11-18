@@ -11,7 +11,7 @@ const isElectron = process.env.ELECTRON === 'true'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/fontplayer_demo/',
+  // base: '/fontplayer_demo/',
   plugins: [
     vue(),
     isElectron && electron({
