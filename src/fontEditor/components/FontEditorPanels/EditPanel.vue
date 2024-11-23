@@ -79,6 +79,15 @@
     initTool()
     await nextTick()
     render()
+    // 监听渲染当前编辑字符事件
+    // watch for render edting character
+    emitter.on('renderCharacter', () => {
+      render()
+      renderRefComponents()
+    })
+    emitter.on('renderCharacter_forceUpdate', () => {
+      _render(canvas.value as HTMLCanvasElement, true, true)
+    })
     await nextTick()
     if (selectedComponentUUID.value && selectedComponent.value.type === 'glyph') {
       setTool('glyphDragger')
@@ -199,7 +208,8 @@
       renderLayoutEditor(canvas.value)
     }
     tool.value === 'select' && renderSelectEditor(canvas.value)
-		//renderRefComponents()
+		renderRefComponents()
+    emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
   }, {
     deep: true,
   })
@@ -317,13 +327,6 @@
       render()
       renderSelectEditor(canvas.value)
     }
-  })
-
-  // 监听渲染当前编辑字符事件
-  // watch for render edting character
-  emitter.on('renderCharacter', () => {
-    render()
-		renderRefComponents()
   })
 
   const render = () => {

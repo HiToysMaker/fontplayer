@@ -82,9 +82,9 @@ const initLayoutResizer = (canvas: HTMLCanvasElement) => {
 				}
 			}
 			executeScript(_editGlyph)
-			emitter.emit('renderGlyphPreviewCanvasByUUID', _editGlyph.uuid)
-			emitter.emit('renderGlyph', true)
-			//renderLayoutEditor(canvas, _editGlyph, 0, 0)
+			emitter.emit('renderPreviewCanvasByUUID', _editGlyph.uuid)
+			emitter.emit('renderCharacter', true)
+			renderLayoutEditor(canvas)
 		}
 		if (!mousedown) {
 			if (distance(mouseX, mouseY, left_top.x, left_top.y) <= d) {

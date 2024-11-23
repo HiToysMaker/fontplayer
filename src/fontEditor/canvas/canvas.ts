@@ -86,6 +86,7 @@ interface IOption {
     y: number,
   };
   scale?: number,
+  forceUpdate?: boolean,
 }
 /**
  * 渲染画布
@@ -103,6 +104,7 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
   fill: false,
   offset: { x: 0, y: 0 },
   scale: 1,
+  forceUpdate: false,
 }) => {
   const scale = options.scale//canvas.width / (selectedFile.value.fontSettings.unitsPerEm as number)
   const ctx: CanvasRenderingContext2D = canvas.getContext('2d') as CanvasRenderingContext2D
@@ -323,16 +325,24 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       if (
         !(component.value as unknown as ICustomGlyph)._o ||
         !(component.value as unknown as ICustomGlyph)._o.components ||
-        !(component.value as unknown as ICustomGlyph)._o.components.length
+        !(component.value as unknown as ICustomGlyph)._o.components.length ||
+        options.forceUpdate
       ) {
         executeScript(component.value as unknown as ICustomGlyph)
       }
 			//executeScript(component.value as unknown as ICustomGlyph)
 			const glyph = (component.value as unknown as ICustomGlyph)._o ? (component.value as unknown as ICustomGlyph)._o : new CustomGlyph((component.value as unknown as ICustomGlyph))
-      glyph.render(canvas, true, {
-        x: options.offset.x + (component as IGlyphComponent).ox,
-        y: options.offset.y + (component as IGlyphComponent).oy,
-      }, false, scale)
+      if (options.forceUpdate) {
+        glyph.render_forceUpdate(canvas, true, {
+          x: options.offset.x + (component as IGlyphComponent).ox,
+          y: options.offset.y + (component as IGlyphComponent).oy,
+        }, false, scale)
+      } else {
+        glyph.render(canvas, true, {
+          x: options.offset.x + (component as IGlyphComponent).ox,
+          y: options.offset.y + (component as IGlyphComponent).oy,
+        }, false, scale)
+      }
     }
   })
   ctx.closePath()
@@ -347,7 +357,7 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
   ctx.stroke()
 }
 
-const render = (canvas: HTMLCanvasElement, renderBackground: Boolean = true) => {
+const render = (canvas: HTMLCanvasElement, renderBackground: Boolean = true, forceUpdate: boolean = false) => {
   clearCanvas(canvas as HTMLCanvasElement)
   if (renderBackground) {
     fillBackground(canvas as HTMLCanvasElement, background, grid)
@@ -356,7 +366,12 @@ const render = (canvas: HTMLCanvasElement, renderBackground: Boolean = true) => 
     ctx.fillStyle = background.color
     ctx.fillRect(0, 0, canvas.width, canvas.height)
   }
-  renderCanvas(orderedListWithItemsForCurrentCharacterFile.value, canvas as HTMLCanvasElement)
+  renderCanvas(orderedListWithItemsForCurrentCharacterFile.value, canvas as HTMLCanvasElement, {
+    forceUpdate,
+    fill: false,
+    offset: { x: 0, y: 0 },
+    scale: 1,
+  })
 }
 
 const renderPreview = (character: ICharacterFile, canvas: HTMLCanvasElement) => {
@@ -372,7 +387,14 @@ const renderGlyphPreview = (glyph: ICustomGlyph, canvas: HTMLCanvasElement) => {
   }, true)
 }
 
-const renderGlyph = (glyph: CustomGlyph, canvas: HTMLCanvasElement, renderBackground: Boolean = true, renderJoints: Boolean = true, renderRefLines: Boolean = true) => {
+const renderGlyph = (
+  glyph: CustomGlyph,
+  canvas: HTMLCanvasElement,
+  renderBackground: Boolean = true,
+  renderJoints: Boolean = true,
+  renderRefLines: Boolean = true,
+  forceUpdate: boolean = false
+) => {
   clearCanvas(canvas as HTMLCanvasElement)
   if (renderBackground) {
     fillBackground(canvas as HTMLCanvasElement, background, grid)
@@ -381,7 +403,7 @@ const renderGlyph = (glyph: CustomGlyph, canvas: HTMLCanvasElement, renderBackgr
     ctx.fillStyle = background.color
     ctx.fillRect(0, 0, canvas.width, canvas.height)
   }
-  glyph.render(canvas as HTMLCanvasElement)
+  glyph.render_forceUpdate(canvas as HTMLCanvasElement)
   renderJoints && glyph.renderJoints(canvas as HTMLCanvasElement)
   renderRefLines && glyph.renderJoints(canvas as HTMLCanvasElement)
 }

@@ -45,6 +45,31 @@ class CustomGlyph {
 		renderCanvas(orderedListWithItemsForGlyph(this._glyph), canvas, {
 			offset,
 			scale: scale,
+			fill: false,
+			forceUpdate: false,
+		})
+		this._components.forEach((component) => {
+			component.render(canvas, {
+				offset,
+				scale: scale,
+			})
+		})
+		if (fontRenderStyle.value === 'color' || fill) {
+			ctx.fillStyle = '#000'
+			ctx.fill()
+		}
+	}
+
+	public render_forceUpdate (canvas: HTMLCanvasElement, renderBackground: Boolean = true, offset: {
+		x: number,
+		y: number,
+	} = { x: 0, y: 0 }, fill: boolean = false, scale: number = 1) {
+		const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
+		renderCanvas(orderedListWithItemsForGlyph(this._glyph), canvas, {
+			offset,
+			scale: scale,
+			fill: false,
+			forceUpdate: true,
 		})
 		this._components.forEach((component) => {
 			component.render(canvas, {

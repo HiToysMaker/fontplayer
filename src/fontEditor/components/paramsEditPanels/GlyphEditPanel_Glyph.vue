@@ -271,6 +271,13 @@
 			emitter.emit('renderGlyphPreviewCanvasByUUID', glyph.uuid)
 		}
 	}
+
+	const onLayoutChange = () => {
+		executeScript(_selectedComponent.value.value)
+		executeScript(editGlyph.value)
+		emitter.emit('renderGlyph_forceUpdate', true)
+		emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
+	}
 </script>
 
 <template>
@@ -303,7 +310,7 @@
 							v-for="key in Object.keys(_selectedComponent.value.layout.params)"
 							:label="key"
 						>
-							<el-input-number v-model="_selectedComponent.value.layout.params[key]"/>
+							<el-input-number v-model="_selectedComponent.value.layout.params[key]" @change="onLayoutChange"/>
 							<div class="ratio-item">
 								<font-awesome-icon class="ratio-icon" :class="{
 									selected: _selectedComponent.value.layout.ratioedMap && _selectedComponent.value.layout.ratioedMap[key].ratioed

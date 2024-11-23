@@ -30,6 +30,8 @@ type Events = {
   updateGlyphView: boolean;
   updateGlyphInfoPreviewCanvasByUUID: string;
   updateCharacterInfoPreviewCanvasByUUID: string;
+  renderCharacter_forceUpdate: boolean;
+  renderGlyph_forceUpdate: boolean;
 }
 
 const emitter = mitt<Events>()

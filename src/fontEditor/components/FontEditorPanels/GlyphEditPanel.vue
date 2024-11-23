@@ -82,6 +82,10 @@
       render()
       renderRefComponents()
     })
+    emitter.on('renderGlyph_forceUpdate', () => {
+      const glyph = editGlyph.value._o ? editGlyph.value._o : new CustomGlyph(editGlyph.value)
+      renderGlyph(glyph, canvas.value, true, false, false, true)
+    })
     await nextTick()
     if (selectedComponentUUID.value && selectedComponent.value.type === 'glyph') {
       setTool('glyphDragger')
@@ -206,6 +210,19 @@
     //   renderLayoutEditor(canvas.value, selectedComponent.value.value, selectedComponent.value.ox, selectedComponent.value.oy)
     // }
     renderRefComponents()
+    emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
+  }, {
+    deep: true,
+  })
+
+  watch([() => selectedComponent.value?.value.layout, () => SubComponentsRoot.value?.value.layout], () => {
+    render()
+    if (editingLayout.value && (selectedComponent.value || SubComponentsRoot.value)) {
+      renderLayoutEditor(canvas.value)
+    }
+    tool.value === 'select' && renderSelectEditor(canvas.value)
+		renderRefComponents()
+    emitter.emit('renderPreviewCanvasByUUID', editGlyph.value.uuid)
   }, {
     deep: true,
   })

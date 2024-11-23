@@ -104,6 +104,7 @@
 				break
 			}
 		}
+		if (!characterFile) return
 		executeCharacterScript(characterFile)
 		characterFile?.components?.map((component) => {
 			if (component.type === 'glyph') {

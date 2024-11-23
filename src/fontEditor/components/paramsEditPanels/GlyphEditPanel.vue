@@ -230,6 +230,13 @@
     }
   }
 
+	const onLoayoutChange = () => {
+		executeScript(_selectedComponent.value.value)
+		executeCharacterScript(editCharacterFile.value)
+		emitter.emit('renderCharacter_forceUpdate', true)
+		emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
+	}
+
 	const cancelGlobalParam = (parameter: IParameter) => {
 		const param = getConstant(parameter.value as string)
 		parameter.type = param.type
@@ -310,7 +317,7 @@
 							v-for="key in Object.keys(_selectedComponent.value.layout.params)"
 							:label="key"
 						>
-							<el-input-number v-model="_selectedComponent.value.layout.params[key]"/>
+							<el-input-number v-model="_selectedComponent.value.layout.params[key]" @change="onLoayoutChange"/>
 							<div class="ratio-item">
 								<font-awesome-icon class="ratio-icon" :class="{
 									selected: _selectedComponent.value.layout.ratioedMap && _selectedComponent.value.layout.ratioedMap[key].ratioed

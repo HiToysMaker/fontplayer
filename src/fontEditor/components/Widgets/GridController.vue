@@ -200,6 +200,9 @@
 		emitter.emit('renderCharacter', true)
 		renderCharacter(orderedListWithItemsForCurrentCharacterFile.value, canvas.value as unknown as HTMLCanvasElement, {
 			scale: 0.5,
+			forceUpdate: false,
+			fill: false,
+    	offset: { x: 0, y: 0 },
 		})
 	}, {
 		deep: true,
@@ -212,6 +215,9 @@
 			emitter.emit('renderCharacter', true)
 			renderCharacter(orderedListWithItemsForCurrentCharacterFile.value, canvas.value as unknown as HTMLCanvasElement, {
 				scale: 0.5,
+				forceUpdate: false,
+				fill: false,
+				offset: { x: 0, y: 0 },
 			})
 		}
 	}, {
