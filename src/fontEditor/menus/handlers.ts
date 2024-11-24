@@ -1690,14 +1690,15 @@ const importTemplate1 = async () => {
 		addFile(file)
 		setSelectedFileUUID(file.uuid)
 		setEditStatus(Status.CharacterList)
+		//const base = '/'
 		const base = ''
-		//const base = '/fontplayer_demo'
+		//const base = '/fontplayer_demo/'
 		total.value = 0
 		loading.value = true
-		let charRes = await fetch(base + '/templates/template1.json')
+		let charRes = await fetch(base + 'templates/template1.json')
 		let charData = await charRes.text()
 		console.time('timer1')
-		let res = await fetch(base + '/glyphs/stroke_glyphs_data_v7_v4.json')
+		let res = await fetch(base + 'glyphs/stroke_glyphs_data_v7_v4.json')
 		let data = await res.text()
 		if (data) {
 			const obj = JSON.parse(data)
@@ -1713,7 +1714,7 @@ const importTemplate1 = async () => {
 			})
 		}
 	
-		res = await fetch(base + '/glyphs/radical_glyphs_data_v7_v5.json')
+		res = await fetch(base + 'glyphs/radical_glyphs_data_v7_v5.json')
 		data = await res.text()
 		if (data) {
 			const obj = JSON.parse(data)
@@ -1729,7 +1730,7 @@ const importTemplate1 = async () => {
 			})
 		}
 
-		res = await fetch(base + '/glyphs/comp_glyphs_data_v7_v4.json')
+		res = await fetch(base + 'glyphs/comp_glyphs_data_v7_v4.json')
 		data = await res.text()
 		if (data) {
 			const obj = JSON.parse(data)

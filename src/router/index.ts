@@ -1,11 +1,12 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
 import Welcome from '../fontEditor/views/Welcome.vue'
 import Editor from '../fontEditor/views/Editor.vue'
 import CharacterProgrammingEditor from '../fontEditor/views/CharacterProgrammingEditor.vue'
 import GlyphProgrammingEditor from '../fontEditor/views/GlyphProgrammingEditor.vue'
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  // history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(),
   routes: [
     {
       path: '/',

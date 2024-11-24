@@ -3,6 +3,7 @@ const path = require('path')
 const serve = require('electron-serve')
 const fs = require('fs')
 const { Buffer } = require('buffer')
+const url = require('url')
 
 const { clipboard } = require('electron')
 
@@ -57,11 +58,21 @@ async function createWindow () {
     mainWindow.webContents.send('detect-system')
   })
 
-  if (isDevelopment) {
-    mainWindow.loadURL('http://localhost:5173/')
-  } else {
-    await loadURL(mainWindow)
-  }
+  mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
+
+  //await loadURL(mainWindow)
+  // const urlString = url.format({
+  //   protocol: 'file',  // 本地文件协议
+  //   slashes: true,
+  //   pathname: path.join(__dirname, '../dist/index.html')  // 指向本地文件
+  // });
+  // mainWindow.loadURL(urlString)
+
+  // if (isDevelopment) {
+  //   mainWindow.loadURL('http://localhost:5173/')
+  // } else {
+  //   mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
+  // }
 
   // 在主进程中处理剪贴板
   ipcMain.on('copy-to-clipboard', (event, text) => {

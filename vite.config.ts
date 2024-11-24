@@ -16,10 +16,10 @@ export default defineConfig({
     vue(),
     isElectron && electron({
       main: {
-        entry: 'src/fontEditor/main/main.ts',  // 主进程入口文件
+        entry: 'src/fontEditor/main/main.ts',
       },
       preload: {
-        input: 'src/fontEditor/main/preload.ts',  // 预加载文件
+        input: 'src/fontEditor/main/preload.ts',
       },
     }),
   ].filter(Boolean),

@@ -11,12 +11,26 @@
       "dist-electron/**/*"
     ],
     "mac": {
-      "target": "dmg",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ],
       "icon": "./public/fontPlayer-logo.icns"
     },
     "win": {
       "target": "nsis",
       "icon": "./public/fontPlayer-logo.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "字玩",
+      "artifactName": "${productName}-Setup-${version}.exe"
     }
   },
   "scripts": {
@@ -32,10 +46,11 @@
     "type-check": "vue-tsc --noEmit -p tsconfig.vitest.json --composite false",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
     "electron:start": "electron ./dist-electron/main.js",
-    "electron:dist": "electron-builder",
-    "electron:dist:win": "electron-builder --win"
+    "electron:dist": "cross-env NODE_ENV=production electron-builder",
+    "electron:dist:win": "cross-env NODE_ENV=production electron-builder --win --x64"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "electron": "^27.0.2",
     "electron-builder": "^25.1.8"
   },
