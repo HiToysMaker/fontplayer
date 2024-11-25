@@ -1692,7 +1692,7 @@ const importTemplate1 = async () => {
 		setEditStatus(Status.CharacterList)
 		//const base = '/'
 		const base = ''
-		//const base = '/fontplayer_demo/'
+		// const base = '/fontplayer_demo/'
 		total.value = 0
 		loading.value = true
 		let charRes = await fetch(base + 'templates/template1.json')

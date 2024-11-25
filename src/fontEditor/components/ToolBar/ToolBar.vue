@@ -56,7 +56,7 @@
       window.__is_web = ENV.value === 'web'
       window.addEventListener('message', onReceiveMessage)
       char_window = window.open(
-        `${location.origin}/character-programming-editor`,
+        `${location.origin}/#/character-programming-editor`,
         'character',
         `popup,width=${screen.width * 0.8},height=${screen.width * 0.8 * 0.6},left=${screen.width * 0.1}`,
       )
@@ -67,7 +67,7 @@
       window.__is_web = ENV.value === 'web'
       window.addEventListener('message', onReceiveMessage)
       glyph_window = window.open(
-        `${location.origin}/glyph-programming-editor`,
+        `${location.origin}/#/glyph-programming-editor`,
         'custom-glyph',
         `popup,width=${screen.width * 0.8},height=${screen.width * 0.8 * 0.6},left=${screen.width * 0.1}`,
       )
