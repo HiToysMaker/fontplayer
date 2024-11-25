@@ -49,6 +49,9 @@
   let glyph_window = null
   let char_window = null
 
+  // const base = '/fontplayer_demo'
+  const base = ''
+
   const showProgrammingWindow = () => {
     if (editStatus.value === Status.Edit) {
       window.__constants = constants.value
@@ -56,7 +59,8 @@
       window.__is_web = ENV.value === 'web'
       window.addEventListener('message', onReceiveMessage)
       char_window = window.open(
-        `${location.origin}/#/character-programming-editor`,
+        // `${location.origin}${base}/#/character-programming-editor`,
+        `${location.origin}${location.pathname}#/character-programming-editor`,
         'character',
         `popup,width=${screen.width * 0.8},height=${screen.width * 0.8 * 0.6},left=${screen.width * 0.1}`,
       )
@@ -67,7 +71,8 @@
       window.__is_web = ENV.value === 'web'
       window.addEventListener('message', onReceiveMessage)
       glyph_window = window.open(
-        `${location.origin}/#/glyph-programming-editor`,
+        // `${location.origin}${base}/#/glyph-programming-editor`,
+        `${location.origin}${location.pathname}#/glyph-programming-editor`,
         'custom-glyph',
         `popup,width=${screen.width * 0.8},height=${screen.width * 0.8 * 0.6},left=${screen.width * 0.1}`,
       )

@@ -109,7 +109,8 @@
         <div>{{ `加载中，请稍候……已加载${Math.round(loaded / total * 100)}%` }}</div>
       </div>
       <div class="side-bar-wrap" :style="{
-        flex: ENV === 'web' ? '0 0 36px': '0 0 0px'
+        flex: ENV === 'web' ? '0 0 36px': '0 0 0px',
+        borderRight: ENV === 'web' ? '1px solid var(--primary-2)': 'none'
       }">
         <side-bar></side-bar>
       </div>
