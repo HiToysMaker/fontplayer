@@ -14,6 +14,7 @@
 	import * as R from 'ramda'
   import { ref } from 'vue'
   import { useI18n } from 'vue-i18n'
+import { emitter } from '@/fontEditor/Event/bus'
   const { tm, t } = useI18n()
 
   const name = ref('')
@@ -28,12 +29,15 @@
       return
     }
 		let glyph = R.clone(getGlyphByUUID(copiedGlyphUUID.value))
+    const originUUID = glyph.uuid
     const uuid = genUUID()
     glyph.uuid = uuid
     glyph.name = name
+    glyph.script = glyph.script.replaceAll(originUUID.replaceAll('-', '_'), uuid.replaceAll('-', '_'))
 
     addGlyph(glyph, editStatus.value)
     addGlyphTemplate(glyph, editStatus.value)
+    emitter.emit('renderPreviewCanvasByUUID', glyph.uuid)
 
     name.value = ''
     setCopyGlyphDialogVisible(false)

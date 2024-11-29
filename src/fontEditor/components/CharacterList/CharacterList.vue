@@ -158,7 +158,7 @@
 		}
 		const wrapper = document.getElementById('character-render-list')
 		const root: HTMLElement = wrapper.querySelector(`.character-${uuid}`) as HTMLElement;
-		(root as HTMLElement).querySelector('.name').innerHTML = `${characterFile.character.text}`;
+		(root as HTMLElement).querySelector('.info').querySelector('.text').innerHTML = `${characterFile.character.text}`;
 		if (characterFile.type === 'text') {
 			(root as HTMLElement).querySelector('.unicode').innerHTML = `0x${characterFile.character.unicode.toString(16)}`;
 		}

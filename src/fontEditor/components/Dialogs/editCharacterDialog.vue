@@ -37,7 +37,7 @@
 			components: [],
 		}
 		modifyCharacterFile(editedCharacterUUID.value, {
-			characterComponent,
+			character: characterComponent,
 		})
     emitter.emit('updateCharacterInfoPreviewCanvasByUUID', editedCharacterUUID.value)
     text.value = ''

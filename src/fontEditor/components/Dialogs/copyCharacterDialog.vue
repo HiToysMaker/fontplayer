@@ -13,6 +13,7 @@
   import * as R from 'ramda'
   import { ref } from 'vue'
   import { useI18n } from 'vue-i18n'
+import { emitter } from '@/fontEditor/Event/bus'
   const { tm, t } = useI18n()
 
   const text = ref('')
@@ -34,9 +35,11 @@
 		for (let i = 0; i < selectedFile.value.characterList.length; i++) {
 			if (selectedFile.value.characterList[i].uuid === copiedCharacterUUID.value) {
 				character = R.clone(selectedFile.value.characterList[i])
+        const originUUID = character.uuid
 				const uuid = genUUID()
 				//@ts-ignore
 				character.uuid = uuid
+        character.script = character.script.replaceAll(originUUID.replaceAll('-', '_'), uuid.replaceAll('-', '_'))
 				const characterComponent = {
 					uuid: genUUID(),
 					text: text.value,
@@ -45,11 +48,12 @@
 				}
 				//@ts-ignore
 				character.character = characterComponent
-				return
+				break
 			}
 		}
 		addCharacterForCurrentFile(character)
 		addCharacterTemplate(generateCharacterTemplate(character))
+    emitter.emit('renderPreviewCanvasByUUID', character.uuid)
     text.value = ''
     setCopyCharacterDialogVisible(false)
   }

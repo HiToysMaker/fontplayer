@@ -45,9 +45,21 @@ const dialogs = {
 			confirm: '确认',
 			cancel: '取消',
 		},
+		editCharacterDialog: {
+			title: '修改字符',
+			glyphName: '字符',
+			confirm: '确认',
+			cancel: '取消',
+		},
 		copyGlyphDialog: {
 			title: '复制字形',
 			glyphName: '字形名称',
+			confirm: '确认',
+			cancel: '取消',
+		},
+		copyCharacterDialog: {
+			title: '复制字符',
+			characterName: '新字符',
 			confirm: '确认',
 			cancel: '取消',
 		},
@@ -151,9 +163,21 @@ const dialogs = {
 			confirm: 'Confirm',
 			cancel: 'Cancel',
 		},
+		editCharacterDialog: {
+			title: 'Edit Character',
+			glyphName: 'Character',
+			confirm: 'Confirm',
+			cancel: 'Cancel',
+		},
 		copyGlyphDialog: {
 			title: 'Copy Glyph',
 			glyphName: 'Glyph Name',
+			confirm: 'Confirm',
+			cancel: 'Cancel',
+		},
+		copyCharacterDialog: {
+			title: 'Copy Character',
+			characterName: 'New Character',
 			confirm: 'Confirm',
 			cancel: 'Cancel',
 		},

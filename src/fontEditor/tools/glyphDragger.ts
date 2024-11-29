@@ -110,7 +110,7 @@ const addScript = (editGlyph?, coords?) => {
 		//	SubComponentsRoot.value.value.glyph_script[comp.uuid] = script
 		//}
 	} else if (dragOption.value === 'layout' && !selectedSubComponent.value) {
-		if (draggingJoint.value) {
+		if (draggingJoint.value && putAtCoord.value) {
 			let coord = null
 			let dx = 0
 			let dy = 0
@@ -132,7 +132,7 @@ const addScript = (editGlyph?, coords?) => {
 			script += `if (window.character.getComponent('${comp.name}')) { window.character.getComponent('${comp.name}').oy = ratio_coord.y+${dy} - window.character.getGlyph('${comp.name}')?.getJoint('${draggingJoint.value.name}')?.y; }`
 			editCharacterFile.value.glyph_script[comp.uuid] = script
 			executeCharacterScript(editCharacterFile.value)
-		} else {
+		} else if (putAtCoord.value) {
 			let coord = null
 			let dx = 0
 			let dy = 0
@@ -158,7 +158,7 @@ const addScript = (editGlyph?, coords?) => {
 			SubComponentsRoot.value.value.glyph_script = {}
 		}
 		const { ox, oy } = getOrigin2()
-		if (draggingJoint.value) {
+		if (draggingJoint.value && putAtCoord.value) {
 			const { x, y } = putAtCoord.value
 			const layout_width = getRatioLayout2(SubComponentsRoot.value.value, 'width')
 			const layout_height = getRatioLayout2(SubComponentsRoot.value.value, 'height')
@@ -171,7 +171,7 @@ const addScript = (editGlyph?, coords?) => {
 			let script = `if (window.glyph.getComponent('${comp.name}')) { window.glyph.getComponent('${comp.name}').ox = (${unitsPerEm} - window.glyph.getRatioLayout('width')) / 2 + window.glyph.getRatioLayout('width') * ${ratio_width} - window.glyph.getGlyph('${comp.name}')?.getJoint('${draggingJoint.value.name}')?.x; }`
 			script += `if (window.glyph.getComponent('${comp.name}')) { window.glyph.getComponent('${comp.name}').oy = (${unitsPerEm} - window.glyph.getRatioLayout('height')) / 2 + window.glyph.getRatioLayout('height') * ${ratio_height} - window.glyph.getGlyph('${comp.name}')?.getJoint('${draggingJoint.value.name}')?.y; }`
 			SubComponentsRoot.value.value.glyph_script[comp.uuid] = script
-		} else {
+		} else if (putAtCoord.value) {
 			const { x, y } = putAtCoord.value
 			const _ox = x - unitsPerEm / 2
 			const _oy = y - unitsPerEm / 2

@@ -304,6 +304,7 @@
     render()
     if (!selectedComponentUUID.value) return
     tool.value === 'select' && renderSelectEditor(canvas.value)
+    renderRefComponents()
     emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
   })
 
