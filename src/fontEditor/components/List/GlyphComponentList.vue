@@ -174,12 +174,12 @@
 
   const remove = (uuid: string) => {
     // 删除
+    popoverVisibleMap[uuid] = false
     selectedComponents.value.map((component: IComponent) => {
       removeComponentForCurrentGlyph(component.uuid)
     })
     setSelectionForCurrentGlyph('')
     onPopover.value = false
-    popoverVisibleMap[uuid] = false
   }
 
   const openPopover = (e: MouseEvent, uuid: string) => {
@@ -205,7 +205,7 @@
 		<el-scrollbar v-if="editPanelCompFilter === 'all'">
 			<div class="all-components-list" v-if="editPanelCompFilter === 'all'">
 				<div class="component-item-wrapper" v-for="component in orderedListWithItemsForCurrentGlyph">
-					<el-popover placement="right" :width="200" trigger="manual" :visible="popoverVisibleMap[component.uuid]">
+					<el-popover placement="right" :width="200" trigger="manual" inert :visible="popoverVisibleMap[component.uuid]">
 						<template #reference>
 							<div
 								:class="{

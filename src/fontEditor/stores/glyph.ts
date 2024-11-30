@@ -559,8 +559,8 @@ const removeComponentForCurrentGlyph = (uuid: string) => {
 		return -1
 	})()
 	removeOrderedItemForCurrentGlyph(uuid)
-	if (editGlyph.value.value.glyph_script && editGlyph.value.value.glyph_script[uuid]) {
-		delete editGlyph.value.value.glyph_script[uuid]
+	if (editGlyph.value.glyph_script && editGlyph.value.glyph_script[uuid]) {
+		delete editGlyph.value.glyph_script[uuid]
 	}
 	editGlyph.value.components.splice(index, 1)
 }
