@@ -1,7 +1,8 @@
-import { getStorageString } from '../utils'
+import { getStorageString, hasChineseChar, isChineseChar } from '../utils'
 import type { IFont } from '../font'
 import { encoder } from '../encode'
 import * as decode from '../decode'
+import iconv from 'iconv-lite'
 
 // name表格式
 // name table format
@@ -944,7 +945,10 @@ const createTable = (names: Array<any>, ltag: Array<any>) => {
 		nameID = nameIDs[i];
 		const translations = namesWithNumericKeys[nameID]
 		for (let lang in translations) {
+			//if (lang === 'en') continue
 			const text = translations[lang]
+			if (text === ' ')
+				continue
 
 			// For MacOS, we try to emit the name in the form that was introduced
 			// in the initial version of the TrueType spec (in the late 1980s).
@@ -960,45 +964,76 @@ const createTable = (names: Array<any>, ltag: Array<any>) => {
 			// However, there are many applications and libraries that read
 			// 'name' tables directly, and these will usually only recognize
 			// the ancient form (silently skipping the unrecognized names).
+
+			// let macScript = macLanguageToScript[macLanguage as keyof typeof macLanguageToScript]
+			// const macEncoding = getEncoding(macPlatform, macScript, macLanguage)
+			// let macName = encodeMACSTRING(text, macEncoding)
+			// if (macName === undefined) {
+			// 	macPlatform = 0;  // Unicode
+			// 	macLanguage = ltag.indexOf(lang)
+			// 	if (macLanguage < 0) {
+			// 		macLanguage = ltag.length
+			// 		ltag.push(lang)
+			// }
+
+			// 	macScript = 4;  // Unicode 2.0 and later
+			// 	macName = encoder.utf16(text)
+			// }
+
+			// if (nameID === 1 || nameID === 4 || nameID === 16 || nameID === 3) {
+			// 	macLanguage = 2052//macLanguageIds['zh']
+			// 	macName = [198, 211, 212, 207, 188, 242, 193, 165]
+			// 	//encoder.utf16(text)
+			// 	macScript = 25
+			// }
+
 			let macPlatform = 1;  // Macintosh
 			let macLanguage = macLanguageIds[lang]
-			let macScript = macLanguageToScript[macLanguage as keyof typeof macLanguageToScript]
-			const macEncoding = getEncoding(macPlatform, macScript, macLanguage)
-			let macName = encodeMACSTRING(text, macEncoding)
-			if (macName === undefined) {
-				macPlatform = 0;  // Unicode
-				macLanguage = ltag.indexOf(lang)
-				if (macLanguage < 0) {
-					macLanguage = ltag.length
-					ltag.push(lang)
-				}
+			let macName = encoder.utf16(text)
+			let encodingID = 0
 
-				macScript = 4;  // Unicode 2.0 and later
-				macName = encoder.utf16(text)
+			if (lang === 'zh') {
+				encodingID = 25
+				macLanguage = 33
+				macName = [...iconv.encode(text, 'gbk')]
 			}
-
 			const macNameOffset = addStringToPool(macName, stringPool)
 			nameRecord.push({
 				platformID: macPlatform,
-				encodingID: macScript,
+				encodingID: encodingID,
 				languageID: macLanguage,
 				nameID: nameID,
 				length: macName.length,
 				stringOffset: macNameOffset,
 			})
 
-			const winLanguage = windowsLanguageIds[lang]
+			let winLanguage = windowsLanguageIds[lang]
 			if (winLanguage !== undefined) {
-				const winName = encoder.utf16(text)
+				let winName = encoder.utf16(text)
+				let encodingID = 1
 				const winNameOffset = addStringToPool(winName, stringPool)
 				nameRecord.push({
 					platformID: 3,
-					encodingID: 1,
+					encodingID: encodingID,
 					languageID: winLanguage,
 					nameID: nameID,
 					length: winName.length,
 					stringOffset: winNameOffset,
 				})
+
+				// if (lang === 'zh') {
+				// 	let winName = [...iconv.encode(text, 'gbk')]
+				// 	let encodingID = 3
+				// 	const winNameOffset = addStringToPool(winName, stringPool)
+				// 	nameRecord.push({
+				// 		platformID: 3,
+				// 		encodingID: encodingID,
+				// 		languageID: winLanguage,
+				// 		nameID: nameID,
+				// 		length: winName.length,
+				// 		stringOffset: winNameOffset,
+				// 	})
+				// }
 			}
 		}
 	}

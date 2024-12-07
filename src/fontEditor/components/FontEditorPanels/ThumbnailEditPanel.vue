@@ -330,6 +330,7 @@
   const confirm = async () => {
     const components = curvesComponents.value
     addComponentsForCharacterFile(editCharacterFileUUID.value, components)
+    emitter.emit('renderPreviewCanvasByUUID', editCharacterFileUUID.value)
     reset()
     setEditStatus(Status.Edit)
     await nextTick()

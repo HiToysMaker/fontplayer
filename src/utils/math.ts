@@ -143,8 +143,8 @@ const transformPoints = (
       y: _point.y + (y - origin_y),
     }
     _point = {
-      x: x + (_point.x - x) * w / origin_w,
-      y: y + (_point.y - y) * h / origin_h,
+      x: x + (origin_w ? (_point.x - x) * w / origin_w : 0),
+      y: y + (origin_h ? (_point.y - y) * h / origin_h : 0),
     }
     return _point
   })

@@ -24,8 +24,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-public/characters
-public/data
-public/glyphs
-public/templates

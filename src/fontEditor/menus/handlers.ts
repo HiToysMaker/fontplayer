@@ -1113,6 +1113,8 @@ const createFont = () => {
 	//		contourNum: contours.length,
 	//	})
 	//}
+	let testContours = null
+	let containSpace = false
 	const { unitsPerEm, ascender, descender } = selectedFile.value.fontSettings
 	for (let i = 0; i < selectedFile.value.characterList.length; i++) {
 		const char: ICharacterFile = selectedFile.value.characterList[i]
@@ -1124,6 +1126,7 @@ const createFont = () => {
 				advanceWidth: unitsPerEm,
 			}, {x: 0, y: 0}, false, false, false
 		)
+		testContours = contours
 		const { text, unicode } = char.character
 		fontCharacters.push({
 			name: text,
@@ -1132,11 +1135,42 @@ const createFont = () => {
 			contours,
 			contourNum: contours.length,
 		})
+		if (text === ' ') {
+			containSpace = true
+		}
 	}
+
+	if (!containSpace) {
+		fontCharacters.push({
+			name: ' ',
+			unicode: parseInt('0x20', 16),
+			advanceWidth: unitsPerEm,
+			contours: [[]],
+			contourNum: 0,
+		})
+	}
+
+	// //-----just for test
+	// const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+	// for (let i = 0; i < chars.length; i++) {
+	// 	const char = chars[i]
+	// 	fontCharacters.push({
+	// 		name: char,
+	// 		unicode: char.charCodeAt(0),
+	// 		advanceWidth: unitsPerEm,
+	// 		contours: testContours,
+	// 		contourNum: testContours.length,
+	// 	})
+	// }
+	// //-----
+
+	fontCharacters.sort((a: any, b: any) => {
+		return a.unicode - b.unicode
+	})
 
 	const font = create(fontCharacters, {
 		familyName: selectedFile.value.name,
-		styleName: 'Medium',
+		styleName: 'Regular',
 		unitsPerEm,
 		ascender,
 		descender,

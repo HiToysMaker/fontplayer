@@ -14,7 +14,10 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "icon": "./public/fontPlayer-logo.icns"
@@ -84,6 +87,7 @@
     "file-saver": "^2.0.5",
     "fs-extra": "^11.2.0",
     "i18next": "^23.6.0",
+    "iconv-lite": "^0.6.3",
     "jsdom": "^20.0.0",
     "jszip": "^3.10.1",
     "localforage": "^1.10.0",
@@ -96,6 +100,7 @@
     "ramda": "^0.28.0",
     "rollup-plugin-copy": "^3.5.0",
     "start-server-and-test": "^1.14.0",
+    "tiny-pinyin": "^1.3.2",
     "typescript": "~4.7.4",
     "vite": "^5.2.9",
     "vite-plugin-electron": "^0.28.8",

@@ -17,9 +17,10 @@ import { create as createFontData, parse as parseFontData } from './tables/sfnt'
 import { createTable as createCmapTable } from './tables/cmap'
 import { createTable as createNameTable } from './tables/name'
 import { createTable as createCffTable } from './tables/cff'
-import { computeCheckSum } from './utils'
+import { computeCheckSum, hasChineseChar, isChineseChar } from './utils'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
+import { convertToPinyin } from 'tiny-pinyin'
 
 // font对象数据类型
 // font object data type
@@ -31,6 +32,7 @@ interface IFont {
 	rawData?: DataView;
 	bytes?: Array<number>;
 	buffer?: ArrayBuffer;
+	checksum?: number;
 }
 
 // font settings 数据类型
@@ -128,21 +130,82 @@ const parseFont = (buffer: ArrayBuffer) => {
  * @returns font object
  */
 const createFont = (characters: Array<ICharacter>, options: IOption) => {
+	let enName = ''
+	for(let i = 0; i < options.familyName.length; i++) {
+		const charcode = options.familyName[i].charCodeAt(0)
+		if (!(charcode >= 0x21 && charcode <= 0x7E)) {
+			enName += `${charcode}`
+		} else {
+			enName += `${options.familyName[i]}`
+		}
+	}
+
 	const fontNames = {
-		fontFamily: {en: options.familyName || ' '},
-		fontSubfamily: {en: options.styleName || ' '},
-		fullName: {en: options.fullName || options.familyName + ' ' + options.styleName},
-		postScriptName: {en: options.postScriptName || (options.familyName + options.styleName).replace(/\s/g, '')},
-		designer: {en: options.designer || ' '},
-		designerURL: {en: options.designerURL || ' '},
-		manufacturer: {en: options.manufacturer || ' '},
-		manufacturerURL: {en: options.manufacturerURL || ' '},
-		license: {en: options.license || ' '},
-		licenseURL: {en: options.licenseURL || ' '},
-		version: {en: options.version || 'Version 0.1'},
-		description: {en: options.description || ' '},
-		copyright: {en: options.copyright || ' '},
-		trademark: {en: options.trademark || ' '}
+		fontFamily: {
+			en: options.familyName || ' ',
+			zh: options.familyName || ' ',
+		},
+		fontSubfamily: {
+			en: 'Regular',//options.styleName || ' ',
+			zh: '常规体',//options.styleName || ' ',
+		},
+		fullName: {
+			en: options.fullName || options.familyName + '-' + options.styleName,
+			zh: options.fullName || options.familyName + '-' + options.styleName
+		},
+		//postScriptName: {en: options.postScriptName || (options.familyName + options.styleName).replace(/\s/g, '')},
+		postScriptName: {
+			en: options.postScriptName || (enName + options.styleName).replace(/\s/g, '').slice(0, 63),
+			zh: options.postScriptName || (enName + options.styleName).replace(/\s/g, '').slice(0, 63),
+		},
+		designer: {
+			en: options.designer || ' ',
+			zh: options.designer || ' ',
+		},
+		designerURL: {
+			en: options.designerURL || ' ',
+			zh: options.designerURL || ' ',
+		},
+		manufacturer: {
+			en: options.manufacturer || ' ',
+			zh: options.manufacturer || ' ',
+		},
+		manufacturerURL: {
+			en: options.manufacturerURL || ' ',
+			zh: options.manufacturerURL || ' ',
+		},
+		license: {
+			en: options.license || ' ',
+			zh: options.license || ' ',
+		},
+		licenseURL: {
+			en: options.licenseURL || ' ',
+			zh: options.licenseURL || ' ',
+		},
+		version: {
+			en: options.version || 'Version 0.1',
+			zh: options.version || 'Version 0.1',
+		},
+		description: {
+			en: options.description || ' ',
+			zh: options.description || ' ',
+		},
+		copyright: {
+			en: options.copyright || ' ',
+			zh: options.copyright || ' ',
+		},
+		trademark: {
+			en: options.trademark || ' ',
+			zh: options.trademark || ' ',
+		}
+	}
+
+	const name_keys = Object.keys(fontNames)
+	for (let i = 0; i < name_keys.length; i++) {
+		const enName = fontNames[name_keys[i]].en
+		if (hasChineseChar(enName)) {
+			fontNames[name_keys[i]].en = convertToPinyin(enName)
+		}
 	}
 
 	// 创建基础font对象
@@ -233,8 +296,8 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 		magicNumber: 0x5F0F3CF5,
 		flags: 3,
 		unitsPerEm: options.unitsPerEm,
-		created: options.createdTimestamp || Date.now() / 1000,
-		modified: Date.now() / 1000,
+		created: Math.floor(options.createdTimestamp || Date.now() / 1000) + 2082844800,
+		modified: Math.floor(Date.now() / 1000) + 2082844800,
 		xMin: globals.xMin,
 		yMin: globals.yMin,
 		xMax: globals.xMax,
@@ -279,10 +342,10 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 	// 定义os2表
 	// define os2 table
 	const os2Table = {
-		version: 0x0003,
+		version: 0x0005,
 		xAvgCharWidth: Math.round(globals.advanceWidthAvg),
-		usWeightClass: 0,
-		usWidthClass: 0,
+		usWeightClass: 400,
+		usWidthClass: 5,
 		fsType: 0,
 		ySubscriptXSize: 650,
 		ySubscriptYSize: 699,
@@ -301,7 +364,7 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 		ulUnicodeRange3,
 		ulUnicodeRange4,
 		achVendID: 'XXXX',
-		fsSelection: 0,
+		fsSelection: 64,
 		usFirstCharIndex: firstCharIndex,
 		usLastCharIndex: lastCharIndex,
 		sTypoAscender: globals.ascender,
@@ -309,13 +372,15 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 		sTypoLineGap: 0,
 		usWinAscent: globals.yMax,
 		usWinDescent: Math.abs(globals.yMin),
-		ulCodePageRange1: 1,
-		ulCodePageRange2: 0,
+		ulCodePageRange1: (1 << 0) | (1 << 18) | (1 << 20),//1,
+		ulCodePageRange2: 0,//0,
 		sxHeight: metricsForChar(font, 'xyvw', {yMax: Math.round(globals.ascender / 2)}).yMax,
 		sCapHeight: metricsForChar(font, 'HIKLEFJMNTZBDPRAGOQSUVWXY', globals).yMax,
 		usDefaultChar: hasChar(font, ' ') ? 32 : 0,
 		usBreakChar: hasChar(font, ' ') ? 32 : 0,
 		usMaxContext: 0,
+		usLowerOpticalPointSize: 8,
+		usUpperOpticalPointSize: 72,
 	}
 
 	// 定义hmtx表
@@ -348,7 +413,7 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 	}
 	const englishFamilyName = getEnglishName('fontFamily')
 	const englishStyleName = getEnglishName('fontSubfamily')
-	const englishFullName = englishFamilyName + ' ' + englishStyleName;
+	const englishFullName = englishFamilyName + '-' + englishStyleName;
 	let postScriptName = getEnglishName('postScriptName');
 	if (!postScriptName) {
 		postScriptName = (englishFamilyName as string).replace(/\s/g, '') + '-' + englishStyleName;
@@ -360,20 +425,24 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 	}
 
 	if (!names.uniqueID) {
-		names.uniqueID = {en: getEnglishName('manufacturer') + ':' + englishFullName}
+		names.uniqueID = {en: englishFullName}//getEnglishName('manufacturer') + ':' + englishFullName}
+		// names.uniqueID = {
+		// 	en: postScriptName,
+		// 	zh: postScriptName,
+		// }
 	}
 
 	if (!names.postScriptName) {
 		names.postScriptName = {en: postScriptName}
 	}
 
-	if (!names.preferredFamily) {
-		names.preferredFamily = fontNames.fontFamily
-	}
+	// if (!names.preferredFamily) {
+	// 	names.preferredFamily = fontNames.fontFamily
+	// }
 
-	if (!names.preferredSubfamily) {
-		names.preferredSubfamily = fontNames.fontSubfamily
-	}
+	// if (!names.preferredSubfamily) {
+	// 	names.preferredSubfamily = fontNames.fontSubfamily
+	// }
 
 	const languageTags: Array<any> = []
 	const nameTable = createNameTable(names, languageTags)
@@ -385,7 +454,7 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 		italicAngle: 0,
 		underlinePosition: 0,
 		underlineThickness: 0,
-		isFixedPitch: 0,
+		isFixedPitch: 1,
 		minMemType42: 0,
 		maxMemType42: 0,
 		minMemType1: 0,
@@ -407,21 +476,29 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 	const tables = {
 		'head': headTable,
 		'hhea': hheaTable,
-		'OS/2': os2Table,
 		'maxp': maxpTable,
+		'OS/2': os2Table,
 		'name': nameTable,
-		'post': postTable,
 		'cmap': cmapTable,
+		'post': postTable,
 		'hmtx': hmtxTable,
 		'CFF ': cffTable,
 	}
-	const checkSum = computeCheckSum(createFontData(tables).data)
-	headTable.checkSumAdjustment = 0xB1B0AFBA - checkSum
+	headTable.checkSumAdjustment = 0x00000000
+	//const _font = createFontData(tables)
+	const _font = createFontData(tables, 'checksum')
+	const checkSum = _font.checksum
+	//const checkSum = computeCheckSum(_font.data)
+	headTable.checkSumAdjustment = 0xB1B0AFBA - (checkSum % 0x100000000)
+	if (headTable.checkSumAdjustment < 0) {
+		headTable.checkSumAdjustment = (headTable.checkSumAdjustment + 0x100000000) % 0x100000000
+	}
 
 	// 创建字体数据
 	// create font data
-	const { data: fontData, tables: fontTables, tablesDataMap: fontDataMap } = createFontData(tables)
-
+	const _font2 = createFontData(tables, 'final')
+	const checkSum2 = _font2.checksum
+	const { data: fontData, tables: fontTables, tablesDataMap: fontDataMap } = _font2
 	font.bytes = fontData
 
 	const keys = Object.keys(tables)

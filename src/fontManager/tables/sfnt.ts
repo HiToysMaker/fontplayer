@@ -6,6 +6,7 @@ import { parseTablesToCharacters } from '../character'
 import type { IFont } from '../font'
 import type { ITable } from '../table'
 import * as decode from '../decode'
+import * as R from 'ramda'
 
 const types = {
 	sfntVersion: 'Tag',
@@ -147,17 +148,12 @@ const parse = (data: DataView, font: IFont) => {
  * @param tables font tables
  * @returns font data
  */
-const create = (tables: any) => {
+const create = (tables: any, mark: string = '') => {
+	let checksum = 0
 	const _tables = []
+	const recordMap = {}
 	const tablesDataMap = {}
 	const keys = Object.keys(tables)
-	keys.sort((key1, key2) => {
-		if (key1 > key2) {
-			return 1
-		} else {
-			return -1
-		}
-	})
 	const numTables = keys.length
 	const highestPowerOf2 = Math.pow(2, log2(numTables))
 	const searchRange = 16 * highestPowerOf2
@@ -168,20 +164,28 @@ const create = (tables: any) => {
 		entrySelector: log2(highestPowerOf2),
 		rangeShift: numTables * 16 - searchRange,
 	})
+	checksum += computeCheckSum(configData)
   let recordsData: Array<number> = []
   let tablesData: Array<number> = []
 
   let offset = configData.length + (createRecord({tag: 'xxxx', checkSum: 0, offset: 0, length: 0}).length * numTables)
+	let count = 0
 	while (offset % 4 !== 0) {
 		offset++
-		recordsData = recordsData.concat(encoder.uint8(0) as Array<number>)
+		count++
+		//recordsData = recordsData.concat(encoder.uint8(0) as Array<number>)
 	}
-
 	for (let i = 0; i < keys.length; i++) {
 		const t = tables[keys[i]]
 		const tableData = tableTool[keys[i]].create(t)
 		tablesDataMap[keys[i]] = tableData
-		const checkSum = computeCheckSum(tableData)
+		let checkSum = computeCheckSum(tableData)
+		if (keys[i] === 'head' && mark === 'final') {
+			const t2 = R.clone(t)
+			t2.checkSumAdjustment = 0x00000000
+			const tableData2 = tableTool[keys[i]].create(t2)
+			checkSum = computeCheckSum(tableData2)
+		}
 		const tableLength = tableData.length
 		const recordData = createRecord({
 			tag: keys[i],
@@ -201,14 +205,38 @@ const create = (tables: any) => {
 				length: tableLength,
 			}
 		})
-		recordsData = recordsData.concat(recordData)
+		checksum += computeCheckSum(recordData)
+		checksum += computeCheckSum(tableData)
+		recordMap[keys[i]] = recordData
 		tablesData = tablesData.concat(tableData)
 		offset += tableLength
+		while (offset % 4 !== 0) {
+			offset++
+			tablesData = tablesData.concat(encoder.uint8(0) as Array<number>)
+		}
 	}
+
+	// for tags, keys should in ascent order
+	keys.sort((key1, key2) => {
+		if (key1 > key2) {
+			return 1
+		} else {
+			return -1
+		}
+	})
+	for (let i = 0; i < keys.length; i++) {
+		const recordData = recordMap[keys[i]]
+		recordsData = recordsData.concat(recordData)
+	}
+	for (let i = 0; i < count; i++) {
+		recordsData = recordsData.concat(encoder.uint8(0) as Array<number>)
+	}
+	checksum %= 0x100000000
 	return {
 		data: [...configData, ...recordsData, ...tablesData],
 		tables: _tables,
 		tablesDataMap,
+		checksum,
 	}
 }
 

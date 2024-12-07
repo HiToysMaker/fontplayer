@@ -1916,15 +1916,30 @@ function encodeString(s: any, strings: any) {
 		sid = i
 	}
 
-	i = strings.indexOf(s)
+	const encodedString = encodeToASCII(s)
+	i = strings.indexOf(encodedString)
 	if (i >= 0) {
 		sid = i + cffStandardStrings.length
 	} else {
 		sid = cffStandardStrings.length + strings.length
-		strings.push(s)
+		strings.push(encodedString)
 	}
 
 	return sid
+}
+
+// 将非 US-ASCII 字符转换为合法 ASCII 字符串
+function encodeToASCII(s) {
+	return s.split('')
+					.map(char => {
+						const code = char.charCodeAt(0);
+						return code < 128
+							? char // 如果是 US-ASCII 字符，直接保留
+							//: `\\u${code.toString(16).padStart(4, '0')}`; // 否则转为 Unicode 形式
+							: `${code.toString(16).padStart(4, '0')}`; // 否则转为 Unicode 形式
+					})
+					.join('');
+	//return s
 }
 
 const createDict = (meta: Array<any>, attrs: Array<any>, strings: any) => {

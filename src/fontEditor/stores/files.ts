@@ -786,7 +786,6 @@ const modifySubComponent = (options) => {
 		for (let i = 0; i < keys.length; i++) {
 			const key = keys[i]
 			subComp[key] = options[key]
-			if (options.ox > 10) debugger
 		}
 		characterFile.components = components
 	}
