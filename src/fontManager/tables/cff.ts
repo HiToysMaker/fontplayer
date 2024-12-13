@@ -3,6 +3,7 @@ import type { ILine, ICubicBezierCurve, IPoint, ICharacter, IQuadraticBezierCurv
 import { PathType } from '../character'
 import { encoder } from '../encode'
 import * as decode from '../decode'
+import * as R from 'ramda'
 
 // cff表格式
 // cff table format
@@ -97,6 +98,7 @@ interface IIndex {
 }
 
 const TOP_DICT_META = [
+	{name: 'ros', op: 1230, type: ['SID', 'SID', 'number']},
 	{name: 'version', op: 0, type: 'SID'},
 	{name: 'notice', op: 1, type: 'SID'},
 	{name: 'copyright', op: 1200, type: 'SID'},
@@ -120,10 +122,9 @@ const TOP_DICT_META = [
 	{name: 'strokeWidth', op: 1208, type: 'number', value: 0},
 	{name: 'xuid', op: 14, type: [], value: null},
 	{name: 'charset', op: 15, type: 'offset', value: 0},
-	{name: 'encoding', op: 16, type: 'offset', value: 0},
+	{name: 'encoding', op: 16, type: 'offset' },
 	{name: 'charStrings', op: 17, type: 'offset', value: 0},
-	{name: 'private', op: 18, type: ['number', 'offset'], value: [0, 0]},
-	{name: 'ros', op: 1230, type: ['SID', 'SID', 'number']},
+	{name: 'private', op: 18, type: ['number', 'offset']},
 	{name: 'cidFontVersion', op: 1231, type: 'number', value: 0},
 	{name: 'cidFontRevision', op: 1232, type: 'number', value: 0},
 	{name: 'cidFontType', op: 1233, type: 'number', value: 0},
@@ -134,10 +135,62 @@ const TOP_DICT_META = [
 	{name: 'fontName', op: 1238, type: 'SID'}
 ]
 
+const FONT_DICT_META = [
+	{name: 'ros', op: 1230, type: ['SID', 'SID', 'number']},
+	{name: 'version', op: 0, type: 'SID'},
+	{name: 'notice', op: 1, type: 'SID'},
+	{name: 'copyright', op: 1200, type: 'SID'},
+	{name: 'fullName', op: 2, type: 'SID'},
+	{name: 'familyName', op: 3, type: 'SID'},
+	{name: 'weight', op: 4, type: 'SID'},
+	{name: 'isFixedPitch', op: 1201, type: 'number' },
+	{name: 'italicAngle', op: 1202, type: 'number' },
+	{name: 'underlinePosition', op: 1203, type: 'number' },
+	{name: 'underlineThickness', op: 1204, type: 'number' },
+	{name: 'paintType', op: 1205, type: 'number' },
+	{name: 'charstringType', op: 1206, type: 'number' },
+	{
+		name: 'fontMatrix',
+		op: 1207,
+		type: ['real', 'real', 'real', 'real', 'real', 'real']
+	},
+	{name: 'uniqueId', op: 13, type: 'number'},
+	{name: 'fontBBox', op: 5, type: ['number', 'number', 'number', 'number'] },
+	{name: 'strokeWidth', op: 1208, type: 'number' },
+	{name: 'xuid', op: 14, type: [] },
+	{name: 'charset', op: 15, type: 'offset' },
+	{name: 'encoding', op: 16, type: 'offset' },
+	{name: 'charStrings', op: 17, type: 'offset' },
+	{name: 'fontName', op: 1238, type: 'SID'},
+	{name: 'private', op: 18, type: ['number', 'offset']},
+	{name: 'cidFontVersion', op: 1231, type: 'number' },
+	{name: 'cidFontRevision', op: 1232, type: 'number' },
+	{name: 'cidFontType', op: 1233, type: 'number' },
+	{name: 'cidCount', op: 1234, type: 'number' },
+	{name: 'uidBase', op: 1235, type: 'number'},
+	{name: 'fdArray', op: 1236, type: 'offset'},
+	{name: 'fdSelect', op: 1237, type: 'offset'},
+]
+
 const PRIVATE_DICT_META = [
-	{name: 'subrs', op: 19, type: 'offset', value: 0},
-	{name: 'defaultWidthX', op: 20, type: 'number', value: 0},
-	{name: 'nominalWidthX', op: 21, type: 'number', value: 0}
+	{ name: 'BlueValues', op: 6, type: ['number', 'number', 'number', 'number'] },
+	{ name: 'OtherBlues', op: 7, type: ['number', 'number'] },
+	{ name: 'FamilyBlues', op: 8, type: 'array' },
+	{ name: 'FamilyOtherBlues', op: 9, type: 'array' },
+	{ name: 'BlueScale', op: 1209, type: 'real' },
+	{ name: 'BlueShift', op: 1210, type: 'number' },
+	{ name: 'BlueFuzz', op: 1211, type: 'number' },
+	{ name: 'StdHW', op: 10, type: 'number' },
+	{ name: 'StdVW', op: 11, type: 'number' },
+	{ name: 'StemSnapH', op: 1212, type: 'array' },
+	{ name: 'StemSnapV', op: 1213, type: 'array' },
+	{ name: 'ForceBold', op: 1214, type: 'number' },
+	{ name: 'LanguageGroup', op: 1217, type: 'number' },
+	{ name: 'ExpansionFactor', op: 1218, type: 'real' },
+	{ name: 'initialRandomSeed', op: 1219, type: 'number' },
+	{ name: 'Subrs', op: 19, type: 'offset' },
+	{ name: 'defaultWidthX', op: 20, type: 'number' },
+	{ name: 'nominalWidthX', op: 21, type: 'number' }
 ]
 
 const cffStandardStrings = [
@@ -185,24 +238,24 @@ const cffStandardStrings = [
 	'Uacutesmall', 'Ucircumflexsmall', 'Udieresissmall', 'Yacutesmall', 'Thornsmall', 'Ydieresissmall', '001.000',
 	'001.001', '001.002', '001.003', 'Black', 'Bold', 'Book', 'Light', 'Medium', 'Regular', 'Roman', 'Semibold']
 
-	const cffStandardEncoding = [
-    '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-    '', '', '', '', 'space', 'exclam', 'quotedbl', 'numbersign', 'dollar', 'percent', 'ampersand', 'quoteright',
-    'parenleft', 'parenright', 'asterisk', 'plus', 'comma', 'hyphen', 'period', 'slash', 'zero', 'one', 'two',
-    'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'colon', 'semicolon', 'less', 'equal', 'greater',
-    'question', 'at', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
-    'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'bracketleft', 'backslash', 'bracketright', 'asciicircum', 'underscore',
-    'quoteleft', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
-    'u', 'v', 'w', 'x', 'y', 'z', 'braceleft', 'bar', 'braceright', 'asciitilde', '', '', '', '', '', '', '', '',
-    '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-    'exclamdown', 'cent', 'sterling', 'fraction', 'yen', 'florin', 'section', 'currency', 'quotesingle',
-    'quotedblleft', 'guillemotleft', 'guilsinglleft', 'guilsinglright', 'fi', 'fl', '', 'endash', 'dagger',
-    'daggerdbl', 'periodcentered', '', 'paragraph', 'bullet', 'quotesinglbase', 'quotedblbase', 'quotedblright',
-    'guillemotright', 'ellipsis', 'perthousand', '', 'questiondown', '', 'grave', 'acute', 'circumflex', 'tilde',
-    'macron', 'breve', 'dotaccent', 'dieresis', '', 'ring', 'cedilla', '', 'hungarumlaut', 'ogonek', 'caron',
-    'emdash', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'AE', '', 'ordfeminine', '', '', '',
-    '', 'Lslash', 'Oslash', 'OE', 'ordmasculine', '', '', '', '', '', 'ae', '', '', '', 'dotlessi', '', '',
-    'lslash', 'oslash', 'oe', 'germandbls']
+const cffStandardEncoding = [
+	'', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+	'', '', '', '', 'space', 'exclam', 'quotedbl', 'numbersign', 'dollar', 'percent', 'ampersand', 'quoteright',
+	'parenleft', 'parenright', 'asterisk', 'plus', 'comma', 'hyphen', 'period', 'slash', 'zero', 'one', 'two',
+	'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'colon', 'semicolon', 'less', 'equal', 'greater',
+	'question', 'at', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+	'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'bracketleft', 'backslash', 'bracketright', 'asciicircum', 'underscore',
+	'quoteleft', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
+	'u', 'v', 'w', 'x', 'y', 'z', 'braceleft', 'bar', 'braceright', 'asciitilde', '', '', '', '', '', '', '', '',
+	'', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+	'exclamdown', 'cent', 'sterling', 'fraction', 'yen', 'florin', 'section', 'currency', 'quotesingle',
+	'quotedblleft', 'guillemotleft', 'guilsinglleft', 'guilsinglright', 'fi', 'fl', '', 'endash', 'dagger',
+	'daggerdbl', 'periodcentered', '', 'paragraph', 'bullet', 'quotesinglbase', 'quotedblbase', 'quotedblright',
+	'guillemotright', 'ellipsis', 'perthousand', '', 'questiondown', '', 'grave', 'acute', 'circumflex', 'tilde',
+	'macron', 'breve', 'dotaccent', 'dieresis', '', 'ring', 'cedilla', '', 'hungarumlaut', 'ogonek', 'caron',
+	'emdash', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'AE', '', 'ordfeminine', '', '', '',
+	'', 'Lslash', 'Oslash', 'OE', 'ordmasculine', '', '', '', '', '', 'ae', '', '', '', 'dotlessi', '', '',
+	'lslash', 'oslash', 'oe', 'germandbls']
 
 const cffExpertEncoding = [
     '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
@@ -260,13 +313,21 @@ const cffExpertEncoding = [
  * }
  */
 const parseIndex = (data: DataView, offset: number, parser?: Function) => {
+	let configRawData = []
+	let offset2 = offset
 	// 启动一个新的decoder
 	// start a new decoder
 	decode.start(data, offset)
 
 	let _offset = offset
 	const count = decode.decoder['uint16']()
+	configRawData.push(data.getUint8(offset2))
+	offset2++
+	configRawData.push(data.getUint8(offset2))
+	offset2++
 	const offSize = decode.decoder['uint8']()
+	configRawData.push(data.getUint8(offset2))
+	offset2++
 	const offsetArray = []
 	const rawDataArray = []
 	const dataArray = []
@@ -275,18 +336,48 @@ const parseIndex = (data: DataView, offset: number, parser?: Function) => {
 			switch(offSize) {
 				case 1: {
 					offsetArray.push(decode.decoder['uint8']())
+					configRawData.push(data.getUint8(offset2))
+					offset2++
 					break
 				}
 				case 2: {
 					offsetArray.push(decode.decoder['uint16']())
+					configRawData.push(data.getUint8(offset2))
+					offset2++
+					configRawData.push(data.getUint8(offset2))
+					offset2++
 					break
 				}
 				case 3: {
 					offsetArray.push(decode.decoder['uint32']())
+					configRawData.push(data.getUint8(offset2))
+					offset2++
+					configRawData.push(data.getUint8(offset2))
+					offset2++
+					configRawData.push(data.getUint8(offset2))
+					offset2++
+					configRawData.push(data.getUint8(offset2))
+					offset2++
 					break
 				}
 				case 4: {
 					offsetArray.push(decode.decoder['bigInt']())
+					configRawData.push(data.getUint8(offset2))
+					offset2++
+					configRawData.push(data.getUint8(offset2))
+					offset2++
+					configRawData.push(data.getUint8(offset2))
+					offset2++
+					configRawData.push(data.getUint8(offset2))
+					offset2++
+					configRawData.push(data.getUint8(offset2))
+					offset2++
+					configRawData.push(data.getUint8(offset2))
+					offset2++
+					configRawData.push(data.getUint8(offset2))
+					offset2++
+					configRawData.push(data.getUint8(offset2))
+					offset2++
 					break
 				}
 			}
@@ -310,6 +401,7 @@ const parseIndex = (data: DataView, offset: number, parser?: Function) => {
 
 	return {
 		data: {
+			configRawData,
 			index: {
 				count,
 				offSize,
@@ -1314,6 +1406,7 @@ const parseDict = (data: DataView, offset: number = 0, size: number) => {
 	return entriesToObject(entries);
 }
 
+
 const parseOperand = (data: DataView, offset: number, b0: number) => {
 	let b1
 	let b2
@@ -1521,6 +1614,15 @@ const gatherTopDicts = (data: DataView, offset: number, cffIndex: any, strings: 
 	return topDictArray
 }
 
+const createFDSelect = (characters) => {
+	const bytes = []
+	bytes.push(0)
+	for (let i = 0; i < characters.length; i++) {
+		bytes.push(0)
+	}
+	return bytes
+}
+
 const parseFDSelect = (data: DataView, offset: number, numGlyphs: number, fdArrayCount: number) => {
 	const fdSelect = [];
 	let fdIndex;
@@ -1706,7 +1808,8 @@ const parseCharsets = (data: DataView, offset: number, font: IFont, stringIndex:
 	const format = decode.decoder['uint8']()
 	if (format === 0) {
 		for (let i = 0; i < n; i += 1) {
-			charset.push(getString(stringIndex.data, decode.decoder['uint16']()))
+			const decoded_data = decode.decoder['uint16']()
+			charset.push(getString(stringIndex.data, decoded_data))
 		}
 		_offset = offset + 1 + n * 2
 	} else if (format === 1) {
@@ -1875,7 +1978,7 @@ const createIndex = (indexData: Array<any>) => {
 	}
 
 	const encodedOffsets: Array<number> = []
-	const offSize = (1 + Math.floor(Math.log(offset) / Math.log(2)) / 8) | 0
+	const offSize = 2//(1 + Math.floor(Math.log(offset) / Math.log(2)) / 8) | 0
 	const offsetEncoder = [undefined, encoder.uint8, encoder.uint16, encoder.uint24, encoder.uint32][offSize]
 	for (let i = 0; i < offsets.length; i += 1) {
 		const encodedOffset = (offsetEncoder as Function)(offsets[i])
@@ -1926,10 +2029,30 @@ function encodeString(s: any, strings: any) {
 	}
 
 	return sid
+
+	// let sid
+
+	// let i = cffStandardStrings.indexOf(s)
+	// if (i >= 0) {
+	// 	sid = i
+	// }
+
+	// i = strings.indexOf(s)
+	// if (i >= 0) {
+	// 	sid = i + cffStandardStrings.length
+	// } else {
+	// 	sid = cffStandardStrings.length + strings.length
+	// 	strings.push(s)
+	// }
+
+	// return sid
 }
 
 // 将非 US-ASCII 字符转换为合法 ASCII 字符串
 function encodeToASCII(s) {
+	if (typeof s === 'number') {
+		return s
+	}
 	return s.split('')
 					.map(char => {
 						const code = char.charCodeAt(0);
@@ -1943,7 +2066,7 @@ function encodeToASCII(s) {
 }
 
 const createDict = (meta: Array<any>, attrs: Array<any>, strings: any) => {
-	const m: any = {}
+	const m = []
 	for (let i = 0; i < meta.length; i += 1) {
 		const entry = meta[i]
 		let value = attrs[entry.name]
@@ -1952,16 +2075,23 @@ const createDict = (meta: Array<any>, attrs: Array<any>, strings: any) => {
 				value = encodeString(value, strings)
 			}
 
-			m[entry.op] = {name: entry.name, type: entry.type, value: value}
+			if (Array.isArray(value)) {
+				value = Object.assign([], value)
+				for (let i = 0; i < value.length; i++) {
+					if (entry.type[i] === 'SID') {
+						value[i] = encodeString(value[i], strings)
+					}
+				}
+			}
+
+			m.push({op: entry.op, name: entry.name, type: entry.type, value: value})
 		}
 	}
 	let d: Array<number> = []
-	const keys = Object.keys(m)
-	const length = keys.length
 
-	for (let i = 0; i < length; i += 1) {
-		const k = parseInt(keys[i], 0)
-		const v = m[k]
+	for (let i = 0; i < m.length; i += 1) {
+		const v = m[i]
+		const k = v.op
 		d = d.concat(encoder.Operand(v.value, v.type))
 		d = d.concat(encoder.Operator(k))
 	}
@@ -2040,7 +2170,7 @@ const createTable = (characters: Array<ICharacter>, options: any) => {
 			major: 1,
 			minor: 0,
 			hdrSize: 4,
-			offSize: 1,
+			offSize: 2,//1,
 		},
 		nameIndex: {
 			data: [options.postScriptName],
@@ -2056,9 +2186,17 @@ const createTable = (characters: Array<ICharacter>, options: any) => {
 			fontBBox: options.fontBBox || [0, 0, 0, 0],
 			fontMatrix: [fontScale, 0, 0, fontScale, 0, 0],
 			charset: 999,
-			encoding: 0,
 			charStrings: 999,
-			private: [0, 999],
+			//private: [0, 999],
+			ros: ['Adobe', 'GB1', 5],
+			//ros: ['Adobe', 'Identity', 0],
+			cidFontVersion: 1,
+			cidFontRevision: 0,
+			cidFontType: 0,
+			cidCount: characters.length,
+			isFixedPitch: 1,
+			fdArray: 0,
+			fdSelect: 0,
 		},
 	}
 
@@ -2085,6 +2223,7 @@ const createTable = (characters: Array<ICharacter>, options: any) => {
 	return cffTable
 }
 
+let cnt = 0
 /**
  * 根据ICffTable对象创建该表的原始数据
  * @param table ICffTable table
@@ -2095,11 +2234,13 @@ const createTable = (characters: Array<ICharacter>, options: any) => {
  * @param table ICffTable table
  * @returns raw data array, each entry is type of 8-bit number
  */
-const create = (table: ICffTable) => {
+const create = (_table: ICffTable) => {
+	const table = R.clone(_table)
 	// 创建header数据
 	// create header data
 	const header = table.header
 	let headerData: Array<number> = []
+	const glyphTables = table.glyphTables as Array<IGlyphTable>
 	Object.keys(header).forEach((key: string) => {
 		const type = types[key as keyof typeof types]
 		const value = header[key as keyof typeof header]
@@ -2117,21 +2258,22 @@ const create = (table: ICffTable) => {
 			value: item
 		}
 	}))
+
 	const strings: any = []
 	const globalSubrIndexData = [0, 0]
 	// 创建charsets数据
 	// create charsets data
 	const charsets = (table.charsets as ICharSets).data
 	let charsetsData: Array<number> = []
+	//charsetsData = charsetsData.concat(encoder.Card8(2) as Array<number>)
 	charsetsData = charsetsData.concat(encoder.Card8(0) as Array<number>)
 	for (let i = 0; i < charsets.length; i += 1) {
-		const glyphName = charsets[i]
-		const glyphSID = encodeString(glyphName, strings)
+		const glyphSID = i + 1//encodeString(glyphName, strings)
 		charsetsData = charsetsData.concat(encoder.SID(glyphSID) as Array<number>)
+		//charsetsData = charsetsData.concat(encoder.Card16(0) as Array<number>)
 	}
 	// 创建charstrings数据
 	// create charstrings data
-	const glyphTables = table.glyphTables as Array<IGlyphTable>
 	const charStringsIndexRawData = []
 	for (let i = 0; i < glyphTables.length; i++) {
 		const glyph = glyphTables[i]
@@ -2139,10 +2281,41 @@ const create = (table: ICffTable) => {
 		charStringsIndexRawData.push({type: 'CharString', value: ops})
 	}
 	const charStringsIndexData = createIndex(charStringsIndexRawData)
+
+	const _fd: any = {
+		private: [0, 0],
+		fontBBox: table.topDict.fontBBox,
+		fontMatrix: table.topDict.fontMatrix,
+		fontName: table.topDict.familyName,
+		weight: table.topDict.weight,
+	}
+	let fd = createDict(FONT_DICT_META, _fd, strings)
+	let fdIndex = createIndex([{type: 'raw', value: fd}])
+	const fdselect = createFDSelect(glyphTables)
+
 	// 创建topDictIndex数据
 	// create topDictIndex data
 	let topDict = createDict(TOP_DICT_META, table.topDict, strings)
 	let topDictIndexData = createIndex([{type: 'raw', value: topDict}])
+
+	const _privateDict = {
+		BlueValues: [-16, 0 - (-16), 800, 816 - 800],
+		OtherBlues: [-216, -200 - (-216)],
+		BlueScale: 0.039625,
+		BlueShift: 7,
+		BlueFuzz: 1,
+		ForcedBold: 0,
+		LanguageGroup: 0,
+		ExpansionFactor: 0.06,
+		initialRandomSeed: 0,
+		defaultWidthX: 0,
+		nominalWidthX: 0,
+		StdHW: 50,
+		StdVW: 100,
+	}
+	//@ts-ignore
+	let privateDict = createDict(PRIVATE_DICT_META, _privateDict, strings)
+
 	// 创建stringIndex数据
 	// create stringIndex data
 	const stringIndex = table.stringIndex as IStringIndex
@@ -2152,15 +2325,23 @@ const create = (table: ICffTable) => {
 			value: item
 		}
 	}))
+
 	const startOffset = headerData.length +
 		nameIndexData.length +
 		topDictIndexData.length +
 		stringIndexData.length +
 		globalSubrIndexData.length
+
 	table.topDict.charset = startOffset
-	table.topDict.encoding = 0
-	table.topDict.charStrings = table.topDict.charset + charsetsData.length
-	table.topDict.private[1] = table.topDict.charStrings + charStringsIndexData.length
+	table.topDict.charStrings = table.topDict.charset + charsetsData.length + fdselect.length
+	table.topDict.fdArray = table.topDict.charStrings + charStringsIndexData.length
+	table.topDict.fdSelect = table.topDict.charset + charsetsData.length
+
+	_fd.private[0] = privateDict.length
+	_fd.private[1] = table.topDict.charStrings + charStringsIndexData.length + fdIndex.length
+	fd = createDict(FONT_DICT_META, _fd, strings)
+	fdIndex = createIndex([{type: 'raw', value: fd}])
+
 	topDict = createDict(TOP_DICT_META, table.topDict, strings)
 	topDictIndexData = createIndex([{type: 'raw', value: topDict}])
 	const data: Array<number> = [
@@ -2170,8 +2351,12 @@ const create = (table: ICffTable) => {
 		...stringIndexData,
 		...globalSubrIndexData,
 		...charsetsData,
+		...fdselect,
 		...charStringsIndexData,
+		...fdIndex,
+		...privateDict,
 	]
+
 	return data
 }
 

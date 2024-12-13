@@ -947,8 +947,8 @@ const createTable = (names: Array<any>, ltag: Array<any>) => {
 		for (let lang in translations) {
 			//if (lang === 'en') continue
 			const text = translations[lang]
-			if (text === ' ')
-				continue
+			// if (text === ' ')
+			// 	continue
 
 			// For MacOS, we try to emit the name in the form that was introduced
 			// in the initial version of the TrueType spec (in the late 1980s).
@@ -974,7 +974,7 @@ const createTable = (names: Array<any>, ltag: Array<any>) => {
 			// 	if (macLanguage < 0) {
 			// 		macLanguage = ltag.length
 			// 		ltag.push(lang)
-			// }
+			// 	}
 
 			// 	macScript = 4;  // Unicode 2.0 and later
 			// 	macName = encoder.utf16(text)
@@ -997,29 +997,56 @@ const createTable = (names: Array<any>, ltag: Array<any>) => {
 				macLanguage = 33
 				macName = [...iconv.encode(text, 'gbk')]
 			}
-			const macNameOffset = addStringToPool(macName, stringPool)
-			nameRecord.push({
-				platformID: macPlatform,
-				encodingID: encodingID,
-				languageID: macLanguage,
-				nameID: nameID,
-				length: macName.length,
-				stringOffset: macNameOffset,
-			})
+			//const macNameOffset = addStringToPool(macName, stringPool)
+			
+			// if (!((nameID === 1 || nameID === 4 || nameID === 16 || nameID === 3) && lang === 'en')) {
+			// 	nameRecord.push({
+			// 		platformID: macPlatform,
+			// 		encodingID: encodingID,
+			// 		languageID: macLanguage,
+			// 		nameID: nameID,
+			// 		length: macName.length,
+			// 		stringOffset: macNameOffset,
+			// 	})
+			// }
+
+			// nameRecord.push({
+			// 	platformID: macPlatform,
+			// 	encodingID: encodingID,
+			// 	languageID: macLanguage,
+			// 	nameID: nameID,
+			// 	length: macName.length,
+			// 	stringOffset: macNameOffset,
+			// })
 
 			let winLanguage = windowsLanguageIds[lang]
 			if (winLanguage !== undefined) {
-				let winName = encoder.utf16(text)
-				let encodingID = 1
-				const winNameOffset = addStringToPool(winName, stringPool)
-				nameRecord.push({
-					platformID: 3,
-					encodingID: encodingID,
-					languageID: winLanguage,
-					nameID: nameID,
-					length: winName.length,
-					stringOffset: winNameOffset,
-				})
+				// if (((nameID === 1 || nameID === 4 || nameID === 16 || nameID === 3) && lang === 'en')) {
+				// 	const text = translations['zh']
+				// 	let winName = encoder.utf16(text)
+				// 	let encodingID = 1
+				// 	const winNameOffset = addStringToPool(winName, stringPool)
+				// 	nameRecord.push({
+				// 		platformID: 3,
+				// 		encodingID: encodingID,
+				// 		languageID: winLanguage,
+				// 		nameID: nameID,
+				// 		length: winName.length,
+				// 		stringOffset: winNameOffset,
+				// 	})
+				// } else {
+					let winName = encoder.utf16(text)
+					let encodingID = 1
+					const winNameOffset = addStringToPool(winName, stringPool)
+					nameRecord.push({
+						platformID: 3,
+						encodingID: encodingID,
+						languageID: winLanguage,
+						nameID: nameID,
+						length: winName.length,
+						stringOffset: winNameOffset,
+					})
+				//}
 
 				// if (lang === 'zh') {
 				// 	let winName = [...iconv.encode(text, 'gbk')]

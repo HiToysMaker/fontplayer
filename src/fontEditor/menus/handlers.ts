@@ -53,7 +53,6 @@ import {
 	componentsToContours,
 } from '@/features/font'
 import { emitter } from '../Event/bus'
-
 import {
 	IComponentValue,
 	contoursComponents,
@@ -1093,26 +1092,14 @@ const createFont = () => {
 		advanceWidth: Math.max(_width, _height),
 	}]
 
-	//const map = new Map()
-	//for (let i = 0; i < radical_glyphs.value.length; i++) {
-	//	const glyph = radical_glyphs.value[i]
-	//	const contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(glyph._o.components, {
-	//		unitsPerEm: 1000,
-	//		descender: -200,
-	//		advanceWidth: 1000,
-	//	}, {x: 0, y: 0}, true, false, false)
-	//	const name = glyph.name.split('-')[0].charAt(0)
-	//	if (map.get(name)) continue
-	//	map.set(name, true)
-	//	const unicode = toUnicode(name)
-	//	fontCharacters.push({
-	//		name: name,
-	//		unicode: parseInt(unicode, 16),
-	//		advanceWidth: Math.max(_width, _height),
-	//		contours,
-	//		contourNum: contours.length,
-	//	})
-	//}
+	// {
+	// 	unicode: 0xa0,
+	// 	name: 'no-break-space',
+	// 	contours: [[]] as Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>,
+	// 	contourNum: 0,
+	// 	advanceWidth: Math.max(_width, _height),
+	// }
+
 	let testContours = null
 	let containSpace = false
 	const { unitsPerEm, ascender, descender } = selectedFile.value.fontSettings
@@ -1126,7 +1113,7 @@ const createFont = () => {
 				advanceWidth: unitsPerEm,
 			}, {x: 0, y: 0}, false, false, false
 		)
-		testContours = contours
+		if (!testContours) testContours = contours
 		const { text, unicode } = char.character
 		fontCharacters.push({
 			name: text,

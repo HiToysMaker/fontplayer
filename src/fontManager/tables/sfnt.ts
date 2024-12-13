@@ -138,6 +138,15 @@ const parse = (data: DataView, font: IFont) => {
 	return font
 }
 
+const parse2 = (data: DataView, offset: number, length: number) => {
+	const bytes = []
+	for (let i = 0; i < length; i++) {
+		const byte = data.getUint8(offset + i)
+		bytes.push(byte)
+	}
+	return bytes
+}
+
 /**
  * 生成font数据
  * @param tables font包含的表
@@ -177,14 +186,17 @@ const create = (tables: any, mark: string = '') => {
 	}
 	for (let i = 0; i < keys.length; i++) {
 		const t = tables[keys[i]]
-		const tableData = tableTool[keys[i]].create(t)
+		let tableData = tableTool[keys[i]].create(t)
+
 		tablesDataMap[keys[i]] = tableData
 		let checkSum = computeCheckSum(tableData)
+		checkSum %= 0x100000000
 		if (keys[i] === 'head' && mark === 'final') {
 			const t2 = R.clone(t)
 			t2.checkSumAdjustment = 0x00000000
 			const tableData2 = tableTool[keys[i]].create(t2)
 			checkSum = computeCheckSum(tableData2)
+			checkSum %= 0x100000000
 		}
 		const tableLength = tableData.length
 		const recordData = createRecord({
@@ -231,7 +243,7 @@ const create = (tables: any, mark: string = '') => {
 	for (let i = 0; i < count; i++) {
 		recordsData = recordsData.concat(encoder.uint8(0) as Array<number>)
 	}
-	checksum %= 0x100000000
+	//checksum %= 0x100000000
 	return {
 		data: [...configData, ...recordsData, ...tablesData],
 		tables: _tables,

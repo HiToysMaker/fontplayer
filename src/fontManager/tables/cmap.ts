@@ -2,6 +2,7 @@ import type { IFont } from '../font'
 import { encoder, setByesAt } from '../encode'
 import type { ICharacter } from '../character'
 import * as decode from '../decode'
+import * as R from 'ramda'
 
 // cmap表格式
 // cmap table format
@@ -69,7 +70,7 @@ const parse = (data: DataView, offset: number, font: IFont) => {
 	decode.end()
 	const encodingRecords = []
 	const glyphIndexMap = {}
-	
+
 	for (let i = 0; i < numTables; i++) {
 		// 启动一个新的decoder
 		// start a new decoder
@@ -246,19 +247,24 @@ const createTable = (characters: Array<ICharacter>) => {
 	// create cmap table
 	const cmapTable: ICmapTable = {
 		version: 0,
-		numTables: isPlan0Only ? 1 : 2,
+		numTables: isPlan0Only ? 2 : 3,
 		encodingRecords: [],
 	}
 	cmapTable.encodingRecords.push({
+		platformID: 0,
+		encodingID: 3,
+		subtableOffset: isPlan0Only ? 4 + 8 + 8 : (4 + 8 + 8 + 8),
+	})
+	cmapTable.encodingRecords.push({
 		platformID: 3,
 		encodingID: 1,
-		subtableOffset: isPlan0Only ? 12 : (12 + 8),
+		subtableOffset: isPlan0Only ? 4 + 8 + 8 : (4 + 8 + 8 + 8),
 	})
 	if (!isPlan0Only) {
 		cmapTable.encodingRecords.push({
 			platformID: 3,
 			encodingID: 10,
-			subtableOffset: 0,
+			subtableOffset: 4 + 8 + 8 + 8,
 		})
 	}
 	cmapTable.encodingRecords[0].subTable = {
@@ -270,8 +276,17 @@ const createTable = (characters: Array<ICharacter>) => {
 		entrySelector: 0,
 		rangeShift: 0,
 	}
+	cmapTable.encodingRecords[1].subTable = {
+		format: 4,
+		length: 0,
+		language: 0,
+		segCount: 0,
+		searchRange: 0,
+		entrySelector: 0,
+		rangeShift: 0,
+	}
 	if (!isPlan0Only) {
-		cmapTable.encodingRecords[1].subTable = {
+		cmapTable.encodingRecords[cmapTable.encodingRecords.length - 1].subTable = {
 			format: 12,
 			reserved: 0,
 			length: 0,
@@ -288,7 +303,7 @@ const createTable = (characters: Array<ICharacter>) => {
 	const glyphIndexMap12: {
 		[key: string | number]: string | number
 	} = {}
-	for (i = 0; i < characters.length; i++) {
+	for (i = 1; i < characters.length; i++) {
 			const character = characters[i]
 			if (character.unicode <= 65535) {
 				segments.push({
@@ -317,23 +332,33 @@ const createTable = (characters: Array<ICharacter>) => {
 		idRangeOffset: 0
 	})
 	if (!isPlan0Only) {
-		cmapTable.encodingRecords[1].subTable.groups = groups
-		cmapTable.encodingRecords[1].subTable.glyphIndexMap = glyphIndexMap12
+		cmapTable.encodingRecords[cmapTable.encodingRecords.length - 1].subTable.groups = groups
+		cmapTable.encodingRecords[cmapTable.encodingRecords.length - 1].subTable.glyphIndexMap = glyphIndexMap12
 	}
 	cmapTable.encodingRecords[0].subTable.segments = segments
+	cmapTable.encodingRecords[1].subTable.segments = R.clone(segments)
 	cmapTable.encodingRecords[0].subTable.glyphIndexMap = glyphIndexMap4
+	cmapTable.encodingRecords[1].subTable.glyphIndexMap = R.clone(glyphIndexMap4)
 
   const segCount = segments.length
 	cmapTable.encodingRecords[0].subTable.segCount = segCount
+	cmapTable.encodingRecords[1].subTable.segCount = segCount
   cmapTable.encodingRecords[0].subTable.searchRange = Math.pow(2, Math.floor(Math.log(segCount) / Math.log(2))) * 2;
+	cmapTable.encodingRecords[1].subTable.searchRange = Math.pow(2, Math.floor(Math.log(segCount) / Math.log(2))) * 2;
   cmapTable.encodingRecords[0].subTable.entrySelector = Math.log(cmapTable.encodingRecords[0].subTable.searchRange / 2) / Math.log(2)
+	cmapTable.encodingRecords[1].subTable.entrySelector = Math.log(cmapTable.encodingRecords[1].subTable.searchRange / 2) / Math.log(2)
   cmapTable.encodingRecords[0].subTable.rangeShift = segCount * 2 - cmapTable.encodingRecords[0].subTable.searchRange
+	cmapTable.encodingRecords[1].subTable.rangeShift = segCount * 2 - cmapTable.encodingRecords[1].subTable.searchRange
 
   cmapTable.encodingRecords[0].subTable.length = 14 + 2 + segments.length * 8
+	cmapTable.encodingRecords[1].subTable.length = 14 + 2 + segments.length * 8
+
+	cmapTable.encodingRecords[1].subtableOffset += cmapTable.encodingRecords[0].subTable.length
 
 	if (!isPlan0Only) {
-		cmapTable.encodingRecords[1].subTable.length = 16 + groups.length * 4
-		cmapTable.encodingRecords[1].subTable.groupCount = groups.length
+		cmapTable.encodingRecords[cmapTable.encodingRecords.length - 1].subtableOffset += (cmapTable.encodingRecords[0].subTable.length + cmapTable.encodingRecords[1].subTable.length)
+		cmapTable.encodingRecords[cmapTable.encodingRecords.length - 1].subTable.length = 16 + groups.length * 4
+		cmapTable.encodingRecords[cmapTable.encodingRecords.length - 1].subTable.groupCount = groups.length
 	}
 	return cmapTable
 }

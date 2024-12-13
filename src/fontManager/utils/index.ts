@@ -39,6 +39,7 @@ const computeCheckSum = (_bytes: Array<number>, write: boolean = false) => {
 		// (bytes[i + 1] << 16) +
 		// (bytes[i + 2] << 8) +
 		// (bytes[i + 3])
+		
 		const value = ((bytes[i] << 24) >>> 0) +
 		((bytes[i + 1] << 16) >>> 0) +
 		((bytes[i + 2] << 8) >>> 0) +

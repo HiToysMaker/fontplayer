@@ -64,6 +64,13 @@ const encoder = {
 	Fixed: (v: IValue) => {
 		if (typeof v !== 'number') return false
 		return [(v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF]
+		// const scaledValue = Math.round(v * 0x10000);
+    // return [
+    //     (scaledValue >> 24) & 0xFF,
+    //     (scaledValue >> 16) & 0xFF,
+    //     (scaledValue >> 8) & 0xFF,
+    //     scaledValue & 0xFF
+    // ];
 	},
 	FWORD: (v: IValue) => {
 		if (typeof v !== 'number') return false
@@ -129,7 +136,7 @@ const encoder = {
 		if (typeof v === 'undefined') {
 			v = ''
 		}
-		const bytes = []
+		let bytes = []
 		for (let i = 0; i < (v as string).length; i += 1) {
 			bytes[i] = (v as string).charCodeAt(i)
 		}
@@ -150,7 +157,15 @@ const encoder = {
 				d = d.concat(encoder.number(v))
 			} else if (type === 'real') {
 				d = d.concat(encoder.real(v))
-			} else {
+			} else if (type === 'Fixed') {
+				//@ts-ignore
+				d = d.concat(encoder.Fixed(v))
+			} else if (type === 'number16') {
+				d = d.concat(encoder.number16(v))
+			} else if (type === 'number32') {
+				d = d.concat(encoder.number32(v))
+			}
+			else {
 				throw new Error('Unknown operand type ' + type)
 			}
     }
@@ -164,7 +179,7 @@ const encoder = {
 			_v = _v - 108
 			return [(_v >> 8) + 247, _v & 0xFF]
 		} else if (_v >= -1131 && _v <= -108) {
-			_v = -v - 108
+			_v = -_v - 108
 			return [(_v >> 8) + 251, _v & 0xFF]
 		} else if (_v >= -32768 && _v <= 32767) {
 			return encoder.number16(_v)
