@@ -92,7 +92,7 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 			setSelectionForCurrentGlyph('')
 		}
 		const comp = glyph ? selectedComponent_glyph.value : selectedComponent.value
-		if (!comp.visible) {
+		if (!comp || !comp.visible) {
 			mousedown = false
 			return
 		}
@@ -102,7 +102,7 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 		if (!glyph && !selectedComponent.value) return
 		if (glyph && !selectedComponent_glyph.value) return
 		const comp = glyph ? selectedComponent_glyph.value : selectedComponent.value
-		if (!comp.visible) return
+		if (!comp || !comp.visible) return
 		const { x, y, w, h, rotation, uuid} = comp
 		const { x: _x, y: _y } = rotatePoint(
 			{ x: getCoord(e.offsetX), y: getCoord(e.offsetY) },
@@ -218,7 +218,7 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 
 	const onMouseUp = (e: MouseEvent) => {
 		const comp = glyph ? selectedComponent_glyph.value : selectedComponent.value
-		if (!comp.visible) return
+		if (!comp || !comp.visible) return
 		if (comp.type !== 'picture') {
 			modifyComponentValue()
 		}
@@ -228,7 +228,7 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 
 	const onEnter = (e: KeyboardEvent) => {
 		const comp = glyph ? selectedComponent_glyph.value : selectedComponent.value
-		if (!comp.visible) return
+		if (!comp || !comp.visible) return
 		if (comp.type !== 'picture') {
 			modifyComponentValue()
 		}

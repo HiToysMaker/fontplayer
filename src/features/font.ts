@@ -532,27 +532,27 @@ const genRectangleContour = (points) => {
 const genPenContour = (points, fill: boolean = false) => {
 	const contour: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve> = []
 	for (let i = 0; i < points.length - 1; i += 3) {
-	if (i + 3 >= points.length) break
-		contour.push({
-			type: PathType.CUBIC_BEZIER,
-			start: {
-				x: points[i].x,
-				y: points[i].y,
-			},
-			end: {
-				x: points[i + 3].x,
-				y: points[i + 3].y,
-			},
-			control1: {
-				x: points[i + 1].x,
-				y: points[i + 1].y,
-			},
-			control2: {
-				x: points[i + 2].x,
-				y: points[i + 2].y,
-			},
-			fill,
-		})
+		if (i + 3 >= points.length) break
+			contour.push({
+				type: PathType.CUBIC_BEZIER,
+				start: {
+					x: points[i].x,
+					y: points[i].y,
+				},
+				end: {
+					x: points[i + 3].x,
+					y: points[i + 3].y,
+				},
+				control1: {
+					x: points[i + 1].x,
+					y: points[i + 1].y,
+				},
+				control2: {
+					x: points[i + 2].x,
+					y: points[i + 2].y,
+				},
+				fill,
+			})
 	}
 	return contour
 }

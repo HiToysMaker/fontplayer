@@ -60,29 +60,36 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 				{ x: component.x + component.w / 2, y: component.y + component.h / 2 },
 				-component.rotation
 			)
-			if (selectedComponentUUID_glyph.value === component.uuid && inComponentBound({ x: _x, y: _y }, component) && component.visible) {
+			if (selectedComponentUUID_glyph.value === component.uuid && component.visible) {
 				const _points = transformPenPoints(selectedComponent_glyph.value, false)
-				_points.map((point: IPoint, index: number) => {
+				for (let i = 0; i < _points.length - 1; i++) {
+					const point = _points[i]
+					// 鼠标移动至point
 					if (distance(_x, _y, point.x, point.y) <= d) {
 						if (point.type === 'anchor') {
+							// 选择锚点
 							selectAnchor.value = point.uuid
 							selectPenPoint.value = point.uuid
 							return
 						} else if (selectAnchor.value) {
+							// 选择控制点
 							const _index: number = (() => {
-								for (let i = 0; i < _points.length; i++) {
-									if (_points[i].uuid === selectAnchor.value) {
-										return i
+								for (let j = 0; j < _points.length; j++) {
+									if (_points[j].uuid === selectAnchor.value) {
+										return j
 									}
 								}
 								return -1
 							})()
-							if (index <= _index + 4 && index >= _index - 4) {
+							if (i <= _index + 4 && i >= _index - 4) {
+								selectPenPoint.value = point.uuid
+							} else if (i === 1 && _index === _points.length - 1) {
+								// 最后一个锚点（和第一个锚点重合），第二个控制点为第一个锚点的第一个控制点
 								selectPenPoint.value = point.uuid
 							}
 						}
 					}
-				})
+				}
 				return
 			}
 			if (inComponentBound({ x: _x, y: _y }, component) && component.visible) {
@@ -106,39 +113,47 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 	} :
 	(e: MouseEvent) => {
 		mousedown = true
-		for (let i = orderedListWithItemsForCurrentCharacterFile.value.length - 1; i >= 0; i++) {
+		for (let i = orderedListWithItemsForCurrentCharacterFile.value.length - 1; i >= 0; i--) {
 			const component = orderedListWithItemsForCurrentCharacterFile.value[i]
 			const { x: _x, y: _y } = rotatePoint(
 				{ x: getCoord(e.offsetX), y: getCoord(e.offsetY) },
 				{ x: component.x + component.w / 2, y: component.y + component.h / 2 },
 				-component.rotation
 			)
-			if (selectedComponentUUID.value === component.uuid && inComponentBound({ x: _x, y: _y }, component) && component.visible) {
+			if (selectedComponentUUID.value === component.uuid && component.visible) {
 				const _points = transformPenPoints(selectedComponent.value, false)
-				_points.map((point: IPoint, index: number) => {
+				for (let i = 0; i < _points.length - 1; i++) {
+					const point = _points[i]
+					// 鼠标移动至point
 					if (distance(_x, _y, point.x, point.y) <= d) {
 						if (point.type === 'anchor') {
+							// 选择锚点
 							selectAnchor.value = point.uuid
 							selectPenPoint.value = point.uuid
 							return
 						} else if (selectAnchor.value) {
+							// 选择控制点
 							const _index: number = (() => {
-								for (let i = 0; i < _points.length; i++) {
-									if (_points[i].uuid === selectAnchor.value) {
-										return i
+								for (let j = 0; j < _points.length; j++) {
+									if (_points[j].uuid === selectAnchor.value) {
+										return j
 									}
 								}
 								return -1
 							})()
-							if (index <= _index + 4 && index >= _index - 4) {
+							if (i <= _index + 4 && i >= _index - 4) {
+								selectPenPoint.value = point.uuid
+							} else if (i === 1 && _index === _points.length - 1) {
+								// 最后一个锚点（和第一个锚点重合），第二个控制点为第一个锚点的第一个控制点
 								selectPenPoint.value = point.uuid
 							}
 						}
 					}
-				})
+				}
 				return
 			}
 			if (inComponentBound({ x: _x, y: _y }, component) && component.visible) {
+				// 选择钢笔路径组件
 				setSelectionForCurrentCharacterFile(component.uuid)
 				return
 			}
@@ -264,7 +279,7 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 
 	const onMouseUp = (e: MouseEvent) => {
 		const comp = glyph ? selectedComponent_glyph.value : selectedComponent.value
-		if (!comp.visible) return
+		if (!comp || !comp.visible) return
 		modifyComponentValue()
 		mousedown = false
 		selectControl.value = 'null'
@@ -272,7 +287,7 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 
 	const onEnter = (e: KeyboardEvent) => {
 		const comp = glyph ? selectedComponent_glyph.value : selectedComponent.value
-		if (!comp.visible) return
+		if (!comp || !comp.visible) return
 		modifyComponentValue()
 		if (!glyph) {
 			setSelectionForCurrentCharacterFile('')
@@ -360,6 +375,7 @@ const renderSelectPenEditor = (canvas: HTMLCanvasElement, d: number = 10, glyph:
 	const ctx: CanvasRenderingContext2D = canvas?.getContext('2d') as CanvasRenderingContext2D
 	const _points = transformPenPoints(glyph ? selectedComponent_glyph.value : selectedComponent.value, true)
 	const _map = listToMap(_points, 'uuid')
+	// index为selectAnchor对应的索引数值
 	const { index, pointType } = (() => {
 		for (let i = 0; i < _points.length; i++) {
 			if (_points[i].uuid === selectAnchor.value) {
@@ -386,7 +402,7 @@ const renderSelectPenEditor = (canvas: HTMLCanvasElement, d: number = 10, glyph:
 			}
 		}
 	} else {
-		for (let i = 0; i < _points.length; i++) {
+		for (let i = 0; i < _points.length - 1; i++) {
 			if (_points[i].type === 'anchor') {
 				ctx.beginPath()
 				ctx.ellipse(_points[i].x, _points[i].y, d, d, 0, 0, 2 * Math.PI);
@@ -404,9 +420,21 @@ const renderSelectPenEditor = (canvas: HTMLCanvasElement, d: number = 10, glyph:
 				ctx.stroke()
 				ctx.closePath()
 			}
+			if (index === _points.length - 1 && _points[i].type === 'control' && i === 1) {
+				// 最后一个锚点（和第一个锚点重合），第二个控制点为第一个锚点的第一个控制点
+				const originUUID = _points[i].origin as string
+				// @ts-ignore
+				const originAnchor: IPoint = _map[originUUID]
+				ctx.strokeRect(_points[i].x - d, _points[i].y - d, 2 * d, 2 * d)
+				ctx.beginPath()
+				ctx.moveTo(_points[i].x, _points[i].y)
+				ctx.lineTo(originAnchor.x, originAnchor.y)
+				ctx.stroke()
+				ctx.closePath()
+			}
 		}
 	}
-	for (let i = 0; i < _points.length; i++) {
+	for (let i = 0; i < _points.length - 1; i++) {
 		if (hoverPenPoint.value === _points[i].uuid) {
 			ctx.fillStyle = '#79bbff'
 			if (_points[i].type === 'anchor') {
