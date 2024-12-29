@@ -35,6 +35,8 @@
   import saveDialog from '../../fontEditor/components/Dialogs/SaveDialog.vue'
   import saveAsDialog from '../../fontEditor/components/Dialogs/SaveAsDialog.vue'
   import exportFileDialog from '../../fontEditor/components/Dialogs/ExportFileDialog.vue'
+  import exportFontDialog from '../../fontEditor/components/Dialogs/ExportFontDialog.vue'
+  import exportFontElectronDialog from '../../fontEditor/components/Dialogs/ExportFontDialog_electron.vue'
   import { editStatus, Status } from '../../fontEditor/stores/font'
   import { ENV } from '../../fontEditor/stores/system'
   import { loading, loaded, total } from '../../fontEditor/stores/global'
@@ -93,6 +95,8 @@
     <save-dialog></save-dialog>
     <save-as-dialog></save-as-dialog>
     <export-file-dialog></export-file-dialog>
+    <export-font-dialog></export-font-dialog>
+    <export-font-electron-dialog></export-font-electron-dialog>
     <div class="outer-wrapper"
       v-loading="loading"
       :element-loading-text="``"

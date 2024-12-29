@@ -92,10 +92,10 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 				}
 				return
 			}
-			if (inComponentBound({ x: _x, y: _y }, component) && component.visible) {
-				setSelectionForCurrentGlyph(component.uuid)
-				return
-			}
+			// if (inComponentBound({ x: _x, y: _y }, component) && component.visible) {
+			// 	setSelectionForCurrentGlyph(component.uuid)
+			// 	return
+			// }
 		}
 		if (!selectedComponent.value.visible) {
 			mousedown = false
@@ -152,11 +152,11 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 				}
 				return
 			}
-			if (inComponentBound({ x: _x, y: _y }, component) && component.visible) {
-				// 选择钢笔路径组件
-				setSelectionForCurrentCharacterFile(component.uuid)
-				return
-			}
+			// if (inComponentBound({ x: _x, y: _y }, component) && component.visible) {
+			// 	// 选择钢笔路径组件
+			// 	setSelectionForCurrentCharacterFile(component.uuid)
+			// 	return
+			// }
 		}
 		if (!selectedComponent.value.visible) return
 		const { x, y, w, h, rotation, uuid} = selectedComponent.value

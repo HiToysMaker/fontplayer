@@ -51,6 +51,9 @@ const menus = {
 			templates: '模板',
 			test1: '测试模板1',
 		},
+		tools: {
+			remove_overlap: '去除重叠',
+		},
   },
   en: {
 		app: 'FontPlayer',
@@ -103,6 +106,9 @@ const menus = {
 		templates: {
 			templates: 'Templates',
 			test1: 'TestTemplate1',
+		},
+		tools: {
+			remove_overlap: 'remove_overlap',
 		},
   },
 }

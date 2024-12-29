@@ -22,6 +22,7 @@ import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import { convertToPinyin } from 'tiny-pinyin'
 import { encoder } from './encode'
+import { loaded, total, loading } from '../fontEditor/stores/global'
 
 // font对象数据类型
 // font object data type
@@ -241,6 +242,12 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 	let ulUnicodeRange4 = 0
 
 	for (let i = 0; i < characters.length; i += 1) {
+		loaded.value++
+		if (loaded.value >= total.value) {
+			loading.value = false
+			loaded.value = 0
+			total.value = 0
+		}
 		const character = characters[i]
 		const unicode = character.unicode | 0
 

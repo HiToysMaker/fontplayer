@@ -20,6 +20,7 @@ class RectangleComponent {
 	public type: string = 'glyph-rectangle'
 	public usedInCharacter: boolean = true
 	public contour: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve> = []
+	public contour2: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve> = []
 	public preview: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve> = []
 
 	constructor (x: number, y: number, width: number, height: number) {
@@ -99,6 +100,17 @@ class RectangleComponent {
 
 		this.contour = contour
 		this.preview = preview_contour
+	}
+
+	public updateData2 = () => {
+		const points = getRectanglePoints(
+			this.width,
+			this.height,
+			this.x,
+			this.y,
+		)
+		const contour = genRectangleContour(points)
+		this.contour2 = contour
 	}
 }
 

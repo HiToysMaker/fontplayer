@@ -12,6 +12,11 @@ const dialogs = {
 			confirm: '确认',
 			cancel: '取消',
 		},
+		exportFontDialog: {
+			title: '导出字体库',
+			confirm: '确认',
+			cancel: '取消',
+		},
 		saveDialog: {
 			title: '保存工程',
 			confirm: '确认',
@@ -127,6 +132,11 @@ const dialogs = {
 		},
 		exportDialog: {
 			title: 'Export Project',
+			confirm: 'Confirm',
+			cancel: 'Cancel',
+		},
+		exportFontDialog: {
+			title: 'Export Font',
 			confirm: 'Confirm',
 			cancel: 'Cancel',
 		},

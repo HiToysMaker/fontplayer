@@ -9,8 +9,9 @@ import {
 	tipsDialogVisible,
 	setSaveFileTipDialogVisible,
 	setSaveDialogVisible,
-	setSaveAsDialogVisible,
 	setExportDialogVisible,
+	setExportFontElectronDialogVisible,
+	setExportFontDialogVisible,
 } from '../stores/dialogs'
 import {
 	files,
@@ -25,7 +26,6 @@ import {
 	ICharacterFile,
 	IFile,
 	setSelectedFileUUID,
-	updateFontSettings,
 	clearCharacterRenderList,
 	characterList,
 	generateCharacterTemplate,
@@ -37,20 +37,21 @@ import {
 import { canvas, fontRenderStyle, loaded, tips, total } from '../stores/global'
 import { saveAs } from 'file-saver'
 import * as R from 'ramda'
-import { genUUID, toUnicode } from '@/utils/string'
+import { genUUID, toUnicode } from '../../utils/string'
 import localForage from 'localforage'
 import { ElNotification } from 'element-plus'
 import { h } from 'vue'
-import { parseStrToSvg, parseSvgToComponents, componentsToSvg } from '@/features/svg'
+import { parseStrToSvg, parseSvgToComponents, componentsToSvg } from '../../features/svg'
 import JSZip from 'jszip'
-import { parse, create, toArrayBuffer } from '@/fontManager'
+import { parse, create, toArrayBuffer, PathType } from '../../fontManager'
 import type {
 	ILine,
 	ICubicBezierCurve,
 	IQuadraticBezierCurve,
-} from '@/fontManager'
+} from '../../fontManager'
 import {
 	componentsToContours,
+	componentsToContours2,
 } from '@/features/font'
 import { emitter } from '../Event/bus'
 import {
@@ -74,7 +75,7 @@ import { getBound, transformPoints } from '../../utils/math'
 import { fitCurve } from '../../features/fitCurve'
 import type { IPoint as IPenPoint, IPoint } from '../stores/pen'
 import { render } from '../canvas/canvas'
-import { ICustomGlyph, IGlyphComponent, addGlyph, addGlyphTemplate, clearGlyphRenderList, comp_glyphs, constantGlyphMap, constants, constantsMap, executeScript, getGlyphByName, glyphs, orderedListWithItemsForCurrentGlyph, radical_glyphs, stroke_glyphs } from '../stores/glyph'
+import { ICustomGlyph, IGlyphComponent, addComponentForCurrentGlyph, addGlyph, addGlyphTemplate, clearGlyphRenderList, comp_glyphs, constantGlyphMap, constants, constantsMap, editGlyph, executeScript, getGlyphByName, glyphs, orderedListWithItemsForCurrentGlyph, radical_glyphs, stroke_glyphs } from '../stores/glyph'
 import { ParametersMap } from '../programming/ParametersMap'
 import { Joint, linkComponentsForJoints } from '../programming/Joint'
 import router from '../../router'
@@ -83,6 +84,8 @@ import { loading } from '../stores/global'
 import { worker } from '../../main'
 import { WorkerEventType } from '../worker'
 import { CustomGlyph } from '../programming/CustomGlyph'
+import paper from 'paper'
+import { genPenComponent } from '../tools/pen'
 
 const plainGlyph = (glyph: ICustomGlyph) => {
 	const data: ICustomGlyph = {
@@ -420,11 +423,19 @@ const exportSVG_electron = async () => {
 	const filePath = await window.electronAPI._saveFile(data, fileName)
 }
 
-const exportFont_electron = async () => {
-	const font = createFont()
+const exportFont_electron = async (options: CreateFontOptions) => {
+	const font = createFont(options)
 	const buffer = new Uint8Array(toArrayBuffer(font) as ArrayBuffer)
 	//@ts-ignore
 	const filePath = await window.electronAPI._saveFile(buffer, `${selectedFile.value.name}.otf`)
+}
+
+const showExportFontDialog_electron = () => {
+	setExportFontElectronDialogVisible(true)
+}
+
+const showExportFontDialog = () => {
+	setExportFontDialogVisible(true)
 }
 
 const createFile = () => {
@@ -1081,7 +1092,11 @@ const exportSVG = () => {
 	saveAs(blob, `${editCharacterFile.value.character.text}.svg`)
 }
 
-const createFont = () => {
+interface CreateFontOptions {
+	remove_overlap?: boolean;
+}
+
+const createFont = (options?: CreateFontOptions) => {
 	const _width = selectedFile.value.width
 	const _height = selectedFile.value.height
 	const fontCharacters = [{
@@ -1100,20 +1115,29 @@ const createFont = () => {
 	// 	advanceWidth: Math.max(_width, _height),
 	// }
 
-	let testContours = null
 	let containSpace = false
 	const { unitsPerEm, ascender, descender } = selectedFile.value.fontSettings
 	for (let i = 0; i < selectedFile.value.characterList.length; i++) {
+		loaded.value++
+		if (loaded.value >= total.value) {
+			loading.value = false
+			loaded.value = 0
+			total.value = 0
+		}
 		const char: ICharacterFile = selectedFile.value.characterList[i]
-		const contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(
-			orderedListWithItemsForCharacterFile(char),
-			{
-				unitsPerEm,
-				descender,
-				advanceWidth: unitsPerEm,
-			}, {x: 0, y: 0}, false, false, false
-		)
-		if (!testContours) testContours = contours
+		let contours = [[]]
+		if (options && options.remove_overlap && char.overlap_removed_contours) {
+			contours = char.overlap_removed_contours
+		} else {
+			contours = componentsToContours(
+				orderedListWithItemsForCharacterFile(char),
+				{
+					unitsPerEm,
+					descender,
+					advanceWidth: unitsPerEm,
+				}, {x: 0, y: 0}, false, false, false
+			)
+		}
 		const { text, unicode } = char.character
 		fontCharacters.push({
 			name: text,
@@ -1165,8 +1189,8 @@ const createFont = () => {
 	return font
 }
 
-const exportFont = () => {
-	const font = createFont()
+const exportFont = (options: CreateFontOptions) => {
+	const font = createFont(options)
 	const dataView = new DataView(toArrayBuffer(font) as ArrayBuffer)
 	const blob = new Blob([dataView], {type: 'font/opentype'})
 	var zip = new JSZip()
@@ -1481,25 +1505,25 @@ const thumbnail = (data: string, img: HTMLImageElement, d: number) => {
 			const points = (contourComponent.value as unknown as IPenComponent).points
 			const beziers: Array<any> = fitCurve(points, maxError.value)
 			let penPoints: Array<IPenPoint> = []
+			if (!beziers.length) return
+			penPoints.push({
+				uuid: genUUID(),
+				x: beziers[0][0].x,
+				y: beziers[0][0].y,
+				type: 'anchor',
+				origin: null,
+				isShow: true,
+			})
 			beziers.map((bezier: Array<{ x: number, y: number }>, index) => {
-				const uuid1 = genUUID()
 				const uuid2 = genUUID()
 				const uuid3 = genUUID()
 				const uuid4 = genUUID()
-				penPoints.push({
-					uuid: uuid1,
-					x: bezier[0].x,
-					y: bezier[0].y,
-					type: 'anchor',
-					origin: null,
-					isShow: true,
-				})
 				penPoints.push({
 					uuid: uuid2,
 					x: bezier[1].x,
 					y: bezier[1].y,
 					type: 'control',
-					origin: uuid1,
+					origin: penPoints[penPoints.length - 1].uuid,
 					isShow: false,
 				})
 				penPoints.push({
@@ -1510,16 +1534,14 @@ const thumbnail = (data: string, img: HTMLImageElement, d: number) => {
 					origin: uuid4,
 					isShow: false,
 				})
-				if (index >= beziers.length - 1) {
-					penPoints.push({
-						uuid: uuid4,
-						x: bezier[3].x,
-						y: bezier[3].y,
-						type: 'anchor',
-						origin: null,
-						isShow: true,
-					})
-				}
+				penPoints.push({
+					uuid: uuid4,
+					x: bezier[3].x,
+					y: bezier[3].y,
+					type: 'anchor',
+					origin: null,
+					isShow: true,
+				})
 			})
 			const { x: penX, y: penY, w: penW, h: penH } = getBound(penPoints)
 			const curveComponent = R.clone(contourComponent)
@@ -1924,6 +1946,215 @@ const generateComponent = (data) => {
   return component
 }
 
+const computeOverlapRemovedContours = () => {
+	const {
+		unitsPerEm,
+		descender,
+	} = selectedFile.value.fontSettings
+	for (let m = 0; m < selectedFile.value.characterList.length; m++) {
+		loaded.value++
+		if (loaded.value >= total.value) {
+			loading.value = false
+			loaded.value = 0
+			total.value = 0
+		}
+		let char = selectedFile.value.characterList[m]
+		// 读取字符轮廓信息（已经将形状都转换成字体轮廓）
+		let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(orderedListWithItemsForCharacterFile(char), {
+			unitsPerEm,
+			descender,
+			advanceWidth: unitsPerEm,
+		}, { x: 0, y: 0 }, false, false, false)
+	
+		// 将轮廓转换成Path
+		let paths = []
+		for (let i = 0; i < contours.length; i++) {
+			const contour = contours[i]
+			let path = new paper.Path()
+			path.moveTo(new paper.Point(contour[0].start.x, contour[0].start.y))
+			for (let j = 0; j < contour.length; j++) {
+				const _path = contour[j]
+				if (_path.type === PathType.LINE) {
+					path.lineTo(new paper.Point((_path as unknown as ILine).end.x, (_path as unknown as ILine).end.y))
+				} else if (_path.type === PathType.CUBIC_BEZIER) {
+					path.cubicCurveTo(
+						new paper.Point(
+							(_path as unknown as ICubicBezierCurve).control1.x,
+							(_path as unknown as ICubicBezierCurve).control1.y,
+						),
+						new paper.Point(
+							(_path as unknown as ICubicBezierCurve).control2.x,
+							(_path as unknown as ICubicBezierCurve).control2.y,
+						),
+						new paper.Point(
+							(_path as unknown as ICubicBezierCurve).end.x,
+							(_path as unknown as ICubicBezierCurve).end.y,
+						)
+					)
+				}
+			}
+			paths.push(path)
+		}
+	
+		// 合并路径，去除重叠
+		let unitedPath = null
+		if (paths.length < 2) {
+			unitedPath = paths[1]
+		} else {
+			unitedPath = paths[0].unite(paths[1])
+			for (let i = 2; i < paths.length; i++) {
+				unitedPath = unitedPath.unite(paths[i]) 
+			}
+		}
+	
+		let overlap_removed_contours = []
+		for (let i = 0; i < unitedPath.children.length; i++) {
+			const paths = unitedPath.children[i]
+			if (!paths.curves.length) continue
+			const contour = []
+			for (let j = 0; j < paths.curves.length; j++) {
+				const curve = paths.curves[j]
+				const path = {
+					type: PathType.CUBIC_BEZIER,
+					start: { x: curve.points[0].x, y: curve.points[0].y },
+					control1: { x: curve.points[1].x, y: curve.points[1].y },
+					control2: { x: curve.points[2].x, y: curve.points[2].y },
+					end: { x: curve.points[3].x, y: curve.points[3].y },
+				}
+				contour.push(path)
+			}
+			overlap_removed_contours.push(contour)
+		}
+
+		char.overlap_removed_contours = overlap_removed_contours
+	}
+}
+
+const removeOverlap = () => {
+	let char = editCharacterFile.value
+	if (editStatus.value === Status.Glyph) {
+		char = editGlyph.value
+	}
+	// 读取字符轮廓信息（已经将形状都转换成字体轮廓）
+	const {
+		unitsPerEm,
+		descender,
+	} = selectedFile.value.fontSettings
+	let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours2(orderedListWithItemsForCharacterFile(char),
+		{ x: 0, y: 0 }, false
+	)
+	if (editStatus.value == Status.Glyph) {
+		contours = componentsToContours2(char._o.components,
+			{ x: 0, y: 0 }, true
+		)
+	}
+
+	// 将轮廓转换成Path
+	let paths = []
+	for (let i = 0; i < contours.length; i++) {
+		const contour = contours[i]
+		let path = new paper.Path()
+		path.moveTo(new paper.Point(contour[0].start.x, contour[0].start.y))
+		for (let j = 0; j < contour.length; j++) {
+			const _path = contour[j]
+			if (_path.type === PathType.LINE) {
+				path.lineTo(new paper.Point((_path as unknown as ILine).end.x, (_path as unknown as ILine).end.y))
+			} else if (_path.type === PathType.CUBIC_BEZIER) {
+				path.cubicCurveTo(
+					new paper.Point(
+						(_path as unknown as ICubicBezierCurve).control1.x,
+						(_path as unknown as ICubicBezierCurve).control1.y,
+					),
+					new paper.Point(
+						(_path as unknown as ICubicBezierCurve).control2.x,
+						(_path as unknown as ICubicBezierCurve).control2.y,
+					),
+					new paper.Point(
+						(_path as unknown as ICubicBezierCurve).end.x,
+						(_path as unknown as ICubicBezierCurve).end.y,
+					)
+				)
+			}
+		}
+		paths.push(path)
+	}
+
+	// 合并路径，去除重叠
+	let unitedPath = null
+	if (paths.length < 2) {
+		unitedPath = paths[1]
+	} else {
+		unitedPath = paths[0].unite(paths[1])
+		for (let i = 2; i < paths.length; i++) {
+			unitedPath = unitedPath.unite(paths[i]) 
+		}
+	}
+
+	let components = []
+	for (let i = 0; i < unitedPath.children.length; i++) {
+		const paths = unitedPath.children[i]
+		let points = []
+		if (!paths.curves.length) continue
+		points.push({
+			uuid: genUUID(),
+			type: 'anchor',
+			x: paths.curves[0].points[0].x,
+			y: paths.curves[0].points[0].y,
+			origin: null,
+			isShow: true,
+		})
+		for (let j = 0; j < paths.curves.length; j++) {
+			const curve = paths.curves[j]
+			const control1 = {
+				uuid: genUUID(),
+				type: 'control',
+				x: curve.points[1].x,
+				y: curve.points[1].y,
+				origin: points[points.length - 1].uuid,
+				isShow: true,
+			}
+			const uuid = genUUID()
+			const control2 = {
+				uuid: genUUID(),
+				type: 'control',
+				x: curve.points[2].x,
+				y: curve.points[2].y,
+				origin: uuid,
+				isShow: true,
+			}
+			const end = {
+				uuid: uuid,
+				type: 'anchor',
+				x: curve.points[3].x,
+				y: curve.points[3].y,
+				origin: null,
+				isShow: true,
+			}
+			points.push(control1, control2, end)
+		}
+		components.push(genPenComponent(points, true))
+	}
+	if (editStatus.value === Status.Edit) {
+		editCharacterFile.value.script = `function script_${editCharacterFile.value.uuid.replaceAll('-', '_')} (character, constants, FP) {\n\t//Todo something\n}`,
+		editCharacterFile.value.glyph_script = null
+		editCharacterFile.value.system_script = null
+		editCharacterFile.value.orderedList = []
+		editCharacterFile.value.components = []
+		for (let i = 0; i < components.length; i++) {
+			addComponentForCurrentCharacterFile(components[i])
+		}
+		emitter.emit('renderCharacter')
+	} else if (editStatus.value === Status.Glyph) {
+		editGlyph.value.script = `function script_${editGlyph.value.uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t//Todo something\n}`,
+		editGlyph.value.glyph_script = null
+		editGlyph.value.system_script = null
+		for (let i = 0; i < components.length; i++) {
+			addComponentForCurrentGlyph(components[i])
+		}
+		emitter.emit('renderGlyph')
+	}
+}
+
 const electron_handlers: IHandlerMap = {
 	'create-file': createFile,
 	'open-file': openFile_electron,
@@ -1940,7 +2171,7 @@ const electron_handlers: IHandlerMap = {
 	'import-glyphs': importGlyphs_electron,
 	'import-pic': importPic_electron,
 	'import-svg': importSVG_electron,
-	'export-font-file': exportFont_electron,
+	'export-font-file': showExportFontDialog_electron,
 	'export-glyphs': exportGlyphs_electron,
 	'export-jpeg': exportJPEG_electron,
 	'export-png': exportPNG_electron,
@@ -1951,6 +2182,7 @@ const electron_handlers: IHandlerMap = {
 	'preference-settings': preferenceSettings,
 	'language-settings': languageSettings,
 	'template-1': importTemplate1,
+	'remove_overlap': removeOverlap,
 }
 
 const web_handlers: IHandlerMap = {
@@ -1971,7 +2203,7 @@ const web_handlers: IHandlerMap = {
 	'import-glyphs': importGlyphs,
 	'import-pic': importPic,
 	'import-svg': importSVG,
-	'export-font-file': exportFont,
+	'export-font-file': showExportFontDialog,
 	'export-glyphs': exportGlyphs,
 	'export-jpeg': exportJPEG,
 	'export-png': exportPNG,
@@ -1982,6 +2214,7 @@ const web_handlers: IHandlerMap = {
 	'preference-settings': preferenceSettings,
 	'language-settings': languageSettings,
 	'template-1': importTemplate1,
+	'remove_overlap': removeOverlap,
 }
 
 interface IHandlerMap {
@@ -2001,4 +2234,7 @@ export {
 	mapToObject,
 	importTemplate1,
 	importFont,
+	exportFont,
+	exportFont_electron,
+	computeOverlapRemovedContours,
 }

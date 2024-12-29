@@ -6,7 +6,7 @@ import router from './router'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 // import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-import { Files, Edit, Upload, Download, Tickets, Setting, List } from '@element-plus/icons-vue'
+import { Files, Edit, Upload, Download, Tickets, Setting, List, Tools } from '@element-plus/icons-vue'
 
 import { i18n } from './i18n'
 
@@ -58,26 +58,36 @@ import { initWorker } from './fontEditor/worker'
 import localForage from 'localforage'
 
 self.MonacoEnvironment = {
+	// getWorker: function (workerId, label) {
+	// 	switch (label) {
+	// 		case 'json':
+	// 			//@ts-ignore
+	// 			return jsonWorker();
+	// 		case 'css':
+	// 			//@ts-ignore
+	// 			return cssWorker();
+	// 		case 'scss':
+	// 			//@ts-ignore
+	// 			return cssWorker();
+	// 		case 'less':
+	// 			//@ts-ignore
+	// 			return cssWorker();
+	// 		case 'html':
+	// 			//@ts-ignore
+	// 			return htmlWorker();
+	// 		case 'typescript':
+	// 			//@ts-ignore
+	// 			return tsWorker();
+	// 		case 'javascript':
+	// 			//@ts-ignore
+	// 			return tsWorker();
+	// 		default:
+	// 			//@ts-ignore
+	// 			return editorWorker();
+	// 	}
+	// }
 	getWorker: function (workerId, label) {
 		switch (label) {
-			case 'json':
-				//@ts-ignore
-				return jsonWorker();
-			case 'css':
-				//@ts-ignore
-				return cssWorker();
-			case 'scss':
-				//@ts-ignore
-				return cssWorker();
-			case 'less':
-				//@ts-ignore
-				return cssWorker();
-			case 'html':
-				//@ts-ignore
-				return htmlWorker();
-			case 'typescript':
-				//@ts-ignore
-				return tsWorker();
 			case 'javascript':
 				//@ts-ignore
 				return tsWorker();
@@ -183,6 +193,7 @@ app.component('Download', Download)
 app.component('Tickets', Tickets)
 app.component('Setting', Setting)
 app.component('List', List)
+app.component('Tools', Tools)
 app.use(router)
 app.use(i18n)
 

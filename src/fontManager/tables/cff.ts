@@ -4,6 +4,7 @@ import { PathType } from '../character'
 import { encoder } from '../encode'
 import * as decode from '../decode'
 import * as R from 'ramda'
+import { loaded, total, loading } from '../../fontEditor/stores/global'
 
 // cff表格式
 // cff table format
@@ -2276,6 +2277,12 @@ const create = (_table: ICffTable) => {
 	// create charstrings data
 	const charStringsIndexRawData = []
 	for (let i = 0; i < glyphTables.length; i++) {
+		loaded.value++
+		if (loaded.value >= total.value) {
+			loading.value = false
+			loaded.value = 0
+			total.value = 0
+		}
 		const glyph = glyphTables[i]
 		const ops = glyphToOps(glyph)
 		charStringsIndexRawData.push({type: 'CharString', value: ops})
