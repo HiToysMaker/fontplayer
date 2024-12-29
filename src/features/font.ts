@@ -481,6 +481,137 @@ const componentsToContours = (components: Array<_Component>, options: {
 	return contours
 }
 
+const componentsToContours2 = (components: Array<_Component>, offset: {
+	x: number,
+	y: number,
+} = { x: 0, y: 0 }, isGlyph: boolean = false) => {
+	let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = []
+	components.map((component) => {
+		if (!component.usedInCharacter) return
+		let { x, y, w, h, rotation, flipX, flipY } = component as IComponent
+		switch (component.type) {
+			case 'pen': {
+				let transformed_points = transformPoints(((component as Component).value as unknown as IPenComponent).points, {
+					x, y, w, h, rotation, flipX, flipY,
+				})
+				const contour = genPenContour(transformed_points);
+				contours.push(contour)
+				break
+			}
+			case 'polygon': {
+				let transformed_points = transformPoints(((component as Component).value as unknown as IPolygonComponent).points, {
+					x, y, w, h, rotation, flipX, flipY,
+				})
+				const contour = genPolygonContour(transformed_points)
+				contours.push(contour)
+				break
+			}
+			case 'rectangle': {
+				const rect = (component as Component).value as unknown as IRectangleComponent
+				let transformed_points = transformPoints(getRectanglePoints(
+					rect.width,
+					rect.height,
+					(component as IComponent).x,
+					(component as IComponent).y,
+				), {
+					x, y, w, h, rotation, flipX, flipY,
+				})
+				const contour = genRectangleContour(transformed_points)
+				contours.push(contour)
+				break
+			}
+			case 'ellipse': {
+				const ellipse = (component as Component).value as unknown as IEllipseComponent
+				let points = getEllipsePoints(
+					ellipse.radiusX,
+					ellipse.radiusY,
+					1000,
+					(component as IComponent).x + ellipse.radiusX,
+					(component as IComponent).y + ellipse.radiusY,
+				)
+				const transformed_points = transformPoints(points, {
+					x, y, w, h, rotation, flipX, flipY,
+				})
+				const contour = genEllipseContour(transformed_points)
+				contours.push(contour)
+				break
+			}
+			case 'glyph-pen': {
+				(component as PenComponent).updateData2()
+				contours.push((component as PenComponent).contour2)
+				break
+			}
+			case 'glyph-polygon': {
+				(component as PolygonComponent).updateData2()
+				contours.push((component as PolygonComponent).contour2)
+				break
+			}
+			case 'glyph-rectangle': {
+				(component as RectangleComponent).updateData2()
+				contours.push((component as RectangleComponent).contour)
+				break
+			}
+			case 'glyph-ellipse': {
+				(component as EllipseComponent).updateData2()
+				contours.push((component as EllipseComponent).contour)
+				break
+			}
+			case 'glyph': {
+				const { ox, oy } = component as IGlyphComponent
+				const glyph = (component as Component).value as unknown as ICustomGlyph
+				if (!glyph._o) {
+					executeScript(glyph)
+					glyph._o.getJoints().map((joint) => {
+						joint.component = component as IGlyphComponent
+					})
+				}
+				// executeScript(glyph)
+				const contours1 = componentsToContours2(glyph._o.components, { x: ox, y: oy }, isGlyph)
+				contours = contours.concat(contours1)
+				break
+			}
+			default: {
+				const contour: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve> = []
+				contours.push(contour)
+				break
+			}
+		}
+	})
+	if (offset.x || offset.y) {
+		const scale = 1
+		contours = R.clone(contours)
+		for (let i = 0; i < contours.length; i++) {
+			const contour = contours[i]
+			for (let j = 0; j < contour.length; j++) {
+				const path = contour[j]
+				if (path.type === PathType.LINE) {
+					path.start.x += offset.x * scale
+					path.start.y -= offset.y * scale
+					path.end.x += offset.x * scale
+					path.end.y -= offset.y * scale
+				} else if (path.type === PathType.QUADRATIC_BEZIER) {
+					path.start.x += offset.x * scale
+					path.start.y -= offset.y * scale
+					path.end.x += offset.x * scale
+					path.end.y -= offset.y * scale
+					path.control.x += offset.x * scale
+					path.control.y -= offset.y * scale
+				} else if (path.type === PathType.CUBIC_BEZIER) {
+					path.start.x += offset.x * scale
+					path.start.y -= offset.y * scale
+					path.end.x += offset.x * scale
+					path.end.y -= offset.y * scale
+					path.control1.x += offset.x * scale
+					path.control1.y -= offset.y * scale
+					path.control2.x += offset.x * scale
+					path.control2.y -= offset.y * scale
+				}
+		  }
+		}
+	}
+	return contours
+}
+
 const genEllipseContour = (points) => {
 	const contour: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve> = []
 	let curves = fitCurve(points, 2)
@@ -579,6 +710,7 @@ export {
 	contoursToComponents,
 	formatPoints,
 	componentsToContours,
+	componentsToContours2,
 	genPenContour,
 	genPolygonContour,
 	genEllipseContour,

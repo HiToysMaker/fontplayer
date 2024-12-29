@@ -308,7 +308,7 @@ const contoursToComponents = (contours: Array<Array<ILine | IQuadraticBezierCurv
 				x: points[0].x,
 				y: points[0].y,
 				type: 'anchor',
-				origin: points[0].uuid,
+				origin: null,
 				isShow: true,
 			})
 		}

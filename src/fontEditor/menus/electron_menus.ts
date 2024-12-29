@@ -299,6 +299,19 @@ const electron_menu: Array<IMenu> = [
 			},
 		]
 	},
+	{
+		label: t('menus.tools.tools'),
+		key: 'tools',
+		submenu: [
+			{
+				label: t('menus.tools.remove_overlap'),
+				click: (mainWindow: typeof BrowserWindow) => {
+					mainWindow.webContents.send('remove_overlap')
+				},
+				key: 'remove_overlap',
+			},
+		]
+	},
 ]
 
 interface ILabelsMap {

@@ -147,6 +147,20 @@ const setSaveAsDialogVisible = (visible: boolean) => {
 	saveAsDialogVisible.value = visible
 }
 
+// 导出字体窗口
+// dialog for export font
+const exportFontDialogVisible: Ref<boolean> = ref(false)
+const setExportFontDialogVisible = (visible: boolean) => {
+	exportFontDialogVisible.value = visible
+}
+
+// electron导出字体窗口
+// dialog for export font for electron
+const exportFontElectronDialogVisible: Ref<boolean> = ref(false)
+const setExportFontElectronDialogVisible = (visible: boolean) => {
+	exportFontElectronDialogVisible.value = visible
+}
+
 const copiedGlyphUUID: Ref<string> = ref('')
 const copiedCharacterUUID: Ref<string> = ref('')
 const editedGlyphUUID: Ref<string> = ref('')
@@ -202,4 +216,8 @@ export {
 	setSaveDialogVisible,
 	saveAsDialogVisible,
 	setSaveAsDialogVisible,
+	exportFontDialogVisible,
+	setExportFontDialogVisible,
+	exportFontElectronDialogVisible,
+	setExportFontElectronDialogVisible,
 }

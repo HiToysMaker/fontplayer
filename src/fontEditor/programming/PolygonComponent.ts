@@ -19,6 +19,7 @@ class PolygonComponent {
 	private hasPathBegan: Boolean = false
 	public usedInCharacter: boolean = true
 	public contour: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve> = []
+	public contour2: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve> = []
 	public preview: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve> = []
 
 	public constructor () {
@@ -120,6 +121,12 @@ class PolygonComponent {
 
 		this.contour = contour
 		this.preview = preview_contour
+	}
+
+	public updateData2 = () => {
+		const points = this.points
+		const contour = genPolygonContour(points)
+		this.contour2 = contour
 	}
 }
 

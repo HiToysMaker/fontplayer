@@ -85,6 +85,7 @@ export interface ICharacterFile {
 	};
 	_o?: Character;
 	objData?: any;
+	overlap_removed_contours?: any;
 }
 
 // 字符信息

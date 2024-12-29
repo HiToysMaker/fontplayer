@@ -251,6 +251,19 @@ const web_menu: Array<IMenu> = [
 			},
 		]
 	},
+	{
+		label: tm('menus.tools.tools'),
+		key: 'tools',
+		submenu: [
+			{
+				label: tm('menus.tools.remove_overlap'),
+				key: 'remove_overlap',
+				click: (handlers: IHandlerMap) => {
+					handlers['remove_overlap']()
+				}
+			},
+		]
+	}
 ]
 
 const traverse_web_menu = (handlers: IHandlerMap, menu: Array<IMenu>) => {

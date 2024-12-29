@@ -20,6 +20,7 @@ class EllipseComponent {
 	public type: string = 'glyph-ellipse'
 	public usedInCharacter: boolean = true
 	public contour: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve> = []
+	public contour2: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve> = []
 	public preview: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve> = []
 
 	constructor (centerX: number, centerY: number, radiusX: number, radiusY: number) {
@@ -99,6 +100,18 @@ class EllipseComponent {
 
 		this.contour = contour
 		this.preview = preview_contour
+	}
+
+	public updateData2 = () => {
+		const points = getEllipsePoints(
+			this.radiusX,
+			this.radiusY,
+			1000,
+			this.centerX,
+			this.centerY,
+		)
+		const contour = genEllipseContour(points)
+		this.contour2 = contour
 	}
 }
 

@@ -161,6 +161,7 @@ const electron_disabled: IDisabledMap = {
   'preference-settings': enable,
   'language-settings': enable,
   'template-1': TemplateEnable,
+  'remove_overlap': enableAtEdit,
 }
 
 const handleToggleMenuDisabled = (event: typeof IpcMainEvent, editStatus: Status) => {

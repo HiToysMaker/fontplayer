@@ -7,6 +7,8 @@ import copyPlugin from 'rollup-plugin-copy'
 
 import electron from 'vite-plugin-electron/simple'
 
+import { visualizer } from 'rollup-plugin-visualizer'
+
 const isElectron = process.env.ELECTRON === 'true'
 
 // https://vitejs.dev/config/
@@ -22,6 +24,9 @@ export default defineConfig({
         input: 'src/fontEditor/main/preload.ts',
       },
     }),
+    visualizer({
+      open: true,
+    })
   ].filter(Boolean),
   resolve: {
     alias: {

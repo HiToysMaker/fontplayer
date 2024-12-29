@@ -74,6 +74,7 @@
     'preference-settings': enable,
     'language-settings': enable,
     'template-1': TemplateEnable,
+    'remove_overlap': enableAtEdit,
 	}
 
 	const web_menu_icons: IIconsMap = {
@@ -84,6 +85,7 @@
     'character': app.component('Tickets'),
 		'settings': app.component('Setting'),
     'templates': app.component('List'),
+    'tools': app.component('Tools'),
 	}
 
 	const _menus = traverse_web_menu(web_handlers, web_menu)
