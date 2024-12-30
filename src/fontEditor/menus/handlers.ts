@@ -1995,7 +1995,7 @@ const computeOverlapRemovedContours = () => {
 			}
 			paths.push(path)
 		}
-	
+
 		// 合并路径，去除重叠
 		let unitedPath = null
 		if (paths.length < 2) {
@@ -2007,6 +2007,7 @@ const computeOverlapRemovedContours = () => {
 			}
 		}
 	
+		// 根据合并路径生成轮廓数据
 		let overlap_removed_contours = []
 		for (let i = 0; i < unitedPath.children.length; i++) {
 			const paths = unitedPath.children[i]
