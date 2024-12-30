@@ -352,7 +352,7 @@
   watch([
     onPenEditMode,
   ], () => {
-    if (!onPenEditMode && closeTool) {
+    if (closeTool) {
       closeTool()
     }
     if (!!onPenEditMode) {
