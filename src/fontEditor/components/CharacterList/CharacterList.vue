@@ -39,54 +39,41 @@
 		let i = 0
 
 		const render = () => {
+			// i 超过 length，渲染完毕
 			if (i >= characters.length) return
+			// 渲染第i个字符
 			const characterFile = characters[i]
 			if (!characterFile._o) {
+				// 执行字符脚本
 				executeCharacterScript(characterFile)
 			}
+			// 获取字符预览canvas
 			const canvas: HTMLCanvasElement = document.getElementById(`preview-canvas-${characterFile.uuid}`) as HTMLCanvasElement
 			if (!canvas) return
-			//renderPreview(characterFile, canvas)
+			// 将字符数据处理成预览模式
 			const contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(orderedListWithItemsForCharacterFile(characterFile), {
 				unitsPerEm,
 				descender,
 				advanceWidth: unitsPerEm,
 			}, { x: 0, y: 0 }, false, true)
+			// 渲染字符
 			renderPreview2(canvas, contours)
+			// 更新进度条
 			if (loading.value) {
 				loaded.value += 1
 				if (loaded.value >= total.value) {
 					loading.value = false
 				}
 			}
+			// i递增
 			i++
+			// 如果没有渲染完毕，调用requestAnimationFrame对下一个字符渲染进行回调
 			if (i < characters.length) {
 				requestAnimationFrame(render)
 			}
 		}
+		// 调用requestAnimationFrame渲染第一个字符
 		requestAnimationFrame(render)
-		//for (let i = 0; i < characters.length; i++) {
-		//	const characterFile = characters[i]
-		//	if (!characterFile._o) {
-		//		executeCharacterScript(characterFile)
-		//	}
-		//	const canvas: HTMLCanvasElement = document.getElementById(`preview-canvas-${characterFile.uuid}`) as HTMLCanvasElement
-		//	if (!canvas) return
-		//	//renderPreview(characterFile, canvas)
-		//	const contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(orderedListWithItemsForCharacterFile(characterFile), {
-		//		unitsPerEm,
-		//		descender,
-		//		advanceWidth: unitsPerEm,
-		//	}, { x: 0, y: 0 }, false, true)
-		//	renderPreview2(canvas, contours)
-		//	if (loading.value) {
-		//		loaded.value += 1
-		//		if (loaded.value >= total.value) {
-		//			loading.value = false
-		//		}
-		//	}
-		//}
-		//loading.value = false
 	}
 
 	// 渲染指定uuid的字符预览

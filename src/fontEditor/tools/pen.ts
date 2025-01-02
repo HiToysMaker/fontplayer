@@ -52,6 +52,10 @@ const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 				index: 0,
 			}
 			setPoints([_anchor, _control])
+			editAnchor = {
+				uuid: points.value[0].uuid,
+				index: 0,
+			}
 			canvas.addEventListener('mousemove', onMouseMove)
 		} else {
 			editAnchor = {
@@ -67,31 +71,26 @@ const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 		if (mousedown) {
 			_points[_controlIndex] = _lastControl
 			// 长按鼠标
-			if (editAnchor.index === 3) {
-				// 第二个锚点
-				let _anchor1 = _points[0]
-				let _control11 = _points[1]
-				let _control21 = _points[2]
-				let _anchor2 = _points[3]
-				let _control22 = _points[4]
-				_control22.x = getCoord(e.offsetX)
-				_control22.y = getCoord(e.offsetY)
-				_control22.isShow = true
-				_control21.x = _anchor2.x - (getCoord(e.offsetX) - _anchor2.x) * (1 - controlScale)
-				_control21.y = _anchor2.y - (getCoord(e.offsetY) - _anchor2.y) * (1 - controlScale)
-				_control21.isShow = true
-				_control11.x = _anchor1.x + (_anchor2.x - (getCoord(e.offsetX) - _anchor2.x) - _anchor1.x) * controlScale
-				_control11.y = _anchor1.y + (_anchor2.y - (getCoord(e.offsetY) - _anchor2.y) - _anchor1.y) * controlScale
-			} else if (editAnchor.index > 3) {
+			if (editAnchor.index === 0) {
+				//第一个锚点
+				let _anchor = _points[editAnchor.index]
+				let _control = _points[editAnchor.index + 1]
+				//将第一个锚点对应的控制点设置为鼠标移动位置
+				_control.x = getCoord(e.offsetX)
+				_control.y = getCoord(e.offsetY)
+				_control.isShow = true
+			} else {
 				// 后续锚点
 				let _anchor = _points[editAnchor.index]
 				let _control1 = _points[editAnchor.index - 1]
 				let _control2 = _points[editAnchor.index + 1]
+				//将锚点对应的后续控制点设置为鼠标移动位置
 				_control2.x = getCoord(e.offsetX)
 				_control2.y = getCoord(e.offsetY)
 				_control2.isShow = true
-				_control1.x = _anchor.x - (getCoord(e.offsetX) - _anchor.x) * (1 - controlScale)
-				_control1.y = _anchor.y - (getCoord(e.offsetY) - _anchor.y) * (1 - controlScale)
+				//将锚点对应的前接控制点设置为与后续控制点对称的位置
+				_control1.x = _anchor.x - (getCoord(e.offsetX) - _anchor.x)
+				_control1.y = _anchor.y - (getCoord(e.offsetY) - _anchor.y)
 				_control1.isShow = true
 			}
 			mousemove = true
@@ -102,8 +101,6 @@ const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 				// 第一次移动鼠标
 				_lastControl = Object.assign({}, _points[_points.length - 1])
 				_controlIndex = _points.length - 1
-				_points[_points.length - 1].x = _points[_points.length - 2].x
-				_points[_points.length - 1].y = _points[_points.length - 2].y
 				const _anchor = {
 					uuid: genUUID(),
 					type: 'anchor',
@@ -115,8 +112,6 @@ const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 				const _control1 = {
 					uuid: genUUID(),
 					type: 'control',
-					// x: _anchor.x + (_lastControl.x - _anchor.x) * (1 - controlScale),
-					// y: _anchor.y + (_lastControl.y - _anchor.y) * (1 - controlScale),
 					x: _anchor.x,
 					y: _anchor.y,
 					origin: _anchor.uuid,
@@ -125,8 +120,6 @@ const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 				const _control2 = {
 					uuid: genUUID(),
 					type: 'control',
-					// x: _anchor.x - (_lastControl.x - _anchor.x),
-					// y: _anchor.y - (_lastControl.y - _anchor.y),
 					x: _anchor.x,
 					y: _anchor.y,
 					origin: _anchor.uuid,
@@ -144,19 +137,18 @@ const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 				_anchor.x = getCoord(e.offsetX)
 				_anchor.y = getCoord(e.offsetY)
 				closePath = false
+				// 当鼠标移动至第一个锚点所在位置附近时，自动闭合路径
 				if (isNearPoint(getCoord(e.offsetX), getCoord(e.offsetY), points.value[0].x, points.value[0].y, nearD)) {
+					// 将最后一个锚点位置设置为第一个锚点位置
 					_anchor.x = points.value[0].x
 					_anchor.y = points.value[0].y
+					// 自动延切线与第一条贝塞尔曲线进行连接
+					_control2.x = points.value[1].x
+					_control2.y = points.value[1].y
+					_control1.x = points.value[0].x - (points.value[1].x - points.value[0].x)
+					_control1.y = points.value[0].y - (points.value[1].y - points.value[0].y)
 					closePath = true
 				}
-				// _control1.x = _anchor.x + (_lastControl.x - _anchor.x) * (1 - controlScale)
-				// _control1.y = _anchor.y + (_lastControl.y - _anchor.y) * (1 - controlScale)
-				// _control2.x = _anchor.x - (_lastControl.x - _anchor.x)
-				// _control2.y = _anchor.y - (_lastControl.y - _anchor.y)
-				_control1.x = _anchor.x
-				_control1.y = _anchor.y
-				_control2.x = _anchor.x
-				_control2.y = _anchor.y
 				setPoints(_points)
 				mousemove = true
 			}
