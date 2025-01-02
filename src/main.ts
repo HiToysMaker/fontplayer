@@ -41,9 +41,9 @@ import {
 
 import { initGlyphEnvironment } from './fontEditor/stores/glyph'
 
-import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
-import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker'
-import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
+// import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
+// import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker'
+// import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
 
@@ -88,6 +88,9 @@ self.MonacoEnvironment = {
 	// }
 	getWorker: function (workerId, label) {
 		switch (label) {
+			case 'typescript':
+				//@ts-ignore
+				return tsWorker();
 			case 'javascript':
 				//@ts-ignore
 				return tsWorker();
