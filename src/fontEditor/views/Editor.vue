@@ -36,7 +36,7 @@
   import saveAsDialog from '../../fontEditor/components/Dialogs/SaveAsDialog.vue'
   import exportFileDialog from '../../fontEditor/components/Dialogs/ExportFileDialog.vue'
   import exportFontDialog from '../../fontEditor/components/Dialogs/ExportFontDialog.vue'
-  import exportFontElectronDialog from '../../fontEditor/components/Dialogs/ExportFontDialog_electron.vue'
+  import exportFontTauriDialog from '../components/Dialogs/ExportFontDialog_tauri.vue'
   import { editStatus, Status } from '../../fontEditor/stores/font'
   import { ENV } from '../../fontEditor/stores/system'
   import { loading, loaded, total } from '../../fontEditor/stores/global'
@@ -96,7 +96,7 @@
     <save-as-dialog></save-as-dialog>
     <export-file-dialog></export-file-dialog>
     <export-font-dialog></export-font-dialog>
-    <export-font-electron-dialog></export-font-electron-dialog>
+    <export-font-tauri-dialog></export-font-tauri-dialog>
     <div class="outer-wrapper"
       v-loading="loading"
       :element-loading-text="``"
@@ -113,8 +113,8 @@
         <div>{{ `加载中，请稍候……已加载${Math.round(loaded / total * 100)}%` }}</div>
       </div>
       <div class="side-bar-wrap" :style="{
-        flex: ENV === 'web' ? '0 0 36px': '0 0 0px',
-        borderRight: ENV === 'web' ? '1px solid var(--primary-2)': 'none'
+        flex: ENV === 'web' ? '0 0 36px': '0 0 36px',
+        borderRight: ENV === 'web' ? '1px solid var(--primary-2)': '1px solid var(--primary-2)'
       }">
         <side-bar></side-bar>
       </div>

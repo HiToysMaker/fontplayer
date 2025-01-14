@@ -15,6 +15,9 @@
   import { emitter } from '../../Event/bus'
   import { ENV } from '../../stores/system'
   import { Grid } from '@element-plus/icons-vue'
+  import { WebviewWindow } from "@tauri-apps/api/webviewWindow"
+  import { emit, listen } from '@tauri-apps/api/event'
+  import { onMounted, onUnmounted } from 'vue'
 
   // 切换工具
   // switch tool
@@ -52,32 +55,119 @@
   // const base = '/fontplayer_demo'
   const base = ''
 
-  const showProgrammingWindow = () => {
-    if (editStatus.value === Status.Edit) {
-      window.__constants = constants.value
-      window.__script = editCharacterFile.value.script
-      window.__is_web = ENV.value === 'web'
-      window.addEventListener('message', onReceiveMessage)
-      char_window = window.open(
-        // `${location.origin}${base}/#/character-programming-editor`,
-        `${location.origin}${location.pathname}#/character-programming-editor`,
-        'character',
-        `popup,width=${screen.width * 0.8},height=${screen.width * 0.8 * 0.6},left=${screen.width * 0.1}`,
-      )
-    } else if (editStatus.value === Status.Glyph) {
-      window.__constants = constants.value
-      window.__parameters = editGlyph.value.parameters.parameters
-      window.__script = editGlyph.value.script
-      window.__is_web = ENV.value === 'web'
-      window.addEventListener('message', onReceiveMessage)
-      glyph_window = window.open(
-        // `${location.origin}${base}/#/glyph-programming-editor`,
-        `${location.origin}${location.pathname}#/glyph-programming-editor`,
-        'custom-glyph',
-        `popup,width=${screen.width * 0.8},height=${screen.width * 0.8 * 0.6},left=${screen.width * 0.1}`,
-      )
+  const showProgrammingWindow = async () => {
+    if (ENV.value === 'web') {
+      if (editStatus.value === Status.Edit) {
+        window.__constants = constants.value
+        window.__script = editCharacterFile.value.script
+        window.__is_web = ENV.value === 'web'
+        window.addEventListener('message', onReceiveMessage)
+        char_window = window.open(
+          // `${location.origin}${base}/#/character-programming-editor`,
+          `${location.origin}${location.pathname}#/character-programming-editor`,
+          'character',
+          `popup,width=${1280},height=${800},left=${(screen.width - 1280) / 2}`,
+        )
+      } else if (editStatus.value === Status.Glyph) {
+        window.__constants = constants.value
+        window.__parameters = editGlyph.value.parameters.parameters
+        window.__script = editGlyph.value.script
+        window.__is_web = ENV.value === 'web'
+        window.addEventListener('message', onReceiveMessage)
+        glyph_window = window.open(
+          // `${location.origin}${base}/#/glyph-programming-editor`,
+          `${location.origin}${location.pathname}#/glyph-programming-editor`,
+          'custom-glyph',
+          `popup,width=${1280},height=${800},left=${(screen.width - 1280) / 2}`,
+        )
+      }
+    } else if (ENV.value === 'tauri') {
+      if (editStatus.value === Status.Edit) {
+        const windowOptions = {
+          url: `${location.origin}${location.pathname}#/character-programming-editor`,
+          width: 1280,
+          height: 800,
+          x: (screen.width - 1280) / 2,
+          y: (screen.height - 800) / 2,
+          //devtools: true,
+        }
+        const webview = new WebviewWindow('character-script', windowOptions)
+        webview.once('tauri://created', async () => {
+          console.log('webview created')
+        })
+        webview.once('tauri://error', function (e) {
+          console.log('error creating webview', e)
+        })
+      } else if (editStatus.value === Status.Glyph) {
+        const windowOptions = {
+          url: `${location.origin}${location.pathname}#/glyph-programming-editor`,
+          width: 1280,
+          height: 800,
+          x: (screen.width - 1280) / 2,
+          y: (screen.height - 800) / 2,
+          //devtools: true,
+        }
+        const webview = new WebviewWindow('glyph-script', windowOptions)
+        webview.once('tauri://created', async () => {
+          console.log('webview created')
+        })
+        webview.once('tauri://error', function (e) {
+          console.log('error creating webview', e)
+        })
+      }
     }
   }
+
+  let unlisten1 = null
+  let unlisten2 = null
+  let unlisten3 = null
+
+  onMounted(() => {
+    unlisten1 = listen('on-webview-mounted', async (e) => {
+      if (editStatus.value === Status.Edit) {
+        await emit('init-data', {
+          __constants: constants.value,
+          __script: editCharacterFile.value.script,
+          __isWeb: ENV.value === 'web'
+        })
+      } else if (editStatus.value === Status.Glyph) {
+        await emit('init-data', {
+          __constants: constants.value,
+          __parameters: editGlyph.value.parameters.parameters,
+          __script: editGlyph.value.script,
+          __isWeb: ENV.value === 'web'
+        })
+      }
+    })
+    unlisten2 = listen('sync-info', async (e) => {
+      const { __constants, __parameters, __script } = e.payload as any
+      if (editStatus.value === Status.Glyph) {
+        editGlyph.value.parameters.parameters = __parameters
+        constants.value = __constants
+        editGlyph.value.script = __script
+      } else if (editStatus.value === Status.Edit) {
+        constants.value = __constants
+        editCharacterFile.value.script = __script
+      }
+    })
+    unlisten3 = listen('execute-script', async (e) => {
+      if (editStatus.value === Status.Glyph) {
+        executeScript(editGlyph.value)
+        emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
+        emitter.emit('renderGlyph', true)
+      } else if (editStatus.value === Status.Edit) {
+        executeCharacterScript(editCharacterFile.value)
+        emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
+        emitter.emit('renderCharacter', true)
+      }
+    })
+  })
+
+  onUnmounted(() => {
+    unlisten1 && unlisten1()
+    unlisten2 && unlisten2()
+    unlisten3 && unlisten3()
+  })
 
   const onReceiveMessage = (e: MessageEvent) => {
     if (e.data === 'sync-info') {
@@ -99,19 +189,6 @@
         emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
         emitter.emit('renderCharacter', true)
       }
-    } else if (e.data === 'copy' && ENV.value === 'electron') {
-      const text = localStorage.getItem('clipboard')
-      // 复制到剪贴板
-			window.electronAPI.copyToClipboard(text)
-    } else if (e.data === 'paste' && ENV.value === 'electron') {
-      window.electronAPI.pasteFromClipboard().then((text) => {
-        localStorage.setItem('clipboard', text)
-        if (editStatus.value === Status.Edit) {
-          char_window && char_window.postMessage('paste-ready', location.origin)
-        } else if (editStatus.value === Status.Glyph) {
-          glyph_window && glyph_window.postMessage('paste-ready', location.origin)
-        }
-      });
     }
   }
 </script>

@@ -26,7 +26,7 @@ import {
 import { mesh } from '../background/mesh'
 import { transparent } from '../background/transparent'
 import { fontRenderStyle } from '../stores/global'
-import { ICustomGlyph, IGlyphComponent, executeScript } from '../stores/glyph'
+import { ICustomGlyph, IGlyphComponent, editGlyph, executeScript, orderedListWithItemsForCurrentGlyph } from '../stores/glyph'
 import { CustomGlyph } from '../programming/CustomGlyph'
 import { layoutGrid } from '../background/layoutGrid'
 import { PathType } from '../../fontManager'
@@ -35,6 +35,7 @@ import type {
 	ICubicBezierCurve,
 	IQuadraticBezierCurve,
 } from '../../fontManager'
+import { editStatus, Status } from '../stores/font'
 
 /**
  * 清空画布
@@ -366,12 +367,17 @@ const render = (canvas: HTMLCanvasElement, renderBackground: Boolean = true, for
     ctx.fillStyle = background.color
     ctx.fillRect(0, 0, canvas.width, canvas.height)
   }
-  renderCanvas(orderedListWithItemsForCurrentCharacterFile.value, canvas as HTMLCanvasElement, {
-    forceUpdate,
-    fill: false,
-    offset: { x: 0, y: 0 },
-    scale: 1,
-  })
+  if (editStatus.value === Status.Edit) {
+    renderCanvas(orderedListWithItemsForCurrentCharacterFile.value, canvas as HTMLCanvasElement, {
+      forceUpdate,
+      fill: false,
+      offset: { x: 0, y: 0 },
+      scale: 1,
+    })
+  } else if (editStatus.value === Status.Glyph) {
+    const glyph = editGlyph.value._o ? editGlyph.value._o : new CustomGlyph(editGlyph.value)
+    renderGlyph(glyph, canvas, renderBackground, false, false)
+  }
 }
 
 const renderPreview = (character: ICharacterFile, canvas: HTMLCanvasElement) => {

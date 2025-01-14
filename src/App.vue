@@ -1,8 +1,8 @@
 <script setup lang="ts">
   import { RouterView } from 'vue-router'
-  import { initRenderer } from './fontEditor/renderer'
+  import { initTauri } from './fontEditor/renderer'
   import paper from 'paper'
-  window.electronAPI && initRenderer()
+  initTauri()
   let canvas = document.createElement('canvas')
   paper.setup(canvas)
 </script>

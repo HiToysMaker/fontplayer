@@ -156,9 +156,9 @@ const setExportFontDialogVisible = (visible: boolean) => {
 
 // electron导出字体窗口
 // dialog for export font for electron
-const exportFontElectronDialogVisible: Ref<boolean> = ref(false)
-const setExportFontElectronDialogVisible = (visible: boolean) => {
-	exportFontElectronDialogVisible.value = visible
+const exportFontTauriDialogVisible: Ref<boolean> = ref(false)
+const setExportFontTauriDialogVisible = (visible: boolean) => {
+	exportFontTauriDialogVisible.value = visible
 }
 
 const copiedGlyphUUID: Ref<string> = ref('')
@@ -218,6 +218,6 @@ export {
 	setSaveAsDialogVisible,
 	exportFontDialogVisible,
 	setExportFontDialogVisible,
-	exportFontElectronDialogVisible,
-	setExportFontElectronDialogVisible,
+	exportFontTauriDialogVisible,
+	setExportFontTauriDialogVisible,
 }

@@ -25,7 +25,7 @@
 	}
 
 	const enableAtEdit = () => {
-		if (editStatus.value === Status.Edit) {
+		if (editStatus.value === Status.Edit || editStatus.value === Status.Glyph) {
 			return true
 		}
 		return false
@@ -96,7 +96,7 @@
 </script>
 
 <template>
-  <div class="side-bar" v-if="ENV === 'web'">
+  <div class="side-bar" v-if="ENV === 'web' || ENV === 'tauri'">
     <el-col class="side-bar-row">
       <el-menu
         class="el-menu side-bar"
@@ -106,9 +106,9 @@
       >
         <el-sub-menu :index="menu.key" v-for="menu in _menus">
           <template #title>
-							<el-icon>
-								<component :is="web_menu_icons[menu.key]"></component>
-							</el-icon>
+            <el-icon>
+              <component :is="web_menu_icons[menu.key]"></component>
+            </el-icon>
 					</template>
           <el-menu-item
 						:index="subMenu.key"

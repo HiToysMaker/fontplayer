@@ -5,25 +5,13 @@ import vue from '@vitejs/plugin-vue'
 
 import copyPlugin from 'rollup-plugin-copy'
 
-import electron from 'vite-plugin-electron/simple'
-
 import { visualizer } from 'rollup-plugin-visualizer'
-
-const isElectron = process.env.ELECTRON === 'true'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   // base: '/fontplayer_demo/',
   plugins: [
     vue(),
-    isElectron && electron({
-      main: {
-        entry: 'src/fontEditor/main/main.ts',
-      },
-      preload: {
-        input: 'src/fontEditor/main/preload.ts',
-      },
-    }),
     visualizer({
       open: true,
     })
@@ -34,6 +22,7 @@ export default defineConfig({
     },
   },
   build: {
+    target: 'es2022',
     rollupOptions: {
       plugins: [
         copyPlugin({
