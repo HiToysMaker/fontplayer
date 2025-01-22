@@ -69,6 +69,7 @@ import {
   editStatus,
   clearContoursComponent,
   clearCurvesComponent,
+  prevEditStatus,
 } from '../stores/font'
 import { reversePixels, toBlackWhiteBitMap } from '../../features/image'
 import { getBound, transformPoints } from '../../utils/math'
@@ -89,6 +90,7 @@ import { genPenComponent } from '../tools/pen'
 import { save, open } from '@tauri-apps/plugin-dialog'
 import { writeTextFile, writeFile, readFile, readTextFile } from '@tauri-apps/plugin-fs'
 import { ENV } from '../stores/system'
+import { OpType, saveState, StoreType, undo as _undo, redo as _redo } from '../stores/edit'
 
 const plainGlyph = (glyph: ICustomGlyph) => {
   const data: ICustomGlyph = {
@@ -514,6 +516,7 @@ const openFile_tauri = async (rawdata) => {
     tipsDialogVisible.value = true
   } else {
     const { data: rawdata } = await nativeImportTextFile(['json'])
+    if (!rawdata) return
     const data = JSON.parse(rawdata)
     __openFile(data)
   }
@@ -780,6 +783,7 @@ const importFont_tauri = async () => {
 
 const _importFont_tauri = (options) => {
   const { uint8Array, name } = options
+  if (!uint8Array) return
   const arrayBuffer = uint8Array.buffer
   const font = parse(arrayBuffer)
   const file: IFile = {
@@ -1282,11 +1286,13 @@ const addIcon = () => {
 const undo = () => {
   // 撤销
   //filesStore.undo()
+  _undo()
 }
 
 const redo = () => {
   // 重做
   //filesStore.redo()
+  _redo()
 }
 
 const copy = () => {
@@ -1342,6 +1348,18 @@ const importPic = () => {
 const importPic_tauri = async () => {
   const options = await nativeImportFile(['jpg', 'png', 'jpeg'])
   const { name, uint8Array } = options
+  if (!uint8Array) return
+  // 保存状态
+  saveState('识别图片', [
+    StoreType.Status,
+    editStatus.value === Status.Glyph ? StoreType.EditGlyph : StoreType.EditCharacter
+  ],
+    OpType.Undo,
+    {
+      undoTip: '撤销识别图片操作会将您上次在识别图片过程中的全部操作撤销，确认撤销？',
+      redoTip: '重做识别图片操作会将您上次在识别图片过程中的全部操作重做，确认重做？'
+    }
+  )
   let binary = ''
   uint8Array.forEach((byte) => {
     binary += String.fromCharCode(byte);
@@ -1355,6 +1373,7 @@ const importPic_tauri = async () => {
   const img = document.createElement('img')
   img.onload = () => {
     setTimeout(() => {
+      prevEditStatus.value = editStatus.value
       thumbnail(dataUrl, img, 1000)
       setEditStatus(Status.Pic)
       loading.value = false
@@ -1368,6 +1387,7 @@ const getFromFontPic = () => {
   const data = fontCanvas.toDataURL()
   const img = document.createElement('img')
   img.onload = () => {
+    prevEditStatus.value = editStatus.value
     thumbnail(data, img, img.width)
     setEditStatus(Status.Pic)
   }
@@ -1396,6 +1416,18 @@ const getFromPic = () => {
          * thumbnail
          */
         // thumbnail(data, img, 100)
+        // 保存状态
+        saveState('识别图片', [
+          StoreType.Status,
+          editStatus.value === Status.Glyph ? StoreType.EditGlyph : StoreType.EditCharacter
+        ],
+          OpType.Undo,
+          {
+            undoTip: '撤销识别图片操作会将您上次在识别图片过程中的全部操作撤销，确认撤销？',
+            redoTip: '重做识别图片操作会将您上次在识别图片过程中的全部操作重做，确认重做？'
+          }
+        )
+        prevEditStatus.value = editStatus.value
         thumbnail(data, img, 1000)
         setEditStatus(Status.Pic)
         loading.value = false
@@ -2304,4 +2336,5 @@ export {
   exportFont_tauri,
   computeOverlapRemovedContours,
   tauri_handlers,
+  nativeImportFile,
 }

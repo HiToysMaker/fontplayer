@@ -14,9 +14,20 @@
     selectedComponent as selectedComponent_Glyph,
     selectedComponentUUID as selectedComponentUUID_Glyph
   } from '../../stores/glyph'
+  import { OpType, saveState, StoreType } from '../../stores/edit'
   const { tm, t } = useI18n()
 
+  const savePicEditState = () => {
+    // 保存状态
+		saveState('编辑图片组件参数', [
+			editStatus.value === Status.Glyph ? StoreType.EditGlyph : StoreType.EditCharacter
+		],
+			OpType.Undo,
+		)
+  }
+
   const handleChangeX = (x: number) => {
+    savePicEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         x,
@@ -29,6 +40,7 @@
   }
 
   const handleChangeY = (y: number) => {
+    savePicEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         y,
@@ -41,6 +53,7 @@
   }
 
   const handleChangeW = (w: number) => {
+    savePicEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         w,
@@ -53,6 +66,7 @@
   }
 
   const handleChangeH = (h: number) => {
+    savePicEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         h,
@@ -65,6 +79,7 @@
   }
 
   const handleChangeRot = (rotation: number) => {
+    savePicEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         rotation,
@@ -76,7 +91,21 @@
     }
   }
 
+  let timer = null
+  let opstatus = false
   const handleChangeOpacity = (opacity: number) => {
+    if (timer) {
+      clearTimeout(timer)
+    }
+    timer = setTimeout(() => {
+      opstatus = false
+      clearTimeout(timer)
+    }, 500)
+    if (!opstatus) {
+      savePicEditState()
+      opstatus = true
+    }
+
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         opacity,

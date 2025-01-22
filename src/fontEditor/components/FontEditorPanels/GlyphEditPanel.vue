@@ -55,6 +55,7 @@
 	import { CustomGlyph } from '../../programming/CustomGlyph'
 	import { emitter } from '../../Event/bus'
   import { initCoordsViewer } from '../../tools/coordsViewer'
+  import { clearState, OpType, redo, saveState, StoreType, undo } from '../../stores/edit'
 
   const mounted: Ref<boolean> = ref(false)
   let closeTool: Function | null = null
@@ -68,6 +69,7 @@
   // onMounted初始化，需要执行当前编辑字形脚本，并渲染字形，初始化工具栏
   // onMounted initialization
   onMounted(async () => {
+    document.addEventListener('keydown', onKeyDown)
     editStatus.value = Status.Glyph
     executeScript(editGlyph.value)
     const _canvas = editCanvas.value as HTMLCanvasElement
@@ -92,9 +94,25 @@
     }
   })
 
+  const onKeyDown = (event) => {
+    const isMac = navigator.userAgent.includes("Mac")
+    if ((isMac && event.metaKey && event.key === 'z') || (!isMac && event.ctrlKey && event.key === 'z')) {
+      if (event.shiftKey) {
+        // 重做 (Ctrl+Shift+Z 或 Command+Shift+Z)
+        redo()
+      } else {
+        // 撤销 (Ctrl+Z 或 Command+Z)
+        undo()
+      }
+      event.preventDefault()
+    }
+  }
+
   // onUnmounted关闭工具栏和布局编辑器
   // onUnmounted operation
   onUnmounted(() => {
+    document.removeEventListener('keydown', onKeyDown)
+    clearState()
     editingLayout.value = false
     if (closeTool) {
       closeTool()
@@ -239,9 +257,10 @@
     if (!glyphEditing.value) return
   })
 
-  watch([
-    tool,
-  ], () => {
+  watch(tool, (newValue, oldValue) => {
+    saveState('选择工具', [StoreType.Tools], OpType.Undo, {
+      tool: oldValue,
+    })
     if (!mounted) return
     render()
     switch (tool.value) {

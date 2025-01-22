@@ -18,10 +18,21 @@
     selectedComponentUUID as selectedComponentUUID_Glyph
   } from '../../stores/glyph'
   import { editStatus, Status } from '../../stores/font'
+  import { OpType, saveState, StoreType } from '../../stores/edit'
   import { useI18n } from 'vue-i18n'
   const { tm, t } = useI18n()
 
+  const savePolygonEditState = () => {
+    // 保存状态
+		saveState('编辑多边形组件参数', [
+			editStatus.value === Status.Glyph ? StoreType.EditGlyph : StoreType.EditCharacter
+		],
+			OpType.Undo,
+		)
+  }
+
   const handleChangeX = (x: number) => {
+    savePolygonEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         x,
@@ -34,6 +45,7 @@
   }
 
   const handleChangeY = (y: number) => {
+    savePolygonEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         y,
@@ -46,6 +58,7 @@
   }
 
   const handleChangeW = (w: number) => {
+    savePolygonEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         w,
@@ -58,6 +71,7 @@
   }
 
   const handleChangeH = (h: number) => {
+    savePolygonEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         h,
@@ -70,6 +84,7 @@
   }
 
   const handleChangeRot = (rotation: number) => {
+    savePolygonEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         rotation,
@@ -82,6 +97,7 @@
   }
 
   const transformToPath = () => {
+    savePolygonEditState()
     const polygonComponent = selectedComponent.value.value
     const { x, y, w, h, rotation, flipX, flipY } = selectedComponent.value
     const points: Array<{

@@ -17,6 +17,8 @@
   import { setSelectGlobalParamDialogVisible, setSetAsGlobalParamDialogVisible } from '../../stores/dialogs'
 	import { selectedFile, selectedItemByUUID } from '../../stores/files'
   import { More } from '@element-plus/icons-vue'
+  import { OpType, saveState, StoreType } from '../../stores/edit'
+  import { editStatus, Status } from '../../stores/font'
   const { t, tm } = useI18n()
   const checkJoints = ref(false)
   const checkRefLines = ref(false)
@@ -45,6 +47,36 @@
   const onLayoutSelect = ref(false)
 
 	const size = ref(150)
+
+  const saveGlyphEditState = (options) => {
+    // 保存状态
+		saveState('编辑字形参数', [
+			editStatus.value === Status.Glyph ? StoreType.EditGlyph : StoreType.EditCharacter
+		],
+			OpType.Undo,
+			options,
+		)
+  }
+
+  let opTimer = null
+  let opstatus = false
+	watch(editGlyph, (newValue, oldValue) => {
+		if (opTimer) {
+      clearTimeout(opTimer)
+    }
+    opTimer = setTimeout(() => {
+      opstatus = false
+			clearTimeout(opTimer)
+    }, 500)
+    if (!opstatus) {
+			saveGlyphEditState({
+				editGlyph: oldValue,
+			})
+      opstatus = true
+    }
+	}, {
+		deep: true,
+	})
 
 	const handleChangeParameter = (parameter: IParameter | IParameter2, value: number) => {
     parameter.value = value

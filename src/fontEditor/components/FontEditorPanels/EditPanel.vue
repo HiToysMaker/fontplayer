@@ -59,6 +59,7 @@
   import { initLayoutResizer, renderLayoutEditor } from '../../tools/glyphLayoutResizer'
   import * as R from 'ramda'
   import { linkComponentsForJoints } from '../../programming/Joint'
+  import { clearState, OpType, redo, saveState, StoreType, undo } from '../../stores/edit'
 
   const mounted: Ref<boolean> = ref(false)
   let closeTool: Function | null = null
@@ -69,6 +70,7 @@
   // onMounted初始化，需要执行当前编辑字符脚本，并渲染字符，初始化工具栏
   // onMounted initialization
   onMounted(async () => {
+    document.addEventListener('keydown', onKeyDown)
     executeCharacterScript(editCharacterFile.value)
     const _canvas = editCanvas.value as HTMLCanvasElement
     _canvas.style.width = `${width.value * editCharacterFile.value.view.zoom / 100}px`
@@ -84,6 +86,8 @@
     emitter.on('renderCharacter', () => {
       render()
       renderRefComponents()
+      tool.value === 'select' && renderSelectEditor(canvas.value)
+      tool.value === 'pen' && renderPenEditor(canvas.value)
     })
     emitter.on('renderCharacter_forceUpdate', () => {
       _render(canvas.value as HTMLCanvasElement, true, true)
@@ -94,9 +98,25 @@
     }
   })
 
+  const onKeyDown = (event) => {
+    const isMac = navigator.userAgent.includes("Mac")
+    if ((isMac && event.metaKey && event.key === 'z') || (!isMac && event.ctrlKey && event.key === 'z')) {
+      if (event.shiftKey) {
+        // 重做 (Ctrl+Shift+Z 或 Command+Shift+Z)
+        redo()
+      } else {
+        // 撤销 (Ctrl+Z 或 Command+Z)
+        undo()
+      }
+      event.preventDefault()
+    }
+  }
+
   // onUnmounted关闭工具栏和布局编辑器
   // onUnmounted operation
   onUnmounted(() => {
+    document.removeEventListener('keydown', onKeyDown)
+    clearState()
     if (closeTool) {
       closeTool()
     }
@@ -166,9 +186,7 @@
 
   // tool改变时，重新初始化工具栏，重新渲染
   // watch for tool change
-  watch([
-    tool,
-  ], () => {
+  watch(tool, (newValue, oldValue) => {
     if (!mounted) return
     render()
     switch (tool.value) {
@@ -208,6 +226,7 @@
       renderLayoutEditor(canvas.value)
     }
     tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
 		renderRefComponents()
     emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
   }, {
@@ -238,6 +257,7 @@
     setCanvas(_canvas)
     render()
 		renderRefComponents()
+    tool.value === 'pen' && renderPenEditor(canvas.value)
     emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
   })
 
@@ -304,6 +324,7 @@
     render()
     if (!selectedComponentUUID.value) return
     tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
     renderRefComponents()
     emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
   })

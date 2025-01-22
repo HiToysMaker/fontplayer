@@ -43,6 +43,7 @@
 		//@ts-ignore
 		if (!!window.__TAURI_INTERNALS__) {
 			const unlistenClose = await getCurrentWindow().onCloseRequested(async (event) => {
+				await emit('on-webview-close')
 				if (codeEditor) {
 					document.getElementById('codes-container').innerHTML = ''
 					codeEditor = null
@@ -116,6 +117,12 @@
 			})
 			await emit('on-webview-mounted')
 		} else {
+			const onBeforeUnload = (e) => {
+				window.opener.postMessage('close-window', location.origin)
+				window.removeEventListener('beforeunload', onBeforeUnload)
+			}
+			window.addEventListener('beforeunload', onBeforeUnload)
+
 			constants.value = window.opener['__constants']
 			parameters.value = window.opener['__parameters']
 			script.value = window.opener['__script']

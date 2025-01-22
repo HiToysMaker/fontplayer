@@ -22,6 +22,8 @@ export interface IBackground {
 	color: string,
 }
 
+const jointsCheckedMap = ref({})
+
 const draggable = ref(false)
 const dragOption = ref('none')
 const checkJoints = ref(false)
@@ -149,4 +151,5 @@ export {
 	loaded,
 	total,
 	tips,
+	jointsCheckedMap,
 }

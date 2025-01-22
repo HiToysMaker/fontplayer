@@ -11,34 +11,68 @@
   import { genPictureComponent } from '../../tools/picture'
   import { addComponentForCurrentCharacterFile, editCharacterFile, executeCharacterScript, selectedFile } from '../../stores/files'
   import { setEditStatus, Status, editStatus, prevStatus } from '../../stores/font'
-  import { constants, editGlyph, executeScript } from '../../stores/glyph'
+  import { addComponentForCurrentGlyph, constants, editGlyph, executeScript } from '../../stores/glyph'
   import { emitter } from '../../Event/bus'
   import { ENV } from '../../stores/system'
   import { Grid } from '@element-plus/icons-vue'
   import { WebviewWindow } from "@tauri-apps/api/webviewWindow"
   import { emit, listen } from '@tauri-apps/api/event'
   import { onMounted, onUnmounted } from 'vue'
+  import { OpType, saveState, StoreType } from '../../stores/edit'
+  import { nativeImportFile } from '../../menus/handlers'
 
   // 切换工具
   // switch tool
-  const switchTool = (tool: string) => {
-    setTool(tool)
+  const switchTool = async (tool: string) => {
+    if (tool !== 'picture') {
+      saveState('选择工具', [StoreType.Tools], OpType.Undo)
+      setTool(tool)
+    }
     if (tool === 'picture') {
-      const input = document.createElement('input')
-      input.setAttribute('type', 'file')
-      input.setAttribute('style', 'display: none')
-      input.addEventListener('change', async (e: Event) => {
-        const el = e.currentTarget as HTMLInputElement
-        const files = el.files as FileList
-        for (let i = 0; i < files.length; i++) {
-          const data = window.URL.createObjectURL(files[i])
-          const component = await genPictureComponent(data, selectedFile.value.width, selectedFile.value.height)
+      // 保存状态
+      saveState('添加参考图', [
+        editStatus.value === Status.Glyph ? StoreType.EditGlyph : StoreType.EditCharacter
+      ],
+        OpType.Undo,
+      )
+      if (ENV.value === 'tauri') {
+        const options = await nativeImportFile(['jpg', 'png', 'jpeg'])
+        const { name, uint8Array } = options
+        if (!uint8Array) return
+        let binary = ''
+        uint8Array.forEach((byte) => {
+          binary += String.fromCharCode(byte);
+        })
+        const base64str = btoa(binary)
+        const type = name.split('.')[1] === 'png' ? 'imge/png' : 'image/jpeg'
+        const dataUrl = `data:${type};base64,${base64str}`
+        const component = await genPictureComponent(dataUrl, selectedFile.value.width, selectedFile.value.height)
+        if (editStatus.value === Status.Edit) {
           addComponentForCurrentCharacterFile(component)
+        } else if (editStatus.value === Status.Glyph) {
+          addComponentForCurrentGlyph(component)
         }
-        document.body.removeChild(input)
-      })
-      document.body.appendChild(input)
-      input.click()
+      } else {
+        const input = document.createElement('input')
+        input.setAttribute('type', 'file')
+        input.setAttribute('style', 'display: none')
+        input.addEventListener('change', async (e: Event) => {
+          const el = e.currentTarget as HTMLInputElement
+          const files = el.files as FileList
+          for (let i = 0; i < files.length; i++) {
+            const data = window.URL.createObjectURL(files[i])
+            const component = await genPictureComponent(data, selectedFile.value.width, selectedFile.value.height)
+            if (editStatus.value === Status.Edit) {
+              addComponentForCurrentCharacterFile(component)
+            } else if (editStatus.value === Status.Glyph) {
+              addComponentForCurrentGlyph(component)
+            }
+          }
+          document.body.removeChild(input)
+        })
+        document.body.appendChild(input)
+        input.click()
+      }
     }
   }
 
@@ -51,11 +85,13 @@
 
   let glyph_window = null
   let char_window = null
+  let hasShowWindow = false
 
   // const base = '/fontplayer_demo'
   const base = ''
 
   const showProgrammingWindow = async () => {
+    if (hasShowWindow) return
     if (ENV.value === 'web') {
       if (editStatus.value === Status.Edit) {
         window.__constants = constants.value
@@ -121,56 +157,91 @@
   let unlisten1 = null
   let unlisten2 = null
   let unlisten3 = null
+  let unlisten4 = null
+  let dataChanged = false
 
   onMounted(() => {
-    unlisten1 = listen('on-webview-mounted', async (e) => {
-      if (editStatus.value === Status.Edit) {
-        await emit('init-data', {
-          __constants: constants.value,
-          __script: editCharacterFile.value.script,
-          __isWeb: ENV.value === 'web'
-        })
-      } else if (editStatus.value === Status.Glyph) {
-        await emit('init-data', {
-          __constants: constants.value,
-          __parameters: editGlyph.value.parameters.parameters,
-          __script: editGlyph.value.script,
-          __isWeb: ENV.value === 'web'
-        })
-      }
-    })
-    unlisten2 = listen('sync-info', async (e) => {
-      const { __constants, __parameters, __script } = e.payload as any
-      if (editStatus.value === Status.Glyph) {
-        editGlyph.value.parameters.parameters = __parameters
-        constants.value = __constants
-        editGlyph.value.script = __script
-      } else if (editStatus.value === Status.Edit) {
-        constants.value = __constants
-        editCharacterFile.value.script = __script
-      }
-    })
-    unlisten3 = listen('execute-script', async (e) => {
-      if (editStatus.value === Status.Glyph) {
-        executeScript(editGlyph.value)
-        emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
-        emitter.emit('renderGlyph', true)
-      } else if (editStatus.value === Status.Edit) {
-        executeCharacterScript(editCharacterFile.value)
-        emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
-        emitter.emit('renderCharacter', true)
-      }
-    })
+    if (ENV.value === 'tauri') {
+      unlisten1 = listen('on-webview-mounted', async (e) => {
+        if (editStatus.value === Status.Edit) {
+          await emit('init-data', {
+            __constants: constants.value,
+            __script: editCharacterFile.value.script,
+            __isWeb: ENV.value === 'web'
+          })
+        } else if (editStatus.value === Status.Glyph) {
+          await emit('init-data', {
+            __constants: constants.value,
+            __parameters: editGlyph.value.parameters.parameters,
+            __script: editGlyph.value.script,
+            __isWeb: ENV.value === 'web'
+          })
+        }
+      })
+      unlisten2 = listen('sync-info', async (e) => {
+        if (!dataChanged) {
+          saveScriptState()
+        }
+        dataChanged = true
+        const { __constants, __parameters, __script } = e.payload as any
+        if (editStatus.value === Status.Glyph) {
+          editGlyph.value.parameters.parameters = __parameters
+          constants.value = __constants
+          editGlyph.value.script = __script
+        } else if (editStatus.value === Status.Edit) {
+          constants.value = __constants
+          editCharacterFile.value.script = __script
+        }
+      })
+      unlisten3 = listen('execute-script', async (e) => {
+        if (editStatus.value === Status.Glyph) {
+          executeScript(editGlyph.value)
+          emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
+          emitter.emit('renderGlyph', true)
+        } else if (editStatus.value === Status.Edit) {
+          executeCharacterScript(editCharacterFile.value)
+          emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
+          emitter.emit('renderCharacter', true)
+        }
+      })
+      unlisten4 = listen('on-webview-close', () => {
+        onScriptWindowClose()
+      })
+    }
   })
+
+  const onScriptWindowClose = () => {
+    dataChanged = false
+    hasShowWindow = false
+  }
+
+  const saveScriptState = () => {
+    // 保存状态
+		saveState('编辑脚本与变量', [
+			editStatus.value === Status.Glyph ? StoreType.EditGlyph : StoreType.EditCharacter
+		],
+			OpType.Undo,
+      {
+        undoTip: '撤销编辑脚本与变量操作会将您上次在脚本编辑窗口的全部操作撤销，确认撤销？',
+        redoTip: '重做编辑脚本与变量操作会将您上次在脚本编辑窗口的全部操作重做，确认重做？',
+        newRecord: true,
+      }
+		)
+  }
 
   onUnmounted(() => {
     unlisten1 && unlisten1()
     unlisten2 && unlisten2()
     unlisten3 && unlisten3()
+    unlisten4 && unlisten4()
   })
 
   const onReceiveMessage = (e: MessageEvent) => {
     if (e.data === 'sync-info') {
+      if (!dataChanged) {
+        saveScriptState()
+      }
+      dataChanged = true
       if (editStatus.value === Status.Glyph) {
         editGlyph.value.parameters.parameters = JSON.parse(localStorage.getItem('parameters'))
         constants.value = JSON.parse(localStorage.getItem('constants'))
@@ -189,6 +260,8 @@
         emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
         emitter.emit('renderCharacter', true)
       }
+    } else if (e.data === 'close-window') {
+      onScriptWindowClose()
     }
   }
 </script>

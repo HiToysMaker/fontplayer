@@ -14,9 +14,20 @@
     selectedComponentUUID as selectedComponentUUID_Glyph
   } from '../../stores/glyph'
   import { editStatus, Status } from '../../stores/font'
+  import { OpType, saveState, StoreType } from '../../stores/edit'
   const { tm, t } = useI18n()
 
+  const saveRectangleEditState = () => {
+    // 保存状态
+		saveState('编辑长方形组件参数', [
+			editStatus.value === Status.Glyph ? StoreType.EditGlyph : StoreType.EditCharacter
+		],
+			OpType.Undo,
+		)
+  }
+
   const handleChangeX = (x: number) => {
+    saveRectangleEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         x,
@@ -29,6 +40,7 @@
   }
 
   const handleChangeY = (y: number) => {
+    saveRectangleEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         y,
@@ -41,6 +53,7 @@
   }
 
   const handleChangeW = (w: number) => {
+    saveRectangleEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         w,
@@ -53,6 +66,7 @@
   }
 
   const handleChangeH = (h: number) => {
+    saveRectangleEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         h,
@@ -65,6 +79,7 @@
   }
 
   const handleChangeRot = (rotation: number) => {
+    saveRectangleEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         rotation,

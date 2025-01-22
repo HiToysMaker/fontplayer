@@ -705,7 +705,7 @@ const insertComponentForCurrentCharacterFile = (component: Component, options: {
 		type: 'component',
 		uuid: component.uuid,
 	}, options)
-	setTool('select')
+	//setTool('select')
 	setSelectionForCurrentCharacterFile(component.uuid)
 }
 
@@ -1149,11 +1149,11 @@ const addComponentForCurrentCharacterFile = (component: Component) => {
 		type: 'component',
 		uuid: component.uuid,
 	})
-	if (component.type === 'glyph') {
-		setTool('glyphDragger')
-	} else {
-		setTool('select')
-	}
+	// if (component.type === 'glyph') {
+	// 	setTool('glyphDragger')
+	// } else {
+	// 	setTool('select')
+	// }
 	setSelectionForCurrentCharacterFile(component.uuid)
 }
 

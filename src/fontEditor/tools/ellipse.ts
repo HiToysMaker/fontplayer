@@ -15,9 +15,11 @@ import { addComponentForCurrentGlyph } from '../stores/glyph'
 import { formatPoints, genEllipseContour } from '../../features/font'
 import { getEllipsePoints, transformPoints } from '../../utils/math'
 import { Status, editStatus } from '../stores/font'
+import { OpType, saveState, StoreType } from '../stores/edit'
 
 // 椭圆工具初始化方法
 // initializer for ellipse tool
+let eventListenersMap: any = {}
 const initEllipse = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 	let mousedown: boolean = false
 	let mousemove: boolean = false
@@ -27,18 +29,22 @@ const initEllipse = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 	let mouseDownY = -1
 	let circle = false
 	const onMouseDown = (e: MouseEvent) => {
+		// 保存状态
+		saveState('创建椭圆组件', [
+			StoreType.Ellipse,
+			glyph ? StoreType.EditGlyph : StoreType.EditCharacter
+		],
+			OpType.Undo,
+		)
 		setEditing(true)
 		mousedown = true
 		mouseDownX = getCoord(e.offsetX)
 		mouseDownY = getCoord(e.offsetY)
 		lastX = getCoord(e.offsetX)
 		lastY = getCoord(e.offsetY)
-		window.addEventListener('mouseup', onMouseUp)
-		canvas.addEventListener('mousemove', onMouseMove)
-		window.addEventListener('keydown', onKeyDown)
-		window.addEventListener('keyup', onKeyUp)
 	}
 	const onMouseMove = (e: MouseEvent) => {
+		if (!mousedown) return
 		const _x = getCoord(e.offsetX)
 		const _y = getCoord(e.offsetY)
 		mousemove = true
@@ -91,27 +97,45 @@ const initEllipse = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 		}
 	}
 	const onMouseUp = (e: MouseEvent) => {
-		canvas.removeEventListener('mousemove', onMouseMove)
-		window.removeEventListener('mouseup', onMouseUp)
-		window.removeEventListener('keydown', onKeyDown)
-		window.removeEventListener('keyup', onKeyUp)
 		setEditing(false)
 		if (mousemove) {
+			const component = genEllipseComponent(ellipseX.value, ellipseY.value, radiusX.value, radiusY.value)
+			mousedown = false
+			mousemove = false
+			mouseDownX = -1
+			mouseDownY = -1
+			circle = false
+			setEllipseX(-1)
+			setEllipseY(-1)
+			setRadiusX(0)
+			setRadiusY(0)
+			// 保存状态
+			saveState('创建椭圆组件',
+				[
+					StoreType.Ellipse,
+					glyph ? StoreType.EditGlyph : StoreType.EditCharacter
+				],
+				OpType.Undo,
+				{
+					newRecord: false,
+				}
+			)
 			if (!glyph) {
-				addComponentForCurrentCharacterFile(genEllipseComponent(ellipseX.value, ellipseY.value, radiusX.value, radiusY.value))
+				addComponentForCurrentCharacterFile(component)
 			} else {
-				addComponentForCurrentGlyph(genEllipseComponent(ellipseX.value, ellipseY.value, radiusX.value, radiusY.value))
+				addComponentForCurrentGlyph(component)
 			}
+		} else {
+			mousedown = false
+			mousemove = false
+			mouseDownX = -1
+			mouseDownY = -1
+			circle = false
+			setEllipseX(-1)
+			setEllipseY(-1)
+			setRadiusX(0)
+			setRadiusY(0)
 		}
-		mousedown = false
-		mousemove = false
-		mouseDownX = -1
-		mouseDownY = -1
-		circle = false
-		setEllipseX(-1)
-		setEllipseY(-1)
-		setRadiusX(0)
-		setRadiusY(0)
 	}
 	const onKeyDown = (e: KeyboardEvent) => {
 		if (e.key === 'Shift') {
@@ -124,8 +148,16 @@ const initEllipse = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 		}
 	}
 	canvas.addEventListener('mousedown', onMouseDown)
+	window.addEventListener('mouseup', onMouseUp)
+	canvas.addEventListener('mousemove', onMouseMove)
+	window.addEventListener('keydown', onKeyDown)
+	window.addEventListener('keyup', onKeyUp)
 	const closeEllipse = () => {
 		canvas.removeEventListener('mousedown', onMouseDown)
+		canvas.removeEventListener('mousemove', onMouseMove)
+		window.removeEventListener('mouseup', onMouseUp)
+		window.removeEventListener('keydown', onKeyDown)
+		window.removeEventListener('keyup', onKeyUp)
 		setEditing(false)
 	}
 	return closeEllipse

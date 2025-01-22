@@ -581,7 +581,7 @@ const insertComponentForCurrentGlyph = (component: Component, options: { uuid: s
 		type: 'component',
 		uuid: component.uuid,
 	}, options)
-	setTool('select')
+	//setTool('select')
 	setSelectionForCurrentGlyph(component.uuid)
 }
 
@@ -879,11 +879,24 @@ const addGroupForCurrentGlyph = (group: { type: string, uuid: string }) => {
 }
 
 /**
- * 在当前字符文件的排序列表中添加项目
+ * 在指定字形的排序列表中添加项目
  * @param item 要被添加的项目
  */
 /**
- * add ordered item into ordered list for current character file
+ * add ordered item into ordered list for certain glyph
+ * @param item ordered item
+ */
+const addOrderedItemForGlyph = (glyphUUID: string, item: { type: string, uuid: string }) => {
+	const glyph = getGlyphByUUID(glyphUUID)
+	glyph.orderedList.push(item)
+}
+
+/**
+ * 在当前字形的排序列表中添加项目
+ * @param item 要被添加的项目
+ */
+/**
+ * add ordered item into ordered list for current glyph
  * @param item ordered item
  */
 const addOrderedItemForCurrentGlyph = (item: { type: string, uuid: string }) => {
@@ -1003,6 +1016,48 @@ const removeGlyph = (uuid: string, type: Status) => {
 }
 
 /**
+ * 在指定字形文件中添加组件列表
+ * @param glyphUUID 字形文件uuid
+ * @param components 要被添加的组件列表
+ */
+/**
+ * add components to certain glyph
+ * @param glyphUUID uuid for glyph
+ * @param components components to be added
+ */
+const addComponentsForGlyph = (glyphUUID: string, components: Array<IComponent>) => {
+	const glyph = getGlyphByUUID(glyphUUID)
+	components.forEach((component) => {
+		addComponentForGlyph(glyphUUID, component)
+	})
+}
+
+/**
+ * 在指定字形中添加组件
+ * @param glyphUUID uuid for glyph
+ * @param component 要被添加的组件
+ */
+/**
+ * add component for certain glyph
+ * @param glyphUUID uuid for glyph
+ * @param component component to be added
+ */
+const addComponentForGlyph = (glyphUUID: string, component: Component) => {
+	const glyph = getGlyphByUUID(glyphUUID)
+	glyph.components.push(component)
+	addOrderedItemForGlyph(glyphUUID, {
+		type: 'component',
+		uuid: component.uuid,
+	})
+	// if (component.type === 'glyph') {
+	// 	setTool('glyphDragger')
+	// } else {
+	// 	setTool('select')
+	// }
+	setSelectionForCurrentGlyph(component.uuid)
+}
+
+/**
  * 在当前字形中添加组件
  * @param component 要被添加的组件
  */
@@ -1016,11 +1071,11 @@ const addComponentForCurrentGlyph = (component: Component) => {
 		type: 'component',
 		uuid: component.uuid,
 	})
-	if (component.type === 'glyph') {
-		setTool('glyphDragger')
-	} else {
-		setTool('select')
-	}
+	// if (component.type === 'glyph') {
+	// 	setTool('glyphDragger')
+	// } else {
+	// 	setTool('select')
+	// }
 	setSelectionForCurrentGlyph(component.uuid)
 }
 
@@ -1464,4 +1519,5 @@ export {
 	modifySubComponent,
 	getGlyphByName,
 	clearSelectionGlyphRenderList,
+	addComponentsForGlyph,
 }

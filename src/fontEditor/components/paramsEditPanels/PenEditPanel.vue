@@ -15,9 +15,21 @@
   } from '../../stores/glyph'
   import { editStatus, Status } from '../../stores/font'
   import { useI18n } from 'vue-i18n'
+  import { OpType, saveState, StoreType } from '../../stores/edit'
   const { tm, t } = useI18n()
 
+  const savePenEditState = () => {
+    // 保存状态
+		saveState('编辑钢笔组件参数', [
+			StoreType.Pen,
+			editStatus.value === Status.Glyph ? StoreType.EditGlyph : StoreType.EditCharacter
+		],
+			OpType.Undo,
+		)
+  }
+
   const handleChangeX = (x: number) => {
+    savePenEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         x,
@@ -30,6 +42,7 @@
   }
 
   const handleChangeY = (y: number) => {
+    savePenEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         y,
@@ -42,6 +55,7 @@
   }
 
   const handleChangeW = (w: number) => {
+    savePenEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         w,
@@ -54,6 +68,7 @@
   }
 
   const handleChangeH = (h: number) => {
+    savePenEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         h,
@@ -66,6 +81,7 @@
   }
 
   const handleChangeRot = (rotation: number) => {
+    savePenEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         rotation,
@@ -78,6 +94,7 @@
   }
 
   const handleChangeFlipX = (flipX: boolean) => {
+    savePenEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         flipX,
@@ -90,6 +107,7 @@
   }
 
   const handleChangeFlipY = (flipY: boolean) => {
+    savePenEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         flipY,
@@ -102,6 +120,7 @@
   }
 
   const handleChangeEditMode = (editMode: boolean) => {
+    savePenEditState()
     setOnPenEditMode(editMode)
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {

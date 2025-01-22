@@ -10,7 +10,7 @@
   import { getRatioOptions, ParameterType, getConstant, IParameter, IRingParameter, IParameter2, getRatioLayout, selectedParam, selectedParamType, constantGlyphMap, ConstantType, getGlyphByUUID, GlyphType, executeScript, getRatioLayout2 } from '../../stores/glyph'
   import { editStatus, Status } from '../../stores/font'
   import { useI18n } from 'vue-i18n'
-  import { canvas, dragOption, draggable, grid, GridType, checkJoints, checkRefLines } from '../../stores/global'
+  import { canvas, dragOption, draggable, grid, GridType, checkJoints, checkRefLines, jointsCheckedMap } from '../../stores/global'
   import { ComputedRef, Ref, computed, onMounted, onUnmounted, ref, watch } from 'vue'
   import { emitter } from '../../Event/bus'
 	import RingController from '../../components/Widgets/RingController.vue'
@@ -24,9 +24,20 @@
 	import { linkComponentsForJoints } from '../../programming/Joint'
 	import { setSelectGlobalParamDialogVisible, setSetAsGlobalParamDialogVisible } from '../../stores/dialogs'
 	import { More } from '@element-plus/icons-vue'
+	import { OpType, saveState, StoreType } from '../../stores/edit'
   const { tm, t } = useI18n()
 
+	const saveGlyphEditState = (options) => {
+    // 保存状态
+		saveState('编辑字形组件参数', [
+			editStatus.value === Status.Glyph ? StoreType.EditGlyph : StoreType.EditCharacter
+		],
+			OpType.Undo,
+			options,
+		)
+  }
 
+	// 具体选择的最子层组件，与顶层选择的组件区分
 	const _selectedComponent: ComputedRef<any> = computed(() => {
 		let comp = selectedComponent.value
     if (editCharacterFile.value.selectedComponentsTree && editCharacterFile.value.selectedComponentsTree.length) {
@@ -59,7 +70,6 @@
 	]
   const size = ref(150)
 
-  const jointsCheckedMap = ref({})
   _selectedComponent.value.value._o?.getJoints().map((joint) => {
 		if (joint) {
 			jointsCheckedMap.value[joint.name] = false
@@ -74,6 +84,26 @@
 			}
     })
   })
+
+	let timer = null
+  let opstatus = false
+	watch(editCharacterFile, (newValue, oldValue) => {
+		if (timer) {
+      clearTimeout(timer)
+    }
+    timer = setTimeout(() => {
+      opstatus = false
+			clearTimeout(timer)
+    }, 500)
+    if (!opstatus) {
+      saveGlyphEditState({
+				editCharacterFile: oldValue,
+			})
+      opstatus = true
+    }
+	}, {
+		deep: true,
+	})
 
   const handleChangeOX = (ox: number) => {
 		if (editCharacterFile.value.selectedComponentsTree && editCharacterFile.value.selectedComponentsTree.length) {
@@ -106,7 +136,7 @@
         _selectedComponent.value.value.system_script = {}
       }
 			if (editCharacterFile.value.selectedComponentsTree && editCharacterFile.value.selectedComponentsTree.length && selectedSubComponent.value) {
-				// 选种子字形组件
+				// 选中子字形组件
 				let layout = getRatioLayout2(SubComponentsRoot.value.value, parameter.ratio)
 				if (layout) {
 					const script = `window.comp_glyph.setParam('${parameter.name}',window.glyph.getRatioLayout('${parameter.ratio}') / ${layout} * ${value});`
@@ -230,7 +260,7 @@
     }
   }
 
-	const onLoayoutChange = () => {
+	const onLayoutChange = () => {
 		executeScript(_selectedComponent.value.value)
 		executeCharacterScript(editCharacterFile.value)
 		emitter.emit('renderCharacter_forceUpdate', true)
@@ -261,7 +291,6 @@
 		selectedParamType.value = 'glyph_components'
 		setSelectGlobalParamDialogVisible(true)
 	}
-
 
 	const updateGlobalParam = (parameter: IParameter) => {
 		const arr = constantGlyphMap.get(parameter.value as unknown as string)
@@ -317,7 +346,7 @@
 							v-for="key in Object.keys(_selectedComponent.value.layout.params)"
 							:label="key"
 						>
-							<el-input-number v-model="_selectedComponent.value.layout.params[key]" @change="onLoayoutChange"/>
+							<el-input-number v-model="_selectedComponent.value.layout.params[key]" @change="onLayoutChange"/>
 							<div class="ratio-item">
 								<font-awesome-icon class="ratio-icon" :class="{
 									selected: _selectedComponent.value.layout.ratioedMap && _selectedComponent.value.layout.ratioedMap[key].ratioed
