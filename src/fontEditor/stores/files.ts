@@ -79,6 +79,7 @@ export interface ICharacterFile {
 			dy: number;
 			centerSquareSize: number;
 			size: number;
+			default?: boolean;
 		};
 		layout?: string;
 		layoutTree?: any;

@@ -3,7 +3,7 @@ import { PenComponent } from './PenComponent'
 import { PolygonComponent } from './PolygonComponent'
 import { EllipseComponent } from './EllipseComponent'
 import { RectangleComponent } from './RectangleComponent'
-import { clearCanvas, fillBackground, renderCanvas } from '../canvas/canvas'
+import { clearCanvas, fillBackground, renderCanvas, renderGridCanvas } from '../canvas/canvas'
 import { fontRenderStyle, background, grid } from '../stores/global'
 import { Joint } from './Joint'
 import { mapCanvasX, mapCanvasY } from '../../utils/canvas'
@@ -75,6 +75,56 @@ class CustomGlyph {
 			component.render(canvas, {
 				offset,
 				scale: scale,
+			})
+		})
+		if (fontRenderStyle.value === 'color' || fill) {
+			ctx.fillStyle = '#000'
+			ctx.fill()
+		}
+	}
+
+	public render_grid (canvas: HTMLCanvasElement, renderBackground: Boolean = true, offset: {
+		x: number,
+		y: number,
+	} = { x: 0, y: 0 }, fill: boolean = false, scale: number = 1, grid: any) {
+		const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
+		renderGridCanvas(orderedListWithItemsForGlyph(this._glyph), canvas, {
+			offset,
+			scale: scale,
+			fill: false,
+			forceUpdate: false,
+			grid,
+		})
+		this._components.forEach((component) => {
+			component.render_grid(canvas, {
+				offset,
+				scale: scale,
+				grid,
+			})
+		})
+		if (fontRenderStyle.value === 'color' || fill) {
+			ctx.fillStyle = '#000'
+			ctx.fill()
+		}
+	}
+
+	public render_grid_forceUpdate (canvas: HTMLCanvasElement, renderBackground: Boolean = true, offset: {
+		x: number,
+		y: number,
+	} = { x: 0, y: 0 }, fill: boolean = false, scale: number = 1, grid: any) {
+		const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
+		renderCanvas(orderedListWithItemsForGlyph(this._glyph), canvas, {
+			offset,
+			scale: scale,
+			fill: false,
+			forceUpdate: true,
+			grid,
+		})
+		this._components.forEach((component) => {
+			component.render(canvas, {
+				offset,
+				scale: scale,
+				grid,
 			})
 		})
 		if (fontRenderStyle.value === 'color' || fill) {

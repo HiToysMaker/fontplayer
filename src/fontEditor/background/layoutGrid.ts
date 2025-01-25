@@ -30,7 +30,7 @@ const layoutGrid = (
 
 	ctx.strokeStyle = '#811616'
 	ctx.lineWidth = 2
-	
+
 	// grid
 	ctx.beginPath()
 	ctx.moveTo(0, mapCanvasHeight(y1))

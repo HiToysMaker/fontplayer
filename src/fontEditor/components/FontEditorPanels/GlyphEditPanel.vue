@@ -260,6 +260,7 @@
   watch(tool, (newValue, oldValue) => {
     saveState('选择工具', [StoreType.Tools], OpType.Undo, {
       tool: oldValue,
+      newRecord: true,
     })
     if (!mounted) return
     render()

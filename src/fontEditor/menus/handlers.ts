@@ -1994,6 +1994,7 @@ const generateCharFile = (data) => {
         dy: 0,
         centerSquareSize: selectedFile.value.width / 3,
         size: selectedFile.value.width,
+        default: true,
       },
       layout: '',
       layoutTree: [],

@@ -60,6 +60,8 @@
   import * as R from 'ramda'
   import { linkComponentsForJoints } from '../../programming/Joint'
   import { clearState, OpType, redo, saveState, StoreType, undo } from '../../stores/edit'
+  import { gridSettings } from '../../stores/global'
+import { ElMessageBox } from 'element-plus'
 
   const mounted: Ref<boolean> = ref(false)
   let closeTool: Function | null = null
@@ -127,29 +129,29 @@
   })
 
   const onGridChange = (dx, dy, centerSquareSize) => {
-    // gridSettings.value.dx = dx
-    // gridSettings.value.dy = dy
-    // gridSettings.value.centerSquareSize = centerSquareSize
-    const info = R.clone(editCharacterFile.value.info)
-    if (info.gridSettings) {
-      info.gridSettings.dx = dx
-      info.gridSettings.dy = dy
-      info.gridSettings.centerSquareSize = centerSquareSize
-      // const x1 = Math.round((info.gridSettings.size - centerSquareSize) / 2) + dx
-      // const x2 =  Math.round((info.gridSettings.size - centerSquareSize) / 2 + centerSquareSize) + dx
-      // const y1 = Math.round((info.gridSettings.size - centerSquareSize) / 2) + dy
-      // const y2 = Math.round((info.gridSettings.size - centerSquareSize) / 2 + centerSquareSize) + dy
-      // const l = info.gridSettings.size
-      // formatLayout(
-      //   info.layoutTree,
-      //   { x: 0, y: 0, w: l, h: l, },
-      //   1,
-      //   { x1, x2, y1, y2, l },
-      // )
-    }
-    modifyCharacterFile(editCharacterFileUUID.value, {
-      info,
-    })
+    gridSettings.value.dx = dx
+    gridSettings.value.dy = dy
+    gridSettings.value.centerSquareSize = centerSquareSize
+    // const info = R.clone(editCharacterFile.value.info)
+    // if (info.gridSettings) {
+    //   info.gridSettings.dx = dx
+    //   info.gridSettings.dy = dy
+    //   info.gridSettings.centerSquareSize = centerSquareSize
+    //   // const x1 = Math.round((info.gridSettings.size - centerSquareSize) / 2) + dx
+    //   // const x2 =  Math.round((info.gridSettings.size - centerSquareSize) / 2 + centerSquareSize) + dx
+    //   // const y1 = Math.round((info.gridSettings.size - centerSquareSize) / 2) + dy
+    //   // const y2 = Math.round((info.gridSettings.size - centerSquareSize) / 2 + centerSquareSize) + dy
+    //   // const l = info.gridSettings.size
+    //   // formatLayout(
+    //   //   info.layoutTree,
+    //   //   { x: 0, y: 0, w: l, h: l, },
+    //   //   1,
+    //   //   { x1, x2, y1, y2, l },
+    //   // )
+    // }
+    // modifyCharacterFile(editCharacterFileUUID.value, {
+    //   info,
+    // })
   }
 
 	// 初始化工具，当切换工具时，调用对应工具的初始化方法
@@ -188,6 +190,13 @@
   // watch for tool change
   watch(tool, (newValue, oldValue) => {
     if (!mounted) return
+    if (oldValue === 'grid') {
+      ElMessageBox.alert(
+        '为方便用户进行组件编辑操作，离开布局编辑界面会恢复默认布局。如果您已经应用布局变换，预览及导出字体库会使用应用变换后的布局，但是在其他编辑操作时，界面仍使用默认布局。',
+        '提示：您已经离开布局编辑界面', {
+        confirmButtonText: '确定',
+      })
+    }
     render()
     switch (tool.value) {
       case 'select':
@@ -392,12 +401,19 @@
   <section class="edit-panel-wrapper">
     <main class="canvas-wrapper">
       <div class="grid" v-show="tool === 'grid'">
-        <grid-controller
+        <!-- <grid-controller
           :size="editCharacterFile.info.gridSettings.size"
           :dx="editCharacterFile.info.gridSettings.dx"
           :dy="editCharacterFile.info.gridSettings.dy"
           :centerSquareSize="editCharacterFile.info.gridSettings.centerSquareSize"
           :layoutTree="editCharacterFile.info.layoutTree"
+          :onChange="onGridChange"
+        ></grid-controller> -->
+        <grid-controller
+          :size="gridSettings.size"
+          :dx="gridSettings.dx"
+          :dy="gridSettings.dy"
+          :centerSquareSize="gridSettings.centerSquareSize"
           :onChange="onGridChange"
         ></grid-controller>
       </div>
@@ -471,6 +487,7 @@
     width: 100%;
     align-items: center;
     justify-content: center;
+    background-color: var(--dark-1);
   }
   .edit-canvas-wrapper {
     flex: 0 0 1;

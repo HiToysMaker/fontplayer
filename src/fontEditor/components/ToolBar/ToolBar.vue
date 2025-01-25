@@ -351,7 +351,8 @@
       >
         <font-awesome-icon :icon="['fas', 'sliders']" />
       </el-icon>
-      <!--<el-icon
+      <el-icon
+        v-show="editStatus === Status.Edit"
         :class="{
           'tool-icon': true,
           'selected': tool === 'grid',
@@ -359,7 +360,7 @@
         @click="switchTool('grid')"
       >
         <font-awesome-icon :icon="['fas', 'table-cells']" />
-      </el-icon>-->
+      </el-icon>
       <div class="to-list" @click="toList">
         <el-icon class="to-list-icon"><Grid /></el-icon>
         <span class="to-list-label">字符列表</span>

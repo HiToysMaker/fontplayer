@@ -103,10 +103,15 @@
 		if (!canvas) return
 		//renderPreview(characterFile, canvas)
 		// loading.value = true
+		let defaultGrid = true
+		if (characterFile && characterFile.info && characterFile.info.gridSettings) {
+			defaultGrid = characterFile.info.gridSettings.default
+		}
 		const contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(orderedListWithItemsForCharacterFile(characterFile), {
 			unitsPerEm,
 			descender,
 			advanceWidth: unitsPerEm,
+			grid: defaultGrid ? null : characterFile.info.gridSettings,
 		}, { x: 0, y: 0 }, false, true, true)
 		renderPreview2(canvas, contours)
 		// loading.value = false

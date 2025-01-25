@@ -4,6 +4,7 @@ import { mapCanvasX, mapCanvasY } from '../../utils/canvas'
 import { selectedFile } from '../stores/files'
 import { formatPoints, genPolygonContour } from '../../features/font'
 import * as R from 'ramda'
+import { computeCoords } from '../canvas/canvas'
 
 interface IOption {
 	offset?: {
@@ -11,6 +12,7 @@ interface IOption {
     y: number,
   };
 	scale?: number;
+	grid?: any;
 }
 
 class PolygonComponent {
@@ -75,6 +77,34 @@ class PolygonComponent {
 		}
 	}
 
+	public render_grid (canvas: HTMLCanvasElement, options: IOption = {
+		offset: { x: 0, y: 0 },
+		scale: 1,
+		grid: null,
+	}) {
+		const translate = (point) => {
+			return {
+				x: options.offset.x + point.x,
+				y: options.offset.y + point.y,
+			}
+		}
+		const scale = options.scale
+		if (this.points.length >= 4) {
+			const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
+			ctx.strokeStyle = '#000'
+			ctx.beginPath()
+			const start = computeCoords(options.grid, translate(this.points[0]))
+			ctx.moveTo(mapCanvasX(start.x) * scale, mapCanvasY(start.y) * scale)
+			for (let i = 1; i < this.points.length; i++) {
+				const { x, y } = computeCoords(options.grid, translate(this.points[i]))
+				ctx.lineTo(mapCanvasX(x) * scale, mapCanvasY(y) * scale)
+			}
+			ctx.stroke()
+			ctx.closePath()
+			ctx.setTransform(1, 0, 0, 1, 0, 0)
+		}
+	}
+
 	public getData = () => {
 		return {
 			points: R.clone(this.points),
@@ -95,8 +125,13 @@ class PolygonComponent {
 		this.preview = R.clone(data.preview)
 	}
 
-	public updateData = (isGlyph: boolean = true) => {
-		const points = this.points
+	public updateData = (isGlyph: boolean = true, grid?: any) => {
+		let points: any = this.points
+		if (grid) {
+			points = points.map((point) => {
+				return computeCoords(grid, point)
+			})
+		}
 		let options = {
 			unitsPerEm: 1000,
 			descender: -200,

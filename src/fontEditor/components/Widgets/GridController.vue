@@ -3,7 +3,7 @@
 	import { renderLayout } from '../../../features/layout'
 	import { editCharacterFile, executeCharacterScript, orderedListWithItemsForCurrentCharacterFile } from '../../stores/files'
 	import { emitter } from '../../Event/bus'
-	import { renderCanvas as renderCharacter } from '../../canvas/canvas'
+	import { renderCanvas as renderCharacter, renderGridCanvas } from '../../canvas/canvas'
 	import { tool } from '../../stores/global'
 	interface LayoutNode {
 		id: string;
@@ -196,13 +196,29 @@
 	watch([dx, dy, size, centerSquareSize, layoutTree], () => {
 		render()
 		executeCharacterScript(editCharacterFile.value)
-		emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
-		emitter.emit('renderCharacter', true)
-		renderCharacter(orderedListWithItemsForCurrentCharacterFile.value, canvas.value as unknown as HTMLCanvasElement, {
+		// emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
+		// emitter.emit('renderCharacter', true)
+		// renderCharacter(orderedListWithItemsForCurrentCharacterFile.value, canvas.value as unknown as HTMLCanvasElement, {
+		// 	scale: 0.5,
+		// 	forceUpdate: false,
+		// 	fill: false,
+    // 	offset: { x: 0, y: 0 },
+		// })
+		renderGridCanvas(orderedListWithItemsForCurrentCharacterFile.value, canvas.value as unknown as HTMLCanvasElement, {
 			scale: 0.5,
 			forceUpdate: false,
 			fill: false,
     	offset: { x: 0, y: 0 },
+			grid: {
+				dx: dx.value,
+				dy: dy.value,
+				size: size.value,
+				centerSquareSize: centerSquareSize.value,
+				x1: x1.value,
+				x2: x2.value,
+				y1: y1.value,
+				y2: y2.value,
+			}
 		})
 	}, {
 		deep: true,
@@ -308,4 +324,7 @@
   .left-bottom, .right-top {
     cursor: nesw-resize;
   }
+	.grid-controller {
+		background-color: white;
+	}
 </style>

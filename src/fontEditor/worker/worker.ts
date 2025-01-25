@@ -391,6 +391,7 @@ onmessage = (e) => {
 							dy: 0,
 							centerSquareSize: width / 3,
 							size: width,
+							default: true,
 						},
 						layout: '',
 						layoutTree: [],

@@ -28,6 +28,7 @@ import { PenComponent } from '../fontEditor/programming/PenComponent'
 import { PolygonComponent } from '../fontEditor/programming/PolygonComponent'
 import * as R from 'ramda'
 import { linkComponentsForJoints } from '../fontEditor/programming/Joint'
+import { computeCoords } from '../fontEditor/canvas/canvas'
 
 const contoursToComponents = (contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>, options: {
 	unitsPerEm: number,
@@ -209,6 +210,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 	unitsPerEm: number,
 	descender: number,
 	advanceWidth: number,
+	grid?: any,
 }, offset: {
 	x: number,
 	y: number,
@@ -228,6 +230,11 @@ const componentsToContours = (components: Array<_Component>, options: {
 					let transformed_points = transformPoints(((component as Component).value as unknown as IPenComponent).points, {
 						x, y, w, h, rotation, flipX, flipY,
 					})
+					if (options.grid) {
+						transformed_points = transformed_points.map((point) => {
+							return computeCoords(options.grid, point)
+						})
+					}
 					const contour_points = formatPoints(transformed_points, options, 1)
 					const contour = genPenContour(contour_points)
 
@@ -255,6 +262,11 @@ const componentsToContours = (components: Array<_Component>, options: {
 					let transformed_points = transformPoints(((component as Component).value as unknown as IPolygonComponent).points, {
 						x, y, w, h, rotation, flipX, flipY,
 					})
+					if (options.grid) {
+						transformed_points = transformed_points.map((point) => {
+							return computeCoords(options.grid, point)
+						})
+					}
 					const contour_points = formatPoints(transformed_points, options, 1)
 					const contour = genPolygonContour(contour_points)
 					contours.push(contour)
@@ -289,6 +301,11 @@ const componentsToContours = (components: Array<_Component>, options: {
 					), {
 						x, y, w, h, rotation, flipX, flipY,
 					})
+					if (options.grid) {
+						transformed_points = transformed_points.map((point) => {
+							return computeCoords(options.grid, point)
+						})
+					}
 					const contour_points = formatPoints(transformed_points, options, 1)
 					const contour = genRectangleContour(contour_points)
 					contours.push(contour)
@@ -322,9 +339,14 @@ const componentsToContours = (components: Array<_Component>, options: {
 						(component as IComponent).x + ellipse.radiusX,
 						(component as IComponent).y + ellipse.radiusY,
 					)
-					const transformed_points = transformPoints(points, {
+					let transformed_points = transformPoints(points, {
 						x, y, w, h, rotation, flipX, flipY,
 					})
+					if (options.grid) {
+						transformed_points = transformed_points.map((point) => {
+							return computeCoords(options.grid, point)
+						})
+					}
 					const contour_points = formatPoints(transformed_points, options, 1)
 					const contour = genEllipseContour(contour_points)
 					contours.push(contour)
@@ -350,7 +372,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 			}
 			case 'glyph-pen': {
 				if (!(component as PenComponent).contour || !(component as PenComponent).contour.length || forceUpdate) {
-					(component as PenComponent).updateData(isGlyph)
+					(component as PenComponent).updateData(isGlyph, options.grid)
 				}
 				if (!preview) {
 					contours.push((component as PenComponent).contour)

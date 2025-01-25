@@ -48,6 +48,7 @@
     if (!opstatus) {
 			saveGlyphEditState({
 				editGlyph: oldValue,
+				newRecord: true,
 			})
       opstatus = true
     }

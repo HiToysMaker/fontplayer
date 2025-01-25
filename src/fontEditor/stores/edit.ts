@@ -125,7 +125,7 @@ const saveState = (opName: String, opStores: StoreType[], opType: OpType, option
       }
     }
   }
-  if (options.newRecord) {
+  if (options.newRecord || !stack.length) {
     stack.push({
       opName,
       opStores,

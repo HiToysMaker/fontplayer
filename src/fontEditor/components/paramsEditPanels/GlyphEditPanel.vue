@@ -98,6 +98,7 @@
     if (!opstatus) {
       saveGlyphEditState({
 				editCharacterFile: oldValue,
+				newRecord: true,
 			})
       opstatus = true
     }

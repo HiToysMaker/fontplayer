@@ -3,6 +3,7 @@ import { getEllipsePoints } from '../../utils/math';
 import { selectedFile } from '../stores/files';
 import { formatPoints, genEllipseContour } from '../../features/font';
 import * as R from 'ramda';
+import { computeCoords } from '../canvas/canvas';
 
 interface IOption {
 	offset?: {
@@ -10,6 +11,7 @@ interface IOption {
     y: number,
   };
 	scale: number;
+	grid?: any;
 }
 
 class EllipseComponent {
@@ -45,6 +47,40 @@ class EllipseComponent {
 		ctx.setTransform(1, 0, 0, 1, 0, 0)
 	}
 
+	public render_grid (canvas: HTMLCanvasElement, options: IOption = {
+		offset: { x: 0, y: 0 },
+		scale: 1,
+		grid: null,
+	}) {
+		const translate = (point) => {
+			return {
+				x: options.offset.x + point.x,
+				y: options.offset.y + point.y,
+			}
+		}
+		let points = getEllipsePoints(
+			this.radiusX,
+			this.radiusY,
+			1000,
+			this.centerX + this.radiusX,
+			this.centerY + this.radiusY,
+		)
+		const scale = options.scale
+		const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
+		ctx.strokeStyle = '#000'
+		ctx.beginPath()
+		const start = computeCoords(options.grid, translate({ x: points[0].x, y: points[0].y }))
+		ctx.moveTo(mapCanvasX(start.x) * scale, mapCanvasY(start.y) * scale)
+		for (let i = 1; i < points.length; i++) {
+			const { x, y } = computeCoords(options.grid, translate({ x: points[i].x, y: points[i].y }))
+			ctx.lineTo(mapCanvasX(x) * scale, mapCanvasY(y) * scale)
+		}
+		ctx.lineTo(mapCanvasX(start.x) * scale, mapCanvasY(start.y) * scale)
+		ctx.stroke()
+		ctx.closePath()
+		ctx.setTransform(1, 0, 0, 1, 0, 0)
+	}
+
 	public getData = () => {
 		return {
 			centerX: this.centerX,
@@ -68,14 +104,19 @@ class EllipseComponent {
 		this.preview = R.clone(data.preview)
 	}
 
-	public updateData = (isGlyph: boolean = true) => {
-		const points = getEllipsePoints(
+	public updateData = (isGlyph: boolean = true, grid?: any) => {
+		let points: any = getEllipsePoints(
 			this.radiusX,
 			this.radiusY,
 			1000,
 			this.centerX,
 			this.centerY,
 		)
+		if (grid) {
+			points = points.map((point) => {
+				return computeCoords(grid, point)
+			})
+		}
 		let options = {
 			unitsPerEm: 1000,
 			descender: -200,
