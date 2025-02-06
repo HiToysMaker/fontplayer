@@ -24,7 +24,7 @@
     mapCanvasWidth,
     mapCanvasHeight,
   } from '../../../utils/canvas'
-  import { tool, grid, background, setCanvas, canvas, fontRenderStyle, width, height, setTool, checkJoints, checkRefLines } from '../../stores/global'
+  import { tool, grid, background, setCanvas, canvas, fontRenderStyle, width, height, setTool, checkJoints, checkRefLines, gridChanged } from '../../stores/global'
   import { initPen, renderPenEditor } from '../../tools/pen'
   import { initSelect, renderSelectEditor } from '../../tools/select/select'
   import { initEllipse, renderEllipseEditor } from '../../tools/ellipse'
@@ -61,7 +61,7 @@
   import { linkComponentsForJoints } from '../../programming/Joint'
   import { clearState, OpType, redo, saveState, StoreType, undo } from '../../stores/edit'
   import { gridSettings } from '../../stores/global'
-import { ElMessageBox } from 'element-plus'
+  import { ElMessageBox } from 'element-plus'
 
   const mounted: Ref<boolean> = ref(false)
   let closeTool: Function | null = null
@@ -117,6 +117,8 @@ import { ElMessageBox } from 'element-plus'
   // onUnmounted关闭工具栏和布局编辑器
   // onUnmounted operation
   onUnmounted(() => {
+    emitter.off('renderCharacter')
+    emitter.off('renderCharacter_forceUpdate')
     document.removeEventListener('keydown', onKeyDown)
     clearState()
     if (closeTool) {
@@ -129,6 +131,7 @@ import { ElMessageBox } from 'element-plus'
   })
 
   const onGridChange = (dx, dy, centerSquareSize) => {
+    gridChanged.value = true
     gridSettings.value.dx = dx
     gridSettings.value.dy = dy
     gridSettings.value.centerSquareSize = centerSquareSize
@@ -190,13 +193,6 @@ import { ElMessageBox } from 'element-plus'
   // watch for tool change
   watch(tool, (newValue, oldValue) => {
     if (!mounted) return
-    if (oldValue === 'grid') {
-      ElMessageBox.alert(
-        '为方便用户进行组件编辑操作，离开布局编辑界面会恢复默认布局。如果您已经应用布局变换，预览及导出字体库会使用应用变换后的布局，但是在其他编辑操作时，界面仍使用默认布局。',
-        '提示：您已经离开布局编辑界面', {
-        confirmButtonText: '确定',
-      })
-    }
     render()
     switch (tool.value) {
       case 'select':
@@ -229,7 +225,7 @@ import { ElMessageBox } from 'element-plus'
     deep: true
   })
 
-  watch([() => selectedComponent.value?.value.layout, () => SubComponentsRoot.value?.value.layout], () => {
+  watch([() => selectedComponent.value?.value?.layout, () => SubComponentsRoot.value?.value?.layout], () => {
     render()
     if (editingLayout.value && (selectedComponent.value || SubComponentsRoot.value)) {
       renderLayoutEditor(canvas.value)
@@ -266,6 +262,7 @@ import { ElMessageBox } from 'element-plus'
     setCanvas(_canvas)
     render()
 		renderRefComponents()
+    tool.value === 'select' && renderSelectEditor(canvas.value)
     tool.value === 'pen' && renderPenEditor(canvas.value)
     emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
   })
@@ -275,6 +272,8 @@ import { ElMessageBox } from 'element-plus'
     penEditing,
   ], () => {
     render()
+    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!penEditing.value) return
     renderPenEditor(canvas.value)
   })
@@ -284,6 +283,8 @@ import { ElMessageBox } from 'element-plus'
     polygonEditing,
   ], () => {
     render()
+    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!polygonEditing.value) return
     renderPolygonEditor(polygonPoints, canvas.value)
   })
@@ -296,6 +297,8 @@ import { ElMessageBox } from 'element-plus'
     ellipseEditing,
   ], () => {
     render()
+    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!ellipseEditing.value) return
     renderEllipseEditor(canvas.value)
   })
@@ -308,6 +311,8 @@ import { ElMessageBox } from 'element-plus'
     rectangleEditing,
   ], () => {
     render()
+    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!rectangleEditing.value) return
     renderRectangleEditor(canvas.value)
   })

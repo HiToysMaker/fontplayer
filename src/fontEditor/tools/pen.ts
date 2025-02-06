@@ -32,6 +32,8 @@ const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 	const controlScale = 0.35
 	const nearD = 5
 	let closePath = false
+	let _lastControl: IPoint
+	let _controlIndex: number
 	const onMouseDown = (e: MouseEvent) => {
 		if (!points.value.length) {
 			// 保存状态
@@ -76,8 +78,6 @@ const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 			}
 		}
 	}
-	let _lastControl: IPoint
-	let _controlIndex: number
 	const onMouseMove = (e: MouseEvent) => {
 		if (!points.value.length || !editing) return
 		const _points = R.clone(points.value)
@@ -154,6 +154,8 @@ const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 				const _control2 = _points[_points.length - 1]
 				_anchor.x = getCoord(e.offsetX)
 				_anchor.y = getCoord(e.offsetY)
+				_control2.x = getCoord(e.offsetX)
+				_control2.y = getCoord(e.offsetY)
 				closePath = false
 				// 当鼠标移动至第一个锚点所在位置附近时，自动闭合路径
 				if (isNearPoint(getCoord(e.offsetX), getCoord(e.offsetY), points.value[0].x, points.value[0].y, nearD)) {
@@ -189,6 +191,10 @@ const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 			} else {
 				addComponentForCurrentGlyph(component)
 			}
+			_lastControl = undefined
+			_controlIndex = undefined
+			closePath = false
+			editAnchor = null
 		}
 	}
 	const onEnter = (e: KeyboardEvent) => {
@@ -232,6 +238,10 @@ const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 			addComponentForCurrentGlyph(genPenComponent(R.clone(points).value, true))
 		}
 		setPoints([])
+		_lastControl = undefined
+		_controlIndex = undefined
+		closePath = false
+		editAnchor = null
 	}
 	const onKeyDown = (e: KeyboardEvent) => {
 		if (e.code === 'Enter') {
@@ -249,6 +259,10 @@ const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 		window.removeEventListener('keydown', onKeyDown)
 		setEditing(false)
 		setPoints([])
+		_lastControl = undefined
+		_controlIndex = undefined
+		closePath = false
+		editAnchor = null
 	}
 	return closePen
 }

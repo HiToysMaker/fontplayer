@@ -141,8 +141,11 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       if (fillColor === 'none') {
         ctx.fillStyle = 'rgba(0, 0, 0, 0)'
       }
+      // let _points = transformPoints(points, {
+      //   x, y, w, h, rotation, flipX, flipY,
+      // })
       let _points = transformPoints(points, {
-        x, y, w, h, rotation, flipX, flipY,
+        x, y, w, h, rotation: 0, flipX, flipY,
       })
       _points = _points.map((point: IPoint) => {
         return mapCanvasCoords({
@@ -182,7 +185,7 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       ctx.strokeStyle = strokeColor || '#000'
       ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
       let _points = transformPoints(points, {
-        x, y, w, h, rotation, flipX, flipY,
+        x, y, w, h, rotation: 0, flipX, flipY,
       })
       _points = _points.map((point: IPoint) => {
         return mapCanvasCoords({
@@ -371,12 +374,10 @@ const computeCoords = (grid, point) => {
     y2 = Math.round((size - centerSquareSize) / 2 + centerSquareSize) + dy
   }
   const { x, y } = point
-  //console.log('compute', size, x1, x2, x, y)
   let _x = x
   let _y = y
   if (x < size / 3) {
     _x = x * x1 / (size / 3)
-    //console.log(1, x, _x)
   } else if (x >= size / 3 && x < size * 2 / 3) {
     _x = x1 + (x - size / 3) * (x2 - x1) / (size / 3)
   } else {

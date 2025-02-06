@@ -1,7 +1,7 @@
 import { mapCanvasX, mapCanvasY } from '../../utils/canvas'
 import { getEllipsePoints } from '../../utils/math';
 import { selectedFile } from '../stores/files';
-import { formatPoints, genEllipseContour } from '../../features/font';
+import { formatPoints, genEllipseContour, translate } from '../../features/font';
 import * as R from 'ramda';
 import { computeCoords } from '../canvas/canvas';
 
@@ -104,7 +104,7 @@ class EllipseComponent {
 		this.preview = R.clone(data.preview)
 	}
 
-	public updateData = (isGlyph: boolean = true, grid?: any) => {
+	public updateData = (isGlyph: boolean = true, offset: { x: number, y: number }, grid?: any) => {
 		let points: any = getEllipsePoints(
 			this.radiusX,
 			this.radiusY,
@@ -112,6 +112,14 @@ class EllipseComponent {
 			this.centerX,
 			this.centerY,
 		)
+		points = points.map((point) => {
+			const p = translate(point, offset)
+			if (grid) {
+				return computeCoords(grid, p)
+			} else {
+				return p
+			}
+		})
 		if (grid) {
 			points = points.map((point) => {
 				return computeCoords(grid, point)

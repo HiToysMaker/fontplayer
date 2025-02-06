@@ -100,6 +100,7 @@ const initPolygon = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 				addComponentForCurrentGlyph(genPolygonComponent(R.clone(points.value), true))
 			}
 			setPoints([])
+			closePath = false
 		}
 	}
 	const onEnter = (e: KeyboardEvent) => {
@@ -120,6 +121,7 @@ const initPolygon = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 			addComponentForCurrentGlyph(genPolygonComponent(R.clone(points.value), true))
 		}
 		setPoints([])
+		closePath = false
 	}
 	const onKeyDown = (e: KeyboardEvent) => {
 		if (e.code === 'Enter') {
@@ -136,6 +138,8 @@ const initPolygon = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 		window.removeEventListener('keydown', onKeyDown)
 		window.removeEventListener('mousemove', onMouseMove)
 		setEditing(false)
+		setPoints([])
+		closePath = false
 	}
 	return closePolygon
 }

@@ -15,6 +15,14 @@ import { instanceGlyph } from '../menus/handlers'
 import { emitter } from '../Event/bus'
 import { Status, editStatus, setEditStatus, setPrevStatus } from './font'
 import { copiedGlyphUUID, editedGlyphUUID, glyphComponentsDialogVisible2, setAddGlyphDialogVisible, setCopyGlyphDialogVisible, setEditGlyphDialogVisible } from './dialogs'
+import {
+	editing as penEditing,
+} from './pen'
+import {
+	editing as polygonEditing,
+} from './polygon'
+import { editing as ellipseEditing } from './ellipse'
+import { editing as rectangleEditing } from './rectangle'
 
 // 字形组件数据结构
 // custom component data struct
@@ -596,12 +604,18 @@ const insertComponentForCurrentGlyph = (component: Component, options: { uuid: s
 const setSelectionForCurrentGlyph = (uuid: string) => {
 	const onKeyDown = (e: KeyboardEvent) => {
 		if (e.key === 'Shift') {
+			if (penEditing.value || polygonEditing.value || ellipseEditing.value || rectangleEditing.value) {
+				return
+			}
 			e.preventDefault()
 			enableMultiSelect.value = true
 		}
 	}
 	const onKeyUp = (e: KeyboardEvent) => {
 		if (e.key === 'Shift') {
+			if (penEditing.value || polygonEditing.value || ellipseEditing.value || rectangleEditing.value) {
+				return
+			}
 			e.preventDefault()
 			enableMultiSelect.value = false
 		}

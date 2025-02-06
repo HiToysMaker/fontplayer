@@ -17,7 +17,7 @@ import {
 	mapCanvasHeight,
 	getCoord,
 } from '../../../utils/canvas'
-import type { IPoint } from "../../stores/pen"
+import { points, type IPoint } from "../../stores/pen"
 import * as R from 'ramda'
 import {
 	selectControl,
@@ -51,230 +51,250 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 	let lastX = -1
 	let lastY = -1
 	let mousedown = false
-	const onMouseDown = glyph ? (e: MouseEvent) => {
-		mousedown = true
-		for (let i = orderedListWithItemsForCurrentGlyph.value.length - 1; i >=0; i--) {
-			const component = orderedListWithItemsForCurrentGlyph.value[i] as IComponent
-			const { x: _x, y: _y } = rotatePoint(
-				{ x: getCoord(e.offsetX), y: getCoord(e.offsetY) },
-				{ x: component.x + component.w / 2, y: component.y + component.h / 2 },
-				-component.rotation
-			)
-			if (selectedComponentUUID_glyph.value === component.uuid && component.visible) {
-				const _points = transformPenPoints(selectedComponent_glyph.value, false)
-				for (let i = 0; i < _points.length - 1; i++) {
-					const point = _points[i]
-					// 鼠标移动至point
-					if (distance(_x, _y, point.x, point.y) <= d) {
-						if (point.type === 'anchor') {
-							// 选择锚点
-							selectAnchor.value = point.uuid
-							selectPenPoint.value = point.uuid
-							return
-						} else if (selectAnchor.value) {
-							// 选择控制点
-							const _index: number = (() => {
-								for (let j = 0; j < _points.length; j++) {
-									if (_points[j].uuid === selectAnchor.value) {
-										return j
+	const onMouseDown = (e: MouseEvent) => {
+		if (glyph) {
+			mousedown = true
+			for (let i = orderedListWithItemsForCurrentGlyph.value.length - 1; i >=0; i--) {
+				const component = orderedListWithItemsForCurrentGlyph.value[i] as IComponent
+				const { x: _x, y: _y } = rotatePoint(
+					{ x: getCoord(e.offsetX), y: getCoord(e.offsetY) },
+					{ x: component.x + component.w / 2, y: component.y + component.h / 2 },
+					-component.rotation
+				)
+				if (selectedComponentUUID_glyph.value === component.uuid && component.visible) {
+					const _points = transformPenPoints(selectedComponent_glyph.value, false)
+					for (let i = 0; i < _points.length - 1; i++) {
+						const point = _points[i]
+						// 鼠标移动至point
+						if (distance(_x, _y, point.x, point.y) <= d) {
+							if (point.type === 'anchor') {
+								// 选择锚点
+								selectAnchor.value = point.uuid
+								selectPenPoint.value = point.uuid
+								return
+							} else if (selectAnchor.value) {
+								// 选择控制点
+								const _index: number = (() => {
+									for (let j = 0; j < _points.length; j++) {
+										if (_points[j].uuid === selectAnchor.value) {
+											return j
+										}
 									}
+									return -1
+								})()
+								if (i <= _index + 4 && i >= _index - 4) {
+									selectPenPoint.value = point.uuid
+								} else if (i === 1 && _index === _points.length - 1) {
+									// 最后一个锚点（和第一个锚点重合），第二个控制点为第一个锚点的第一个控制点
+									selectPenPoint.value = point.uuid
 								}
-								return -1
-							})()
-							if (i <= _index + 4 && i >= _index - 4) {
-								selectPenPoint.value = point.uuid
-							} else if (i === 1 && _index === _points.length - 1) {
-								// 最后一个锚点（和第一个锚点重合），第二个控制点为第一个锚点的第一个控制点
-								selectPenPoint.value = point.uuid
 							}
 						}
 					}
+					return
 				}
+				// if (inComponentBound({ x: _x, y: _y }, component) && component.visible) {
+				// 	setSelectionForCurrentGlyph(component.uuid)
+				// 	return
+				// }
+			}
+			if (!selectedComponent.value.visible) {
+				mousedown = false
 				return
 			}
-			// if (inComponentBound({ x: _x, y: _y }, component) && component.visible) {
-			// 	setSelectionForCurrentGlyph(component.uuid)
-			// 	return
-			// }
-		}
-		if (!selectedComponent.value.visible) {
-			mousedown = false
-			return
-		}
-		const { x, y, w, h, rotation, uuid} = selectedComponent.value
-		const { x: _x, y: _y } = rotatePoint(
-			{ x: getCoord(e.offsetX), y: getCoord(e.offsetY) },
-			{ x: x + w / 2, y: y + h / 2 },
-			-rotation
-		)
-		lastX = _x
-		lastY = _y
-		setSelectionForCurrentGlyph('')
-	} :
-	(e: MouseEvent) => {
-		mousedown = true
-		for (let i = orderedListWithItemsForCurrentCharacterFile.value.length - 1; i >= 0; i--) {
-			const component = orderedListWithItemsForCurrentCharacterFile.value[i]
+			const { x, y, w, h, rotation, uuid} = selectedComponent.value
 			const { x: _x, y: _y } = rotatePoint(
 				{ x: getCoord(e.offsetX), y: getCoord(e.offsetY) },
-				{ x: component.x + component.w / 2, y: component.y + component.h / 2 },
-				-component.rotation
+				{ x: x + w / 2, y: y + h / 2 },
+				-rotation
 			)
-			if (selectedComponentUUID.value === component.uuid && component.visible) {
-				const _points = transformPenPoints(selectedComponent.value, false)
-				for (let i = 0; i < _points.length - 1; i++) {
-					const point = _points[i]
-					// 鼠标移动至point
-					if (distance(_x, _y, point.x, point.y) <= d) {
-						if (point.type === 'anchor') {
-							// 选择锚点
-							selectAnchor.value = point.uuid
-							selectPenPoint.value = point.uuid
-							return
-						} else if (selectAnchor.value) {
-							// 选择控制点
-							const _index: number = (() => {
-								for (let j = 0; j < _points.length; j++) {
-									if (_points[j].uuid === selectAnchor.value) {
-										return j
+			lastX = _x
+			lastY = _y
+			setSelectionForCurrentGlyph('')
+		} else {
+			mousedown = true
+			for (let i = orderedListWithItemsForCurrentCharacterFile.value.length - 1; i >= 0; i--) {
+				const component = orderedListWithItemsForCurrentCharacterFile.value[i]
+				const { x: _x, y: _y } = rotatePoint(
+					{ x: getCoord(e.offsetX), y: getCoord(e.offsetY) },
+					{ x: component.x + component.w / 2, y: component.y + component.h / 2 },
+					-component.rotation
+				)
+				if (selectedComponentUUID.value === component.uuid && component.visible) {
+					const _points = transformPenPoints(selectedComponent.value, false)
+					for (let i = 0; i < _points.length - 1; i++) {
+						const point = _points[i]
+						// 鼠标移动至point
+						if (distance(_x, _y, point.x, point.y) <= d) {
+							if (point.type === 'anchor') {
+								// 选择锚点
+								selectAnchor.value = point.uuid
+								selectPenPoint.value = point.uuid
+								return
+							} else if (selectAnchor.value) {
+								// 选择控制点
+								const _index: number = (() => {
+									for (let j = 0; j < _points.length; j++) {
+										if (_points[j].uuid === selectAnchor.value) {
+											return j
+										}
 									}
+									return -1
+								})()
+								if (i <= _index + 4 && i >= _index - 4) {
+									selectPenPoint.value = point.uuid
+								} else if (i === 1 && _index === _points.length - 1) {
+									// 最后一个锚点（和第一个锚点重合），第二个控制点为第一个锚点的第一个控制点
+									selectPenPoint.value = point.uuid
 								}
-								return -1
-							})()
-							if (i <= _index + 4 && i >= _index - 4) {
-								selectPenPoint.value = point.uuid
-							} else if (i === 1 && _index === _points.length - 1) {
-								// 最后一个锚点（和第一个锚点重合），第二个控制点为第一个锚点的第一个控制点
-								selectPenPoint.value = point.uuid
 							}
 						}
 					}
+					return
 				}
-				return
+				// if (inComponentBound({ x: _x, y: _y }, component) && component.visible) {
+				// 	// 选择钢笔路径组件
+				// 	setSelectionForCurrentCharacterFile(component.uuid)
+				// 	return
+				// }
 			}
-			// if (inComponentBound({ x: _x, y: _y }, component) && component.visible) {
-			// 	// 选择钢笔路径组件
-			// 	setSelectionForCurrentCharacterFile(component.uuid)
-			// 	return
-			// }
+			if (!selectedComponent.value.visible) return
+			const { x, y, w, h, rotation, uuid} = selectedComponent.value
+			const { x: _x, y: _y } = rotatePoint(
+				{ x: getCoord(e.offsetX), y: getCoord(e.offsetY) },
+				{ x: x + w / 2, y: y + h / 2 },
+				-rotation
+			)
+			lastX = _x
+			lastY = _y
+			setSelectionForCurrentCharacterFile('')
 		}
-		if (!selectedComponent.value.visible) return
-		const { x, y, w, h, rotation, uuid} = selectedComponent.value
-		const { x: _x, y: _y } = rotatePoint(
-			{ x: getCoord(e.offsetX), y: getCoord(e.offsetY) },
-			{ x: x + w / 2, y: y + h / 2 },
-			-rotation
-		)
-		lastX = _x
-		lastY = _y
-		setSelectionForCurrentCharacterFile('')
 	}
 
-	const onMouseMove = glyph ? (e: MouseEvent) => {
-		if (!selectedComponent_glyph.value || !selectedComponent_glyph.value?.visible) return
-		const { x, y, w, h, rotation, uuid} = selectedComponent_glyph.value
-		const { x: _x, y: _y } = rotatePoint(
-			{ x: getCoord(e.offsetX), y: getCoord(e.offsetY) },
-			{ x: x + w / 2, y: y + h / 2 },
-			-rotation
-		)
-		const penComponentValue = selectedComponent_glyph.value.value as unknown as IPenComponent
-		const { points, closePath } = penComponentValue
-		if (mousedown) {
-			const _points = R.clone(points)
-			_points.map((point: IPoint, index: number) => {
-				if (selectPenPoint.value === point.uuid) {
-					point.x = _x
-					point.y = _y
-
-					if (point.type === 'anchor' && closePath && ( index < 2 || index > _points.length - 3 )) {
-						if (index < 2) {
-							for(let i = _points.length - 2; i < _points.length; i++) {
-								if (_points[i].type === 'anchor') {
-									_points[i].x += _x - lastY
-									_points[i].y += _y - lastY
+	const onMouseMove = (e: MouseEvent) => {
+		if (glyph) {
+			if (!selectedComponent_glyph.value || !selectedComponent_glyph.value?.visible) return
+			const { x, y, w, h, rotation, uuid} = selectedComponent_glyph.value
+			const { x: _x, y: _y } = rotatePoint(
+				{ x: getCoord(e.offsetX), y: getCoord(e.offsetY) },
+				{ x: x + w / 2, y: y + h / 2 },
+				-rotation
+			)
+			const penComponentValue = selectedComponent_glyph.value.value as unknown as IPenComponent
+			const { points, closePath } = penComponentValue
+			if (mousedown) {
+				const _points = R.clone(points)
+				_points.map((point: IPoint, index: number) => {
+					if (selectPenPoint.value === point.uuid) {
+						// 对于闭合路径，起始锚点和收尾锚点重合，应该一致移动
+						if (point.type === 'anchor' && closePath && ( index < 2 || index > _points.length - 3 )) {
+							if (index < 2) {
+								for(let i = _points.length - 2; i < _points.length; i++) {
+									if (_points[i].type === 'anchor' && _points[i].x === point.x && _points[i].y === point.y) {
+										_points[i].x = _x
+										_points[i].y = _y
+									}
 								}
-							}
-						} else if (index > _points.length - 3) {
-							for(let i = 0; i < 2; i++) {
-								if (points[i].type === 'anchor') {
-									_points[i].x = point.x
-									_points[i].y = point.y
-								}
-							}
-						}
-					}
-				}
-				return point
-			})
-			modifyComponentForCurrentGlyph(uuid, {
-				value: {
-					points: _points
-				}
-			})
-		}
-		if (!mousedown) {
-			points.map((point: IPoint) => {
-				if (distance(_x, _y, point.x, point.y) <= d) {
-					hoverPenPoint.value = point.uuid
-				}
-			})
-		}
-		lastX = _x
-		lastY = _y
-	} :
-	(e: MouseEvent) => {
-		if (!selectedComponent.value || !selectedComponent.value?.visible) return
-		const { x, y, w, h, rotation, uuid} = selectedComponent.value
-		const { x: _x, y: _y } = rotatePoint(
-			{ x: getCoord(e.offsetX), y: getCoord(e.offsetY) },
-			{ x: x + w / 2, y: y + h / 2 },
-			-rotation
-		)
-		const penComponentValue = selectedComponent.value.value as unknown as IPenComponent
-		const { points, closePath } = penComponentValue
-		if (mousedown) {
-			const _points = R.clone(points)
-			_points.map((point: IPoint, index: number) => {
-				if (selectPenPoint.value === point.uuid) {
-					point.x = _x
-					point.y = _y
-
-					if (point.type === 'anchor' && closePath && ( index < 2 || index > _points.length - 3 )) {
-						if (index < 2) {
-							for(let i = _points.length - 2; i < _points.length; i++) {
-								if (_points[i].type === 'anchor') {
-									_points[i].x += _x - lastY
-									_points[i].y += _y - lastY
-								}
-							}
-						} else if (index > _points.length - 3) {
-							for(let i = 0; i < 2; i++) {
-								if (points[i].type === 'anchor') {
-									_points[i].x = point.x
-									_points[i].y = point.y
+							} else if (index > _points.length - 3) {
+								for(let i = 0; i < 2; i++) {
+									if (points[i].type === 'anchor' && _points[i].x === point.x && _points[i].y === point.y) {
+										_points[i].x = _x
+										_points[i].y = _y
+									}
 								}
 							}
 						}
+
+						// 对于闭合路径，起始控制点和收尾控制点重合，应该一致移动
+						// TODO
+
+						point.x = _x
+						point.y = _y
 					}
-				}
-				return point
-			})
-			modifyComponentForCurrentCharacterFile(uuid, {
-				value: {
-					points: _points
-				}
-			})
+					return point
+				})
+				modifyComponentForCurrentGlyph(uuid, {
+					value: {
+						points: _points
+					}
+				})
+			}
+			if (!mousedown) {
+				points.map((point: IPoint, index) => {
+					if (distance(_x, _y, point.x, point.y) <= d) {
+						if (point.type === 'control' && index === points.length - 1 && points.length >= 2 && point.x === points[1].x && point.y === points[1].y) {
+							// 如果未闭合路径，且最后一个控制点和第一个控制点重合，改变第一个控制点
+							return
+						} else {
+							hoverPenPoint.value = point.uuid
+						}
+					}
+				})
+			}
+			lastX = _x
+			lastY = _y
+		} else {
+			if (!selectedComponent.value || !selectedComponent.value?.visible) return
+			const { x, y, w, h, rotation, uuid} = selectedComponent.value
+			const { x: _x, y: _y } = rotatePoint(
+				{ x: getCoord(e.offsetX), y: getCoord(e.offsetY) },
+				{ x: x + w / 2, y: y + h / 2 },
+				-rotation
+			)
+			const penComponentValue = selectedComponent.value.value as unknown as IPenComponent
+			const { points, closePath } = penComponentValue
+			if (mousedown) {
+				const _points = R.clone(points)
+				_points.map((point: IPoint, index: number) => {
+					if (selectPenPoint.value === point.uuid) {
+						// 对于闭合路径，起始锚点和收尾锚点重合，应该一致移动
+						if (point.type === 'anchor' && closePath && ( index < 2 || index > _points.length - 3 )) {
+							if (index < 2) {
+								for(let i = _points.length - 2; i < _points.length; i++) {
+									if (_points[i].type === 'anchor' && _points[i].x === point.x && _points[i].y === point.y) {
+										_points[i].x = _x
+										_points[i].y = _y
+									}
+								}
+							} else if (index > _points.length - 3) {
+								for(let i = 0; i < 2; i++) {
+									if (points[i].type === 'anchor' && _points[i].x === point.x && _points[i].y === point.y) {
+										_points[i].x = _x
+										_points[i].y = _y
+									}
+								}
+							}
+						}
+
+						// 对于闭合路径，起始控制点和收尾控制点重合，应该一致移动
+						// TODO
+
+						point.x = _x
+						point.y = _y
+					}
+					return point
+				})
+				modifyComponentForCurrentCharacterFile(uuid, {
+					value: {
+						points: _points
+					}
+				})
+			}
+			if (!mousedown) {
+				points.map((point: IPoint, index) => {
+					if (distance(_x, _y, point.x, point.y) <= d) {
+						if (point.type === 'control' && index === points.length - 1 && points.length >= 2 && point.x === points[1].x && point.y === points[1].y) {
+							// 如果未闭合路径，且最后一个控制点和第一个控制点重合，改变第一个控制点
+							return
+						} else {
+							hoverPenPoint.value = point.uuid
+						}
+					}
+				})
+			}
+			lastX = _x
+			lastY = _y
 		}
-		if (!mousedown) {
-			points.map((point: IPoint) => {
-				if (distance(_x, _y, point.x, point.y) <= d) {
-					hoverPenPoint.value = point.uuid
-				}
-			})
-		}
-		lastX = _x
-		lastY = _y
 	}
 
 	const onMouseUp = (e: MouseEvent) => {
@@ -434,7 +454,7 @@ const renderSelectPenEditor = (canvas: HTMLCanvasElement, d: number = 10, glyph:
 			}
 		}
 	}
-	for (let i = 0; i < _points.length - 1; i++) {
+	for (let i = 0; i < _points.length; i++) {
 		if (hoverPenPoint.value === _points[i].uuid) {
 			ctx.fillStyle = '#79bbff'
 			if (_points[i].type === 'anchor') {
@@ -443,9 +463,11 @@ const renderSelectPenEditor = (canvas: HTMLCanvasElement, d: number = 10, glyph:
 				ctx.fill()
 				ctx.closePath()
 			}
-			if (_points[i].type === 'control' && i >= index - 4 && i <= index + 4) {
-				ctx.fillRect(_points[i].x - d, _points[i].y - d, 2 * d, 2 * d)
+			// 只显示选中锚点前后控制点
+			if (_points[i].type === 'control' && i >= index - 4 && i <= index + 4) {	
+			  ctx.fillRect(_points[i].x - d, _points[i].y - d, 2 * d, 2 * d)
 			}
+
 			ctx.fillStyle = '#fff'
 		}
 	}

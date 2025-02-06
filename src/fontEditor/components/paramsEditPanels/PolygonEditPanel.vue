@@ -20,6 +20,7 @@
   import { editStatus, Status } from '../../stores/font'
   import { OpType, saveState, StoreType } from '../../stores/edit'
   import { useI18n } from 'vue-i18n'
+  import paper from 'paper'
   const { tm, t } = useI18n()
 
   const savePolygonEditState = () => {
@@ -111,48 +112,65 @@
     }), {
       x, y, w, h, rotation, flipX, flipY,
     })
-    const beziers: Array<any> = fitCurve(points, 10)
     let penPoints: Array<IPenPoint> = []
-    beziers.map((bezier: Array<{ x: number, y: number }>, index) => {
-      const uuid1 = genUUID()
+
+    // 创建一个闭合多边形
+    const segments = []
+    for(let i = 0; i < points.length - 1; i++) {
+      segments.push([points[i].x, points[i].y])
+    }
+    // 如果收尾节点和起始节点重合，则不添加
+    if (points[points.length - 1].x !== points[0].x || points[points.length - 1].y !== points[0].y) {
+      segments.push([points[points.length - 1].x, points[points.length - 1].y])
+    }
+
+    let path = new paper.Path({
+      segments,
+      closed: true,
+    })
+    path.smooth()
+    let uuid1 = genUUID()
+    for (let i = 0; i < path.curves.length; i++) {
+      const curve = path.curves[i]
       const uuid2 = genUUID()
       const uuid3 = genUUID()
-      const uuid4 = genUUID()
       penPoints.push({
         uuid: uuid1,
-        x: bezier[0].x,
-        y: bezier[0].y,
+        x: curve.points[0].x,
+        y: curve.points[0].y,
         type: 'anchor',
         origin: null,
         isShow: true,
       })
       penPoints.push({
         uuid: uuid2,
-        x: bezier[1].x,
-        y: bezier[1].y,
+        x: curve.points[1].x,
+        y: curve.points[1].y,
         type: 'control',
         origin: uuid1,
         isShow: false,
       })
+      uuid1 = genUUID()
       penPoints.push({
         uuid: uuid3,
-        x: bezier[2].x,
-        y: bezier[2].y,
+        x: curve.points[2].x,
+        y: curve.points[2].y,
         type: 'control',
-        origin: uuid4,
+        origin: uuid1,
         isShow: false,
       })
-      if (index >= beziers.length - 1) {
+      if (i >= path.curves.length - 1) {
         penPoints.push({
-          uuid: uuid4,
-          x: bezier[3].x,
-          y: bezier[3].y,
+          uuid: uuid1,
+          x: curve.points[3].x,
+          y: curve.points[3].y,
           type: 'anchor',
           origin: null,
           isShow: true,
         })
       }
-    })
+    }
+
     const { x: penX, y: penY, w: penW, h: penH } = getBound(penPoints)
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {

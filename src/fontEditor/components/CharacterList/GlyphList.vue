@@ -9,7 +9,7 @@
 	import { Status } from '../../stores/font'
 	import { glyphs, executeScript, addGlyphTemplate, clearGlyphRenderList, getGlyphType, getGlyphByUUID } from '../../stores/glyph'
 	import { glyphComponentsDialogVisible, setGlyphComponentsDialogVisible } from '../../stores/dialogs'
-	import { onMounted, nextTick } from 'vue'
+	import { onMounted, nextTick, onUnmounted } from 'vue'
 	import type {
 		ILine,
 		ICubicBezierCurve,
@@ -92,86 +92,85 @@
 		// loading.value = false
 	}
 
-	// 监听renderGlyphPreviewCanvas事件，需要调用nextTick保证预览canvas节点已经在dom中
-	// listen renderGlyphPreviewCanvas event, need to call nextTick to ensure that preview canvas is already added into dom
-	emitter.on('renderGlyphPreviewCanvas', async () => {
-		await nextTick()
-		renderPreviewCanvas()
-		emitter.emit('renderGlyphSelection')
-	})
-
-	// 监听渲染指定uuid字形预览事件
-	// listen for render glyph preview by uuid
-	emitter.on('renderGlyphPreviewCanvasByUUID', async (uuid: string) => {
-		const type: Status = getGlyphType(uuid)
-
-		if (type === Status.GlyphList) {
-			// render glyph preview
-			if (timerMap.get(uuid)) {
-				clearTimeout(timerMap.get(uuid))
-			}
-			const timer = setTimeout(async () => {
-				await nextTick()
-				renderGlyphPreviewCanvasByUUID(uuid)
-			}, 1000)
-			timerMap.set(uuid, timer)
-			emitter.emit('renderGlyphSelectionByUUID', uuid)
-		} else if (type === Status.StrokeGlyphList) {
-			emitter.emit('renderStrokeGlyphPreviewCanvasByUUID', uuid)
-			emitter.emit('renderStrokeGlyphSelectionByUUID', uuid)
-		} else if (type === Status.RadicalGlyphList) {
-			emitter.emit('renderRadicalGlyphPreviewCanvasByUUID', uuid)
-			emitter.emit('renderRadicalGlyphSelectionByUUID', uuid)
-		} else if (type === Status.CompGlyphList) {
-			emitter.emit('renderCompGlyphPreviewCanvasByUUID', uuid)
-			emitter.emit('renderCompGlyphSelectionByUUID', uuid)
-		}
-	})
-
-	// 监听更新指定uuid字形信息
-	// listen for update glyph info by uuid
-	emitter.on('updateGlyphInfoPreviewCanvasByUUID', async (uuid: string) => {
-		const type: Status = getGlyphType(uuid)
-		const glyph = getGlyphByUUID(uuid)
-
-		if (type === Status.GlyphList) {
-			const wrapper = document.getElementById('glyph-render-list')
-			const root: HTMLElement = wrapper.querySelector(`.glyph-${uuid}`) as HTMLElement;
-			(root as HTMLElement).querySelector('.name').innerHTML = `${glyph.name}`;
-
-			const wrapper2 = document.getElementById('glyph-components-wrapper')
-			const root2: HTMLElement = wrapper2.querySelector(`.glyph-${uuid}`) as HTMLElement;
-			(root2 as HTMLElement).querySelector('.name').innerHTML = `${glyph.name}`;
-		} else if (type === Status.StrokeGlyphList) {
-			const wrapper = document.getElementById('stroke-glyph-render-list')
-			const root: HTMLElement = wrapper.querySelector(`.glyph-${uuid}`) as HTMLElement;
-			(root as HTMLElement).querySelector('.name').innerHTML = `${glyph.name}`;
-
-			const wrapper2 = document.getElementById('stroke-glyph-components-wrapper')
-			const root2: HTMLElement = wrapper2.querySelector(`.glyph-${uuid}`) as HTMLElement;
-			(root2 as HTMLElement).querySelector('.name').innerHTML = `${glyph.name}`;
-		} else if (type === Status.RadicalGlyphList) {
-			const wrapper = document.getElementById('radical-glyph-render-list')
-			const root: HTMLElement = wrapper.querySelector(`.glyph-${uuid}`) as HTMLElement;
-			(root as HTMLElement).querySelector('.name').innerHTML = `${glyph.name}`;
-
-			const wrapper2 = document.getElementById('radical-glyph-components-wrapper')
-			const root2: HTMLElement = wrapper2.querySelector(`.glyph-${uuid}`) as HTMLElement;
-			(root2 as HTMLElement).querySelector('.name').innerHTML = `${glyph.name}`;
-		} else if (type === Status.CompGlyphList) {
-			const wrapper = document.getElementById('comp-glyph-render-list')
-			const root: HTMLElement = wrapper.querySelector(`.glyph-${uuid}`) as HTMLElement;
-			(root as HTMLElement).querySelector('.name').innerHTML = `${glyph.name}`;
-
-			const wrapper2 = document.getElementById('comp-glyph-components-wrapper')
-			const root2: HTMLElement = wrapper2.querySelector(`.glyph-${uuid}`) as HTMLElement;
-			(root2 as HTMLElement).querySelector('.name').innerHTML = `${glyph.name}`;
-		}
-	})
-
 	// 挂载组件时，渲染预览画布
 	// renderPreviewCanvas on mounted
 	onMounted(async () => {
+		// 监听renderGlyphPreviewCanvas事件，需要调用nextTick保证预览canvas节点已经在dom中
+		// listen renderGlyphPreviewCanvas event, need to call nextTick to ensure that preview canvas is already added into dom
+		emitter.on('renderGlyphPreviewCanvas', async () => {
+			await nextTick()
+			renderPreviewCanvas()
+			emitter.emit('renderGlyphSelection')
+		})
+
+		// 监听渲染指定uuid字形预览事件
+		// listen for render glyph preview by uuid
+		emitter.on('renderGlyphPreviewCanvasByUUID', async (uuid: string) => {
+			const type: Status = getGlyphType(uuid)
+
+			if (type === Status.GlyphList) {
+				// render glyph preview
+				if (timerMap.get(uuid)) {
+					clearTimeout(timerMap.get(uuid))
+				}
+				const timer = setTimeout(async () => {
+					await nextTick()
+					renderGlyphPreviewCanvasByUUID(uuid)
+				}, 1000)
+				timerMap.set(uuid, timer)
+				emitter.emit('renderGlyphSelectionByUUID', uuid)
+			} else if (type === Status.StrokeGlyphList) {
+				emitter.emit('renderStrokeGlyphPreviewCanvasByUUID', uuid)
+				emitter.emit('renderStrokeGlyphSelectionByUUID', uuid)
+			} else if (type === Status.RadicalGlyphList) {
+				emitter.emit('renderRadicalGlyphPreviewCanvasByUUID', uuid)
+				emitter.emit('renderRadicalGlyphSelectionByUUID', uuid)
+			} else if (type === Status.CompGlyphList) {
+				emitter.emit('renderCompGlyphPreviewCanvasByUUID', uuid)
+				emitter.emit('renderCompGlyphSelectionByUUID', uuid)
+			}
+		})
+
+		// 监听更新指定uuid字形信息
+		// listen for update glyph info by uuid
+		emitter.on('updateGlyphInfoPreviewCanvasByUUID', async (uuid: string) => {
+			const type: Status = getGlyphType(uuid)
+			const glyph = getGlyphByUUID(uuid)
+
+			if (type === Status.GlyphList) {
+				const wrapper = document.getElementById('glyph-render-list')
+				const root: HTMLElement = wrapper.querySelector(`.glyph-${uuid}`) as HTMLElement;
+				(root as HTMLElement).querySelector('.name').innerHTML = `${glyph.name}`;
+
+				const wrapper2 = document.getElementById('glyph-components-wrapper')
+				const root2: HTMLElement = wrapper2.querySelector(`.glyph-${uuid}`) as HTMLElement;
+				(root2 as HTMLElement).querySelector('.name').innerHTML = `${glyph.name}`;
+			} else if (type === Status.StrokeGlyphList) {
+				const wrapper = document.getElementById('stroke-glyph-render-list')
+				const root: HTMLElement = wrapper.querySelector(`.glyph-${uuid}`) as HTMLElement;
+				(root as HTMLElement).querySelector('.name').innerHTML = `${glyph.name}`;
+
+				const wrapper2 = document.getElementById('stroke-glyph-components-wrapper')
+				const root2: HTMLElement = wrapper2.querySelector(`.glyph-${uuid}`) as HTMLElement;
+				(root2 as HTMLElement).querySelector('.name').innerHTML = `${glyph.name}`;
+			} else if (type === Status.RadicalGlyphList) {
+				const wrapper = document.getElementById('radical-glyph-render-list')
+				const root: HTMLElement = wrapper.querySelector(`.glyph-${uuid}`) as HTMLElement;
+				(root as HTMLElement).querySelector('.name').innerHTML = `${glyph.name}`;
+
+				const wrapper2 = document.getElementById('radical-glyph-components-wrapper')
+				const root2: HTMLElement = wrapper2.querySelector(`.glyph-${uuid}`) as HTMLElement;
+				(root2 as HTMLElement).querySelector('.name').innerHTML = `${glyph.name}`;
+			} else if (type === Status.CompGlyphList) {
+				const wrapper = document.getElementById('comp-glyph-render-list')
+				const root: HTMLElement = wrapper.querySelector(`.glyph-${uuid}`) as HTMLElement;
+				(root as HTMLElement).querySelector('.name').innerHTML = `${glyph.name}`;
+
+				const wrapper2 = document.getElementById('comp-glyph-components-wrapper')
+				const root2: HTMLElement = wrapper2.querySelector(`.glyph-${uuid}`) as HTMLElement;
+				(root2 as HTMLElement).querySelector('.name').innerHTML = `${glyph.name}`;
+			}
+		})
 		!glyphComponentsDialogVisible.value && setGlyphComponentsDialogVisible(true)
 		//glyphComponentsDialogVisible2.value = true
 		await nextTick()
@@ -185,6 +184,12 @@
 		emitter.emit('renderStrokeGlyphSelection')
 		emitter.emit('renderRadicalGlyphSelection')
 		emitter.emit('renderCompGlyphSelection')
+	})
+
+	onUnmounted(() => {
+		emitter.off('renderGlyphPreviewCanvas')
+		emitter.off('renderGlyphPreviewCanvasByUUID')
+		emitter.off('updateGlyphInfoPreviewCanvasByUUID')
 	})
 
 	// 更新组件时，渲染预览画布

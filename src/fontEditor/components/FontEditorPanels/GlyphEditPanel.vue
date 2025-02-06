@@ -111,6 +111,8 @@
   // onUnmounted关闭工具栏和布局编辑器
   // onUnmounted operation
   onUnmounted(() => {
+    emitter.off('renderGlyph')
+    emitter.off('renderGlyph_forceUpdate')
     document.removeEventListener('keydown', onKeyDown)
     clearState()
     editingLayout.value = false
@@ -233,7 +235,7 @@
     deep: true,
   })
 
-  watch([() => selectedComponent.value?.value.layout, () => SubComponentsRoot.value?.value.layout], () => {
+  watch([() => selectedComponent.value?.value?.layout, () => SubComponentsRoot.value?.value?.layout], () => {
     render()
     if (editingLayout.value && (selectedComponent.value || SubComponentsRoot.value)) {
       renderLayoutEditor(canvas.value)

@@ -1,7 +1,7 @@
 import { mapCanvasX, mapCanvasY } from '../../utils/canvas'
 import { getRectanglePoints } from '../../utils/math';
 import { selectedFile } from '../stores/files';
-import { formatPoints, genRectangleContour } from '../../features/font';
+import { formatPoints, genRectangleContour, translate } from '../../features/font';
 import * as R from 'ramda';
 import { computeCoords } from '../canvas/canvas';
 
@@ -104,13 +104,21 @@ class RectangleComponent {
 		this.preview = R.clone(data.preview)
 	}
 
-	public updateData = (isGlyph: boolean = true, grid?: any) => {
+	public updateData = (isGlyph: boolean = true, offset: {x: number, y: number}, grid?: any) => {
 		let points: any = getRectanglePoints(
 			this.width,
 			this.height,
 			this.x,
 			this.y,
 		)
+		points = points.map((point) => {
+			const p = translate(point, offset)
+			if (grid) {
+				return computeCoords(grid, p)
+			} else {
+				return p
+			}
+		})
 		if (grid) {
 			points = points.map((point) => {
 				return computeCoords(grid, point)

@@ -1,7 +1,7 @@
 import { ref, type Ref } from 'vue'
 import { editCharacterFile, editCharacterFileUUID, selectedFile } from './files'
 import { comp_glyphs, editGlyph, editGlyphUUID, glyphs, radical_glyphs, stroke_glyphs } from './glyph'
-import { jointsCheckedMap, tool } from './global'
+import { gridChanged, gridSettings, jointsCheckedMap, tool } from './global'
 import { editing as editingPen, points as pointsPen, mousedown as mousedownPen, mousemove as mousemovePen } from './pen'
 import { editing as editingPolygon, points as pointsPolygon, mousedown as mousedownPolygon, mousemove as mousemovePolygon } from './polygon'
 import {
@@ -37,6 +37,7 @@ enum StoreType {
   Ellipse,
   GlyphCompnent,
   Status,
+  Grid,
 }
 
 enum OpType {
@@ -121,6 +122,11 @@ const saveState = (opName: String, opStores: StoreType[], opType: OpType, option
         states.ellipseY = R.clone(ellipseY.value)
         states.radiusX = R.clone(radiusX.value)
         states.radiusY = R.clone(radiusY.value)
+        break
+      }
+      case StoreType.Grid: {
+        states.gridSettings = R.clone(options.gridSettings || gridSettings.value)
+        states.gridChanged = R.clone(options.gridChanged || gridChanged.value)
         break
       }
     }
@@ -277,6 +283,11 @@ const updateState = (record) => {
         ellipseY.value = record.states.ellipseX
         radiusX.value = record.states.radiusX
         radiusY.value = record.states.radiusY
+        break
+      }
+      case StoreType.Grid: {
+        gridSettings.value = record.gridSettings
+        gridChanged.value = record.gridChanged
         break
       }
     }

@@ -470,7 +470,7 @@ const exportPNG_tauri = async () => {
 const exportSVG_tauri = async () => {
   // 导出SVG
   if (editStatus.value !== Status.Edit && editStatus.value !== Status.Glyph ) return
-  const components = editStatus.value === Status.Edit ? orderedListWithItemsForCurrentCharacterFile.value : orderedListWithItemsForCurrentGlyph.value
+  const components = editStatus.value === Status.Edit ? orderedListWithItemsForCurrentCharacterFile.value : editGlyph.value._o.components
   const data = componentsToSvg(components, selectedFile.value.width, selectedFile.value.height)
   let fileName = 'untitled.svg'
   if (editStatus.value === Status.Edit) {
@@ -1154,7 +1154,10 @@ const exportSVG = () => {
     // 导出SVG
     // const components = editCharacterFile.value.components
     if (editStatus.value !== Status.Edit && editStatus.value !== Status.Glyph ) return
-    const components = editStatus.value === Status.Edit ? orderedListWithItemsForCurrentCharacterFile.value : orderedListWithItemsForCurrentGlyph.value
+    if (editStatus.value === Status.Glyph && !editGlyph.value._o) {
+      executeScript(editGlyph.value)
+    }
+    const components = editStatus.value === Status.Edit ? orderedListWithItemsForCurrentCharacterFile.value : editGlyph.value._o.components
     const svgStr = componentsToSvg(components, selectedFile.value.width, selectedFile.value.height, fontRenderStyle.value)
     const blob = new Blob([svgStr], {type: "image/svg+xml"})
     let fileName = 'untitled.svg'

@@ -25,7 +25,8 @@
 	import { DocumentCopy, Edit } from '@element-plus/icons-vue'
 	import { Plus } from '@element-plus/icons-vue'
 	import { emitter } from '../../Event/bus'
-import { ElMessage } from 'element-plus'
+	import { ElMessage } from 'element-plus'
+	import { OpType, saveState, StoreType } from '../../stores/edit'
 
 	interface LayoutNode {
 		id: string;
@@ -86,6 +87,14 @@ import { ElMessage } from 'element-plus'
 	}
 	const editingNode = ref('')
 	const confirmGridChange = () => {
+		// 保存状态
+		saveState('应用布局', [
+			StoreType.Grid,
+			StoreType.EditCharacter,
+		],
+			OpType.Undo,
+		)
+		gridChanged.value = false
 		editCharacterFile.value.info.gridSettings = {
 			dx: gridSettings.value.dx,
 			dy: gridSettings.value.dy,
@@ -100,7 +109,21 @@ import { ElMessage } from 'element-plus'
 		})
 	}
 	const resetGrid = () => {
+		// 保存状态
+		saveState('重置布局', [
+			StoreType.Grid,
+			StoreType.EditCharacter,
+		],
+			OpType.Undo,
+		)
 		editCharacterFile.value.info.gridSettings = {
+			dx: 0,
+			dy: 0,
+			centerSquareSize: selectedFile.value.width / 3,
+			size: selectedFile.value.width,
+			default: true,
+		}
+		gridSettings.value = {
 			dx: 0,
 			dy: 0,
 			centerSquareSize: selectedFile.value.width / 3,
@@ -215,13 +238,19 @@ import { ElMessage } from 'element-plus'
 				应用布局变换
 			</el-button>
 			<el-button class="grid-reset-btn" :disabled="!gridChanged" @click="resetGrid">
-				应用布局变换
+				重置布局变换
 			</el-button>
 		</div>
   </div>
 </template>
 
 <style scoped>
+	.grid-settings {
+		.grid-confirm-btn, .grid-reset-btn {
+			width: 100%;
+			margin: 0 0 10px 0;
+		}
+	}
 	.character-edit-panel {
 		padding: 10px;
 	}

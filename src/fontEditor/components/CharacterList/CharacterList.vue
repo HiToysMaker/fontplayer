@@ -7,7 +7,7 @@
 	 */
 
 	import { selectedFile, orderedListWithItemsForCharacterFile, clearCharacterRenderList, characterList, addCharacterTemplate, generateCharacterTemplate, executeCharacterScript } from '../../stores/files'
-	import { onMounted, nextTick } from 'vue'
+	import { onMounted, nextTick, onUnmounted } from 'vue'
 	import type {
 		ILine,
 		ICubicBezierCurve,
@@ -117,48 +117,47 @@
 		// loading.value = false
 	}
 
-	// 监听renderPreviewCanvas事件，需要调用nextTick保证预览canvas节点已经在dom中
-	// listen renderPreviewCanvas event, need to call nextTick to ensure that preview canvas is already added into dom
-	emitter.on('renderPreviewCanvas', async () => {
-		await nextTick()
-		renderPreviewCanvas()
-	})
-
-	// 监听渲染预览字符事件
-	// listen for render preview canvas by uuid
-	emitter.on('renderPreviewCanvasByUUID', async (uuid: string) => {
-		if (timerMap.get(uuid)) {
-			clearTimeout(timerMap.get(uuid))
-		}
-		const fn = () => {
-			renderPreviewCanvasByUUID(uuid)
-		}
-		const timer = setTimeout(fn, 1000)
-		timerMap.set(uuid, timer)
-	})
-
-	// 监听更新字符信息事件
-	// listen for update character info by uuid
-	emitter.on('updateCharacterInfoPreviewCanvasByUUID', async (uuid: string) => {
-		let characterFile
-		const characters = selectedFile.value ? selectedFile.value.characterList : []
-		for (let i = 0; i < characters.length; i++) {
-			characterFile = characters[i]
-			if (characterFile.uuid === uuid) {
-				break
-			}
-		}
-		const wrapper = document.getElementById('character-render-list')
-		const root: HTMLElement = wrapper.querySelector(`.character-${uuid}`) as HTMLElement;
-		(root as HTMLElement).querySelector('.info').querySelector('.text').innerHTML = `${characterFile.character.text}`;
-		if (characterFile.type === 'text') {
-			(root as HTMLElement).querySelector('.unicode').innerHTML = `0x${characterFile.character.unicode.toString(16)}`;
-		}
-	})
-
 	// 挂载组件时，渲染预览画布
 	// renderPreviewCanvas on mounted
 	onMounted(async () => {
+		// 监听renderPreviewCanvas事件，需要调用nextTick保证预览canvas节点已经在dom中
+		// listen renderPreviewCanvas event, need to call nextTick to ensure that preview canvas is already added into dom
+		emitter.on('renderPreviewCanvas', async () => {
+			await nextTick()
+			renderPreviewCanvas()
+		})
+
+		// 监听渲染预览字符事件
+		// listen for render preview canvas by uuid
+		emitter.on('renderPreviewCanvasByUUID', async (uuid: string) => {
+			if (timerMap.get(uuid)) {
+				clearTimeout(timerMap.get(uuid))
+			}
+			const fn = () => {
+				renderPreviewCanvasByUUID(uuid)
+			}
+			const timer = setTimeout(fn, 1000)
+			timerMap.set(uuid, timer)
+		})
+
+		// 监听更新字符信息事件
+		// listen for update character info by uuid
+		emitter.on('updateCharacterInfoPreviewCanvasByUUID', async (uuid: string) => {
+			let characterFile
+			const characters = selectedFile.value ? selectedFile.value.characterList : []
+			for (let i = 0; i < characters.length; i++) {
+				characterFile = characters[i]
+				if (characterFile.uuid === uuid) {
+					break
+				}
+			}
+			const wrapper = document.getElementById('character-render-list')
+			const root: HTMLElement = wrapper.querySelector(`.character-${uuid}`) as HTMLElement;
+			(root as HTMLElement).querySelector('.info').querySelector('.text').innerHTML = `${characterFile.character.text}`;
+			if (characterFile.type === 'text') {
+				(root as HTMLElement).querySelector('.unicode').innerHTML = `0x${characterFile.character.unicode.toString(16)}`;
+			}
+		})
 		clearCharacterRenderList()
 		characterList.value?.map((characterFile) => {
 			addCharacterTemplate(generateCharacterTemplate(characterFile))
@@ -167,6 +166,11 @@
 		renderPreviewCanvas()
 	})
 
+	onUnmounted(() => {
+		emitter.off('updateCharacterInfoPreviewCanvasByUUID')
+		emitter.off('renderPreviewCanvasByUUID')
+		emitter.off('renderPreviewCanvas')
+	})
 	// 更新组件时，渲染预览画布
 	// renderPreviewCanvas on updated
 	// onUpdated(async () => {

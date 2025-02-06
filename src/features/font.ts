@@ -206,6 +206,13 @@ const formatPoints = (points: Array<IPenPoint | IPoint>, options: {
 
 type _Component = Component | EllipseComponent | RectangleComponent | PenComponent | PolygonComponent
 
+const translate = (p, offset) => {
+	return {
+		x: p.x + offset.x,
+		y: p.y + offset.y,
+	}
+}
+
 const componentsToContours = (components: Array<_Component>, options: {
 	unitsPerEm: number,
 	descender: number,
@@ -230,11 +237,14 @@ const componentsToContours = (components: Array<_Component>, options: {
 					let transformed_points = transformPoints(((component as Component).value as unknown as IPenComponent).points, {
 						x, y, w, h, rotation, flipX, flipY,
 					})
-					if (options.grid) {
-						transformed_points = transformed_points.map((point) => {
-							return computeCoords(options.grid, point)
-						})
-					}
+					transformed_points = transformed_points.map((point) => {
+						const p = translate(point, offset)
+						if (options.grid) {
+							return computeCoords(options.grid, p)
+						} else {
+							return p
+						}
+					})
 					const contour_points = formatPoints(transformed_points, options, 1)
 					const contour = genPenContour(contour_points)
 
@@ -262,11 +272,14 @@ const componentsToContours = (components: Array<_Component>, options: {
 					let transformed_points = transformPoints(((component as Component).value as unknown as IPolygonComponent).points, {
 						x, y, w, h, rotation, flipX, flipY,
 					})
-					if (options.grid) {
-						transformed_points = transformed_points.map((point) => {
-							return computeCoords(options.grid, point)
-						})
-					}
+					transformed_points = transformed_points.map((point) => {
+						const p = translate(point, offset)
+						if (options.grid) {
+							return computeCoords(options.grid, p)
+						} else {
+							return p
+						}
+					})
 					const contour_points = formatPoints(transformed_points, options, 1)
 					const contour = genPolygonContour(contour_points)
 					contours.push(contour)
@@ -301,11 +314,14 @@ const componentsToContours = (components: Array<_Component>, options: {
 					), {
 						x, y, w, h, rotation, flipX, flipY,
 					})
-					if (options.grid) {
-						transformed_points = transformed_points.map((point) => {
-							return computeCoords(options.grid, point)
-						})
-					}
+					transformed_points = transformed_points.map((point) => {
+						const p = translate(point, offset)
+						if (options.grid) {
+							return computeCoords(options.grid, p)
+						} else {
+							return p
+						}
+					})
 					const contour_points = formatPoints(transformed_points, options, 1)
 					const contour = genRectangleContour(contour_points)
 					contours.push(contour)
@@ -342,11 +358,14 @@ const componentsToContours = (components: Array<_Component>, options: {
 					let transformed_points = transformPoints(points, {
 						x, y, w, h, rotation, flipX, flipY,
 					})
-					if (options.grid) {
-						transformed_points = transformed_points.map((point) => {
-							return computeCoords(options.grid, point)
-						})
-					}
+					transformed_points = transformed_points.map((point) => {
+						const p = translate(point, offset)
+						if (options.grid) {
+							return computeCoords(options.grid, p)
+						} else {
+							return p
+						}
+					})
 					const contour_points = formatPoints(transformed_points, options, 1)
 					const contour = genEllipseContour(contour_points)
 					contours.push(contour)
@@ -372,7 +391,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 			}
 			case 'glyph-pen': {
 				if (!(component as PenComponent).contour || !(component as PenComponent).contour.length || forceUpdate) {
-					(component as PenComponent).updateData(isGlyph, options.grid)
+					(component as PenComponent).updateData(isGlyph, offset, options.grid)
 				}
 				if (!preview) {
 					contours.push((component as PenComponent).contour)
@@ -383,7 +402,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 			}
 			case 'glyph-polygon': {
 				if (!(component as PolygonComponent).contour || !(component as PolygonComponent).contour.length || forceUpdate) {
-					(component as PolygonComponent).updateData(isGlyph)
+					(component as PolygonComponent).updateData(isGlyph, offset, options.grid)
 				}
 				if (!preview) {
 					contours.push((component as PolygonComponent).contour)
@@ -394,7 +413,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 			}
 			case 'glyph-rectangle': {
 				if (!(component as RectangleComponent).contour || !(component as RectangleComponent).contour.length || forceUpdate) {
-					(component as RectangleComponent).updateData(isGlyph)
+					(component as RectangleComponent).updateData(isGlyph, offset, options.grid)
 				}
 				if (!preview) {
 					contours.push((component as RectangleComponent).contour)
@@ -405,7 +424,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 			}
 			case 'glyph-ellipse': {
 				if (!(component as EllipseComponent).contour || !(component as EllipseComponent).contour.length || forceUpdate) {
-					(component as EllipseComponent).updateData(isGlyph)
+					(component as EllipseComponent).updateData(isGlyph, offset, options.grid)
 				}
 				if (!preview) {
 					contours.push((component as EllipseComponent).contour)
@@ -424,7 +443,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 					})
 				}
 				// executeScript(glyph)
-				const contours1 = componentsToContours(glyph._o.components, options, { x: ox, y: oy }, isGlyph, preview, true)
+				const contours1 = componentsToContours(glyph._o.components, options, { x: offset.x + ox, y: offset.y + oy }, isGlyph, preview, true)
 				contours = contours.concat(contours1)
 				break
 			}
@@ -435,71 +454,71 @@ const componentsToContours = (components: Array<_Component>, options: {
 			}
 		}
 	})
-	if (offset.x || offset.y) {
-		if (preview) {
-			const scale = 100 / (options.unitsPerEm as number)
-			contours = R.clone(contours)
-			for (let i = 0; i < contours.length; i++) {
-				const contour = contours[i]
-				for (let j = 0; j < contour.length; j++) {
-					const path = contour[j]
-					if (path.type === PathType.LINE) {
-						path.start.x += offset.x * scale
-						path.start.y += offset.y * scale
-						path.end.x += offset.x * scale
-						path.end.y += offset.y * scale
-					} else if (path.type === PathType.QUADRATIC_BEZIER) {
-						path.start.x += offset.x * scale
-						path.start.y += offset.y * scale
-						path.end.x += offset.x * scale
-						path.end.y += offset.y * scale
-						path.control.x += offset.x * scale
-						path.control.y += offset.y * scale
-					} else if (path.type === PathType.CUBIC_BEZIER) {
-						path.start.x += offset.x * scale
-						path.start.y += offset.y * scale
-						path.end.x += offset.x * scale
-						path.end.y += offset.y * scale
-						path.control1.x += offset.x * scale
-						path.control1.y += offset.y * scale
-						path.control2.x += offset.x * scale
-						path.control2.y += offset.y * scale
-					}
-				}
-			}
-		} else {
-			const scale = 1
-			contours = R.clone(contours)
-			for (let i = 0; i < contours.length; i++) {
-				const contour = contours[i]
-				for (let j = 0; j < contour.length; j++) {
-					const path = contour[j]
-					if (path.type === PathType.LINE) {
-						path.start.x += offset.x * scale
-						path.start.y -= offset.y * scale
-						path.end.x += offset.x * scale
-						path.end.y -= offset.y * scale
-					} else if (path.type === PathType.QUADRATIC_BEZIER) {
-						path.start.x += offset.x * scale
-						path.start.y -= offset.y * scale
-						path.end.x += offset.x * scale
-						path.end.y -= offset.y * scale
-						path.control.x += offset.x * scale
-						path.control.y -= offset.y * scale
-					} else if (path.type === PathType.CUBIC_BEZIER) {
-						path.start.x += offset.x * scale
-						path.start.y -= offset.y * scale
-						path.end.x += offset.x * scale
-						path.end.y -= offset.y * scale
-						path.control1.x += offset.x * scale
-						path.control1.y -= offset.y * scale
-						path.control2.x += offset.x * scale
-						path.control2.y -= offset.y * scale
-					}
-				}
-			}
-		}
-	}
+	// if (offset.x || offset.y) {
+	// 	if (preview) {
+	// 		const scale = 100 / (options.unitsPerEm as number)
+	// 		contours = R.clone(contours)
+	// 		for (let i = 0; i < contours.length; i++) {
+	// 			const contour = contours[i]
+	// 			for (let j = 0; j < contour.length; j++) {
+	// 				const path = contour[j]
+	// 				if (path.type === PathType.LINE) {
+	// 					path.start.x += offset.x * scale
+	// 					path.start.y += offset.y * scale
+	// 					path.end.x += offset.x * scale
+	// 					path.end.y += offset.y * scale
+	// 				} else if (path.type === PathType.QUADRATIC_BEZIER) {
+	// 					path.start.x += offset.x * scale
+	// 					path.start.y += offset.y * scale
+	// 					path.end.x += offset.x * scale
+	// 					path.end.y += offset.y * scale
+	// 					path.control.x += offset.x * scale
+	// 					path.control.y += offset.y * scale
+	// 				} else if (path.type === PathType.CUBIC_BEZIER) {
+	// 					path.start.x += offset.x * scale
+	// 					path.start.y += offset.y * scale
+	// 					path.end.x += offset.x * scale
+	// 					path.end.y += offset.y * scale
+	// 					path.control1.x += offset.x * scale
+	// 					path.control1.y += offset.y * scale
+	// 					path.control2.x += offset.x * scale
+	// 					path.control2.y += offset.y * scale
+	// 				}
+	// 			}
+	// 		}
+	// 	} else {
+	// 		const scale = 1
+	// 		contours = R.clone(contours)
+	// 		for (let i = 0; i < contours.length; i++) {
+	// 			const contour = contours[i]
+	// 			for (let j = 0; j < contour.length; j++) {
+	// 				const path = contour[j]
+	// 				if (path.type === PathType.LINE) {
+	// 					path.start.x += offset.x * scale
+	// 					path.start.y -= offset.y * scale
+	// 					path.end.x += offset.x * scale
+	// 					path.end.y -= offset.y * scale
+	// 				} else if (path.type === PathType.QUADRATIC_BEZIER) {
+	// 					path.start.x += offset.x * scale
+	// 					path.start.y -= offset.y * scale
+	// 					path.end.x += offset.x * scale
+	// 					path.end.y -= offset.y * scale
+	// 					path.control.x += offset.x * scale
+	// 					path.control.y -= offset.y * scale
+	// 				} else if (path.type === PathType.CUBIC_BEZIER) {
+	// 					path.start.x += offset.x * scale
+	// 					path.start.y -= offset.y * scale
+	// 					path.end.x += offset.x * scale
+	// 					path.end.y -= offset.y * scale
+	// 					path.control1.x += offset.x * scale
+	// 					path.control1.y -= offset.y * scale
+	// 					path.control2.x += offset.x * scale
+	// 					path.control2.y -= offset.y * scale
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 	return contours
 }
 
@@ -737,4 +756,5 @@ export {
 	genPolygonContour,
 	genEllipseContour,
 	genRectangleContour,
+	translate,
 }

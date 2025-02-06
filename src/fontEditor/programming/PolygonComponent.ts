@@ -2,7 +2,7 @@ import type { IPoint } from '../stores/polygon'
 import { genUUID } from '../../utils/string'
 import { mapCanvasX, mapCanvasY } from '../../utils/canvas'
 import { selectedFile } from '../stores/files'
-import { formatPoints, genPolygonContour } from '../../features/font'
+import { formatPoints, genPolygonContour, translate } from '../../features/font'
 import * as R from 'ramda'
 import { computeCoords } from '../canvas/canvas'
 
@@ -125,13 +125,16 @@ class PolygonComponent {
 		this.preview = R.clone(data.preview)
 	}
 
-	public updateData = (isGlyph: boolean = true, grid?: any) => {
+	public updateData = (isGlyph: boolean = true, offset: {x: number, y: number}, grid?: any) => {
 		let points: any = this.points
-		if (grid) {
-			points = points.map((point) => {
-				return computeCoords(grid, point)
-			})
-		}
+		points = points.map((point) => {
+			const p = translate(point, offset)
+			if (grid) {
+				return computeCoords(grid, p)
+			} else {
+				return p
+			}
+		})
 		let options = {
 			unitsPerEm: 1000,
 			descender: -200,

@@ -16,6 +16,14 @@ import type {
 	IQuadraticBezierCurve,
 } from '../../fontManager'
 import { componentsToContours } from '../../features/font'
+import {
+	editing as penEditing,
+} from './pen'
+import {
+	editing as polygonEditing,
+} from './polygon'
+import { editing as ellipseEditing } from './ellipse'
+import { editing as rectangleEditing } from './rectangle'
 
 // 字体文件列表数据结构
 // font files list data struct
@@ -723,12 +731,18 @@ const setSelectionForCurrentCharacterFile = (uuid: string) => {
 	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
 	const onKeyDown = (e: KeyboardEvent) => {
 		if (e.key === 'Shift') {
+			if (penEditing.value || polygonEditing.value || ellipseEditing.value || rectangleEditing.value) {
+				return
+			}
 			e.preventDefault()
 			enableMultiSelect.value = true
 		}
 	}
 	const onKeyUp = (e: KeyboardEvent) => {
 		if (e.key === 'Shift') {
+			if (penEditing.value || polygonEditing.value || ellipseEditing.value || rectangleEditing.value) {
+				return
+			}
 			e.preventDefault()
 			enableMultiSelect.value = false
 		}
