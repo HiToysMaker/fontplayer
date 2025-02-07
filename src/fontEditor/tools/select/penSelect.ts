@@ -329,8 +329,8 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 		if (glyph) {
 			modifyComponent = modifyComponentForCurrentGlyph
 		}
-		const { x, y, w, h, rotation, flipX, flipY, type, uuid } = selectedComponent.value
-		const points = selectedComponent.value.value.points
+		const { x, y, w, h, rotation, flipX, flipY, type, uuid } = comp
+		const points = comp.value.points
 		let options = {
 			unitsPerEm: 1000,
 			descender: -200,
@@ -341,7 +341,7 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 			options.descender = selectedFile.value.fontSettings.descender
 			options.advanceWidth = selectedFile.value.fontSettings.unitsPerEm
 		}
-	
+
 		let transformed_points = transformPoints(points, {
 			x, y, w, h, rotation, flipX, flipY,
 		})

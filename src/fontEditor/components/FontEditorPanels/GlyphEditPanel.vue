@@ -240,7 +240,8 @@
     if (editingLayout.value && (selectedComponent.value || SubComponentsRoot.value)) {
       renderLayoutEditor(canvas.value)
     }
-    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
 		renderRefComponents()
     emitter.emit('renderPreviewCanvasByUUID', editGlyph.value.uuid)
   }, {
@@ -269,7 +270,7 @@
     switch (tool.value) {
       case 'select':
         if (selectedComponentUUID.value) {
-          renderSelectEditor(canvas.value, 5, true)
+          renderSelectEditor(canvas.value, 10, true)
         }
         break
       case 'glyphDragger':
@@ -306,7 +307,8 @@
     _canvas.style.height = `${500 * editGlyph.value.view.zoom / 100}px`
     render()
     if (selectedComponentUUID.value) {
-      tool.value === 'select' && renderSelectEditor(canvas.value, 5, true)
+      tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+      tool.value === 'pen' && renderPenEditor(canvas.value)
     }
     renderRefComponents()
 		emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
@@ -323,6 +325,8 @@
     penEditing,
   ], () => {
     render()
+    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!penEditing.value) return
     renderPenEditor(canvas.value)
   })
@@ -332,6 +336,8 @@
     polygonEditing,
   ], () => {
     render()
+    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!polygonEditing.value) return
     renderPolygonEditor(polygonPoints, canvas.value)
   })
@@ -344,6 +350,8 @@
     ellipseEditing,
   ], () => {
     render()
+    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!ellipseEditing.value) return
     renderEllipseEditor(canvas.value)
   })
@@ -356,6 +364,8 @@
     rectangleEditing,
   ], () => {
     render()
+    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!rectangleEditing.value) return
     renderRectangleEditor(canvas.value)
   })
@@ -368,7 +378,8 @@
     render()
     renderRefComponents()
     if (!selectedComponentUUID.value) return
-    tool.value === 'select' && renderSelectEditor(canvas.value, 5, true)
+    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
   })
 
   watch([
@@ -389,7 +400,7 @@
   ], () => {
     if (tool.value === 'select') {
       render()
-      renderSelectEditor(canvas.value, 5, true)
+      renderSelectEditor(canvas.value, 10, true)
     }
   })
 

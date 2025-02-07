@@ -84,11 +84,13 @@
 	onBeforeUnmount(() => {
 		canvas.value.removeEventListener('mousedown', onMouseDown)
 		canvas.value.removeEventListener('mousemove', onMouseMove)
-		ElMessageBox.alert(
-			'为方便用户进行组件编辑操作，离开布局编辑界面会恢复默认布局。如果您已经应用布局变换，预览及导出字体库会使用应用变换后的布局，但是在其他编辑操作时，界面仍使用默认布局。',
-			'提示：您已经离开布局编辑界面', {
-			confirmButtonText: '确定',
-		})
+		if (tool.value === 'grid') {
+			ElMessageBox.alert(
+				'为方便用户进行组件编辑操作，离开布局编辑界面会恢复默认布局。如果您已经应用布局变换，预览及导出字体库会使用应用变换后的布局，但是在其他编辑操作时，界面仍使用默认布局。',
+				'提示：您已经离开布局编辑界面', {
+				confirmButtonText: '确定',
+			})
+		}
 	})
 	const status = ref('none')
 	const style = ref('default')

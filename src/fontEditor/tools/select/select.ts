@@ -206,6 +206,9 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 					if (selectedComponentUUID.value === component.uuid && inComponentBound({ x: getCoord(e.offsetX), y: getCoord(e.offsetY) }, component, 20) && component.visible) return
 					if (inComponentBound({ x: getCoord(e.offsetX), y: getCoord(e.offsetY) }, component, 20) && component.visible) {
 						setSelectionForCurrentCharacterFile(component.uuid)
+						mousedown = false
+						mousemove = false
+						selectControl.value = 'null'
 						return
 					}
 				}
@@ -216,6 +219,9 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 					if (selectedComponentUUID_glyph.value === component.uuid && inComponentBound({ x: getCoord(e.offsetX), y: getCoord(e.offsetY) }, component, 20) && component.visible) return
 					if (inComponentBound({ x: getCoord(e.offsetX), y: getCoord(e.offsetY) }, component, 20) && component.visible) {
 						setSelectionForCurrentGlyph(component.uuid)
+						mousedown = false
+						mousemove = false
+						selectControl.value = 'null'
 						return
 					}
 				}
