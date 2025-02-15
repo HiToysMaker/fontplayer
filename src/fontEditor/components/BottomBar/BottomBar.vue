@@ -32,6 +32,8 @@
   ], () => {
     if (!editCharacterFile.value) return
     translateText.value = `${editCharacterFile.value.view.translateX},${editCharacterFile.value.view.translateY}`
+  }, {
+    deep: true,
   })
 
   // 重置translateText
@@ -51,6 +53,7 @@
         zoom: editCharacterFile.value.view.zoom - zoomScale >= 0 ? editCharacterFile.value.view.zoom - zoomScale : 0,
       }
     })
+    emitter.emit('updateCharacterView')
   }
 
   // 放大
@@ -61,16 +64,17 @@
         zoom: editCharacterFile.value.view.zoom + zoomScale <= 200 ? editCharacterFile.value.view.zoom + zoomScale : 200,
       }
     })
+    emitter.emit('updateCharacterView')
   }
 
 	const onZoomChange = (value) => {
 		const _value = value <= 200 ? (value >= 0 ? value : 0) : 200
-    modifyGlyph(editGlyphUUID.value, {
+    modifyCharacterFile(editCharacterFileUUID.value, {
       view: {
         zoom: _value
       }
     })
-    emitter.emit('updateGlyphView')
+    emitter.emit('updateCharacterView')
 	}
 
 	// 从图片中提取时使用，缩小

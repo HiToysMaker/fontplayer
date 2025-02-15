@@ -22,8 +22,10 @@ export interface IBackground {
 	color: string,
 }
 
-const draggable = ref(false)
-const dragOption = ref('none')
+const jointsCheckedMap = ref({})
+
+const draggable = ref(true)
+const dragOption = ref('default')
 const checkJoints = ref(false)
 const checkRefLines = ref(false)
 
@@ -51,6 +53,7 @@ const gridSettings = ref({
 	dy: 0,
 	centerSquareSize: 1000 / 3,
 	size: 1000,
+	default: true,
 })
 
 const layoutOptions = ref([
@@ -122,6 +125,8 @@ const loading = ref(false)
 const loaded = ref(0)
 const total = ref(100)
 
+const gridChanged = ref(false)
+
 export {
 	tool,
 	grid,
@@ -149,4 +154,6 @@ export {
 	loaded,
 	total,
 	tips,
+	jointsCheckedMap,
+	gridChanged,
 }

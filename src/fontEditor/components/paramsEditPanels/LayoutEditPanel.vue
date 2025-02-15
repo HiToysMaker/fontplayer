@@ -10,8 +10,11 @@
   import { ref, type Ref } from 'vue'
 	import {
 		editCharacterFile, editCharacterFileUUID, modifyCharacterFile,
+		selectedFile,
 	} from '../../stores/files'
 	import {
+		gridChanged,
+		gridSettings,
 		layoutOptions,
 	} from '../../stores/global'
 	import * as R from 'ramda'
@@ -21,6 +24,9 @@
 	} from '../../../features/layout'
 	import { DocumentCopy, Edit } from '@element-plus/icons-vue'
 	import { Plus } from '@element-plus/icons-vue'
+	import { emitter } from '../../Event/bus'
+	import { ElMessage } from 'element-plus'
+	import { OpType, saveState, StoreType } from '../../stores/edit'
 
 	interface LayoutNode {
 		id: string;
@@ -80,11 +86,61 @@
 		label: 'label',
 	}
 	const editingNode = ref('')
+	const confirmGridChange = () => {
+		// 保存状态
+		saveState('应用布局', [
+			StoreType.Grid,
+			StoreType.EditCharacter,
+		],
+			OpType.Undo,
+		)
+		gridChanged.value = false
+		editCharacterFile.value.info.gridSettings = {
+			dx: gridSettings.value.dx,
+			dy: gridSettings.value.dy,
+			size: gridSettings.value.size,
+			centerSquareSize: gridSettings.value.centerSquareSize,
+			default: false,
+		}
+		emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
+		ElMessage({
+			type: 'success',
+			message: '应用布局变换',
+		})
+	}
+	const resetGrid = () => {
+		// 保存状态
+		saveState('重置布局', [
+			StoreType.Grid,
+			StoreType.EditCharacter,
+		],
+			OpType.Undo,
+		)
+		editCharacterFile.value.info.gridSettings = {
+			dx: 0,
+			dy: 0,
+			centerSquareSize: selectedFile.value.width / 3,
+			size: selectedFile.value.width,
+			default: true,
+		}
+		gridSettings.value = {
+			dx: 0,
+			dy: 0,
+			centerSquareSize: selectedFile.value.width / 3,
+			size: selectedFile.value.width,
+			default: true,
+		}
+		emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
+		ElMessage({
+			type: 'success',
+			message: '重置布局变换',
+		})
+	}
 </script>
 
 <template>
   <div class="character-edit-panel">
-		<div class="layout-settings">
+		<!-- <div class="layout-settings">
 			<el-button class="layout-btn" v-show="!onLayoutEdit" @click="onLayoutEdit = true">{{ !editCharacterFile.info.layout ? '设置字体结构' : '重置字体结构' }}</el-button>
 			<el-select placeholder="Select" style="width: 100%" @change="onLayoutReset" v-show="onLayoutEdit">
 				<el-option
@@ -176,11 +232,25 @@
 					/>
 				</el-form-item>
 			</el-form>
+		</div> -->
+		<div class="grid-settings">
+			<el-button class="grid-confirm-btn" :disabled="!gridChanged" @click="confirmGridChange" type="primary">
+				应用布局变换
+			</el-button>
+			<el-button class="grid-reset-btn" @click="resetGrid">
+				重置布局变换
+			</el-button>
 		</div>
   </div>
 </template>
 
 <style scoped>
+	.grid-settings {
+		.grid-confirm-btn, .grid-reset-btn {
+			width: 100%;
+			margin: 0 0 10px 0;
+		}
+	}
 	.character-edit-panel {
 		padding: 10px;
 	}

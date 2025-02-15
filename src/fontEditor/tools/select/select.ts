@@ -68,29 +68,10 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 	let lastX = -1
 	let lastY = -1
 	let mousedown = false
+	let mousemove = false
 	const onMouseDown = (e: MouseEvent) => {
 		mousedown = true
-		if (!glyph) {
-			for (let i = orderedListWithItemsForCurrentCharacterFile.value.length - 1; i >= 0; i--) {
-				const component = orderedListWithItemsForCurrentCharacterFile.value[i]
-				if (selectedComponentUUID.value === component.uuid && inComponentBound({ x: getCoord(e.offsetX), y: getCoord(e.offsetY) }, component, 20) && component.visible) return
-				if (inComponentBound({ x: getCoord(e.offsetX), y: getCoord(e.offsetY) }, component, 20) && component.visible) {
-					setSelectionForCurrentCharacterFile(component.uuid)
-					return
-				}
-			}
-			setSelectionForCurrentCharacterFile('')
-		} else {
-			for (let i = orderedListWithItemsForCurrentGlyph.value.length - 1; i >= 0; i--) {
-				const component = orderedListWithItemsForCurrentGlyph.value[i]
-				if (selectedComponentUUID_glyph.value === component.uuid && inComponentBound({ x: getCoord(e.offsetX), y: getCoord(e.offsetY) }, component, 20) && component.visible) return
-				if (inComponentBound({ x: getCoord(e.offsetX), y: getCoord(e.offsetY) }, component, 20) && component.visible) {
-					setSelectionForCurrentGlyph(component.uuid)
-					return
-				}
-			}
-			setSelectionForCurrentGlyph('')
-		}
+		mousemove = false
 		const comp = glyph ? selectedComponent_glyph.value : selectedComponent.value
 		if (!comp || !comp.visible) {
 			mousedown = false
@@ -99,6 +80,7 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 	}
 
 	const onMouseMove = (e: MouseEvent) => {
+		mousemove = true
 		if (!glyph && !selectedComponent.value) return
 		if (glyph && !selectedComponent_glyph.value) return
 		const comp = glyph ? selectedComponent_glyph.value : selectedComponent.value
@@ -217,12 +199,42 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 	}
 
 	const onMouseUp = (e: MouseEvent) => {
+		if (!mousemove) {
+			if (!glyph) {
+				for (let i = orderedListWithItemsForCurrentCharacterFile.value.length - 1; i >= 0; i--) {
+					const component = orderedListWithItemsForCurrentCharacterFile.value[i]
+					if (selectedComponentUUID.value === component.uuid && inComponentBound({ x: getCoord(e.offsetX), y: getCoord(e.offsetY) }, component, 20) && component.visible) return
+					if (inComponentBound({ x: getCoord(e.offsetX), y: getCoord(e.offsetY) }, component, 20) && component.visible) {
+						setSelectionForCurrentCharacterFile(component.uuid)
+						mousedown = false
+						mousemove = false
+						selectControl.value = 'null'
+						return
+					}
+				}
+				setSelectionForCurrentCharacterFile('')
+			} else {
+				for (let i = orderedListWithItemsForCurrentGlyph.value.length - 1; i >= 0; i--) {
+					const component = orderedListWithItemsForCurrentGlyph.value[i]
+					if (selectedComponentUUID_glyph.value === component.uuid && inComponentBound({ x: getCoord(e.offsetX), y: getCoord(e.offsetY) }, component, 20) && component.visible) return
+					if (inComponentBound({ x: getCoord(e.offsetX), y: getCoord(e.offsetY) }, component, 20) && component.visible) {
+						setSelectionForCurrentGlyph(component.uuid)
+						mousedown = false
+						mousemove = false
+						selectControl.value = 'null'
+						return
+					}
+				}
+				setSelectionForCurrentGlyph('')
+			}
+		}
 		const comp = glyph ? selectedComponent_glyph.value : selectedComponent.value
 		if (!comp || !comp.visible) return
 		if (comp.type !== 'picture') {
 			modifyComponentValue()
 		}
 		mousedown = false
+		mousemove = false
 		selectControl.value = 'null'
 	}
 

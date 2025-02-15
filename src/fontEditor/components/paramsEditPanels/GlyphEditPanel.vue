@@ -10,7 +10,7 @@
   import { getRatioOptions, ParameterType, getConstant, IParameter, IRingParameter, IParameter2, getRatioLayout, selectedParam, selectedParamType, constantGlyphMap, ConstantType, getGlyphByUUID, GlyphType, executeScript, getRatioLayout2 } from '../../stores/glyph'
   import { editStatus, Status } from '../../stores/font'
   import { useI18n } from 'vue-i18n'
-  import { canvas, dragOption, draggable, grid, GridType, checkJoints, checkRefLines } from '../../stores/global'
+  import { canvas, dragOption, draggable, grid, GridType, checkJoints, checkRefLines, jointsCheckedMap } from '../../stores/global'
   import { ComputedRef, Ref, computed, onMounted, onUnmounted, ref, watch } from 'vue'
   import { emitter } from '../../Event/bus'
 	import RingController from '../../components/Widgets/RingController.vue'
@@ -24,9 +24,20 @@
 	import { linkComponentsForJoints } from '../../programming/Joint'
 	import { setSelectGlobalParamDialogVisible, setSetAsGlobalParamDialogVisible } from '../../stores/dialogs'
 	import { More } from '@element-plus/icons-vue'
+	import { OpType, saveState, StoreType } from '../../stores/edit'
   const { tm, t } = useI18n()
 
+	const saveGlyphEditState = (options) => {
+    // 保存状态
+		saveState('编辑字形组件参数', [
+			editStatus.value === Status.Glyph ? StoreType.EditGlyph : StoreType.EditCharacter
+		],
+			OpType.Undo,
+			options,
+		)
+  }
 
+	// 具体选择的最子层组件，与顶层选择的组件区分
 	const _selectedComponent: ComputedRef<any> = computed(() => {
 		let comp = selectedComponent.value
     if (editCharacterFile.value.selectedComponentsTree && editCharacterFile.value.selectedComponentsTree.length) {
@@ -40,8 +51,8 @@
   })
 
 	onUnmounted(() => {
-    draggable.value = false
-    dragOption.value = 'none'
+    draggable.value = true
+    dragOption.value = 'default'
 		checkJoints.value = false
 		checkRefLines.value = false
   })
@@ -59,7 +70,6 @@
 	]
   const size = ref(150)
 
-  const jointsCheckedMap = ref({})
   _selectedComponent.value.value._o?.getJoints().map((joint) => {
 		if (joint) {
 			jointsCheckedMap.value[joint.name] = false
@@ -74,6 +84,27 @@
 			}
     })
   })
+
+	let timer = null
+  let opstatus = false
+	watch(editCharacterFile, (newValue, oldValue) => {
+		if (timer) {
+      clearTimeout(timer)
+    }
+    timer = setTimeout(() => {
+      opstatus = false
+			clearTimeout(timer)
+    }, 500)
+    if (!opstatus) {
+      saveGlyphEditState({
+				editCharacterFile: oldValue,
+				newRecord: true,
+			})
+      opstatus = true
+    }
+	}, {
+		deep: true,
+	})
 
   const handleChangeOX = (ox: number) => {
 		if (editCharacterFile.value.selectedComponentsTree && editCharacterFile.value.selectedComponentsTree.length) {
@@ -106,7 +137,7 @@
         _selectedComponent.value.value.system_script = {}
       }
 			if (editCharacterFile.value.selectedComponentsTree && editCharacterFile.value.selectedComponentsTree.length && selectedSubComponent.value) {
-				// 选种子字形组件
+				// 选中子字形组件
 				let layout = getRatioLayout2(SubComponentsRoot.value.value, parameter.ratio)
 				if (layout) {
 					const script = `window.comp_glyph.setParam('${parameter.name}',window.glyph.getRatioLayout('${parameter.ratio}') / ${layout} * ${value});`
@@ -230,7 +261,7 @@
     }
   }
 
-	const onLoayoutChange = () => {
+	const onLayoutChange = () => {
 		executeScript(_selectedComponent.value.value)
 		executeCharacterScript(editCharacterFile.value)
 		emitter.emit('renderCharacter_forceUpdate', true)
@@ -262,8 +293,10 @@
 		setSelectGlobalParamDialogVisible(true)
 	}
 
-
 	const updateGlobalParam = (parameter: IParameter) => {
+		// 选择全局变量时，只更新当前字形的视图
+		// 但是一个全局变量可能用于多个字形的组件
+		// 点击更新全局变量会更新其他调用该全局变量的字形或字符的预览试图
 		const arr = constantGlyphMap.get(parameter.value as unknown as string)
 		for (let i = 0; i < arr.length; i++) {
 			const pair = arr[i]
@@ -317,7 +350,7 @@
 							v-for="key in Object.keys(_selectedComponent.value.layout.params)"
 							:label="key"
 						>
-							<el-input-number v-model="_selectedComponent.value.layout.params[key]" @change="onLoayoutChange"/>
+							<el-input-number v-model="_selectedComponent.value.layout.params[key]" @change="onLayoutChange"/>
 							<div class="ratio-item">
 								<font-awesome-icon class="ratio-icon" :class="{
 									selected: _selectedComponent.value.layout.ratioedMap && _selectedComponent.value.layout.ratioedMap[key].ratioed
@@ -603,7 +636,7 @@
 									:min="getConstant(parameter.value).min"
 									:max="getConstant(parameter.value).max"
 									:precision="getConstant(parameter.value).max <= 10 ? 2 : 0"
-									@input="(value) => handleChangeParameter(parameter, value)"
+									@input="(value) => handleChangeParameter(getConstant(parameter.value), value)"
 									@change="(value) => handleChangeParameter(getConstant(parameter.value), value)"
 								/>
 							</div>
@@ -836,4 +869,18 @@
   .draggable-check {
     margin-left: 0;
   }
+	.param-btn-group {
+		width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+		.el-button {
+			margin: 0;
+      width: 100%;
+		}
+		&.ring {
+			top: 45px;
+			left: 5px;
+		}
+	}
 </style>

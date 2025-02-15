@@ -10,23 +10,36 @@ import {
 	points,
 	setPoints,
 	setEditing,
+	mousedown,
+	mousemove,
+	editing,
 } from '@/fontEditor/stores/polygon'
 import { IComponentValue, addComponentForCurrentCharacterFile, selectedFile } from '@/fontEditor/stores/files'
 import { addComponentForCurrentGlyph } from '@/fontEditor/stores/glyph'
 import { formatPoints, genPolygonContour } from '@/features/font'
 import { transformPoints } from '@/utils/math'
 import { Status, editStatus } from '../stores/font'
+import { OpType, saveState, StoreType } from '../stores/edit'
 
 // 多边形工具初始化方法
 // initializer for polygon tool
 const initPolygon = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
-	let mousedown: boolean = false
-	let mousemove: boolean = false
+	mousedown.value = false
+	mousemove.value = false
 	const nearD = 5
 	let closePath = false
 	const onMouseDown = (e: MouseEvent) => {
+		if (!points.value.length) {
+			// 保存状态
+			saveState('创建多边形组件', [
+				StoreType.Polygon,
+				glyph ? StoreType.EditGlyph : StoreType.EditCharacter
+			],
+				OpType.Undo
+			)
+		}
 		setEditing(true)
-		mousedown = true
+		mousedown.value = true
 		if (!points.value.length) {
 			const _point: IPoint = {
 				uuid: genUUID(),
@@ -36,13 +49,20 @@ const initPolygon = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 			const _points = R.clone(points.value)
 			_points.push(_point)
 			setPoints(_points)
-			window.addEventListener('mousemove', onMouseMove)
 		}
 	}
 	const onMouseMove = (e: MouseEvent) => {
+		if (!points.value.length || !editing) return
 		const _points = R.clone(points.value)
-		if (!mousedown) {
-			if (!mousemove) {
+		if (!mousedown.value) {
+			if (!mousemove.value) {
+				// 保存状态
+				saveState('创建多边形组件', [
+					StoreType.Polygon,
+					glyph ? StoreType.EditGlyph : StoreType.EditCharacter
+				],
+					OpType.Undo
+				)
 				// 第一次移动鼠标
 				const _point = {
 					uuid: genUUID(),
@@ -51,7 +71,7 @@ const initPolygon = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 				}
 				_points.push(_point)
 				setPoints(_points)
-				mousemove = true
+				mousemove.value = true
 			} else {
 				// 移动鼠标
 				const _point = _points[_points.length - 1]
@@ -64,17 +84,15 @@ const initPolygon = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 					closePath = true
 				}
 				setPoints(_points)
-				mousemove = true
+				mousemove.value = true
 			}
 		}
 	}
 	const onMouseUp = (e: MouseEvent) => {
-		mousedown = false
-		mousemove = false
+		if (!points.value.length || !editing) return
+		mousedown.value = false
+		mousemove.value = false
 		if (closePath) {
-			window.removeEventListener('mousemove', onMouseMove)
-			window.removeEventListener('mouseup', onMouseUp)
-			window.removeEventListener('keydown', onKeyDown)
 			setEditing(false)
 			if (!glyph) {
 				addComponentForCurrentCharacterFile(genPolygonComponent(R.clone(points.value), true))
@@ -82,12 +100,20 @@ const initPolygon = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 				addComponentForCurrentGlyph(genPolygonComponent(R.clone(points.value), true))
 			}
 			setPoints([])
+			closePath = false
 		}
 	}
 	const onEnter = (e: KeyboardEvent) => {
-		window.removeEventListener('mousemove', onMouseMove)
-		window.removeEventListener('mouseup', onMouseUp)
-		window.removeEventListener('keydown', onKeyDown)
+		const _points = R.clone(points.value)
+		if (points.value.length >= 0) {
+			const point = {
+				uuid: genUUID(),
+				x: points[0].x,
+				y: points[0].y,
+			}
+			_points.push(point)
+			setPoints(_points)
+		}
 		setEditing(false)
 		if (!glyph) {
 			addComponentForCurrentCharacterFile(genPolygonComponent(R.clone(points.value), true))
@@ -95,6 +121,7 @@ const initPolygon = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 			addComponentForCurrentGlyph(genPolygonComponent(R.clone(points.value), true))
 		}
 		setPoints([])
+		closePath = false
 	}
 	const onKeyDown = (e: KeyboardEvent) => {
 		if (e.code === 'Enter') {
@@ -102,13 +129,17 @@ const initPolygon = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 		}
 	}
 	canvas.addEventListener('mousedown', onMouseDown)
+	window.addEventListener('mousemove', onMouseMove)
 	window.addEventListener('mouseup', onMouseUp)
 	window.addEventListener('keydown', onKeyDown)
 	const closePolygon = () => {
 		canvas.removeEventListener('mousedown', onMouseDown)
 		window.removeEventListener('mouseup', onMouseUp)
 		window.removeEventListener('keydown', onKeyDown)
+		window.removeEventListener('mousemove', onMouseMove)
 		setEditing(false)
+		setPoints([])
+		closePath = false
 	}
 	return closePolygon
 }

@@ -155,6 +155,8 @@ const prevStatus: Ref<Status> = ref(Status.CharacterList)
 
 const editStatus: Ref<Status> = ref(Status.CharacterList)
 
+const prevEditStatus = ref(Status.Edit)
+
 const coordsText: Ref<string> = ref('0, 0')
 
 const enableLocalBrush: {
@@ -428,4 +430,5 @@ export {
 	coordsText,
 	prevStatus,
 	setPrevStatus,
+	prevEditStatus,
 }

@@ -7,11 +7,11 @@
 	 */
 
   import { useI18n } from 'vue-i18n'
-  import { setExportFontElectronDialogVisible, exportFontElectronDialogVisible } from '../../stores/dialogs'
+  import { setExportFontTauriDialogVisible, exportFontTauriDialogVisible } from '../../stores/dialogs'
   import { ref } from 'vue'
   import saveAs from 'file-saver'
   import { IFile, selectedFile } from '../../stores/files'
-  import { computeOverlapRemovedContours, exportFont_electron, mapToObject, plainFile, plainGlyph } from '../../menus/handlers'
+  import { computeOverlapRemovedContours, exportFont_tauri, mapToObject, plainFile, plainGlyph } from '../../menus/handlers'
   import { ICustomGlyph, comp_glyphs, constantGlyphMap, constants, glyphs, radical_glyphs, stroke_glyphs } from '../../stores/glyph'
   import { total, loaded, loading } from '../../stores/global'
   const { tm, t } = useI18n()
@@ -21,22 +21,22 @@
   })
 
   const handleCancel = () => {
-    setExportFontElectronDialogVisible(false)
+    setExportFontTauriDialogVisible(false)
   }
 
-  const handleClick = () => {
+  const handleClick = async () => {
     total.value = selectedFile.value.characterList.length * 4
     loaded.value = 0
     loading.value = true
     computeOverlapRemovedContours()
-    exportFont_electron(options.value)
-    setExportFontElectronDialogVisible(false)
+    await exportFont_tauri(options.value)
+    setExportFontTauriDialogVisible(false)
   }
 </script>
 
 <template>
   <el-dialog
-    v-model="exportFontElectronDialogVisible"
+    v-model="exportFontTauriDialogVisible"
     :title="tm('dialogs.exportFontDialog.title')"
     width="320px"
   >

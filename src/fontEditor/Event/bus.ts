@@ -28,6 +28,7 @@ type Events = {
   renderGlyph: boolean;
   renderCharacter: boolean;
   updateGlyphView: boolean;
+  updateCharacterView: boolean;
   updateGlyphInfoPreviewCanvasByUUID: string;
   updateCharacterInfoPreviewCanvasByUUID: string;
   renderCharacter_forceUpdate: boolean;

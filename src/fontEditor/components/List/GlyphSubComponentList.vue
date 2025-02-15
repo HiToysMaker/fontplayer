@@ -277,7 +277,7 @@
 							</div>
 						</template>
 						<div class="component-menu">
-							<div class="component-menu-item" @click="(e: MouseEvent) => clip(component.uuid)">
+              <!-- <div class="component-menu-item" @click="(e: MouseEvent) => clip(component.uuid)">
 								{{ t('panels.componentList.menu.cut') }}
 							</div>
 							<div class="component-menu-item" @click="(e: MouseEvent) => copy(component.uuid)">
@@ -285,7 +285,7 @@
 							</div>
 							<div class="component-menu-item" @click="(e: MouseEvent) => paste(component.uuid)">
 								{{ t('panels.componentList.menu.paste') }}
-							</div>
+							</div> -->
 							<div class="component-menu-item" @click="(e: MouseEvent) => remove(component.uuid)">
 								{{ t('panels.componentList.menu.delete') }}
 							</div>

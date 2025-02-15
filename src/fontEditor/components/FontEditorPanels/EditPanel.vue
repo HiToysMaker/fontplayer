@@ -24,7 +24,7 @@
     mapCanvasWidth,
     mapCanvasHeight,
   } from '../../../utils/canvas'
-  import { tool, grid, background, setCanvas, canvas, fontRenderStyle, width, height, setTool, checkJoints, checkRefLines } from '../../stores/global'
+  import { tool, grid, background, setCanvas, canvas, fontRenderStyle, width, height, setTool, checkJoints, checkRefLines, gridChanged } from '../../stores/global'
   import { initPen, renderPenEditor } from '../../tools/pen'
   import { initSelect, renderSelectEditor } from '../../tools/select/select'
   import { initEllipse, renderEllipseEditor } from '../../tools/ellipse'
@@ -59,6 +59,9 @@
   import { initLayoutResizer, renderLayoutEditor } from '../../tools/glyphLayoutResizer'
   import * as R from 'ramda'
   import { linkComponentsForJoints } from '../../programming/Joint'
+  import { clearState, OpType, redo, saveState, StoreType, undo } from '../../stores/edit'
+  import { gridSettings } from '../../stores/global'
+  import { ElMessageBox } from 'element-plus'
 
   const mounted: Ref<boolean> = ref(false)
   let closeTool: Function | null = null
@@ -69,6 +72,7 @@
   // onMounted初始化，需要执行当前编辑字符脚本，并渲染字符，初始化工具栏
   // onMounted initialization
   onMounted(async () => {
+    document.addEventListener('keydown', onKeyDown)
     executeCharacterScript(editCharacterFile.value)
     const _canvas = editCanvas.value as HTMLCanvasElement
     _canvas.style.width = `${width.value * editCharacterFile.value.view.zoom / 100}px`
@@ -84,9 +88,16 @@
     emitter.on('renderCharacter', () => {
       render()
       renderRefComponents()
+      tool.value === 'select' && renderSelectEditor(canvas.value)
+      tool.value === 'pen' && renderPenEditor(canvas.value)
     })
     emitter.on('renderCharacter_forceUpdate', () => {
       _render(canvas.value as HTMLCanvasElement, true, true)
+    })
+    emitter.on('updateCharacterView', () => {
+      const _canvas = canvas.value
+      _canvas.style.width = `${500 * editCharacterFile.value.view.zoom / 100}px`
+      _canvas.style.height = `${500 * editCharacterFile.value.view.zoom / 100}px`
     })
     await nextTick()
     if (selectedComponentUUID.value && selectedComponent.value.type === 'glyph') {
@@ -94,9 +105,28 @@
     }
   })
 
+  const onKeyDown = (event) => {
+    const isMac = navigator.userAgent.includes("Mac")
+    if ((isMac && event.metaKey && event.key === 'z') || (!isMac && event.ctrlKey && event.key === 'z')) {
+      if (event.shiftKey) {
+        // 重做 (Ctrl+Shift+Z 或 Command+Shift+Z)
+        redo()
+      } else {
+        // 撤销 (Ctrl+Z 或 Command+Z)
+        undo()
+      }
+      event.preventDefault()
+    }
+  }
+
   // onUnmounted关闭工具栏和布局编辑器
   // onUnmounted operation
   onUnmounted(() => {
+    emitter.off('renderCharacter')
+    emitter.off('renderCharacter_forceUpdate')
+    emitter.off('updateCharacterView')
+    document.removeEventListener('keydown', onKeyDown)
+    clearState()
     if (closeTool) {
       closeTool()
     }
@@ -107,29 +137,30 @@
   })
 
   const onGridChange = (dx, dy, centerSquareSize) => {
-    // gridSettings.value.dx = dx
-    // gridSettings.value.dy = dy
-    // gridSettings.value.centerSquareSize = centerSquareSize
-    const info = R.clone(editCharacterFile.value.info)
-    if (info.gridSettings) {
-      info.gridSettings.dx = dx
-      info.gridSettings.dy = dy
-      info.gridSettings.centerSquareSize = centerSquareSize
-      // const x1 = Math.round((info.gridSettings.size - centerSquareSize) / 2) + dx
-      // const x2 =  Math.round((info.gridSettings.size - centerSquareSize) / 2 + centerSquareSize) + dx
-      // const y1 = Math.round((info.gridSettings.size - centerSquareSize) / 2) + dy
-      // const y2 = Math.round((info.gridSettings.size - centerSquareSize) / 2 + centerSquareSize) + dy
-      // const l = info.gridSettings.size
-      // formatLayout(
-      //   info.layoutTree,
-      //   { x: 0, y: 0, w: l, h: l, },
-      //   1,
-      //   { x1, x2, y1, y2, l },
-      // )
-    }
-    modifyCharacterFile(editCharacterFileUUID.value, {
-      info,
-    })
+    gridChanged.value = true
+    gridSettings.value.dx = dx
+    gridSettings.value.dy = dy
+    gridSettings.value.centerSquareSize = centerSquareSize
+    // const info = R.clone(editCharacterFile.value.info)
+    // if (info.gridSettings) {
+    //   info.gridSettings.dx = dx
+    //   info.gridSettings.dy = dy
+    //   info.gridSettings.centerSquareSize = centerSquareSize
+    //   // const x1 = Math.round((info.gridSettings.size - centerSquareSize) / 2) + dx
+    //   // const x2 =  Math.round((info.gridSettings.size - centerSquareSize) / 2 + centerSquareSize) + dx
+    //   // const y1 = Math.round((info.gridSettings.size - centerSquareSize) / 2) + dy
+    //   // const y2 = Math.round((info.gridSettings.size - centerSquareSize) / 2 + centerSquareSize) + dy
+    //   // const l = info.gridSettings.size
+    //   // formatLayout(
+    //   //   info.layoutTree,
+    //   //   { x: 0, y: 0, w: l, h: l, },
+    //   //   1,
+    //   //   { x1, x2, y1, y2, l },
+    //   // )
+    // }
+    // modifyCharacterFile(editCharacterFileUUID.value, {
+    //   info,
+    // })
   }
 
 	// 初始化工具，当切换工具时，调用对应工具的初始化方法
@@ -166,9 +197,7 @@
 
   // tool改变时，重新初始化工具栏，重新渲染
   // watch for tool change
-  watch([
-    tool,
-  ], () => {
+  watch(tool, (newValue, oldValue) => {
     if (!mounted) return
     render()
     switch (tool.value) {
@@ -202,12 +231,13 @@
     deep: true
   })
 
-  watch([() => selectedComponent.value?.value.layout, () => SubComponentsRoot.value?.value.layout], () => {
+  watch([() => selectedComponent.value?.value?.layout, () => SubComponentsRoot.value?.value?.layout], () => {
     render()
     if (editingLayout.value && (selectedComponent.value || SubComponentsRoot.value)) {
       renderLayoutEditor(canvas.value)
     }
     tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
 		renderRefComponents()
     emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
   }, {
@@ -238,6 +268,8 @@
     setCanvas(_canvas)
     render()
 		renderRefComponents()
+    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
     emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
   })
 
@@ -246,6 +278,8 @@
     penEditing,
   ], () => {
     render()
+    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!penEditing.value) return
     renderPenEditor(canvas.value)
   })
@@ -255,6 +289,8 @@
     polygonEditing,
   ], () => {
     render()
+    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!polygonEditing.value) return
     renderPolygonEditor(polygonPoints, canvas.value)
   })
@@ -267,6 +303,8 @@
     ellipseEditing,
   ], () => {
     render()
+    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!ellipseEditing.value) return
     renderEllipseEditor(canvas.value)
   })
@@ -279,6 +317,8 @@
     rectangleEditing,
   ], () => {
     render()
+    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!rectangleEditing.value) return
     renderRectangleEditor(canvas.value)
   })
@@ -304,6 +344,7 @@
     render()
     if (!selectedComponentUUID.value) return
     tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
     renderRefComponents()
     emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
   })
@@ -371,12 +412,19 @@
   <section class="edit-panel-wrapper">
     <main class="canvas-wrapper">
       <div class="grid" v-show="tool === 'grid'">
-        <grid-controller
+        <!-- <grid-controller
           :size="editCharacterFile.info.gridSettings.size"
           :dx="editCharacterFile.info.gridSettings.dx"
           :dy="editCharacterFile.info.gridSettings.dy"
           :centerSquareSize="editCharacterFile.info.gridSettings.centerSquareSize"
           :layoutTree="editCharacterFile.info.layoutTree"
+          :onChange="onGridChange"
+        ></grid-controller> -->
+        <grid-controller
+          :size="gridSettings.size"
+          :dx="gridSettings.dx"
+          :dy="gridSettings.dy"
+          :centerSquareSize="gridSettings.centerSquareSize"
           :onChange="onGridChange"
         ></grid-controller>
       </div>
@@ -450,6 +498,7 @@
     width: 100%;
     align-items: center;
     justify-content: center;
+    background-color: var(--dark-1);
   }
   .edit-canvas-wrapper {
     flex: 0 0 1;
@@ -493,8 +542,11 @@
     box-sizing: border-box;
     height: 32px;
   }
-  .pen-on-edit, .mirror-on-edit {
+  /* .pen-on-edit, .mirror-on-edit {
     cursor: url('@/assets/icons/pen-nib-solid.svg') 0 16, pointer;
+  } */
+  .pen-on-edit, .mirror-on-edit {
+    cursor: url('@/assets/icons/pen-cursor.cur'), pointer;
   }
   .rectangle-on-edit, .ellipse-on-edit {
     cursor: crosshair;

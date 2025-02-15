@@ -1,9 +1,10 @@
 import type { IPoint } from '../stores/pen'
 import { genUUID } from '../../utils/string'
 import { mapCanvasX, mapCanvasY } from '../../utils/canvas'
-import { formatPoints, genPenContour } from '../../features/font'
+import { formatPoints, genPenContour, translate } from '../../features/font'
 import { selectedFile } from '../stores/files'
 import * as R from 'ramda'
+import { computeCoords } from '../canvas/canvas'
 
 interface IOption {
 	offset?: {
@@ -11,6 +12,7 @@ interface IOption {
     y: number,
   };
 	scale?: number;
+	grid?: any;
 }
 
 class PenComponent {
@@ -155,6 +157,40 @@ class PenComponent {
 		}
 	}
 
+	public render_grid (canvas: HTMLCanvasElement, options: IOption = {
+		offset: { x: 0, y: 0 },
+		scale: 1,
+		grid: null,
+	}) {
+		const translate = (point) => {
+			return {
+				x: options.offset.x + point.x,
+				y: options.offset.y + point.y,
+			}
+		}
+		const scale = options.scale
+		if (this.points.length >= 4) {
+			const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
+			ctx.strokeStyle = '#000'
+			ctx.beginPath()
+			const start = computeCoords(options.grid, translate(this.points[0]))
+			ctx.moveTo(mapCanvasX(start.x) * scale, mapCanvasY(start.y) * scale)
+			for (let i = 1; i < this.points.length; i += 3) {
+				const control1 = computeCoords(options.grid, translate(this.points[i]))
+				const control2 = computeCoords(options.grid, translate(this.points[i + 1]))
+				const end = computeCoords(options.grid, translate(this.points[i + 2]))
+				ctx.bezierCurveTo(
+					mapCanvasX(control1.x) * scale, mapCanvasY(control1.y) * scale,
+					mapCanvasX(control2.x) * scale, mapCanvasY(control2.y) * scale,
+					mapCanvasX(end.x) * scale, mapCanvasY(end.y) * scale,
+				)
+			}
+			ctx.stroke()
+			ctx.closePath()
+			ctx.setTransform(1, 0, 0, 1, 0, 0)
+		}
+	}
+
 	public getData = () => {
 		return {
 			points: R.clone(this.points),
@@ -175,8 +211,16 @@ class PenComponent {
 		this.preview = R.clone(data.preview)
 	}
 
-	public updateData = (isGlyph: boolean = true) => {
-		const points = this.points
+	public updateData = (isGlyph: boolean = true, offset: { x: number, y: number }, grid?: any) => {
+		let points: any = this.points
+		points = points.map((point) => {
+			const p = translate(point, offset)
+			if (grid) {
+				return computeCoords(grid, p)
+			} else {
+				return p
+			}
+		})
 		let options = {
 			unitsPerEm: 1000,
 			descender: -200,

@@ -30,6 +30,8 @@
   ], () => {
     if (!editGlyph.value) return
     translateText.value = `${editGlyph.value.view.translateX},${editGlyph.value.view.translateY}`
+  }, {
+    deep: true,
   })
 
   // 重置translateText

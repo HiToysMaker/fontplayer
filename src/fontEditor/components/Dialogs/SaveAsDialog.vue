@@ -13,6 +13,8 @@
   import { IFile, selectedFile } from '../../stores/files'
   import { mapToObject, plainFile, plainGlyph } from '../../menus/handlers'
   import { total, loaded, loading } from '../../stores/global'
+  import { save } from '@tauri-apps/plugin-dialog'
+  import { writeTextFile } from '@tauri-apps/plugin-fs'
   import { ICustomGlyph, comp_glyphs, constantGlyphMap, constants, glyphs, radical_glyphs, stroke_glyphs } from '../../stores/glyph'
   const { tm, t } = useI18n()
 
@@ -43,17 +45,17 @@
       })
     }
     if (exportItems.value.stroke_glyphs) {
-      stroke_glyphs.value.map((glyph: ICustomGlyph) => {
+      _stroke_glyphs = stroke_glyphs.value.map((glyph: ICustomGlyph) => {
         return plainGlyph(glyph)
       })
     }
     if (exportItems.value.radical_glyphs) {
-      radical_glyphs.value.map((glyph: ICustomGlyph) => {
+      _radical_glyphs = radical_glyphs.value.map((glyph: ICustomGlyph) => {
         return plainGlyph(glyph)
       })
     }
     if (exportItems.value.comp_glyphs) {
-      comp_glyphs.value.map((glyph: ICustomGlyph) => {
+      _comp_glyphs = comp_glyphs.value.map((glyph: ICustomGlyph) => {
         return plainGlyph(glyph)
       })
     }
@@ -67,7 +69,20 @@
       radical_glyphs: _radical_glyphs,
       comp_glyphs: _comp_glyphs,
     })
-    const filePath = await window.electronAPI._saveFile(data, `${file.name}.json`)
+    
+    const path = await save({
+      defaultPath: `${(selectedFile.value as unknown as IFile).name}.json`,
+      filters: [
+        {
+          name: 'JSON Filter',
+          extensions: ['json'],
+        },
+      ],
+    })
+    if (path) {
+      await writeTextFile(path, data)
+    }
+
     loading.value = false
     setSaveAsDialogVisible(false)
   }

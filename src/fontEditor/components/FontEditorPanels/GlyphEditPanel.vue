@@ -55,6 +55,7 @@
 	import { CustomGlyph } from '../../programming/CustomGlyph'
 	import { emitter } from '../../Event/bus'
   import { initCoordsViewer } from '../../tools/coordsViewer'
+  import { clearState, OpType, redo, saveState, StoreType, undo } from '../../stores/edit'
 
   const mounted: Ref<boolean> = ref(false)
   let closeTool: Function | null = null
@@ -68,6 +69,7 @@
   // onMounted初始化，需要执行当前编辑字形脚本，并渲染字形，初始化工具栏
   // onMounted initialization
   onMounted(async () => {
+    document.addEventListener('keydown', onKeyDown)
     editStatus.value = Status.Glyph
     executeScript(editGlyph.value)
     const _canvas = editCanvas.value as HTMLCanvasElement
@@ -86,15 +88,39 @@
       const glyph = editGlyph.value._o ? editGlyph.value._o : new CustomGlyph(editGlyph.value)
       renderGlyph(glyph, canvas.value, true, false, false, true)
     })
+    emitter.on('updateGlyphView', () => {
+      const _canvas = canvas.value
+      _canvas.style.width = `${500 * editGlyph.value.view.zoom / 100}px`
+      _canvas.style.height = `${500 * editGlyph.value.view.zoom / 100}px`
+    })
     await nextTick()
     if (selectedComponentUUID.value && selectedComponent.value.type === 'glyph') {
       setTool('glyphDragger')
     }
   })
 
+  const onKeyDown = (event) => {
+    const isMac = navigator.userAgent.includes("Mac")
+    if ((isMac && event.metaKey && event.key === 'z') || (!isMac && event.ctrlKey && event.key === 'z')) {
+      if (event.shiftKey) {
+        // 重做 (Ctrl+Shift+Z 或 Command+Shift+Z)
+        redo()
+      } else {
+        // 撤销 (Ctrl+Z 或 Command+Z)
+        undo()
+      }
+      event.preventDefault()
+    }
+  }
+
   // onUnmounted关闭工具栏和布局编辑器
   // onUnmounted operation
   onUnmounted(() => {
+    emitter.off('renderGlyph')
+    emitter.off('renderGlyph_forceUpdate')
+    emitter.off('updateGlyphView')
+    document.removeEventListener('keydown', onKeyDown)
+    clearState()
     editingLayout.value = false
     if (closeTool) {
       closeTool()
@@ -215,12 +241,13 @@
     deep: true,
   })
 
-  watch([() => selectedComponent.value?.value.layout, () => SubComponentsRoot.value?.value.layout], () => {
+  watch([() => selectedComponent.value?.value?.layout, () => SubComponentsRoot.value?.value?.layout], () => {
     render()
     if (editingLayout.value && (selectedComponent.value || SubComponentsRoot.value)) {
       renderLayoutEditor(canvas.value)
     }
-    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
 		renderRefComponents()
     emitter.emit('renderPreviewCanvasByUUID', editGlyph.value.uuid)
   }, {
@@ -239,15 +266,17 @@
     if (!glyphEditing.value) return
   })
 
-  watch([
-    tool,
-  ], () => {
+  watch(tool, (newValue, oldValue) => {
+    saveState('选择工具', [StoreType.Tools], OpType.Undo, {
+      tool: oldValue,
+      newRecord: true,
+    })
     if (!mounted) return
     render()
     switch (tool.value) {
       case 'select':
         if (selectedComponentUUID.value) {
-          renderSelectEditor(canvas.value, 5, true)
+          renderSelectEditor(canvas.value, 10, true)
         }
         break
       case 'glyphDragger':
@@ -284,16 +313,11 @@
     _canvas.style.height = `${500 * editGlyph.value.view.zoom / 100}px`
     render()
     if (selectedComponentUUID.value) {
-      tool.value === 'select' && renderSelectEditor(canvas.value, 5, true)
+      tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+      tool.value === 'pen' && renderPenEditor(canvas.value)
     }
     renderRefComponents()
 		emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
-  })
-
-  emitter.on('updateGlyphView', () => {
-    const _canvas = canvas.value
-    _canvas.style.width = `${500 * editGlyph.value.view.zoom / 100}px`
-    _canvas.style.height = `${500 * editGlyph.value.view.zoom / 100}px`
   })
 
   watch([
@@ -301,6 +325,8 @@
     penEditing,
   ], () => {
     render()
+    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!penEditing.value) return
     renderPenEditor(canvas.value)
   })
@@ -310,6 +336,8 @@
     polygonEditing,
   ], () => {
     render()
+    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!polygonEditing.value) return
     renderPolygonEditor(polygonPoints, canvas.value)
   })
@@ -322,6 +350,8 @@
     ellipseEditing,
   ], () => {
     render()
+    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!ellipseEditing.value) return
     renderEllipseEditor(canvas.value)
   })
@@ -334,6 +364,8 @@
     rectangleEditing,
   ], () => {
     render()
+    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!rectangleEditing.value) return
     renderRectangleEditor(canvas.value)
   })
@@ -346,7 +378,8 @@
     render()
     renderRefComponents()
     if (!selectedComponentUUID.value) return
-    tool.value === 'select' && renderSelectEditor(canvas.value, 5, true)
+    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
   })
 
   watch([
@@ -367,7 +400,7 @@
   ], () => {
     if (tool.value === 'select') {
       render()
-      renderSelectEditor(canvas.value, 5, true)
+      renderSelectEditor(canvas.value, 10, true)
     }
   })
 

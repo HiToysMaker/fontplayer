@@ -6,9 +6,10 @@
 	 * dialog for select global param
 	 */
 
+	import { emitter } from '../../Event/bus'
 	import { setSelectGlobalParamDialogVisible, selectGlobalParamDialogVisible } from '../../stores/dialogs'
 	import { editCharacterFileUUID, selectedComponent as selectedComponent_character } from '../../stores/files'
-	import { constantGlyphMap, ConstantGlyphPair, constants, constantsMap, ConstantType, convertGlyphType, editGlyph, editGlyphUUID, getGlyphType, GlyphType, ParameterType, selectedComponent, selectedParam, selectedParamType } from '../../stores/glyph'
+	import { constantGlyphMap, ConstantGlyphPair, constants, constantsMap, ConstantType, convertGlyphType, editGlyph, editGlyphUUID, executeScript, getGlyphType, GlyphType, ParameterType, selectedComponent, selectedParam, selectedParamType } from '../../stores/glyph'
   import { Ref, ref } from 'vue'
   import { useI18n } from 'vue-i18n'
   const { tm, t } = useI18n()
@@ -32,6 +33,9 @@
 							delete selectedComponent.value.value.system_script[selectedComponent.value.value.parameters.parameters[i].name]
 						}
 						const type = getGlyphType(editGlyphUUID.value)
+						if (!constantGlyphMap.get(parameter.value)) {
+							constantGlyphMap.set(parameter.value, [])
+						}
 						const arr = constantGlyphMap.get(parameter.value)
 						arr.push({
 							constantType: ConstantType.Component,
@@ -41,6 +45,9 @@
 							glyphUUID: selectedComponent.value.uuid,
 						} as ConstantGlyphPair)
 					}
+					executeScript(editGlyph.value)
+					emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
+					emitter.emit('renderGlyph')
 				}
 			} else if (selectedParamType.value === 'character_components') {
 				for (let i = 0; i < selectedComponent_character.value.value.parameters.parameters.length; i++) {
@@ -52,6 +59,9 @@
 						if (selectedComponent_character.value.value.system_script[selectedComponent_character.value.value.parameters.parameters[i].name]) {
 							delete selectedComponent_character.value.value.system_script[selectedComponent_character.value.value.parameters.parameters[i].name]
 						}
+						if (!constantGlyphMap.get(parameter.value)) {
+							constantGlyphMap.set(parameter.value, [])
+						}
 						const arr = constantGlyphMap.get(parameter.value)
 						arr.push({
 							constantType: ConstantType.Component,
@@ -60,6 +70,9 @@
 							parentUUID: editCharacterFileUUID.value,
 							glyphUUID: selectedComponent_character.value.uuid,
 						} as ConstantGlyphPair)
+						executeScript(editGlyph.value)
+						emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
+						emitter.emit('renderGlyph')
 					}
 				}
 			} else if (selectedParamType.value === 'glyph_params') {
@@ -73,6 +86,9 @@
 							delete editGlyph.value.value.system_script[editGlyph.value.value.parameters.parameters[i].name]
 						}
 						const type = getGlyphType(editGlyphUUID.value)
+						if (!constantGlyphMap.get(parameter.value)) {
+							constantGlyphMap.set(parameter.value, [])
+						}
 						const arr = constantGlyphMap.get(parameter.value)
 						arr.push({
 							constantType: ConstantType.Parameter,
@@ -80,6 +96,9 @@
 							parameterUUID: selectedParam.value.uuid,
 							glyphUUID: editGlyphUUID.value,
 						} as ConstantGlyphPair)
+						executeScript(editGlyph.value)
+						emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
+						emitter.emit('renderGlyph')
 					}
 				}
 			}

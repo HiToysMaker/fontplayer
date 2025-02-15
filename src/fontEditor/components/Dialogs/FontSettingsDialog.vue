@@ -7,8 +7,8 @@
    */
 
   import { fontSettingsDialogVisible, setFontSettingsDialogVisible } from '../../stores/dialogs'
-  import { updateFontSettings } from '../../stores/files'
-  import { ref, type Ref } from 'vue'
+  import { selectedFile, updateFontSettings } from '../../stores/files'
+  import { onMounted, onUnmounted, ref, watch, type Ref } from 'vue'
   import { useI18n } from 'vue-i18n'
   const { tm, t } = useI18n()
 
@@ -16,6 +16,23 @@
   const unitsPerEm: Ref<number> = ref(1000)
   const ascender: Ref<number> = ref(800)
   const descender: Ref<number> = ref(-200)
+
+  onMounted(() => {
+    name.value = selectedFile.value.name
+    unitsPerEm.value = selectedFile.value.fontSettings.unitsPerEm
+    ascender.value = selectedFile.value.fontSettings.ascender
+    descender.value = selectedFile.value.fontSettings.descender
+  })
+
+  watch(selectedFile, () => {
+    if (!selectedFile.value) return
+    name.value = selectedFile.value.name
+    unitsPerEm.value = selectedFile.value.fontSettings.unitsPerEm
+    ascender.value = selectedFile.value.fontSettings.ascender
+    descender.value = selectedFile.value.fontSettings.descender
+  }, {
+    deep: true,
+  })
 
   const updateFont = () => {
     updateFontSettings({

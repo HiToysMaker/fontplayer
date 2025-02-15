@@ -1,10 +1,12 @@
 <script lang="ts" setup>
-	import { ref, type Ref, toRefs, onMounted, watch, computed } from 'vue'
+	import { ref, type Ref, toRefs, onMounted, watch, computed, onUnmounted, onBeforeUnmount } from 'vue'
 	import { renderLayout } from '../../../features/layout'
 	import { editCharacterFile, executeCharacterScript, orderedListWithItemsForCurrentCharacterFile } from '../../stores/files'
 	import { emitter } from '../../Event/bus'
-	import { renderCanvas as renderCharacter } from '../../canvas/canvas'
-	import { tool } from '../../stores/global'
+	import { renderCanvas as renderCharacter, renderGridCanvas } from '../../canvas/canvas'
+	import { gridChanged, gridSettings, tool } from '../../stores/global'
+	import { ElMessageBox } from 'element-plus'
+	import { OpType, saveState, StoreType } from '../../stores/edit'
 	interface LayoutNode {
 		id: string;
 		coords: string;
@@ -59,13 +61,37 @@
 
 	onMounted(() => {
 		render()
+		executeCharacterScript(editCharacterFile.value)
+		renderGridCanvas(orderedListWithItemsForCurrentCharacterFile.value, canvas.value as unknown as HTMLCanvasElement, {
+			scale: 0.5,
+			forceUpdate: false,
+			fill: false,
+    	offset: { x: 0, y: 0 },
+			grid: {
+				dx: dx.value,
+				dy: dy.value,
+				size: size.value,
+				centerSquareSize: centerSquareSize.value,
+				x1: x1.value,
+				x2: x2.value,
+				y1: y1.value,
+				y2: y2.value,
+			}
+		})
 		canvas.value.addEventListener('mousedown', onMouseDown)
 		canvas.value.addEventListener('mousemove', onMouseMove)
 	})
-	// onUnmounted(() => {
-	// 	canvas.value.removeEventListener('mousedown', onMouseDown)
-	// 	canvas.value.removeEventListener('mousemove', onMouseMove)
-	// })
+	onBeforeUnmount(() => {
+		canvas.value.removeEventListener('mousedown', onMouseDown)
+		canvas.value.removeEventListener('mousemove', onMouseMove)
+		if (tool.value === 'grid') {
+			ElMessageBox.alert(
+				'为方便用户进行组件编辑操作，离开布局编辑界面会恢复默认布局。如果您已经应用布局变换，预览及导出字体库会使用应用变换后的布局，但是在其他编辑操作时，界面仍使用默认布局。',
+				'提示：您已经离开布局编辑界面', {
+				confirmButtonText: '确定',
+			})
+		}
+	})
 	const status = ref('none')
 	const style = ref('default')
 	const onMouseDown = (e: MouseEvent) => {
@@ -193,16 +219,65 @@
 		status.value = 'none'
 		document.body.removeEventListener('mouseup', onMouseUp)
 	}
-	watch([dx, dy, size, centerSquareSize, layoutTree], () => {
+
+	const saveGridEditState = (options) => {
+    // 保存状态
+		saveState('编辑布局', [
+			StoreType.Grid
+		],
+			OpType.Undo,
+			options,
+		)
+  }
+
+	let timer = null
+  let opstatus = false
+	watch([gridSettings, gridChanged], (newValue, oldValue) => {
+		if (timer) {
+      clearTimeout(timer)
+    }
+    timer = setTimeout(() => {
+      opstatus = false
+			clearTimeout(timer)
+    }, 500)
+    if (!opstatus) {
+      saveGridEditState({
+				gridSettings: oldValue[0],
+				gridChanged: oldValue[1],
+				newRecord: true,
+			})
+      opstatus = true
+    }
+	}, {
+		deep: true,
+	})
+
+	watch([dx, dy, size, centerSquareSize, layoutTree], (newValue, oldValue) => {
 		render()
 		executeCharacterScript(editCharacterFile.value)
-		emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
-		emitter.emit('renderCharacter', true)
-		renderCharacter(orderedListWithItemsForCurrentCharacterFile.value, canvas.value as unknown as HTMLCanvasElement, {
+		// emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
+		// emitter.emit('renderCharacter', true)
+		// renderCharacter(orderedListWithItemsForCurrentCharacterFile.value, canvas.value as unknown as HTMLCanvasElement, {
+		// 	scale: 0.5,
+		// 	forceUpdate: false,
+		// 	fill: false,
+    // 	offset: { x: 0, y: 0 },
+		// })
+		renderGridCanvas(orderedListWithItemsForCurrentCharacterFile.value, canvas.value as unknown as HTMLCanvasElement, {
 			scale: 0.5,
 			forceUpdate: false,
 			fill: false,
     	offset: { x: 0, y: 0 },
+			grid: {
+				dx: dx.value,
+				dy: dy.value,
+				size: size.value,
+				centerSquareSize: centerSquareSize.value,
+				x1: x1.value,
+				x2: x2.value,
+				y1: y1.value,
+				y2: y2.value,
+			}
 		})
 	}, {
 		deep: true,
@@ -308,4 +383,7 @@
   .left-bottom, .right-top {
     cursor: nesw-resize;
   }
+	.grid-controller {
+		background-color: white;
+	}
 </style>

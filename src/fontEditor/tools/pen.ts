@@ -10,24 +10,39 @@ import {
 	points,
 	setPoints,
 	setEditing,
+	editing,
+	mousedown,
+	mousemove,
 } from '../../fontEditor/stores/pen'
 import { addComponentForCurrentCharacterFile, IComponentValue, selectedFile } from '../../fontEditor/stores/files'
 import { addComponentForCurrentGlyph } from '../../fontEditor/stores/glyph'
 import { formatPoints, genPenContour } from '../../features/font'
 import { transformPoints } from '../../utils/math'
 import { Status, editStatus } from '../stores/font'
+import { OpType, saveState, StoreType } from '../stores/edit'
 
+let eventListenersMap: any = {}
 // 钢笔工具初始化方法
 // initializer for pen tool
 const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
-	let mousedown: boolean = false
-	let mousemove: boolean = false
+	mousedown.value = false
+	mousemove.value = false
+	eventListenersMap = {}
 	let editAnchor: any = null
 	const controlScale = 0.35
 	const nearD = 5
 	let closePath = false
+	let _lastControl: IPoint
+	let _controlIndex: number
 	const onMouseDown = (e: MouseEvent) => {
-		mousedown = true
+		if (!points.value.length) {
+			// 保存状态
+			saveState('新建钢笔组件锚点', [
+				StoreType.Pen,
+				glyph ? StoreType.EditGlyph : StoreType.EditCharacter],
+			OpType.Undo)
+		}
+		mousedown.value = true
 		setEditing(true)
 		if (!points.value.length) {
 			// 第一个锚点
@@ -56,7 +71,6 @@ const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 				uuid: points.value[0].uuid,
 				index: 0,
 			}
-			canvas.addEventListener('mousemove', onMouseMove)
 		} else {
 			editAnchor = {
 				uuid: points.value[points.value.length - 2].uuid,
@@ -64,12 +78,11 @@ const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 			}
 		}
 	}
-	let _lastControl: IPoint
-	let _controlIndex: number
 	const onMouseMove = (e: MouseEvent) => {
+		if (!points.value.length || !editing) return
 		const _points = R.clone(points.value)
-		if (mousedown) {
-			_points[_controlIndex] = _lastControl
+		if (mousedown.value) {
+			if (_lastControl) _points[_controlIndex] = _lastControl
 			// 长按鼠标
 			if (editAnchor.index === 0) {
 				//第一个锚点
@@ -93,12 +106,17 @@ const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 				_control1.y = _anchor.y - (getCoord(e.offsetY) - _anchor.y)
 				_control1.isShow = true
 			}
-			mousemove = true
+			mousemove.value = true
 			setPoints(_points)
 		}
-		if (!mousedown) {
-			if (!mousemove) {
+		if (!mousedown.value) {
+			if (!mousemove.value && _points.length) {
 				// 第一次移动鼠标
+				// 保存状态
+				saveState('新建钢笔组件锚点', [
+					StoreType.Pen,
+					glyph ? StoreType.EditGlyph : StoreType.EditCharacter],
+				OpType.Undo)
 				_lastControl = Object.assign({}, _points[_points.length - 1])
 				_controlIndex = _points.length - 1
 				const _anchor = {
@@ -127,8 +145,8 @@ const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 				}
 				_points.push(_control1, _anchor, _control2)
 				setPoints(_points)
-				mousemove = true
-			} else {
+				mousemove.value = true
+			} else if (_points.length) {
 				// 移动鼠标
 				_controlIndex = _points.length - 4
 				const _anchor = _points[_points.length - 2]
@@ -136,6 +154,8 @@ const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 				const _control2 = _points[_points.length - 1]
 				_anchor.x = getCoord(e.offsetX)
 				_anchor.y = getCoord(e.offsetY)
+				_control2.x = getCoord(e.offsetX)
+				_control2.y = getCoord(e.offsetY)
 				closePath = false
 				// 当鼠标移动至第一个锚点所在位置附近时，自动闭合路径
 				if (isNearPoint(getCoord(e.offsetX), getCoord(e.offsetY), points.value[0].x, points.value[0].y, nearD)) {
@@ -150,31 +170,67 @@ const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 					closePath = true
 				}
 				setPoints(_points)
-				mousemove = true
+				mousemove.value = true
 			}
 		}
 	}
 	const onMouseUp = (e: MouseEvent) => {
-		mousedown = false
-		mousemove = false
+		if (!points.value.length || !editing) return
+		mousedown.value = false
+		mousemove.value = false
 		editAnchor = null
 		if (closePath) {
-			canvas.removeEventListener('mousemove', onMouseMove)
-			window.removeEventListener('mouseup', onMouseUp)
-			window.removeEventListener('keydown', onKeyDown)
+			// canvas.removeEventListener('mousemove', onMouseMove)
+			// window.removeEventListener('mouseup', onMouseUp)
+			// window.removeEventListener('keydown', onKeyDown)
 			setEditing(false)
-			if (!glyph) {
-				addComponentForCurrentCharacterFile(genPenComponent(R.clone(points).value, true))
-			} else {
-				addComponentForCurrentGlyph(genPenComponent(R.clone(points).value, true))
-			}
+			const component = genPenComponent(R.clone(points).value, true)
 			setPoints([])
+			if (!glyph) {
+				addComponentForCurrentCharacterFile(component)
+			} else {
+				addComponentForCurrentGlyph(component)
+			}
+			_lastControl = undefined
+			_controlIndex = undefined
+			closePath = false
+			editAnchor = null
 		}
 	}
 	const onEnter = (e: KeyboardEvent) => {
-		canvas && canvas.removeEventListener('mousemove', onMouseMove)
-		window.removeEventListener('mouseup', onMouseUp)
-		window.removeEventListener('keydown', onKeyDown)
+		if (!points.value.length || !editing) return
+		const _points = R.clone(points.value)
+		if (points.value.length >= 2) {
+			const _anchor = {
+				uuid: genUUID(),
+				type: 'anchor',
+				x: points.value[0].x,
+				y: points.value[0].y,
+				origin: null,
+				isShow: true,
+			}
+			const _control1 = {
+				uuid: genUUID(),
+				type: 'control',
+				x: points.value[0].x,//points.value[1].x,
+				y: points.value[0].y,//points.value[1].y,
+				origin: _anchor.uuid,
+				isShow: false,
+			}
+			const _control2 = {
+				uuid: genUUID(),
+				type: 'control',
+				x: points.value[0].x,//points.value[0].x - (points.value[1].x - points.value[0].x),
+				y: points.value[0].y,//points.value[0].y - (points.value[1].y - points.value[0].y),
+				origin: _anchor.uuid,
+				isShow: false,
+			}
+			_points.push(_control1, _anchor, _control2)
+			setPoints(_points)
+		}
+		//canvas && canvas.removeEventListener('mousemove', onMouseMove)
+		//window.removeEventListener('mouseup', onMouseUp)
+		//window.removeEventListener('keydown', onKeyDown)
 		setEditing(false)
 		if (!glyph) {
 			addComponentForCurrentCharacterFile(genPenComponent(R.clone(points).value, true))
@@ -182,6 +238,10 @@ const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 			addComponentForCurrentGlyph(genPenComponent(R.clone(points).value, true))
 		}
 		setPoints([])
+		_lastControl = undefined
+		_controlIndex = undefined
+		closePath = false
+		editAnchor = null
 	}
 	const onKeyDown = (e: KeyboardEvent) => {
 		if (e.code === 'Enter') {
@@ -189,13 +249,20 @@ const initPen = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 		}
 	}
 	canvas.addEventListener('mousedown', onMouseDown)
+	canvas.addEventListener('mousemove', onMouseMove)
 	window.addEventListener('mouseup', onMouseUp)
 	window.addEventListener('keydown', onKeyDown)
 	const closePen = () => {
 		canvas.removeEventListener('mousedown', onMouseDown)
+		canvas.removeEventListener('mousemove', onMouseMove)
 		window.removeEventListener('mouseup', onMouseUp)
 		window.removeEventListener('keydown', onKeyDown)
 		setEditing(false)
+		setPoints([])
+		_lastControl = undefined
+		_controlIndex = undefined
+		closePath = false
+		editAnchor = null
 	}
 	return closePen
 }

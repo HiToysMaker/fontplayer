@@ -20,9 +20,6 @@
 
   const handleClick = () => {
 		locale.value = language.value
-    if (ENV.value === 'electron') {
-      window.electronAPI._changeLanguage(language.value)
-    }
     setLanguageSettingsDialogVisible(false)
   }
 

@@ -9,7 +9,7 @@
 	import { Status } from '../../stores/font'
 	import { executeScript, addGlyphTemplate, clearGlyphRenderList, stroke_glyphs } from '../../stores/glyph'
 	import { glyphComponentsDialogVisible, setGlyphComponentsDialogVisible } from '../../stores/dialogs'
-	import { onMounted, nextTick } from 'vue'
+	import { onMounted, nextTick, onUnmounted } from 'vue'
 	import type {
 		ILine,
 		ICubicBezierCurve,
@@ -95,30 +95,29 @@
 		// loading.value = false
 	}
 
-	// 监听renderGlyphPreviewCanvas事件，需要调用nextTick保证预览canvas节点已经在dom中
-	// listen renderGlyphPreviewCanvas event, need to call nextTick to ensure that preview canvas is already added into dom
-	emitter.on('renderStrokeGlyphPreviewCanvas', async () => {
-		await nextTick()
-		renderPreviewCanvas()
-		emitter.emit('renderStrokeGlyphSelection')
-	})
-
-	// 监听渲染指定uuid字形预览事件
-	// listen for render glyph preview by uuid
-	emitter.on('renderStrokeGlyphPreviewCanvasByUUID', async (uuid: string) => {
-		if (timerMap.get(uuid)) {
-			clearTimeout(timerMap.get(uuid))
-		}
-		const timer = setTimeout(async () => {
-			await nextTick()
-			renderGlyphPreviewCanvasByUUID(uuid)
-		}, 1000)
-		timerMap.set(uuid, timer)
-	})
-
 	// 挂载组件时，渲染预览画布
 	// renderPreviewCanvas on mounted
 	onMounted(async () => {
+		// 监听renderGlyphPreviewCanvas事件，需要调用nextTick保证预览canvas节点已经在dom中
+		// listen renderGlyphPreviewCanvas event, need to call nextTick to ensure that preview canvas is already added into dom
+		emitter.on('renderStrokeGlyphPreviewCanvas', async () => {
+			await nextTick()
+			renderPreviewCanvas()
+			emitter.emit('renderStrokeGlyphSelection')
+		})
+
+		// 监听渲染指定uuid字形预览事件
+		// listen for render glyph preview by uuid
+		emitter.on('renderStrokeGlyphPreviewCanvasByUUID', async (uuid: string) => {
+			if (timerMap.get(uuid)) {
+				clearTimeout(timerMap.get(uuid))
+			}
+			const timer = setTimeout(async () => {
+				await nextTick()
+				renderGlyphPreviewCanvasByUUID(uuid)
+			}, 1000)
+			timerMap.set(uuid, timer)
+		})
 		!glyphComponentsDialogVisible.value && setGlyphComponentsDialogVisible(true)
 		//glyphComponentsDialogVisible2.value = true
 		await nextTick()
@@ -129,6 +128,11 @@
 		await nextTick()
 		renderPreviewCanvas()
 	})
+
+	onUnmounted(() => {
+    emitter.off('renderStrokeGlyphPreviewCanvas')
+    emitter.off('renderStrokeGlyphPreviewCanvasByUUID')
+  })
 
 	// 更新组件时，渲染预览画布
 	// renderPreviewCanvas on updated

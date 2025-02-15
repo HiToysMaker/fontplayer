@@ -15,9 +15,11 @@ import { addComponentForCurrentGlyph } from '../../fontEditor/stores/glyph'
 import { formatPoints, genRectangleContour } from '../../features/font'
 import { getRectanglePoints, transformPoints } from '../../utils/math'
 import { Status, editStatus } from '../stores/font'
+import { OpType, saveState, StoreType } from '../stores/edit'
 
 // 长方形工具初始化方法
 // initializer for rectangle tool
+let eventListenersMap: any = {}
 const initRectangle = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 	let mousedown: boolean = false
 	let mousemove: boolean = false
@@ -27,18 +29,22 @@ const initRectangle = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 	let mouseDownY = -1
 	let cube = false
 	const onMouseDown = (e: MouseEvent) => {
+		// 保存状态
+		saveState('创建长方形组件', [
+			StoreType.Rectangle,
+			glyph ? StoreType.EditGlyph : StoreType.EditCharacter
+		],
+			OpType.Undo,
+		)
 		setEditing(true)
 		mousedown = true
 		mouseDownX = getCoord(e.offsetX)
 		mouseDownY = getCoord(e.offsetY)
 		lastX = getCoord(e.offsetX)
 		lastY = getCoord(e.offsetY)
-		window.addEventListener('mouseup', onMouseUp)
-		canvas.addEventListener('mousemove', onMouseMove)
-		window.addEventListener('keydown', onKeyDown)
-		window.addEventListener('keyup', onKeyUp)
 	}
 	const onMouseMove = (e: MouseEvent) => {
+		if (!mousedown) return
 		const _x = getCoord(e.offsetX)
 		const _y = getCoord(e.offsetY)
 		mousemove = true
@@ -91,25 +97,45 @@ const initRectangle = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 		}
 	}
 	const onMouseUp = (e: MouseEvent) => {
-		canvas.removeEventListener('mousemove', onMouseMove)
-		window.removeEventListener('mouseup', onMouseUp)
 		setEditing(false)
 		if (mousemove) {
+			const component = genRectComponent(rectX.value, rectY.value, rectWidth.value, rectHeight.value)
+			mousedown = false
+			mousemove = false
+			cube = false
+			mouseDownX = -1
+			mouseDownY = -1
+			setRectX(-1)
+			setRectY(-1)
+			setRectWidth(0)
+			setRectWidth(0)
+			// 保存状态
+			saveState('创建长方形组件',
+				[
+					StoreType.Rectangle,
+					glyph ? StoreType.EditGlyph : StoreType.EditCharacter
+				],
+				OpType.Undo,
+				{
+					newRecord: false,
+				}
+			)
 			if (!glyph) {
-				addComponentForCurrentCharacterFile(genRectComponent(rectX.value, rectY.value, rectWidth.value, rectHeight.value))
+				addComponentForCurrentCharacterFile(component)
 			} else {
-				addComponentForCurrentGlyph(genRectComponent(rectX.value, rectY.value, rectWidth.value, rectHeight.value))
+				addComponentForCurrentGlyph(component)
 			}
+		} else {
+			mousedown = false
+			mousemove = false
+			cube = false
+			mouseDownX = -1
+			mouseDownY = -1
+			setRectX(-1)
+			setRectY(-1)
+			setRectWidth(0)
+			setRectWidth(0)
 		}
-		mousedown = false
-		mousemove = false
-		cube = false
-		mouseDownX = -1
-		mouseDownY = -1
-		setRectX(-1)
-		setRectY(-1)
-		setRectWidth(0)
-		setRectWidth(0)
 	}
 	const onKeyDown = (e: KeyboardEvent) => {
 		if (e.key === 'Shift') {
@@ -122,8 +148,16 @@ const initRectangle = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 		}
 	}
 	canvas.addEventListener('mousedown', onMouseDown)
+	window.addEventListener('mouseup', onMouseUp)
+	canvas.addEventListener('mousemove', onMouseMove)
+	window.addEventListener('keydown', onKeyDown)
+	window.addEventListener('keyup', onKeyUp)
 	const closeRectangle = () => {
 		canvas.removeEventListener('mousedown', onMouseDown)
+		window.removeEventListener('mouseup', onMouseUp)
+		canvas.removeEventListener('mousemove', onMouseMove)
+		window.removeEventListener('keydown', onKeyDown)
+		window.removeEventListener('keyup', onKeyUp)
 		setEditing(false)
 	}
 	return closeRectangle

@@ -64,6 +64,7 @@ export interface ICharacterFile {
 		type: string,
 		uuid: string,
 	}>;
+	// selectedComponentsTree为当前选择树，比如[部首uuid, 笔画uuid]
 	selectedComponentsTree?: Array<string>;
 	selectedComponentsUUIDs?: Array<string>;
 	view: {
@@ -79,6 +80,7 @@ export interface ICharacterFile {
 			dy: number;
 			centerSquareSize: number;
 			size: number;
+			default?: boolean;
 		};
 		layout?: string;
 		layoutTree?: any;
@@ -705,8 +707,8 @@ const insertComponentForCurrentCharacterFile = (component: Component, options: {
 		type: 'component',
 		uuid: component.uuid,
 	}, options)
-	setTool('select')
-	setSelectionForCurrentCharacterFile(component.uuid)
+	// setTool('select')
+	// setSelectionForCurrentCharacterFile(component.uuid)
 }
 
 /**
@@ -720,33 +722,13 @@ const insertComponentForCurrentCharacterFile = (component: Component, options: {
 const setSelectionForCurrentCharacterFile = (uuid: string) => {
 	const file = selectedItemByUUID(files.value, selectedFileUUID.value)
 	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
-	const onKeyDown = (e: KeyboardEvent) => {
-		if (e.key === 'Shift') {
-			e.preventDefault()
-			enableMultiSelect.value = true
-		}
-	}
-	const onKeyUp = (e: KeyboardEvent) => {
-		if (e.key === 'Shift') {
-			e.preventDefault()
-			enableMultiSelect.value = false
-		}
-	}
 	if (uuid) {
-		if (!characterFile.selectedComponentsUUIDs.length) {
-			document.addEventListener('keydown', onKeyDown)
-			document.addEventListener('keyup', onKeyUp)
-		}
 		if (enableMultiSelect.value) {
 			characterFile.selectedComponentsUUIDs.push(uuid)
 		} else {
 			characterFile.selectedComponentsUUIDs = [uuid]
 		}
 	} else {
-		if (!!characterFile.selectedComponentsUUIDs.length) {
-			document.removeEventListener('keydown', onKeyDown)
-			document.removeEventListener('keyup', onKeyUp)
-		}
 		characterFile.selectedComponentsUUIDs = []
 	}
 }
@@ -1149,11 +1131,11 @@ const addComponentForCurrentCharacterFile = (component: Component) => {
 		type: 'component',
 		uuid: component.uuid,
 	})
-	if (component.type === 'glyph') {
-		setTool('glyphDragger')
-	} else {
-		setTool('select')
-	}
+	// if (component.type === 'glyph') {
+	// 	setTool('glyphDragger')
+	// } else {
+	// 	setTool('select')
+	// }
 	setSelectionForCurrentCharacterFile(component.uuid)
 }
 

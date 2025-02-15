@@ -38,4 +38,7 @@ const setPoints = (value: Array<IPoint>) => {
 	points.value = value
 }
 
-export { editing, points, setEditing, setPoints }
+const mousedown = ref(false)
+const mousemove = ref(false)
+
+export { editing, points, setEditing, setPoints, mousedown, mousemove }

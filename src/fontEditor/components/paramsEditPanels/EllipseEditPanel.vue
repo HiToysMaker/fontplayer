@@ -14,9 +14,20 @@
   } from '../../stores/glyph'
   import { editStatus, Status } from '../../stores/font'
   import { useI18n } from 'vue-i18n'
+  import { OpType, saveState, StoreType } from '@/fontEditor/stores/edit'
   const { tm, t } = useI18n()
 
+  const saveEllipseEditState = () => {
+    // 保存状态
+		saveState('编辑椭圆组件参数', [
+			editStatus.value === Status.Glyph ? StoreType.EditGlyph : StoreType.EditCharacter
+		],
+			OpType.Undo,
+		)
+  }
+
   const handleChangeX = (x: number) => {
+    saveEllipseEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         x,
@@ -29,6 +40,7 @@
   }
 
   const handleChangeY = (y: number) => {
+    saveEllipseEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         y,
@@ -41,6 +53,7 @@
   }
 
   const handleChangeW = (w: number) => {
+    saveEllipseEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         w,
@@ -53,6 +66,7 @@
   }
 
   const handleChangeH = (h: number) => {
+    saveEllipseEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         h,
@@ -65,6 +79,7 @@
   }
 
   const handleChangeRot = (rotation: number) => {
+    saveEllipseEditState()
     if (editStatus.value === Status.Edit) {
       modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
         rotation,

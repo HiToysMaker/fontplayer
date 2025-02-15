@@ -1,10 +1,15 @@
 <script setup lang="ts">
-	import { Ref, ref, onMounted, watch } from 'vue'
+	import { Ref, ref, onMounted, watch, onUnmounted } from 'vue'
 	import { useI18n } from 'vue-i18n'
 	import { IConstant, IRingParameter, ParameterType } from '../../fontEditor/stores/glyph'
 	import { genUUID } from '../../utils/string'
-	import * as monaco from 'monaco-editor'
 	import { Edit, SortDown, SortUp, Close } from '@element-plus/icons-vue'
+	import { emit, listen } from '@tauri-apps/api/event'
+	import { basicSetup, EditorView } from 'codemirror'
+	import { javascript } from '@codemirror/lang-javascript'
+	import { oneDark } from '@codemirror/theme-one-dark'
+	import { getCurrentWindow } from '@tauri-apps/api/window'
+	import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager'
   const { t, tm } = useI18n()
 
 	const constants: Ref<Array<IConstant>> = ref([])
@@ -16,47 +21,109 @@
 	const activeTab: Ref<string> = ref('global-constants')
 	let codeEditor
 
-	onMounted(() => {
-		constants.value = window.opener['__constants']
-		script.value = window.opener['__script']
-		isWeb = window.opener['__is_web']
+	let unlistenInitData = null
 
-		constants.value.map((constant) => {
-			editMap.value[constant.uuid] = false
-		})
-
-		codeEditor = monaco.editor.create(document.getElementById('codes-container'), {
-			value: script.value,
-			language: 'typescript',
-			theme: "vs-dark",
-			tabSize: 2,
-			quickSuggestions: { other: true, comments: true, strings: true },
-		})
-
-		codeEditor.getModel().onDidChangeContent(() => {
-			script.value = codeEditor.getModel().getValue()
-		})
-	
-		if (!isWeb) {
-			// 监听来自父窗口的消息
-			window.addEventListener('message', (e) => {
-				if(e.data === 'paste-ready') {
-					const text = localStorage.getItem('clipboard')
-					codeEditor.executeEdits('', [{ range: codeEditor.getSelection(), text }]); // 粘贴到编辑器
+	onMounted(async () => {
+		//@ts-ignore
+		if (!!window.__TAURI_INTERNALS__) {
+			const unlistenClose = await getCurrentWindow().onCloseRequested(async (event) => {
+				await emit('on-webview-close')
+				if (codeEditor) {
+					document.getElementById('codes-container').innerHTML = ''
+					codeEditor = null
 				}
-			});
+				unlistenInitData && unlistenInitData()
+				unlistenClose && unlistenClose()
+			})
+			unlistenInitData = await listen('init-data', (event) => {
+				const { __constants, __script, __isWeb } = event.payload as any
 
-			codeEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC, () => {
-				const selection = codeEditor.getSelection();
-				const selectedText = codeEditor.getModel().getValueInRange(selection);
-				sendCopyCommand(selectedText)
-				// 复制到剪贴板
-			});
+				window.__constants = __constants
+				window.__script = __script
+				window.__is_web = __isWeb
 
-			codeEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyV, () => {
-				sendPasteCommand()
-			});
+				constants.value = __constants
+				script.value = __script
+				isWeb = __isWeb
+
+				constants.value?.map((constant) => {
+					editMap.value[constant.uuid] = false
+				})
+
+				codeEditor = new EditorView({
+					doc: script.value,
+					extensions: [basicSetup, javascript(), oneDark,
+						EditorView.updateListener.of((v) => {
+							script.value = v.state.doc.toString()
+						}
+					)],
+					parent: document.getElementById('codes-container'),
+				})
+
+				const isMac = navigator.userAgent.includes("Mac")
+
+				// 监听按键事件
+				codeEditor.dom.addEventListener("keydown", async (event) => {
+					// 监听复制：Ctrl+C 或 Command+C
+					if ((isMac ? event.metaKey : event.ctrlKey) && event.key === "c") {
+						const { from, to } = codeEditor.state.selection.main
+						const selectedText = codeEditor.state.doc.slice(from, to).toString()
+
+						if (selectedText) {
+							// 将选中的文本写入剪贴板
+							await writeText(selectedText)
+						}
+
+						event.preventDefault()
+					}
+
+					// 监听粘贴：Ctrl+V 或 Command+V
+					if ((isMac ? event.metaKey : event.ctrlKey) && event.key === "v") {
+						const clipboardText = await readText() // 从剪贴板读取文本
+
+						if (clipboardText) {
+							const { from } = codeEditor.state.selection.main
+							const transaction = codeEditor.state.update({
+								changes: { from, insert: clipboardText }, // 插入剪贴板内容
+							})
+							codeEditor.dispatch(transaction) // 执行插入
+						}
+
+						event.preventDefault()
+					}
+				})
+			})
+			await emit('on-webview-mounted')
+		} else {
+			const onBeforeUnload = (e) => {
+				window.opener.postMessage('close-window', location.origin)
+				window.removeEventListener('beforeunload', onBeforeUnload)
+			}
+			window.addEventListener('beforeunload', onBeforeUnload)
+			constants.value = window.opener['__constants']
+			script.value = window.opener['__script']
+			isWeb = window.opener['__is_web']
+
+			constants.value.map((constant) => {
+				editMap.value[constant.uuid] = false
+			})
+
+			codeEditor = new EditorView({
+				doc: script.value,
+				extensions: [basicSetup, javascript(), oneDark,
+					EditorView.updateListener.of((v) => {
+						script.value = v.state.doc.toString()
+					}
+				)],
+				parent: document.getElementById('codes-container'),
+			})
 		}
+	})
+
+	onUnmounted(() => {
+		const editorElement = codeEditor.getWrapperElement()
+		editorElement.parentNode.removeChild(editorElement)
+		codeEditor = null
 	})
 
 	const toggleEdit = (uuid: string, value: boolean) => {
@@ -107,14 +174,27 @@
 		}
 	]
 
-	const syncInfo = () => {
-		localStorage.setItem('constants', JSON.stringify(constants.value))
-		localStorage.setItem('script', script.value)
-		window.opener.postMessage('sync-info', location.origin)
+	const syncInfo = async () => {
+		//@ts-ignore
+		if (!!window.__TAURI_INTERNALS__) {
+			await emit('sync-info', {
+				__constants: constants.value,
+				__script: script.value,
+			})
+		} else {
+			localStorage.setItem('constants', JSON.stringify(constants.value))
+			localStorage.setItem('script', script.value)
+			window.opener.postMessage('sync-info', location.origin)
+		}
 	}
 
-	const executeScript = () => {
-		window.opener.postMessage('execute-script', location.origin)
+	const executeScript = async () => {
+		//@ts-ignore
+		if (!!window.__TAURI_INTERNALS__) {
+			await emit('execute-script')
+		} else {
+			window.opener.postMessage('execute-script', location.origin)
+		}
 	}
 
 	const sendCopyCommand = (text) => {
@@ -315,6 +395,12 @@
 			}
 			#codes-container {
 				height: calc(100% - 32px);
+				pointer-events: auto;
+				z-index: 10;
+				background-color: #282c34;
+				overflow: auto;
+				width: 100%;
+				overflow-x: auto;
 			}
 		}
 		.left-panel {
@@ -398,7 +484,8 @@
 			}
 		}
 		.right-panel {
-			flex: auto;
+			flex: 0 0 980px;
+			width: 980px;
 		}
 	}
 	:deep(.el-input__wrapper) {

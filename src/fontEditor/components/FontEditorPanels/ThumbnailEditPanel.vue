@@ -30,6 +30,7 @@
     type IComponent,
     type IPenComponent,
     Status,
+    prevEditStatus,
   } from '../../stores/font'
   import { addComponentsForCharacterFile, editCharacterFileUUID, selectedFile } from '../../stores/files'
   import { toBlackWhiteBitMap } from '../../../features/image'
@@ -45,6 +46,7 @@
   import * as R from 'ramda'
   import { emitter } from '../../Event/bus'
   import { ArrowLeftBold, ArrowRightBold } from '@element-plus/icons-vue'
+  import { addComponentsForGlyph, editGlyphUUID } from '../../stores/glyph'
 
   const previewCanvas1: Ref<HTMLCanvasElement | null> = ref(null)
   const previewCanvas2: Ref<HTMLCanvasElement | null> = ref(null)
@@ -329,12 +331,21 @@
 
   const confirm = async () => {
     const components = curvesComponents.value
-    addComponentsForCharacterFile(editCharacterFileUUID.value, components)
-    emitter.emit('renderPreviewCanvasByUUID', editCharacterFileUUID.value)
-    reset()
-    setEditStatus(Status.Edit)
-    await nextTick()
-    resetEditPic()
+    if (prevEditStatus.value === Status.Edit) {
+      addComponentsForCharacterFile(editCharacterFileUUID.value, components)
+      emitter.emit('renderPreviewCanvasByUUID', editCharacterFileUUID.value)
+      reset()
+      setEditStatus(Status.Edit)
+      await nextTick()
+      resetEditPic()
+    } else if (prevEditStatus.value === Status.Glyph) {
+      addComponentsForGlyph(editGlyphUUID.value, components)
+      emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyphUUID.value)
+      reset()
+      setEditStatus(Status.Glyph)
+      await nextTick()
+      resetEditPic()
+    }
   }
 
   const reset = () => {
