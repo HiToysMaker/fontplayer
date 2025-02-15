@@ -94,6 +94,11 @@
     emitter.on('renderCharacter_forceUpdate', () => {
       _render(canvas.value as HTMLCanvasElement, true, true)
     })
+    emitter.on('updateCharacterView', () => {
+      const _canvas = canvas.value
+      _canvas.style.width = `${500 * editCharacterFile.value.view.zoom / 100}px`
+      _canvas.style.height = `${500 * editCharacterFile.value.view.zoom / 100}px`
+    })
     await nextTick()
     if (selectedComponentUUID.value && selectedComponent.value.type === 'glyph') {
       setTool('glyphDragger')
@@ -119,6 +124,7 @@
   onUnmounted(() => {
     emitter.off('renderCharacter')
     emitter.off('renderCharacter_forceUpdate')
+    emitter.off('updateCharacterView')
     document.removeEventListener('keydown', onKeyDown)
     clearState()
     if (closeTool) {
@@ -536,8 +542,11 @@
     box-sizing: border-box;
     height: 32px;
   }
-  .pen-on-edit, .mirror-on-edit {
+  /* .pen-on-edit, .mirror-on-edit {
     cursor: url('@/assets/icons/pen-nib-solid.svg') 0 16, pointer;
+  } */
+  .pen-on-edit, .mirror-on-edit {
+    cursor: url('@/assets/icons/pen-cursor.cur'), pointer;
   }
   .rectangle-on-edit, .ellipse-on-edit {
     cursor: crosshair;

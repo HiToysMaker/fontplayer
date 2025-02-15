@@ -24,7 +24,7 @@
   import { editStatus, Status } from '../../stores/font'
 	import { emitter } from '../../Event/bus'
   import { renderPreview2 } from '../../canvas/canvas'
-  import { loaded, loading, total } from '../../stores/global'
+  import { loaded, loading, setTool, tool, total } from '../../stores/global'
   import { linkComponentsForJoints } from '../../programming/Joint'
   const { tm, t } = useI18n()
 
@@ -272,6 +272,9 @@
       addComponentForCurrentGlyph(component)
     }
     //setGlyphComponentsDialogVisible(false)
+    if (tool.value !== 'glyphDragger') {
+      setTool('glyphDragger')
+    }
   }
 </script>
 

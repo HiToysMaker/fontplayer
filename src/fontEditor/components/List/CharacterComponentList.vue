@@ -23,6 +23,8 @@
     type IComponent,
 		selectedItemByUUID,
 		editCharacterFile,
+    insertComponentForCurrentCharacterFile,
+    enableMultiSelect,
   } from '../../stores/files'
   import { editPanelCompFilter } from '../../stores/font'
   import * as R from 'ramda'
@@ -141,11 +143,32 @@
 
   const clip = (uuid: string) => {
     // 剪切
-    if (!selectedComponent.value) return
-    setClipBoard(R.clone(selectedComponents.value))
-    selectedComponents.value.map((component: IComponent) => {
-      removeComponentForCurrentCharacterFile(component.uuid)
-    })
+    if (!selectedComponents.value || !selectedComponents.value.length) {
+      const component = selectedItemByUUID(editCharacterFile.value.components, uuid)
+      setClipBoard(R.clone(component))
+      removeComponentForCurrentCharacterFile(uuid)
+    } else {
+      let mark = false
+      if (selectedComponents.value) {
+        for (let i = 0; i < selectedComponents.value?.length; i++) {
+          if (selectedComponents.value[i].uuid === uuid) {
+            mark = true
+          }
+        }
+      }
+      if (mark) {
+        // 右键菜单对应的组件为选中组件或之一，剪切所有选中组件
+        setClipBoard(R.clone(selectedComponents.value))
+        selectedComponents.value.map((component: IComponent) => {
+          removeComponentForCurrentCharacterFile(component.uuid)
+        })
+      } else {
+        // 右键菜单对应的组件不是选中组件或之一，剪切菜单对应组件
+        const component = selectedItemByUUID(editCharacterFile.value.components, uuid)
+        setClipBoard(R.clone(component))
+        removeComponentForCurrentCharacterFile(uuid)
+      }
+    }
     setSelectionForCurrentCharacterFile('')
     onPopover.value = false
     popoverVisibleMap[uuid] = false
@@ -153,8 +176,27 @@
 
   const copy = (uuid: string) => {
     // 复制
-    if (!selectedComponent.value) return
-    setClipBoard(R.clone(selectedComponents.value))
+    if (!selectedComponents.value || !selectedComponents.value.length) {
+      const component = selectedItemByUUID(editCharacterFile.value.components, uuid)
+      setClipBoard(R.clone(component))
+    } else {
+      let mark = false
+      if (selectedComponents.value) {
+        for (let i = 0; i < selectedComponents.value?.length; i++) {
+          if (selectedComponents.value[i].uuid === uuid) {
+            mark = true
+          }
+        }
+      }
+      if (mark) {
+        // 右键菜单对应的组件为选中组件或之一，复制所有选中组件
+        setClipBoard(R.clone(selectedComponents.value))
+      } else {
+        // 右键菜单对应的组件不是选中组件或之一，复制菜单对应组件
+        const component = selectedItemByUUID(editCharacterFile.value.components, uuid)
+        setClipBoard(R.clone(component))
+      }
+    }
     onPopover.value = false
     popoverVisibleMap[uuid] = false
   }
@@ -162,10 +204,11 @@
   const paste = (uuid: string) => {
     // 粘贴
     const components = clipBoard.value
-    components.map((component: IComponent) => {
+    for (let i = components.length - 1; i >= 0; i--) {
+      const component = components[i]
       component.uuid = genUUID()
-      addComponentForCurrentCharacterFile(component)
-    })
+      insertComponentForCurrentCharacterFile(component, { uuid, pos: 'next' })
+    }
     setClipBoard([])
     onPopover.value = false
     popoverVisibleMap[uuid] = false
@@ -173,9 +216,27 @@
 
   const remove = (uuid: string) => {
     // 删除
-    selectedComponents.value.map((component: IComponent) => {
-      removeComponentForCurrentCharacterFile(component.uuid)
-    })
+    if (!selectedComponents.value || !selectedComponents.value.length) {
+      removeComponentForCurrentCharacterFile(uuid)
+    } else {
+      let mark = false
+      if (selectedComponents.value) {
+        for (let i = 0; i < selectedComponents.value?.length; i++) {
+          if (selectedComponents.value[i].uuid === uuid) {
+            mark = true
+          }
+        }
+      }
+      if (mark) {
+        // 右键菜单对应的组件为选中组件或之一，删除所有选中组件
+        selectedComponents.value.map((component: IComponent) => {
+          removeComponentForCurrentCharacterFile(component.uuid)
+        })
+      } else {
+        // 右键菜单对应的组件不是选中组件或之一，删除菜单对应组件
+        removeComponentForCurrentCharacterFile(uuid)
+      }
+    }
     setSelectionForCurrentCharacterFile('')
     onPopover.value = false
     popoverVisibleMap[uuid] = false

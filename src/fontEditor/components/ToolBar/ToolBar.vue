@@ -20,15 +20,23 @@
   import { onMounted, onUnmounted } from 'vue'
   import { OpType, saveState, StoreType } from '../../stores/edit'
   import { nativeImportFile } from '../../menus/handlers'
+  import { ElMessageBox } from 'element-plus'
 
   // 切换工具
   // switch tool
-  const switchTool = async (tool: string) => {
-    if (tool !== 'picture') {
+  const switchTool = async (_tool: string) => {
+    if (tool.value === 'grid' && _tool !== 'grid') {
+			ElMessageBox.alert(
+				'为方便用户进行组件编辑操作，离开布局编辑界面会恢复默认布局。如果您已经应用布局变换，预览及导出字体库会使用应用变换后的布局，但是在其他编辑操作时，界面仍使用默认布局。',
+				'提示：您已经离开布局编辑界面', {
+				confirmButtonText: '确定',
+			})
+		}
+    if (_tool !== 'picture') {
       saveState('选择工具', [StoreType.Tools], OpType.Undo)
-      setTool(tool)
+      setTool(_tool)
     }
-    if (tool === 'picture') {
+    if (_tool === 'picture') {
       // 保存状态
       saveState('添加参考图', [
         editStatus.value === Status.Glyph ? StoreType.EditGlyph : StoreType.EditCharacter
@@ -56,6 +64,7 @@
         const input = document.createElement('input')
         input.setAttribute('type', 'file')
         input.setAttribute('style', 'display: none')
+        input.setAttribute('accept', 'image/*')
         input.addEventListener('change', async (e: Event) => {
           const el = e.currentTarget as HTMLInputElement
           const files = el.files as FileList

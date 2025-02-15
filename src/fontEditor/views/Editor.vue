@@ -43,6 +43,15 @@
   import { ref, onMounted, onUnmounted } from 'vue'
   import { onBeforeRouteLeave } from 'vue-router'
   import { initGlyphEnvironment } from '../stores/glyph'
+  import {
+    editing as penEditing,
+  } from '../stores/pen'
+  import {
+    editing as polygonEditing,
+  } from '../stores/polygon'
+  import { editing as ellipseEditing } from '../stores/ellipse'
+  import { editing as rectangleEditing } from '../stores/rectangle'
+import { enableMultiSelect } from '../stores/files'
 
   const svg = `
     <path class="path" d="" style="stroke-width: 4px; fill: rgba(0, 0, 0, 0)"/>
@@ -67,9 +76,35 @@
     }
   }
 
+  const onKeyDown = (e: KeyboardEvent) => {
+		if (e.key === 'Shift') {
+			if (penEditing.value || polygonEditing.value || ellipseEditing.value || rectangleEditing.value) {
+				return
+			}
+			e.preventDefault()
+			enableMultiSelect.value = true
+		}
+	}
+	const onKeyUp = (e: KeyboardEvent) => {
+		if (e.key === 'Shift') {
+			if (penEditing.value || polygonEditing.value || ellipseEditing.value || rectangleEditing.value) {
+				return
+			}
+			e.preventDefault()
+			enableMultiSelect.value = false
+		}
+	}
+
   onMounted(async () => {
     window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('keyup', onKeyUp)
     await initGlyphEnvironment()
+  })
+
+  onUnmounted(() => {
+    document.removeEventListener('keydown', onKeyDown)
+    document.removeEventListener('keyup', onKeyUp)
   })
 </script>
 

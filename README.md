@@ -1,6 +1,8 @@
 # 字玩FontPlayer
 一款开源的字体设计工具。
 
+使用Vue3 + ElementUI + Tauri2开发，支持Web端、MacOS和Windows平台。
+
 官网：https://www.font-player.com
 
 在线体验：https://toysmaker.github.io/fontplayer_demo/
@@ -17,15 +19,15 @@ npm run install
 npm run dev
 ```
 
-### 运行electron端应用
-首先进行代码打包：
+### 运行Tauri应用
+开发环境下测试：
 ```
-npm run build:electron
+npx tauri dev
 ```
 
-然后启动electron应用：
+Tauri应用打包：
 ```
-npm run electron:start
+npx tauri build
 ```
 
 ### 致谢

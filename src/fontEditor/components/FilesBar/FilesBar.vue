@@ -123,6 +123,7 @@
     display: flex;
     flex: auto;
     margin-left: 5px;
+    padding: 0 10px;
   }
   .row-1 {
     justify-content: space-between;
@@ -158,8 +159,10 @@
       width: 100%;
       .file-tag {
         display: flex;
-        width: 120px;
+        min-width: 120px;
+        width: max-content;
         height: 36px;
+        white-space: nowrap;
         line-height: 36px;
         flex-direction: row;
         text-align: center;

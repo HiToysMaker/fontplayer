@@ -81,12 +81,12 @@
             <div class="form-label"> {{ t('panels.settingsPanel.background.style') }} </div>
             <el-radio-group v-model="backgroundStyle">
               <el-radio label="color">{{ t('panels.settingsPanel.background.color') }}</el-radio>
+              <el-color-picker class="color-picker" :style="{
+                marginLeft: '-20px',
+                marginRight: '20px',
+              }" v-if="backgroundStyle === 'color'" v-model="backgroundColor" id="backgroundColor" />
               <el-radio label="transparent">{{ t('panels.settingsPanel.background.transparent') }}</el-radio>
             </el-radio-group>
-          </div>
-          <div class="form-item" v-show="backgroundStyle === 'color'">
-            <div class="form-label"> {{ t('panels.settingsPanel.background.color') }} </div>
-            <el-color-picker v-model="backgroundColor" id="backgroundColor" />
           </div>
         </el-form>
       </div>
@@ -164,5 +164,9 @@
         line-height: 32px;
       }
     }
+  }
+  .el-color-picker {
+    margin-left: -20px;
+    margin-right: 20px;
   }
 </style>

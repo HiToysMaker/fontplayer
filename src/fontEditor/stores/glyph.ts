@@ -15,14 +15,7 @@ import { instanceGlyph } from '../menus/handlers'
 import { emitter } from '../Event/bus'
 import { Status, editStatus, setEditStatus, setPrevStatus } from './font'
 import { copiedGlyphUUID, editedGlyphUUID, glyphComponentsDialogVisible2, setAddGlyphDialogVisible, setCopyGlyphDialogVisible, setEditGlyphDialogVisible } from './dialogs'
-import {
-	editing as penEditing,
-} from './pen'
-import {
-	editing as polygonEditing,
-} from './polygon'
-import { editing as ellipseEditing } from './ellipse'
-import { editing as rectangleEditing } from './rectangle'
+import { enableMultiSelect } from './files'
 
 // 字形组件数据结构
 // custom component data struct
@@ -51,6 +44,7 @@ export interface ICustomGlyph {
 	reflines?: Array<IRefLine>;
 	layout?: GlyphLayout | null;
 	script: string;
+	param_script?: Map<string, string>;
 	system_script?: Map<string, string>;
 	glyph_script?: Map<string, string>;
 	parent?: ICustomGlyph | ICharacterFile;
@@ -226,7 +220,7 @@ const editGlyphUUID: Ref<string> = ref('')
 
 // 是否支持多选
 // whether enable multi select
-const enableMultiSelect: Ref<boolean> = ref(false)
+// const enableMultiSelect: Ref<boolean> = ref(false)
 
 // 初始化字形环境
 // init glyph environment
@@ -589,8 +583,8 @@ const insertComponentForCurrentGlyph = (component: Component, options: { uuid: s
 		type: 'component',
 		uuid: component.uuid,
 	}, options)
-	//setTool('select')
-	setSelectionForCurrentGlyph(component.uuid)
+	// setTool('select')
+	// setSelectionForCurrentGlyph(component.uuid)
 }
 
 /**
@@ -602,39 +596,13 @@ const insertComponentForCurrentGlyph = (component: Component, options: { uuid: s
  * @param uuid uuid of component to be selected
  */
 const setSelectionForCurrentGlyph = (uuid: string) => {
-	const onKeyDown = (e: KeyboardEvent) => {
-		if (e.key === 'Shift') {
-			if (penEditing.value || polygonEditing.value || ellipseEditing.value || rectangleEditing.value) {
-				return
-			}
-			e.preventDefault()
-			enableMultiSelect.value = true
-		}
-	}
-	const onKeyUp = (e: KeyboardEvent) => {
-		if (e.key === 'Shift') {
-			if (penEditing.value || polygonEditing.value || ellipseEditing.value || rectangleEditing.value) {
-				return
-			}
-			e.preventDefault()
-			enableMultiSelect.value = false
-		}
-	}
 	if (uuid) {
-		if (!editGlyph.value.selectedComponentsUUIDs.length) {
-			document.addEventListener('keydown', onKeyDown)
-			document.addEventListener('keyup', onKeyUp)
-		}
 		if (enableMultiSelect.value) {
 			editGlyph.value.selectedComponentsUUIDs.push(uuid)
 		} else {
 			editGlyph.value.selectedComponentsUUIDs = [uuid]
 		}
 	} else {
-		if (!!editGlyph.value.selectedComponentsUUIDs.length) {
-			document.removeEventListener('keydown', onKeyDown)
-			document.removeEventListener('keyup', onKeyUp)
-		}
 		editGlyph.value.selectedComponentsUUIDs = []
 	}
 }
@@ -1113,6 +1081,9 @@ const executeScript = (targetGlyph) => {
 		} catch (e) {
 			console.error(e)
 		}
+		// glyph_script是一个map，key为glyph的component uuid，用于对component的操作
+		// let script = `if (window.glyph.getComponent('${comp.name}')) { window.glyph.getComponent('${comp.name}').ox = (${unitsPerEm} - window.glyph.getRatioLayout('width')) / 2 + window.glyph.getRatioLayout('width') * ${ratio_width}; }`
+		// script += `if (window.glyph.getComponent('${comp.name}')) { window.glyph.getComponent('${comp.name}').oy = (${unitsPerEm} - window.glyph.getRatioLayout('height')) / 2 + window.glyph.getRatioLayout('height') * ${ratio_height}; }`
 		if (targetGlyph && targetGlyph.glyph_script) {
 			const keys = Object.keys(targetGlyph.glyph_script)
 			for (let i = 0; i < keys.length; i++) {
@@ -1122,6 +1093,19 @@ const executeScript = (targetGlyph) => {
 			}
 		}
 
+		// param_script是对glyph本身参数的操作，是一个map，key值为parameter name
+		// `window.glyph.setParam('${parameter.name}',window.glyph.getRatioLayout('${value}') / ${layout} * ${parameter.value});`
+		if (targetGlyph && targetGlyph.param_script) {
+			const keys = Object.keys(targetGlyph.param_script)
+			for (let i = 0; i < keys.length; i++) {
+				const script = targetGlyph.param_script[keys[i]]
+				const fn = new Function(`${script}`)
+				fn()
+			}
+		}
+
+		// system_script编辑window.comp_glyph参数
+		// `window.comp_glyph.setParam('${parameter.name}',window.glyph.getRatioLayout('${parameter.ratio}') / ${layout} * ${value});`
 		targetGlyph?.components?.map(component => {
 			// @ts-ignore
 			window.comp_glyph = new CustomGlyph(component.value)

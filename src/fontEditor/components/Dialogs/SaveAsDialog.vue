@@ -45,17 +45,17 @@
       })
     }
     if (exportItems.value.stroke_glyphs) {
-      stroke_glyphs.value.map((glyph: ICustomGlyph) => {
+      _stroke_glyphs = stroke_glyphs.value.map((glyph: ICustomGlyph) => {
         return plainGlyph(glyph)
       })
     }
     if (exportItems.value.radical_glyphs) {
-      radical_glyphs.value.map((glyph: ICustomGlyph) => {
+      _radical_glyphs = radical_glyphs.value.map((glyph: ICustomGlyph) => {
         return plainGlyph(glyph)
       })
     }
     if (exportItems.value.comp_glyphs) {
-      comp_glyphs.value.map((glyph: ICustomGlyph) => {
+      _comp_glyphs = comp_glyphs.value.map((glyph: ICustomGlyph) => {
         return plainGlyph(glyph)
       })
     }

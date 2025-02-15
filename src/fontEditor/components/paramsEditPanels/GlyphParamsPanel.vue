@@ -82,12 +82,12 @@
 	const handleChangeParameter = (parameter: IParameter | IParameter2, value: number) => {
     parameter.value = value
     if (parameter.ratioed) {
-      if (!editGlyph.value.system_script) {
-        editGlyph.value.system_script = {}
+      if (!editGlyph.value.param_script) {
+        editGlyph.value.param_script = {}
       }
       const layout = getRatioLayout(editGlyph.value, value)
       const script = `window.glyph.setParam('${parameter.name}',window.glyph.getRatioLayout('${value}') / ${layout} * ${parameter.value});`
-      editGlyph.value.system_script[parameter.name] = script
+      editGlyph.value.param_script[parameter.name] = script
     }
     executeScript(editGlyph.value)
     emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
@@ -102,12 +102,12 @@
 
   const handleRatioOptionChange = (parameter: IParameter | IParameter2, value: string) => {
     if (parameter.ratioed) {
-      if (!editGlyph.value.system_script) {
-        editGlyph.value.system_script = {}
+      if (!editGlyph.value.param_script) {
+        editGlyph.value.param_script = {}
       }
       const layout = getRatioLayout(editGlyph.value, value)
       const script = `window.glyph.setParam('${parameter.name}',window.glyph.getRatioLayout('${value}') / ${layout} * ${parameter.value});`
-      editGlyph.value.system_script[parameter.name] = script
+      editGlyph.value.param_script[parameter.name] = script
     }
     executeScript(editGlyph.value)
     emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
@@ -694,6 +694,21 @@
 		}
 		&.show {
 			display: block;
+		}
+	}
+
+  .param-btn-group {
+		width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+		.el-button {
+			margin: 0;
+      width: 100%;
+		}
+		&.ring {
+			top: 45px;
+			left: 5px;
 		}
 	}
 </style>

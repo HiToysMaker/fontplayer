@@ -7,7 +7,7 @@
    */
 
   import { addIconDialogVisible, setAddIconDialogVisible } from '../../stores/dialogs'
-  import { selectedFile, addCharacterForCurrentFile } from '../../stores/files'
+  import { selectedFile, addCharacterForCurrentFile, generateCharacterTemplate, addCharacterTemplate } from '../../stores/files'
   import { genUUID, toIconUnicode } from '../../../utils/string'
   import { ElMessage } from 'element-plus'
   import { ref } from 'vue'
@@ -26,12 +26,14 @@
       return
     }
     const count = selectedFile.value.iconsCount
+
     const iconComponent = {
       uuid: genUUID(),
       text: text.value,
       unicode: toIconUnicode(count),
       components: [],
     }
+
     const uuid = genUUID()
     const iconFile = {
       uuid,
@@ -46,11 +48,24 @@
         translateX: 0,
         translateY: 0,
       },
+      info: {
+        gridSettings: {
+          dx: 0,
+          dy: 0,
+          centerSquareSize: selectedFile.value.width / 3,
+          size: selectedFile.value.width,
+          default: true,
+        },
+        layout: '',
+        layoutTree: [],
+      },
       script: `function script_${uuid.replaceAll('-', '_')} (character, constants, FP) {\n\t//Todo something\n}`,
     }
+
     text.value = ''
     selectedFile.value.iconsCount++
     addCharacterForCurrentFile(iconFile)
+    addCharacterTemplate(generateCharacterTemplate(iconFile))
     setAddIconDialogVisible(false)
   }
 

@@ -326,3 +326,8 @@
 .el-menu--vertical {
   border: none !important;
 }
+
+div, span {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}

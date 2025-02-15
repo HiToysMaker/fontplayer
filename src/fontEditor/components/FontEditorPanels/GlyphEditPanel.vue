@@ -88,6 +88,11 @@
       const glyph = editGlyph.value._o ? editGlyph.value._o : new CustomGlyph(editGlyph.value)
       renderGlyph(glyph, canvas.value, true, false, false, true)
     })
+    emitter.on('updateGlyphView', () => {
+      const _canvas = canvas.value
+      _canvas.style.width = `${500 * editGlyph.value.view.zoom / 100}px`
+      _canvas.style.height = `${500 * editGlyph.value.view.zoom / 100}px`
+    })
     await nextTick()
     if (selectedComponentUUID.value && selectedComponent.value.type === 'glyph') {
       setTool('glyphDragger')
@@ -113,6 +118,7 @@
   onUnmounted(() => {
     emitter.off('renderGlyph')
     emitter.off('renderGlyph_forceUpdate')
+    emitter.off('updateGlyphView')
     document.removeEventListener('keydown', onKeyDown)
     clearState()
     editingLayout.value = false
@@ -312,12 +318,6 @@
     }
     renderRefComponents()
 		emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
-  })
-
-  emitter.on('updateGlyphView', () => {
-    const _canvas = canvas.value
-    _canvas.style.width = `${500 * editGlyph.value.view.zoom / 100}px`
-    _canvas.style.height = `${500 * editGlyph.value.view.zoom / 100}px`
   })
 
   watch([

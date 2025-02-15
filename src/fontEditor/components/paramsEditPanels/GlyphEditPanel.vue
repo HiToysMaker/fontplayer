@@ -51,8 +51,8 @@
   })
 
 	onUnmounted(() => {
-    draggable.value = false
-    dragOption.value = 'none'
+    draggable.value = true
+    dragOption.value = 'default'
 		checkJoints.value = false
 		checkRefLines.value = false
   })
@@ -294,6 +294,9 @@
 	}
 
 	const updateGlobalParam = (parameter: IParameter) => {
+		// 选择全局变量时，只更新当前字形的视图
+		// 但是一个全局变量可能用于多个字形的组件
+		// 点击更新全局变量会更新其他调用该全局变量的字形或字符的预览试图
 		const arr = constantGlyphMap.get(parameter.value as unknown as string)
 		for (let i = 0; i < arr.length; i++) {
 			const pair = arr[i]
@@ -633,7 +636,7 @@
 									:min="getConstant(parameter.value).min"
 									:max="getConstant(parameter.value).max"
 									:precision="getConstant(parameter.value).max <= 10 ? 2 : 0"
-									@input="(value) => handleChangeParameter(parameter, value)"
+									@input="(value) => handleChangeParameter(getConstant(parameter.value), value)"
 									@change="(value) => handleChangeParameter(getConstant(parameter.value), value)"
 								/>
 							</div>
@@ -866,4 +869,18 @@
   .draggable-check {
     margin-left: 0;
   }
+	.param-btn-group {
+		width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+		.el-button {
+			margin: 0;
+      width: 100%;
+		}
+		&.ring {
+			top: 45px;
+			left: 5px;
+		}
+	}
 </style>

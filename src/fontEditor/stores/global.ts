@@ -24,8 +24,8 @@ export interface IBackground {
 
 const jointsCheckedMap = ref({})
 
-const draggable = ref(false)
-const dragOption = ref('none')
+const draggable = ref(true)
+const dragOption = ref('default')
 const checkJoints = ref(false)
 const checkRefLines = ref(false)
 

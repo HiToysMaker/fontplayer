@@ -237,7 +237,7 @@
 			<el-button class="grid-confirm-btn" :disabled="!gridChanged" @click="confirmGridChange" type="primary">
 				应用布局变换
 			</el-button>
-			<el-button class="grid-reset-btn" :disabled="!gridChanged" @click="resetGrid">
+			<el-button class="grid-reset-btn" @click="resetGrid">
 				重置布局变换
 			</el-button>
 		</div>

@@ -32,6 +32,7 @@ import {
 	faTerminal,
 	faSliders,
 	faTableCells,
+	faHand as faHandSolid,
 } from '@fortawesome/free-solid-svg-icons'
 import {
 	faHand,
@@ -87,6 +88,7 @@ library.add(
 	faHand,
 	faSquare_regular,
 	faCircle_regular,
+	faHandSolid,
 )
 
 const app = createApp(App)

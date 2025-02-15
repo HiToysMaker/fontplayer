@@ -39,7 +39,7 @@ import { saveAs } from 'file-saver'
 import * as R from 'ramda'
 import { genUUID, toUnicode } from '../../utils/string'
 import localForage from 'localforage'
-import { ElNotification } from 'element-plus'
+import { ElMessageBox, ElNotification } from 'element-plus'
 import { h } from 'vue'
 import { parseStrToSvg, parseSvgToComponents, componentsToSvg } from '../../features/svg'
 import JSZip from 'jszip'
@@ -76,7 +76,7 @@ import { getBound, transformPoints } from '../../utils/math'
 import { fitCurve } from '../../features/fitCurve'
 import type { IPoint as IPenPoint, IPoint } from '../stores/pen'
 import { render } from '../canvas/canvas'
-import { ICustomGlyph, IGlyphComponent, addComponentForCurrentGlyph, addGlyph, addGlyphTemplate, clearGlyphRenderList, comp_glyphs, constantGlyphMap, constants, constantsMap, editGlyph, executeScript, getGlyphByName, glyphs, orderedListWithItemsForCurrentGlyph, radical_glyphs, stroke_glyphs } from '../stores/glyph'
+import { ICustomGlyph, IGlyphComponent, addComponentForCurrentGlyph, addGlyph, addGlyphTemplate, clearGlyphRenderList, comp_glyphs, constantGlyphMap, constants, constantsMap, editGlyph, executeScript, getGlyphByName, getGlyphByUUID, glyphs, orderedListWithItemsForCurrentGlyph, radical_glyphs, stroke_glyphs } from '../stores/glyph'
 import { ParametersMap } from '../programming/ParametersMap'
 import { Joint, linkComponentsForJoints } from '../programming/Joint'
 import router from '../../router'
@@ -414,7 +414,7 @@ const exportGlyphs_tauri = async () => {
     temp_glyphs = glyphs.value
     temp_glyphs_name = 'glyphs.json'
   }
-  total.value = temp_glyphs.value.length
+  total.value = temp_glyphs.length
   loading.value = true
   setTimeout(async () => {
     requestAnimationFrame(() => addGlyph(0))
@@ -510,7 +510,7 @@ const createFile = () => {
   }
 }
 
-const openFile_tauri = async (rawdata) => {
+const openFile_tauri = async () => {
   if (files.value && files.value.length) {
     tips.value = '目前字玩仅支持同时编辑一个工程，请关闭当前工程再打开新工程。注意，关闭工程前请保存工程以避免数据丢失。'
     tipsDialogVisible.value = true
@@ -623,6 +623,10 @@ const __openFile = (data) => {
 }
 
 const openFile = async () => {
+  if (ENV.value === 'tauri') {
+    openFile_tauri()
+    return
+  }
   if (files.value && files.value.length) {
     tips.value = '目前字玩仅支持同时编辑一个工程，请关闭当前工程再打开新工程。注意，关闭工程前请保存工程以避免数据丢失。'
     tipsDialogVisible.value = true
@@ -639,6 +643,7 @@ const _openFile = async () => {
   const input = document.createElement('input')
   input.setAttribute('type', 'file')
   input.setAttribute('style', 'display: none')
+  input.setAttribute('accept', '.json')
   input.addEventListener('change', async (e: Event) => {
     const el = e.currentTarget as HTMLInputElement
     const readfiles = el.files as FileList
@@ -662,7 +667,6 @@ const saveFile_web = () => {
 
 const saveFile = async () => {
   // 保存
-
   loading.value = true
   loaded.value = 0
   total.value = selectedFile.value.characterList.length + glyphs.value.length + stroke_glyphs.value.length + radical_glyphs.value.length + comp_glyphs.value.length
@@ -827,6 +831,7 @@ const importFont = () => {
   const input = document.createElement('input')
   input.setAttribute('type', 'file')
   input.setAttribute('style', 'display: none')
+  input.setAttribute('accept', '.otf, .ttf')
   input.addEventListener('blur', async () => {
     loading.value = false
   })
@@ -924,6 +929,7 @@ const importTemplates = () => {
 }
 
 const importGlyphs_tauri = async () => {
+  let repeatMark = false
   const { data: rawdata } = await nativeImportTextFile(['json'])
   if (!rawdata) return
   const data = JSON.parse(rawdata)
@@ -943,8 +949,12 @@ const importGlyphs_tauri = async () => {
   }
   const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
   _glyphs.map((glyph) => {
-    addGlyph(glyph, editStatus.value)
-    addGlyphTemplate(glyph, editStatus.value)
+    if (getGlyphByUUID(glyph.uuid)) {
+      repeatMark = true
+    } else {
+      addGlyph(glyph, editStatus.value)
+      addGlyphTemplate(glyph, editStatus.value)
+    }
   })
   if (editStatus.value === Status.GlyphList) {
     emitter.emit('renderGlyphPreviewCanvas')
@@ -955,12 +965,21 @@ const importGlyphs_tauri = async () => {
   } else if (editStatus.value === Status.CompGlyphList) {
     emitter.emit('renderCompGlyphPreviewCanvas')
   }
+  if (repeatMark) {
+    ElMessageBox.alert(
+      '导入字形时发现有与当前字形相同uuid的重复字形，自动忽略重复字形',
+      '提示', {
+      confirmButtonText: '确定',
+    })
+  }
 }
 
 const importGlyphs = () => {
+  let repeatMark = false
   const input = document.createElement('input')
   input.setAttribute('type', 'file')
   input.setAttribute('style', 'display: none')
+  input.setAttribute('accept', '.json')
   input.addEventListener('change', async (e: Event) => {
     const el = e.currentTarget as HTMLInputElement
     const readfiles = el.files as FileList
@@ -986,8 +1005,12 @@ const importGlyphs = () => {
         }
         const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
         _glyphs.map((glyph) => {
-          addGlyph(glyph, editStatus.value)
-          addGlyphTemplate(glyph, editStatus.value)
+          if (getGlyphByUUID(glyph.uuid)) {
+            repeatMark = true
+          } else {
+            addGlyph(glyph, editStatus.value)
+            addGlyphTemplate(glyph, editStatus.value)
+          }
         })
         if (editStatus.value === Status.GlyphList) {
           emitter.emit('renderGlyphPreviewCanvas')
@@ -997,6 +1020,13 @@ const importGlyphs = () => {
           emitter.emit('renderRadicalGlyphPreviewCanvas')
         } else if (editStatus.value === Status.CompGlyphList) {
           emitter.emit('renderCompGlyphPreviewCanvas')
+        }
+        if (repeatMark) {
+          ElMessageBox.alert(
+            '导入字形时发现有与当前字形相同uuid的重复字形，自动忽略重复字形',
+            '提示', {
+            confirmButtonText: '确定',
+          })
         }
       }
     }
@@ -1017,10 +1047,15 @@ const importSVG_tauri = async () => {
 }
 
 const importSVG = () => {
+  if (ENV.value === 'tauri') {
+    importSVG_tauri()
+    return
+  }
   // 导入SVG
   const input = document.createElement('input')
   input.setAttribute('type', 'file')
   input.setAttribute('style', 'display: none')
+  input.setAttribute('accept', '.svg')
   input.addEventListener('change', async (e: Event) => {
     const el = e.currentTarget as HTMLInputElement
     const readfiles = el.files as FileList
@@ -1051,6 +1086,14 @@ const exportJSON = () => {
 }
 
 const exportGlyphs = () => {
+  if (editStatus.value === Status.CharacterList) {
+    ElMessageBox.alert(
+      '字符列表不能导出，只有在笔画、部首、字形、组件列表可以导出相应类型的字形',
+      '提示', {
+      confirmButtonText: '确定',
+    })
+    return
+  }
   if (ENV.value === 'tauri') {
     exportGlyphs_tauri()
   } else {
@@ -1074,7 +1117,7 @@ const exportGlyphs = () => {
       temp_glyphs = glyphs.value
       temp_glyphs_name = 'glyphs.json'
     }
-    total.value = temp_glyphs.value.length
+    total.value = temp_glyphs.length
     loading.value = true
     setTimeout(() => {
       requestAnimationFrame(() => addGlyph(0))
@@ -1345,6 +1388,10 @@ const languageSettings = () => {
 }
 
 const importPic = () => {
+  if (ENV.value === 'tauri') {
+    importPic_tauri()
+    return
+  }
   getFromPic()
 }
 
@@ -1368,7 +1415,7 @@ const importPic_tauri = async () => {
     binary += String.fromCharCode(byte);
   })
   const base64str = btoa(binary)
-  const type = name.split('.')[1] === 'png' ? 'imge/png' : 'image/jpeg'
+  const type = name.split('.')[1] === 'png' ? 'image/png' : 'image/jpeg'
   const dataUrl = `data:${type};base64,${base64str}`
   total.value = 0
   loaded.value = 0
@@ -1405,6 +1452,7 @@ const getFromPic = () => {
   const input = document.createElement('input')
   input.setAttribute('type', 'file')
   input.setAttribute('style', 'display: none')
+  input.setAttribute('accept', 'image/*')
   input.addEventListener('change', async (e: Event) => {
     const el = e.currentTarget as HTMLInputElement
     const files = el.files as FileList
@@ -1673,7 +1721,6 @@ const syncData = async () => {
 }
 
 const _syncData = async () => {
-  loading.value = true
   clearGlyphRenderList(Status.GlyphList)
   clearGlyphRenderList(Status.StrokeGlyphList)
   clearGlyphRenderList(Status.RadicalGlyphList)
@@ -1723,9 +1770,16 @@ const _syncData = async () => {
     file = JSON.parse(file_data as string)
   }
 
-  //total.value = file.characterList.length + plainGlyphs.length + plainGlyphs_stroke.length + plainGlyphs_radical.length + plainGlyphs_comp.length
-  //loaded.value = 0
-  //loading.value = true
+  loaded.value = 0
+  total.value = file ? file.characterList.length * 2 : 0 + (plainGlyphs.length + plainGlyphs_stroke.length + plainGlyphs_radical.length + plainGlyphs_comp.length) * 3
+  if (total.value === 0) {
+    ElMessageBox.alert(
+      '暂时没有缓存',
+      '提示', {
+      confirmButtonText: '确定',
+    })
+  }
+  total.value && (loading.value = true)
 
   if (glyphs_data) {
     glyphs.value = []
@@ -1734,6 +1788,8 @@ const _syncData = async () => {
     })
     _glyphs.map((glyph) => {
       addGlyph(glyph, Status.GlyphList)
+      addGlyphTemplate(glyph, Status.GlyphList)
+      addLoaded()
     })
   }
 
@@ -1744,6 +1800,8 @@ const _syncData = async () => {
     })
     _glyphs.map((glyph) => {
       addGlyph(glyph, Status.StrokeGlyphList)
+      addGlyphTemplate(glyph, Status.StrokeGlyphList)
+      addLoaded()
     })
   }
 
@@ -1754,6 +1812,8 @@ const _syncData = async () => {
     })
     _glyphs.map((glyph) => {
       addGlyph(glyph, Status.RadicalGlyphList)
+      addGlyphTemplate(glyph, Status.RadicalGlyphList)
+      addLoaded()
     })
   }
 
@@ -1764,11 +1824,14 @@ const _syncData = async () => {
     })
     _glyphs.map((glyph) => {
       addGlyph(glyph, Status.CompGlyphList)
+      addGlyphTemplate(glyph, Status.CompGlyphList)
+      addLoaded()
     })
   }
 
   if (file_data) {
     file.characterList.map((character) => {
+      addLoaded()
       return instanceCharacter(character)
     })
     let success = true
@@ -1783,27 +1846,22 @@ const _syncData = async () => {
       }
     }
     if (success) {
+      emitter.emit('renderGlyphPreviewCanvas')
+      emitter.emit('renderStrokeGlyphPreviewCanvas')
+      emitter.emit('renderRadicalGlyphPreviewCanvas')
+      emitter.emit('renderCompGlyphPreviewCanvas')
+  
       addFile(file)
       setSelectedFileUUID(file.uuid)
       setEditStatus(Status.CharacterList)
       if (router.currentRoute.value.name === 'welcome') {
-        total.value = file.characterList.length + (glyphs.value.length + stroke_glyphs.value.length + radical_glyphs.value.length + comp_glyphs.value.length) * 2
-        loaded.value = 0
-        loading.value = true
         router.push('/editor')
-        //setTimeout(() => {
-        //	total.value = (file.characterList.length + glyphs.value.length + stroke_glyphs.value.length + radical_glyphs.value.length + comp_glyphs.value.length) * 2
-        //	loaded.value = 0
-        //	loading.value = true
-        //	if (router.currentRoute.value.name === 'welcome') {
-        //		router.push('/editor')
-        //	}
-        //}, 100)
       } else {
         clearCharacterRenderList()
         characterList.value.map((characterFile) => {
           addCharacterTemplate(generateCharacterTemplate(characterFile))
         })
+        emitter.emit('renderPreviewCanvas')
       }
     }
   }

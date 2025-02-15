@@ -16,14 +16,6 @@ import type {
 	IQuadraticBezierCurve,
 } from '../../fontManager'
 import { componentsToContours } from '../../features/font'
-import {
-	editing as penEditing,
-} from './pen'
-import {
-	editing as polygonEditing,
-} from './polygon'
-import { editing as ellipseEditing } from './ellipse'
-import { editing as rectangleEditing } from './rectangle'
 
 // 字体文件列表数据结构
 // font files list data struct
@@ -72,6 +64,7 @@ export interface ICharacterFile {
 		type: string,
 		uuid: string,
 	}>;
+	// selectedComponentsTree为当前选择树，比如[部首uuid, 笔画uuid]
 	selectedComponentsTree?: Array<string>;
 	selectedComponentsUUIDs?: Array<string>;
 	view: {
@@ -714,8 +707,8 @@ const insertComponentForCurrentCharacterFile = (component: Component, options: {
 		type: 'component',
 		uuid: component.uuid,
 	}, options)
-	//setTool('select')
-	setSelectionForCurrentCharacterFile(component.uuid)
+	// setTool('select')
+	// setSelectionForCurrentCharacterFile(component.uuid)
 }
 
 /**
@@ -729,39 +722,13 @@ const insertComponentForCurrentCharacterFile = (component: Component, options: {
 const setSelectionForCurrentCharacterFile = (uuid: string) => {
 	const file = selectedItemByUUID(files.value, selectedFileUUID.value)
 	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
-	const onKeyDown = (e: KeyboardEvent) => {
-		if (e.key === 'Shift') {
-			if (penEditing.value || polygonEditing.value || ellipseEditing.value || rectangleEditing.value) {
-				return
-			}
-			e.preventDefault()
-			enableMultiSelect.value = true
-		}
-	}
-	const onKeyUp = (e: KeyboardEvent) => {
-		if (e.key === 'Shift') {
-			if (penEditing.value || polygonEditing.value || ellipseEditing.value || rectangleEditing.value) {
-				return
-			}
-			e.preventDefault()
-			enableMultiSelect.value = false
-		}
-	}
 	if (uuid) {
-		if (!characterFile.selectedComponentsUUIDs.length) {
-			document.addEventListener('keydown', onKeyDown)
-			document.addEventListener('keyup', onKeyUp)
-		}
 		if (enableMultiSelect.value) {
 			characterFile.selectedComponentsUUIDs.push(uuid)
 		} else {
 			characterFile.selectedComponentsUUIDs = [uuid]
 		}
 	} else {
-		if (!!characterFile.selectedComponentsUUIDs.length) {
-			document.removeEventListener('keydown', onKeyDown)
-			document.removeEventListener('keyup', onKeyUp)
-		}
 		characterFile.selectedComponentsUUIDs = []
 	}
 }
