@@ -13,6 +13,7 @@
   import { ref, type Ref } from 'vue'
   import router from '../../../router'
   import { useI18n } from 'vue-i18n'
+  import { getEnName, name_data } from '../../stores/settings'
   const { tm, t } = useI18n()
 
   const name: Ref<string> = ref('untitled')
@@ -50,6 +51,98 @@
     //    router.push('/editor')
     //  }
     //}, 100)
+    name_data.value = [
+      {
+        nameID: 1,
+        nameLabel: 'fontFamily',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x804,
+        value: name.value,
+        default: true,
+      },
+      {
+        nameID: 1,
+        nameLabel: 'fontFamily',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x409,
+        value: getEnName(name.value),
+        default: true,
+      },
+      {
+        nameID: 2,
+        nameLabel: 'fontSubfamily',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x804,
+        value: '常规体',
+        default: true,
+      },
+      {
+        nameID: 2,
+        nameLabel: 'fontSubfamily',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x409,
+        value: 'Regular',
+        default: true,
+      },
+      {
+        nameID: 4,
+        nameLabel: 'fullName',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x804,
+        value: name.value + ' ' + '常规体',
+        default: true,
+      },
+      {
+        nameID: 4,
+        nameLabel: 'fullName',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x409,
+        value: getEnName(name.value) + ' ' + 'Regular',
+        default: true,
+      },
+      {
+        nameID: 5,
+        nameLabel: 'version',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x804,
+        value: '版本 1.0',
+        default: true,
+      },
+      {
+        nameID: 5,
+        nameLabel: 'version',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x409,
+        value: 'Version 1.0',
+        default: true,
+      },
+      {
+        nameID: 6,
+        nameLabel: 'postScriptName',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x804,
+        value: (getEnName(name.value) + '-' + 'Regular').replace(/\s/g, '').slice(0, 63),
+        default: true,
+      },
+      {
+        nameID: 6,
+        nameLabel: 'postScriptName',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x409,
+        value: (getEnName(name.value) + '-' + 'Regular').replace(/\s/g, '').slice(0, 63),
+        default: true,
+      }
+    ]
     setCreateFileDialogVisible(false)
   }
 

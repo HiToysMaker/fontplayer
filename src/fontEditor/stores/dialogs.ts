@@ -14,6 +14,13 @@ const setFontSettingsDialogVisible = (visible: boolean) => {
 	fontSettingsDialogVisible.value = visible
 }
 
+// 字体设置窗口
+// dialog for font setting
+const fontSettings2DialogVisible: Ref<boolean> = ref(false)
+const setFontSettings2DialogVisible = (visible: boolean) => {
+	fontSettings2DialogVisible.value = visible
+}
+
 // 偏好设置窗口
 // dialog for preference setting
 const preferenceSettingsDialogVisible: Ref<boolean> = ref(false)
@@ -220,4 +227,6 @@ export {
 	setExportFontDialogVisible,
 	exportFontTauriDialogVisible,
 	setExportFontTauriDialogVisible,
+	fontSettings2DialogVisible,
+	setFontSettings2DialogVisible,
 }

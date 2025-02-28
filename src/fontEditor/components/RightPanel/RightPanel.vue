@@ -17,6 +17,7 @@
   import GlyphEditPanelGlyph from '../paramsEditPanels/GlyphEditPanel_Glyph.vue'
   import GlyphParamsPanel from '../paramsEditPanels/GlyphParamsPanel.vue'
   import LayoutEditPanel from '../paramsEditPanels/LayoutEditPanel.vue'
+  import MetricsEditPanel from '../paramsEditPanels/MetricsEditPanel.vue'
   import { selectedComponent, selectedComponentUUID,} from '../../stores/files'
   import { selectedComponent as selectedComponent_glyph, selectedComponentUUID as selectedComponentUUID_glyph,} from '../../stores/glyph'
   import { editStatus, Status } from '../../stores/font'
@@ -28,6 +29,9 @@
     <layout-edit-panel
       v-if="editStatus === Status.Edit && tool === 'grid'"
     ></layout-edit-panel>
+    <metrics-edit-panel
+      v-else-if="editStatus === Status.Edit && tool === 'metrics'"
+    ></metrics-edit-panel>
     <settings-panel
       v-else-if="!selectedComponentUUID && editStatus === Status.Edit"
     ></settings-panel>

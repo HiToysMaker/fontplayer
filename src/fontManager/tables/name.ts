@@ -900,6 +900,51 @@ const encodeMACSTRING = (str: string, encoding: string | undefined) => {
 	return result
 }
 
+interface IPlainNameRecord {
+	nameID: number,
+	nameLabel: string,
+	platformID: number,
+	encodingID: number,
+	langID: number,
+	value: string,
+	default: boolean,
+}
+
+const createTable2 = (names: Array<any>) => {
+	const nameRecord = [];
+	const stringPool: Array<any> = []
+
+	for (let i = 0; i < names.length; i++) {
+		const { value, nameID, langID, encodingID, platformID } = names[i]
+		if (platformID != 3) break
+		let winName = encoder.utf16(value)
+		const winNameOffset = addStringToPool(winName, stringPool)
+		nameRecord.push({
+			platformID: 3,
+			encodingID: encodingID,
+			languageID: langID,
+			nameID: nameID,
+			length: winName.length,
+			stringOffset: winNameOffset,
+		})
+	}
+
+	nameRecord.sort(function(a, b) {
+		return ((a.platformID - b.platformID) ||
+						(a.encodingID - b.encodingID) ||
+						(a.languageID - b.languageID) ||
+						(a.nameID - b.nameID))
+	})
+
+	const nameTable = {
+		version: 0,
+		count: nameRecord.length,
+		storageOffset: 6 + nameRecord.length * 12,
+		nameRecord,
+		stringPool,
+	}
+	return nameTable
+}
 
 /**
  * 根据 names 和 ltag 创建name表
@@ -1143,6 +1188,8 @@ export {
 	parse,
 	create,
 	createTable,
+	createTable2,
+	nameTableNames,
 }
 
 export type {

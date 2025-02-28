@@ -6,7 +6,7 @@ import router from './router'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 // import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-import { Files, Edit, Upload, Download, Tickets, Setting, List, Tools } from '@element-plus/icons-vue'
+import { Files, Edit, Upload, Download, Tickets, Setting, List, Tools, QuestionFilled } from '@element-plus/icons-vue'
 
 import { i18n } from './i18n'
 
@@ -33,6 +33,7 @@ import {
 	faSliders,
 	faTableCells,
 	faHand as faHandSolid,
+	faTextWidth,
 } from '@fortawesome/free-solid-svg-icons'
 import {
 	faHand,
@@ -89,6 +90,7 @@ library.add(
 	faSquare_regular,
 	faCircle_regular,
 	faHandSolid,
+	faTextWidth,
 )
 
 const app = createApp(App)
@@ -106,6 +108,7 @@ app.component('Tickets', Tickets)
 app.component('Setting', Setting)
 app.component('List', List)
 app.component('Tools', Tools)
+app.component('QuestionFilled', QuestionFilled)
 app.use(router)
 app.use(i18n)
 

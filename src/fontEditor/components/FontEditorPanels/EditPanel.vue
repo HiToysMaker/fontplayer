@@ -55,6 +55,7 @@
   import { initCoordsViewer } from '../../tools/coordsViewer'
   import { nextTick } from 'vue'
   import GridController from '../../components/Widgets/GridController.vue'
+  import MetricsController from '../../components/Widgets/MetricsController.vue'
   import { editing as editingLayout,  selectControl as selectLayoutControl } from '../../stores/glyphLayoutResizer'
   import { initLayoutResizer, renderLayoutEditor } from '../../tools/glyphLayoutResizer'
   import * as R from 'ramda'
@@ -411,15 +412,10 @@
 <template>
   <section class="edit-panel-wrapper">
     <main class="canvas-wrapper">
+      <div class="metrics" v-show="tool === 'metrics'">
+        <metrics-controller></metrics-controller>
+      </div>
       <div class="grid" v-show="tool === 'grid'">
-        <!-- <grid-controller
-          :size="editCharacterFile.info.gridSettings.size"
-          :dx="editCharacterFile.info.gridSettings.dx"
-          :dy="editCharacterFile.info.gridSettings.dy"
-          :centerSquareSize="editCharacterFile.info.gridSettings.centerSquareSize"
-          :layoutTree="editCharacterFile.info.layoutTree"
-          :onChange="onGridChange"
-        ></grid-controller> -->
         <grid-controller
           :size="gridSettings.size"
           :dx="gridSettings.dx"
@@ -492,7 +488,8 @@
     height: 100%;
     display: flex;
   }
-  .grid {
+  .grid, .metrics {
+    position: absolute;
     display: flex;
     height: 100%;
     width: 100%;

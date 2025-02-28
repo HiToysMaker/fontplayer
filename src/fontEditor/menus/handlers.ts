@@ -91,6 +91,7 @@ import { save, open } from '@tauri-apps/plugin-dialog'
 import { writeTextFile, writeFile, readFile, readTextFile } from '@tauri-apps/plugin-fs'
 import { ENV } from '../stores/system'
 import { OpType, saveState, StoreType, undo as _undo, redo as _redo } from '../stores/edit'
+import { getEnName, name_data } from '../stores/settings'
 
 const plainGlyph = (glyph: ICustomGlyph) => {
   const data: ICustomGlyph = {
@@ -1306,6 +1307,7 @@ const createFont = (options?: CreateFontOptions) => {
     unitsPerEm,
     ascender,
     descender,
+    tables: selectedFile.value.tables || null,
   })
   return font
 }
@@ -1875,6 +1877,7 @@ const importTemplate1 = async () => {
     if (router.currentRoute.value.name === 'welcome') {
       router.push('/editor')
     }
+    const name = '朴韵简隶'
     const file: IFile = {
       uuid: genUUID(),
       width: 1000,
@@ -1889,6 +1892,98 @@ const importTemplate1 = async () => {
         descender: -200,
       }
     }
+    name_data.value = [
+      {
+        nameID: 1,
+        nameLabel: 'fontFamily',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x804,
+        value: name,
+        default: true,
+      },
+      {
+        nameID: 1,
+        nameLabel: 'fontFamily',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x409,
+        value: getEnName(name),
+        default: true,
+      },
+      {
+        nameID: 2,
+        nameLabel: 'fontSubfamily',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x804,
+        value: '常规体',
+        default: true,
+      },
+      {
+        nameID: 2,
+        nameLabel: 'fontSubfamily',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x409,
+        value: 'Regular',
+        default: true,
+      },
+      {
+        nameID: 4,
+        nameLabel: 'fullName',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x804,
+        value: name + ' ' + '常规体',
+        default: true,
+      },
+      {
+        nameID: 4,
+        nameLabel: 'fullName',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x409,
+        value: getEnName(name) + ' ' + 'Regular',
+        default: true,
+      },
+      {
+        nameID: 5,
+        nameLabel: 'version',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x804,
+        value: '版本 1.0',
+        default: true,
+      },
+      {
+        nameID: 5,
+        nameLabel: 'version',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x409,
+        value: 'Version 1.0',
+        default: true,
+      },
+      {
+        nameID: 6,
+        nameLabel: 'postScriptName',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x804,
+        value: (getEnName(name) + '-' + 'Regular').replace(/\s/g, '').slice(0, 63),
+        default: true,
+      },
+      {
+        nameID: 6,
+        nameLabel: 'postScriptName',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x409,
+        value: (getEnName(name) + '-' + 'Regular').replace(/\s/g, '').slice(0, 63),
+        default: true,
+      }
+    ]
     addFile(file)
     setSelectedFileUUID(file.uuid)
     setEditStatus(Status.CharacterList)

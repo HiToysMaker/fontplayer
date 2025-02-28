@@ -370,6 +370,16 @@
       >
         <font-awesome-icon :icon="['fas', 'table-cells']" />
       </el-icon>
+      <el-icon
+        v-show="editStatus === Status.Edit"
+        :class="{
+          'tool-icon': true,
+          'selected': tool === 'metrics',
+        }"
+        @click="switchTool('metrics')"
+      >
+        <font-awesome-icon :icon="['fas', 'text-width']" />
+      </el-icon>
       <div class="to-list" @click="toList">
         <el-icon class="to-list-icon"><Grid /></el-icon>
         <span class="to-list-label">字符列表</span>

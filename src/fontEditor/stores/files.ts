@@ -46,6 +46,7 @@ export interface IFontSettings {
 	unitsPerEm: number;
 	ascender: number;
 	descender: number;
+	tables?: any;
 }
 
 // 字符文件数据结构
@@ -84,6 +85,11 @@ export interface ICharacterFile {
 		};
 		layout?: string;
 		layoutTree?: any;
+		metrics?: {
+			lsb?: number;
+			advanceWidth?: number;
+			useDefaultValues?: boolean;
+		};
 	};
 	_o?: Character;
 	objData?: any;

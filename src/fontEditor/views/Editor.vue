@@ -25,6 +25,7 @@
   import addIconDialog from '../../fontEditor/components/Dialogs/AddIconDialog.vue'
   import glyphComponentsDialog from '../../fontEditor/components/Dialogs/GlyphComponentsDialog.vue'
   import fontSettingsDialog from '../../fontEditor/components/Dialogs/FontSettingsDialog.vue'
+  import fontSettings2Dialog from '../../fontEditor/components/Dialogs/fontSettings/FontSettingsDialog.vue'
   import languageSettingsDialog from '../../fontEditor/components/Dialogs/LanguageSettingsDialog.vue'
   import preferenceSettingsDialog from '../../fontEditor/components/Dialogs/PreferenceSettingsDialog.vue'
   import setAsGlobalParamDialog from '../../fontEditor/components/Dialogs/SetAsGlobalParamDialog.vue'
@@ -125,6 +126,7 @@ import { enableMultiSelect } from '../stores/files'
     <copy-character-dialog></copy-character-dialog>
     <glyph-components-dialog></glyph-components-dialog>
     <font-settings-dialog></font-settings-dialog>
+    <font-settings-2-dialog></font-settings-2-dialog>
     <preference-settings-dialog></preference-settings-dialog>
     <language-settings-dialog></language-settings-dialog>
     <save-dialog></save-dialog>

@@ -73,8 +73,8 @@ enum PathType {
  * @returns metrics
  */
 const getMetrics = (character: ICharacter) => {
-	const xCoords = [];
-	const yCoords = [];
+	const xCoords = []
+	const yCoords = []
 	for (let i = 0; i < character.contours.length; i += 1) {
 		for (let j = 0; j < character.contours[i].length; j++) {
 			const contour = character.contours[i][j]
