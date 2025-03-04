@@ -76,7 +76,7 @@ import { getBound, transformPoints } from '../../utils/math'
 import { fitCurve } from '../../features/fitCurve'
 import type { IPoint as IPenPoint, IPoint } from '../stores/pen'
 import { render } from '../canvas/canvas'
-import { ICustomGlyph, IGlyphComponent, addComponentForCurrentGlyph, addGlyph, addGlyphTemplate, clearGlyphRenderList, comp_glyphs, constantGlyphMap, constants, constantsMap, editGlyph, executeScript, getGlyphByName, getGlyphByUUID, glyphs, orderedListWithItemsForCurrentGlyph, radical_glyphs, stroke_glyphs } from '../stores/glyph'
+import { ICustomGlyph, IGlyphComponent, IParameter, ParameterType, addComponentForCurrentGlyph, addGlyph, addGlyphTemplate, clearGlyphRenderList, comp_glyphs, constantGlyphMap, constants, constantsMap, editGlyph, executeScript, getGlyphByName, getGlyphByUUID, glyphs, orderedListWithItemsForCurrentGlyph, radical_glyphs, stroke_glyphs } from '../stores/glyph'
 import { ParametersMap } from '../programming/ParametersMap'
 import { Joint, linkComponentsForJoints } from '../programming/Joint'
 import router from '../../router'
@@ -92,6 +92,7 @@ import { writeTextFile, writeFile, readFile, readTextFile } from '@tauri-apps/pl
 import { ENV } from '../stores/system'
 import { OpType, saveState, StoreType, undo as _undo, redo as _redo } from '../stores/edit'
 import { getEnName, name_data } from '../stores/settings'
+import { strokes as hei_strokes } from '../templates/strokes_1'
 
 const plainGlyph = (glyph: ICustomGlyph) => {
   const data: ICustomGlyph = {
@@ -1869,6 +1870,52 @@ const _syncData = async () => {
   }
 }
 
+const importTemplate2 = async () => {
+  const base = ''
+  // const base = '/fontplayer_demo/'
+
+  for (let i = 0; i < hei_strokes.length; i++) {
+    const stroke = hei_strokes[i]
+    const { name, params } = stroke
+    const parameters: Array<IParameter> = []
+    for (let j = 0; j < params.length; j++) {
+      const param = params[j]
+      parameters.push({
+        uuid: genUUID(),
+        name: param.name,
+        type: ParameterType.Number,
+        value: param.default,
+        min: param.min || 0,
+        max: param.max || 1000,
+      })
+    }
+    let stroke_script_res = await fetch(base + `templates/templates2/${name}.js`)
+    let stroke_script = await stroke_script_res.text()
+
+    const uuid = genUUID()
+    const glyph = {
+      uuid,
+      type: 'system',
+      name,
+      components: [],
+      groups: [],
+      orderedList: [],
+      selectedComponentsUUIDs: [],
+      view: {
+        zoom: 100,
+        translateX: 0,
+        translateY: 0,
+      },
+      parameters: new ParametersMap(parameters),
+      joints: [],
+      script: `function script_${uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t${stroke_script}\n}`,
+    }
+    addGlyph(glyph, Status.StrokeGlyphList)
+    addGlyphTemplate(glyph, Status.StrokeGlyphList)
+  }
+  emitter.emit('renderStrokeGlyphPreviewCanvas')
+}
+
 const importTemplate1 = async () => {
   if (files.value && files.value.length) {
     tips.value = '导入模板会覆盖当前工程，请关闭当前工程再导入。注意，关闭工程前请保存工程以避免数据丢失。'
@@ -2438,6 +2485,7 @@ const tauri_handlers: IHandlerMap = {
   'preference-settings': preferenceSettings,
   'language-settings': languageSettings,
   'template-1': importTemplate1,
+  'template-2': importTemplate2,
   'remove_overlap': removeOverlap,
 }
 
@@ -2470,6 +2518,7 @@ const web_handlers: IHandlerMap = {
   'preference-settings': preferenceSettings,
   'language-settings': languageSettings,
   'template-1': importTemplate1,
+  'template-2': importTemplate2,
   'remove_overlap': removeOverlap,
 }
 

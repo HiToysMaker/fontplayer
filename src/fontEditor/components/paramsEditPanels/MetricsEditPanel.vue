@@ -63,7 +63,11 @@
       advanceWidth,
       lsb,
       useDefaultValues,
-    } = _metrics ? _metrics : {}
+    } = _metrics ? _metrics : {
+      advanceWidth: unitsPerEm,
+      lsb: 0,
+      useDefaultValues: true,
+    }
     if (!_metrics) {
       useDefaultValues = true
       advanceWidth = unitsPerEm

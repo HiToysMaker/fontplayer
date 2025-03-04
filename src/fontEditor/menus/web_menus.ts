@@ -249,6 +249,13 @@ const web_menu: Array<IMenu> = [
 					handlers['template-1']()
 				}
 			},
+			{
+				label: tm('menus.templates.test2'),
+				key: 'template-2',
+				click: (handlers: IHandlerMap) => {
+					handlers['template-2']()
+				}
+			},
 		]
 	},
 	{

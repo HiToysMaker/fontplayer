@@ -204,10 +204,10 @@
     </el-form>
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="setCreateFileDialogVisible(false)">{{ t('dialogs.addFileDialog.cancel') }}</el-button>
+        <el-button @pointerdown="setCreateFileDialogVisible(false)">{{ t('dialogs.addFileDialog.cancel') }}</el-button>
         <el-button
           type="primary"
-          @click="() => createFont()"
+          @pointerdown="() => createFont()"
         >
           {{ t('dialogs.addFileDialog.confirm') }}
         </el-button>

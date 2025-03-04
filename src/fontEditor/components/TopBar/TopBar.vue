@@ -73,6 +73,7 @@
     'preference-settings': enable,
     'language-settings': enable,
     'template-1': TemplateEnable,
+    'template-2': TemplateEnable,
 	}
 
 	const web_menu_icons: IIconsMap = {
