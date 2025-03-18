@@ -50,7 +50,7 @@ glyph.addJoint(start)
 glyph.addJoint(end)
 glyph.addJoint(bend)
 
-const skeloton = {
+const skeleton = {
   start,
   end,
   bend,
@@ -58,3 +58,44 @@ const skeloton = {
 
 glyph.addRefLine(refline(start, bend))
 glyph.addRefLine(refline(bend, end))
+
+const getComponents = (skeleton) => {
+  // 根据骨架计算轮廓关键点
+
+  const { start, bend, end } = skeleton
+
+  // out指右侧（外侧）轮廓线
+  // in指左侧（内侧）轮廓线
+  const { out_tiao_curves, out_tiao_points, in_tiao_curves, in_tiao_points } = FP.getCurveContours('tiao', { tiao_start: start, tiao_bend: bend, tiao_end: end }, weight)
+
+  // 创建钢笔组件
+  const pen = new FP.PenComponent()
+  pen.beginPath()
+
+  // 绘制横的右侧轮廓
+  pen.moveTo(out_tiao_curves[0].start.x, out_tiao_curves[0].start.y)
+  for (let i = 0; i < out_tiao_curves.length; i++) {
+    const curve = out_tiao_curves[i]
+    pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
+  }
+
+  // 绘制轮廓连接线
+  pen.lineTo(in_tiao_curves[in_tiao_curves.length - 1].end.x, in_tiao_curves[in_tiao_curves.length - 1].end.y)
+
+  // 绘制横的左侧轮廓
+  for (let i = in_tiao_curves.length - 1; i >= 0; i--) {
+    const curve = in_tiao_curves[i]
+    pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
+  }
+
+  // 绘制轮廓连接线
+  pen.lineTo(out_tiao_curves[0].start.x, out_tiao_curves[0].start.y)
+
+  pen.closePath()
+  return [ pen ]
+}
+
+const components = getComponents(skeleton)
+for (let i = 0; i < components.length; i++) {
+  glyph.addComponent(components[i])
+}

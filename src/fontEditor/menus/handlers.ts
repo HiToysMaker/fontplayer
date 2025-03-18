@@ -1889,6 +1889,80 @@ const importTemplate2 = async () => {
         max: param.max || 1000,
       })
     }
+    // 添加Enum参数起笔风格类型
+    parameters.push({
+      uuid: genUUID(),
+      name: '起笔风格',
+      type: ParameterType.Enum,
+      value: 0,
+      options: [
+        {
+          value: 0,
+          label: '无起笔样式',
+        },
+        {
+          value: 1,
+          label: '凸笔起笔',
+        },
+        {
+          value: 2,
+          label: '凸笔圆角起笔',
+        }
+      ]
+    })
+    // 添加起笔数值
+    parameters.push({
+      uuid: genUUID(),
+      name: '起笔数值',
+      type: ParameterType.Number,
+      value: 1,
+      min: 0,
+      max: 2,
+    })
+    // 添加Enum参数转角风格类型
+    parameters.push({
+      uuid: genUUID(),
+      name: '转角风格',
+      type: ParameterType.Enum,
+      value: 0,
+      options: [
+        {
+          value: 0,
+          label: '默认转角样式',
+        },
+        {
+          value: 1,
+          label: '转角圆滑凸起',
+        }
+      ]
+    })
+    // 添加转角数值
+    parameters.push({
+      uuid: genUUID(),
+      name: '转角数值',
+      type: ParameterType.Number,
+      value: 1,
+      min: 1,
+      max: 2,
+    })
+    // 添加字重变化
+    parameters.push({
+      uuid: genUUID(),
+      name: '字重变化',
+      type: ParameterType.Number,
+      value: 0,
+      min: 0,
+      max: 2,
+    })
+    // 添加弯曲程度
+    parameters.push({
+      uuid: genUUID(),
+      name: '弯曲程度',
+      type: ParameterType.Number,
+      value: 1,
+      min: 0,
+      max: 2,
+    })
     let stroke_script_res = await fetch(base + `templates/templates2/${name}.js`)
     let stroke_script = await stroke_script_res.text()
 

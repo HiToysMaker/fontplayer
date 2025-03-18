@@ -81,7 +81,7 @@ glyph.addJoint(dian_start)
 glyph.addJoint(dian_bend)
 glyph.addJoint(dian_end)
 
-const skeloton = {
+const skeleton = {
   pie_start,
   pie_bend,
   pie_end,
@@ -94,3 +94,75 @@ glyph.addRefLine(refline(pie_start, pie_bend))
 glyph.addRefLine(refline(pie_bend, pie_end))
 glyph.addRefLine(refline(dian_start, dian_bend))
 glyph.addRefLine(refline(dian_bend, dian_end))
+
+const getComponents = (skeleton) => {
+  // 根据骨架计算轮廓关键点
+
+  const {
+    pie_start,
+    pie_bend,
+    pie_end,
+    dian_start,
+    dian_bend,
+    dian_end,
+  } = skeleton
+
+  // out指左侧（外侧）轮廓线
+  // in指右侧（内侧）轮廓线
+  const { out_pie_curves, out_pie_points, in_pie_curves, in_pie_points } = FP.getCurveContours('pie', { pie_start, pie_bend, pie_end }, weight, {
+    unticlockwise: true,
+  })
+  const { out_dian_curves, out_dian_points, in_dian_curves, in_dian_points } = FP.getCurveContours('dian', { dian_start, dian_bend, dian_end }, weight, {
+    unticlockwise: true,
+  })
+  const { corner: out_corner_pie_dian } = FP.getIntersection(
+    { type: 'line', start: out_pie_curves[out_pie_curves.length - 1].control2, end: out_pie_curves[out_pie_curves.length - 1].end },
+    { type: 'line', start: out_dian_curves[0].start, end: out_dian_curves[0].control1 }
+  )
+  const { corner: in_corner_pie_dian, corner_index: in_corner_index_pie_dian } = FP.getIntersection(
+    { type: 'curve', points: in_pie_points },
+    { type: 'curve', points: in_dian_points },
+  )
+  const { curves: in_pie_curves_final } = FP.fitCurvesByPoints(in_pie_points.slice(0, in_corner_index_pie_dian[0]))
+  const { curves: in_dian_curves_final } = FP.fitCurvesByPoints(in_dian_points.slice(in_corner_index_pie_dian[1]))
+
+  // 创建钢笔组件
+  const pen = new FP.PenComponent()
+  pen.beginPath()
+
+  // 绘制横的左侧（外侧）轮廓
+  pen.moveTo(out_pie_curves[0].start.x, out_pie_curves[0].start.y)
+  for (let i = 0; i < out_pie_curves.length; i++) {
+    const curve = out_pie_curves[i]
+    pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
+  }
+  pen.lineTo(out_corner_pie_dian.x, out_corner_pie_dian.y)
+  for (let i = 0; i < out_dian_curves.length; i++) {
+    const curve = out_dian_curves[i]
+    pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
+  }
+
+  // 绘制轮廓连接线
+  pen.lineTo(in_dian_curves_final[in_dian_curves_final.length - 1].end.x, in_dian_curves_final[in_dian_curves_final.length - 1].end.y)
+
+  // 绘制横的右侧（内侧）轮廓
+  for (let i = in_dian_curves_final.length - 1; i >= 0; i--) {
+    const curve = in_dian_curves_final[i]
+    pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
+  }
+  for (let i = in_pie_curves_final.length - 1; i >= 0; i--) {
+    const curve = in_pie_curves_final[i]
+    pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
+  }
+
+  // 绘制轮廓连接线
+  pen.lineTo(out_pie_curves[0].start.x, out_pie_curves[0].start.y)
+
+  pen.closePath()
+  return [ pen ]
+}
+
+const components = getComponents(skeleton)
+for (let i = 0; i < components.length; i++) {
+  glyph.addComponent(components[i])
+}

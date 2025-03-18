@@ -518,18 +518,6 @@ const strokes = [
         max: 1000,
       },
       {
-        name: '挑-弯曲游标',
-        default: 0.5,
-        min: 0,
-        max: 1,
-      },
-      {
-        name: '挑-弯曲度',
-        default: 50,
-        min: 0,
-        max: 500,
-      },
-      {
         name: '字重',
         default: 40,
         min: 0,
@@ -563,18 +551,6 @@ const strokes = [
         default: 300,
         min: 0,
         max: 1000,
-      },
-      {
-        name: '挑-弯曲游标',
-        default: 0.5,
-        min: 0,
-        max: 1,
-      },
-      {
-        name: '挑-弯曲度',
-        default: 50,
-        min: 0,
-        max: 500,
       },
       {
         name: '字重',
@@ -742,14 +718,14 @@ const strokes = [
       {
         name: '钩-水平延伸',
         default: 100,
-        min: 0,
-        max: 300,
+        min: -150,
+        max: 150,
       },
       {
         name: '钩-竖直延伸',
         default: 100,
         min: 0,
-        max: 300,
+        max: 200,
       },
       {
         name: '字重',

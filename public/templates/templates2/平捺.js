@@ -45,7 +45,7 @@ glyph.addJoint(start)
 glyph.addJoint(end)
 glyph.addJoint(bend)
 
-const skeloton = {
+const skeleton = {
   start,
   bend,
   end,
@@ -53,3 +53,50 @@ const skeloton = {
 
 glyph.addRefLine(refline(start, bend))
 glyph.addRefLine(refline(bend, end))
+
+const weights_variation_power = glyph.getParam('字重变化')
+
+const getComponents = (skeleton) => {
+  // 根据骨架计算轮廓关键点
+
+  const { start, bend, end } = skeleton
+
+  // out指左侧（外侧）轮廓线
+  // in指右侧（内侧）轮廓线
+  const { out_na_curves, out_na_points, in_na_curves, in_na_points } = FP.getCurveContours('na', { na_start: start, na_bend: bend, na_end: end }, weight, {
+    unticlockwise: true,
+    weightsVariation: 'pow',
+    weightsVariationPower: weights_variation_power,
+  })
+
+  // 创建钢笔组件
+  const pen = new FP.PenComponent()
+  pen.beginPath()
+
+  // 绘制横的左侧轮廓
+  pen.moveTo(out_na_curves[0].start.x, out_na_curves[0].start.y)
+  for (let i = 0; i < out_na_curves.length; i++) {
+    const curve = out_na_curves[i]
+    pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
+  }
+
+  // 绘制轮廓连接线
+  pen.lineTo(in_na_curves[in_na_curves.length - 1].end.x, in_na_curves[in_na_curves.length - 1].end.y)
+
+  // 绘制横的右侧轮廓
+  for (let i = in_na_curves.length - 1; i >= 0; i--) {
+    const curve = in_na_curves[i]
+    pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
+  }
+
+  // 绘制轮廓连接线
+  pen.lineTo(out_na_curves[0].start.x, out_na_curves[0].start.y)
+
+  pen.closePath()
+  return [ pen ]
+}
+
+const components = getComponents(skeleton)
+for (let i = 0; i < components.length; i++) {
+  glyph.addComponent(components[i])
+}

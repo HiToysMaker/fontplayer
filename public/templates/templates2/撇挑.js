@@ -26,7 +26,7 @@ const distance = (p1, p2) => {
 const pie_start = new FP.Joint(
   'pie_start',
   {
-    x: ox + Math.max(pie_horizonalSpan, tiao_horizonalSpan) / 2,
+    x: ox + pie_horizonalSpan / 2,
     y: oy - pie_verticalSpan / 2,
   },
 )
@@ -81,7 +81,7 @@ glyph.addJoint(tiao_start)
 glyph.addJoint(tiao_bend)
 glyph.addJoint(tiao_end)
 
-const skeloton = {
+const skeleton = {
   pie_start,
   pie_bend,
   pie_end,
@@ -94,3 +94,105 @@ glyph.addRefLine(refline(pie_start, pie_bend))
 glyph.addRefLine(refline(pie_bend, pie_end))
 glyph.addRefLine(refline(tiao_start, tiao_bend))
 glyph.addRefLine(refline(tiao_bend, tiao_end))
+
+const getComponents = (skeleton) => {
+  // 根据骨架计算轮廓关键点
+
+  const {
+    pie_start,
+    pie_bend,
+    pie_end,
+    tiao_start,
+    tiao_bend,
+    tiao_end,
+  } = skeleton
+
+  // out指左侧（外侧）轮廓线
+  // in指右侧（内侧）轮廓线
+  const { out_pie_curves, out_pie_points, in_pie_curves, in_pie_points } = FP.getCurveContours('pie', { pie_start, pie_bend, pie_end }, weight, {
+    unticlockwise: true,
+  })
+  const { out_tiao_curves, out_tiao_points, in_tiao_curves, in_tiao_points } = FP.getCurveContours('tiao', { tiao_start, tiao_bend, tiao_end }, weight, {
+    unticlockwise: true,
+  })
+  let { corner: out_corner_pie_tiao, corner_index: out_corner_index_pie_tiao } = FP.getIntersection(
+    { type: 'curve', points: out_pie_points },
+    { type: 'curve', points: in_tiao_points },
+  )
+  if (!out_corner_pie_tiao) {
+    out_corner_pie_tiao = out_pie_curves[out_pie_curves.length - 1].end
+    out_corner_index_pie_tiao = [out_pie_points.length, 0]
+  }
+  const { corner: in_corner_pie_tiao, corner_index: in_corner_index_pie_tiao } = FP.getIntersection(
+    { type: 'curve', points: in_pie_points },
+    { type: 'curve', points: in_tiao_points },
+  )
+  const { curves: out_pie_curves_final } = FP.fitCurvesByPoints(out_pie_points.slice(0, out_corner_index_pie_tiao[0]))
+  const { curves: in_pie_curves_final } = FP.fitCurvesByPoints(in_pie_points.slice(0, in_corner_index_pie_tiao[0]))
+  let in_tiao_curves_final_1 = []
+  if (out_corner_index_pie_tiao[1]) {
+    let { curves } = FP.fitCurvesByPoints(in_tiao_points.slice(0, out_corner_index_pie_tiao[1]))
+    in_tiao_curves_final_1 = curves
+  }
+  const { curves: in_tiao_curves_final_2 } = FP.fitCurvesByPoints(in_tiao_points.slice(in_corner_index_pie_tiao[1]))
+
+  // 创建钢笔组件
+  const pen = new FP.PenComponent()
+  pen.beginPath()
+
+  // pen.moveTo(out_pie_curves[0].start.x, out_pie_curves[0].start.y)
+  // pen.bezierTo(out_pie_curves[0].control1.x, out_pie_curves[0].control1.y, out_pie_curves[0].control2.x, out_pie_curves[0].control2.y, out_pie_curves[0].end.x, out_pie_curves[0].end.y)
+  // pen.lineTo(in_pie_curves[0].end.x, in_pie_curves[0].end.y)
+  // pen.bezierTo(in_pie_curves[0].control2.x, in_pie_curves[0].control2.y, in_pie_curves[0].control1.x, in_pie_curves[0].control1.y, in_pie_curves[0].start.x, in_pie_curves[0].start.y)
+  // pen.moveTo(out_pie_curves[0].start.x, out_pie_curves[0].start.y)
+  // pen.closePath()
+
+  // const pen2 = new FP.PenComponent()
+  // pen2.beginPath()
+  // pen2.moveTo(out_tiao_curves[0].start.x, out_tiao_curves[0].start.y)
+  // pen2.bezierTo(out_tiao_curves[0].control1.x, out_tiao_curves[0].control1.y, out_tiao_curves[0].control2.x, out_tiao_curves[0].control2.y, out_tiao_curves[0].end.x, out_tiao_curves[0].end.y)
+  // pen2.lineTo(in_tiao_curves[0].end.x, in_tiao_curves[0].end.y)
+  // pen2.bezierTo(in_tiao_curves[0].control2.x, in_tiao_curves[0].control2.y, in_tiao_curves[0].control1.x, in_tiao_curves[0].control1.y, in_tiao_curves[0].start.x, in_tiao_curves[0].start.y)
+  // pen2.moveTo(out_tiao_curves[0].start.x, out_tiao_curves[0].start.y)
+  // pen2.closePath()
+
+  // 绘制左侧（外侧）轮廓
+  pen.moveTo(out_pie_curves[0].start.x, out_pie_curves[0].start.y)
+  for (let i = 0; i < out_pie_curves_final.length; i++) {
+    const curve = out_pie_curves_final[i]
+    pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
+  }
+  for (let i = in_tiao_curves_final_1.length - 1; i >= 0; i--) {
+    const curve = in_tiao_curves_final_1[i]
+    pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
+  }
+  pen.lineTo(out_tiao_curves[0].start.x, out_tiao_curves[0].start.y)
+  for (let i = 0; i < out_tiao_curves.length; i++) {
+    const curve = out_tiao_curves[i]
+    pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
+  }
+
+  // 绘制轮廓连接线
+  pen.lineTo(in_tiao_curves_final_2[in_tiao_curves_final_2.length - 1].end.x, in_tiao_curves_final_2[in_tiao_curves_final_2.length - 1].end.y)
+
+  // 绘制右侧（内侧）轮廓
+  for (let i = in_tiao_curves_final_2.length - 1; i >= 0; i--) {
+    const curve = in_tiao_curves_final_2[i]
+    pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
+  }
+  for (let i = in_pie_curves_final.length - 1; i >= 0; i--) {
+    const curve = in_pie_curves_final[i]
+    pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
+  }
+
+  // 绘制轮廓连接线
+  pen.lineTo(out_pie_curves[0].start.x, out_pie_curves[0].start.y)
+
+  pen.closePath()
+  return [ pen ]
+}
+
+const components = getComponents(skeleton)
+for (let i = 0; i < components.length; i++) {
+  glyph.addComponent(components[i])
+}

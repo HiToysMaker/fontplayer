@@ -119,6 +119,7 @@ export enum ParameterType {
 	Number,
 	Constant,
 	RingController,
+	Enum,
 }
 
 const parameterCompKey = ref(0)
@@ -143,6 +144,11 @@ export interface IParameter2 {
 	ratioed?: boolean;
 }
 
+export interface IEnumOption {
+	value: number,
+	label: string,
+}
+
 // 字形参数
 // glyph parameter
 export interface IParameter {
@@ -152,8 +158,9 @@ export interface IParameter {
 	value: number | string | IRingParameter;
 	ratio?: string;
 	ratioed?: boolean;
-	min: number;
-	max: number;
+	min?: number;
+	max?: number;
+	options?: Array<IEnumOption>;
 }
 
 const constants: Ref<Array<IConstant>> = ref([])

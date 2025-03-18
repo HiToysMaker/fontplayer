@@ -46,6 +46,10 @@ class ParametersMap {
 		else if (parameter.type === ParameterType.Constant) {
 			return constantsMap.getByUUID(parameter.value as string)
 		}
+		else if (parameter.type === ParameterType.Enum) {
+			// 如果选择类型，返回相应的类型value标识
+			return parameter.value
+		}
 	}
 }
 
