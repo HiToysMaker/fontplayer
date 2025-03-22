@@ -366,18 +366,18 @@
   <div class="font-edit-pic-wrapper">
     <header class="top-bar">
       <el-button-group class="btn-group">
-        <el-button class="btn delete-btn" @click="remove" size="small">删除</el-button>
-        <el-button class="btn reset-btn" @click="reset" size="small">重置</el-button>
+        <el-button class="btn delete-btn" @pointerdown="remove" size="small">删除</el-button>
+        <el-button class="btn reset-btn" @pointerdown="reset" size="small">重置</el-button>
         <el-button
           type="primary"
           class="btn confitm-btn"
-          @click="confirm"
+          @pointerdown="confirm"
           size="small"
         >确认</el-button>
       </el-button-group>
     </header>
     <main class="main">
-      <div class="left-mover" @click="moveLeft">
+      <div class="left-mover" @pointerdown="moveLeft">
         <el-icon><ArrowLeftBold /></el-icon>
       </div>
       <div class="canvas-list-outer-wrapper">
@@ -434,7 +434,7 @@
           </div>
         </div>
       </div>
-      <div class="right-mover" @click="moveRight">
+      <div class="right-mover" @pointerdown="moveRight">
         <el-icon><ArrowRightBold /></el-icon>
       </div>
     </main>

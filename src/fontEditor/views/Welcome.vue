@@ -38,22 +38,22 @@
 			<div>{{ `加载中，请稍候……已加载${Math.round(loaded / total * 100)}%` }}</div>
 		</div>-->
 		<div class="items-wrapper">
-			<div class="item new-project-item" @click="createFile">
+			<div class="item new-project-item" @pointerdown="createFile">
 				<div class="item-icon"><el-icon><DocumentAdd /></el-icon></div>
 				<div class="item-name">{{ t('welcome.new.name') }}</div>
 				<div class="description">{{ t('welcome.new.description') }}</div>
 			</div>
-			<div class="item open-project-item" @click="openFile">
+			<div class="item open-project-item" @pointerdown="openFile">
 				<div class="item-icon"><el-icon><FolderOpened /></el-icon></div>
 				<div class="item-name">{{ t('welcome.open.name') }}</div>
 				<div class="description">{{ t('welcome.open.description') }}</div>
 			</div>
-			<div class="item import-font-item" @click="importFont">
+			<div class="item import-font-item" @pointerdown="importFont">
 				<div class="item-icon"><el-icon><Files /></el-icon></div>
 				<div class="item-name">{{ t('welcome.import.name') }}</div>
 				<div class="description">{{ t('welcome.import.description') }}</div>
 			</div>
-			<div class="item template-item" @click="importTemplate1">
+			<div class="item template-item" @pointerdown="importTemplate1">
 				<div class="item-icon"><el-icon><Switch /></el-icon></div>
 				<div class="item-name">{{ t('welcome.template.name') }}</div>
 				<div class="description">{{ t('welcome.template.description') }}</div>

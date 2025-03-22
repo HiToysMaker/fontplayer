@@ -141,7 +141,7 @@
 <template>
   <div class="character-edit-panel">
 		<!-- <div class="layout-settings">
-			<el-button class="layout-btn" v-show="!onLayoutEdit" @click="onLayoutEdit = true">{{ !editCharacterFile.info.layout ? '设置字体结构' : '重置字体结构' }}</el-button>
+			<el-button class="layout-btn" v-show="!onLayoutEdit" @pointerdown="onLayoutEdit = true">{{ !editCharacterFile.info.layout ? '设置字体结构' : '重置字体结构' }}</el-button>
 			<el-select placeholder="Select" style="width: 100%" @change="onLayoutReset" v-show="onLayoutEdit">
 				<el-option
 					v-for="item in layoutOptions"
@@ -169,7 +169,7 @@
     					'margin-right': '10px',
 							'display': 'flex',
 						}">
-							<el-icon v-if="editingNode !== node.id" @click="(e) => {
+							<el-icon v-if="editingNode !== node.id" @pointerdown="(e) => {
 								e.stopPropagation()
 								editingNode = node.id
 							}"><Plus /></el-icon>
@@ -197,7 +197,7 @@
 				<el-form-item label="ID">
 					<el-input v-model="selectedNode.id" disabled>
 						<template #append>
-							<el-button :icon="DocumentCopy" @click="copyID"/>
+							<el-button :icon="DocumentCopy" @pointerdown="copyID"/>
 						</template>
 					</el-input>
 				</el-form-item>
@@ -234,10 +234,10 @@
 			</el-form>
 		</div> -->
 		<div class="grid-settings">
-			<el-button class="grid-confirm-btn" :disabled="!gridChanged" @click="confirmGridChange" type="primary">
+			<el-button class="grid-confirm-btn" :disabled="!gridChanged" @pointerdown="confirmGridChange" type="primary">
 				应用布局变换
 			</el-button>
-			<el-button class="grid-reset-btn" @click="resetGrid">
+			<el-button class="grid-reset-btn" @pointerdown="resetGrid">
 				重置布局变换
 			</el-button>
 		</div>

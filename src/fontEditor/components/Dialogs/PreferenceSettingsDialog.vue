@@ -129,10 +129,10 @@
     </div>
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="setPreferenceSettingsDialogVisible(false)">{{ tm('dialogs.preferenceDialog.cancel') }}</el-button>
+        <el-button @pointerdown="setPreferenceSettingsDialogVisible(false)">{{ tm('dialogs.preferenceDialog.cancel') }}</el-button>
         <el-button
           type="primary"
-          @click="() => updatePreference()"
+          @pointerdown="() => updatePreference()"
         >
           {{ tm('dialogs.preferenceDialog.confirm') }}
         </el-button>

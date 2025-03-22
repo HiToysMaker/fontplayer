@@ -267,7 +267,7 @@
       >
         <div class="title">{{ t('panels.paramsPanel.transformToCurve.title') }}</div>
         <el-button
-          @click="transformToPath"
+          @pointerdown="transformToPath"
         >{{ t('panels.paramsPanel.transformToCurve.label') }}</el-button>
       </div>
     </div>
@@ -334,7 +334,7 @@
       >
         <div class="title">{{ t('panels.paramsPanel.transformToCurve.title') }}</div>
         <el-button
-          @click="transformToPath"
+          @pointerdown="transformToPath"
         >{{ t('panels.paramsPanel.transformToCurve.label') }}</el-button>
       </div>
     </div>

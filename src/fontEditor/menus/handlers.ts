@@ -1301,14 +1301,13 @@ const createFont = (options?: CreateFontOptions) => {
   fontCharacters.sort((a: any, b: any) => {
     return a.unicode - b.unicode
   })
-
   const font = create(fontCharacters, {
     familyName: selectedFile.value.name,
     styleName: 'Regular',
     unitsPerEm,
     ascender,
     descender,
-    tables: selectedFile.value.tables || null,
+    tables: selectedFile.value.fontSettings.tables || null,
   })
   return font
 }
@@ -1894,7 +1893,7 @@ const importTemplate2 = async () => {
       uuid: genUUID(),
       name: '起笔风格',
       type: ParameterType.Enum,
-      value: 0,
+      value: 2,
       options: [
         {
           value: 0,
@@ -1924,7 +1923,7 @@ const importTemplate2 = async () => {
       uuid: genUUID(),
       name: '转角风格',
       type: ParameterType.Enum,
-      value: 0,
+      value: 1,
       options: [
         {
           value: 0,
@@ -2379,15 +2378,35 @@ const computeOverlapRemovedContours = () => {
     } else {
       unitedPath = paths[0].unite(paths[1])
       for (let i = 2; i < paths.length; i++) {
-        unitedPath = unitedPath.unite(paths[i]) 
+        unitedPath = unitedPath.unite(paths[i])
       }
     }
+    
+    if (!unitedPath) return
 
     // 根据合并路径生成轮廓数据
     let overlap_removed_contours = []
-    for (let i = 0; i < unitedPath.children.length; i++) {
-      const paths = unitedPath.children[i]
-      if (!paths.curves.length) continue
+    if (unitedPath.children && unitedPath.children.length) {
+      for (let i = 0; i < unitedPath.children.length; i++) {
+        const paths = unitedPath.children[i]
+        if (!paths.curves.length) continue
+        const contour = []
+        for (let j = 0; j < paths.curves.length; j++) {
+          const curve = paths.curves[j]
+          const path = {
+            type: PathType.CUBIC_BEZIER,
+            start: { x: curve.points[0].x, y: curve.points[0].y },
+            control1: { x: curve.points[1].x, y: curve.points[1].y },
+            control2: { x: curve.points[2].x, y: curve.points[2].y },
+            end: { x: curve.points[3].x, y: curve.points[3].y },
+          }
+          contour.push(path)
+        }
+        overlap_removed_contours.push(contour)
+      }
+    } else if (unitedPath.curves) {
+      const paths = unitedPath
+      if (!paths.curves.length) return
       const contour = []
       for (let j = 0; j < paths.curves.length; j++) {
         const curve = paths.curves[j]
@@ -2418,11 +2437,11 @@ const removeOverlap = () => {
     descender,
   } = selectedFile.value.fontSettings
   let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours2(orderedListWithItemsForCharacterFile(char),
-    { x: 0, y: 0 }, false
+    { x: 0, y: 0 }, false, 1
   )
   if (editStatus.value == Status.Glyph) {
     contours = componentsToContours2(char._o.components,
-      { x: 0, y: 0 }, true
+      { x: 0, y: 0 }, true, 1
     )
   }
 
@@ -2468,10 +2487,53 @@ const removeOverlap = () => {
   }
 
   let components = []
-  for (let i = 0; i < unitedPath.children.length; i++) {
-    const paths = unitedPath.children[i]
+  if (unitedPath && unitedPath.children) {
+    for (let i = 0; i < unitedPath.children.length; i++) {
+      const paths = unitedPath.children[i]
+      let points = []
+      if (!paths.curves.length) continue
+      points.push({
+        uuid: genUUID(),
+        type: 'anchor',
+        x: paths.curves[0].points[0].x,
+        y: paths.curves[0].points[0].y,
+        origin: null,
+        isShow: true,
+      })
+      for (let j = 0; j < paths.curves.length; j++) {
+        const curve = paths.curves[j]
+        const control1 = {
+          uuid: genUUID(),
+          type: 'control',
+          x: curve.points[1].x,
+          y: curve.points[1].y,
+          origin: points[points.length - 1].uuid,
+          isShow: true,
+        }
+        const uuid = genUUID()
+        const control2 = {
+          uuid: genUUID(),
+          type: 'control',
+          x: curve.points[2].x,
+          y: curve.points[2].y,
+          origin: uuid,
+          isShow: true,
+        }
+        const end = {
+          uuid: uuid,
+          type: 'anchor',
+          x: curve.points[3].x,
+          y: curve.points[3].y,
+          origin: null,
+          isShow: true,
+        }
+        points.push(control1, control2, end)
+      }
+      components.push(genPenComponent(points, true))
+    }
+  } else if (unitedPath && unitedPath.curves) {
+    const paths = unitedPath
     let points = []
-    if (!paths.curves.length) continue
     points.push({
       uuid: genUUID(),
       type: 'anchor',
@@ -2510,6 +2572,8 @@ const removeOverlap = () => {
       points.push(control1, control2, end)
     }
     components.push(genPenComponent(points, true))
+  } else {
+    return
   }
   if (editStatus.value === Status.Edit) {
     editCharacterFile.value.script = `function script_${editCharacterFile.value.uuid.replaceAll('-', '_')} (character, constants, FP) {\n\t//Todo something\n}`,

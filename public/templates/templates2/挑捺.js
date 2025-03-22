@@ -1,9 +1,15 @@
+const weights_variation_power = glyph.getParam('字重变化')
+const start_style_type = glyph.getParam('起笔风格')
+const start_style_value = glyph.getParam('起笔数值')
+const turn_style_type = glyph.getParam('转角风格')
+const turn_style_value = glyph.getParam('转角数值')
+const bending_degree = glyph.getParam('弯曲程度')
 const tiao_horizonalSpan = glyph.getParam('挑-水平延伸')
 const tiao_verticalSpan = glyph.getParam('挑-竖直延伸')
 const na_horizonalSpan = glyph.getParam('捺-水平延伸')
 const na_verticalSpan = glyph.getParam('捺-竖直延伸')
 const na_bendCursor = glyph.getParam('捺-弯曲游标')
-const na_bendDegree = glyph.getParam('捺-弯曲度')
+const na_bendDegree = glyph.getParam('捺-弯曲度') + 30 * bending_degree
 const weight = glyph.getParam('字重') || 40
 const ox = 500
 const oy = 500

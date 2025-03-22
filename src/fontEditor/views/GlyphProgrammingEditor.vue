@@ -326,7 +326,7 @@
 			<el-tabs v-model="activeTab" class="tabs">
 				<el-tab-pane :label="tm('programming.global-constants')" name="global-constants">
 					<el-scrollbar>
-						<el-button class="add-constant-button" @click="addConstant">{{ t('programming.new-constant') }}</el-button>
+						<el-button class="add-constant-button" @pointerdown="addConstant">{{ t('programming.new-constant') }}</el-button>
 						<div class="constant-item" v-for="parameter in constants">
 							<div class="parameter-name">
 								<span class="parameter-name-label" v-show="!editMap[parameter.uuid]">{{ parameter.name }}</span>
@@ -335,7 +335,7 @@
 									v-show="editMap[parameter.uuid]" v-model="parameter.name"
 									@keyup.enter.native="toggleEdit(parameter.uuid, false)"
 								></el-input>
-								<el-icon class="edit-icon" v-show="!editMap[parameter.uuid]" @click="toggleEdit(parameter.uuid, true)"><Edit /></el-icon>
+								<el-icon class="edit-icon" v-show="!editMap[parameter.uuid]" @pointerdown="toggleEdit(parameter.uuid, true)"><Edit /></el-icon>
 							</div>
 							<el-select v-model="parameter.type" class="parameter-type-select" :placeholder="tm('programming.type')" @change="onParamTypeChange(parameter)">
 								<el-option
@@ -393,7 +393,7 @@
 										</el-form-item>
 									</el-tab-pane>
 									<el-tab-pane label="params">
-										<el-button class="add-parameter-button" @click="addParam(parameter.value)">{{ t('programming.new-parameter') }}</el-button>
+										<el-button class="add-parameter-button" @pointerdown="addParam(parameter.value)">{{ t('programming.new-parameter') }}</el-button>
 										<el-collapse>
 											<el-collapse-item v-for="param in (parameter.value as IRingParameter).params" :title="param.name" name="1">
 												<el-form-item label="name" label-width="42px">
@@ -413,15 +413,15 @@
 									</el-tab-pane>
 								</el-tabs>
 							</div>
-							<el-icon class="sort-down-btn" @click="sortDownConstant(parameter.uuid)"><SortDown /></el-icon>
-							<el-icon class="sort-up-btn" @click="sortUpConstant(parameter.uuid)"><SortUp /></el-icon>
-							<el-icon class="remove-btn" @click="removeConstant(parameter.uuid)"><Close /></el-icon>
+							<el-icon class="sort-down-btn" @pointerdown="sortDownConstant(parameter.uuid)"><SortDown /></el-icon>
+							<el-icon class="sort-up-btn" @pointerdown="sortUpConstant(parameter.uuid)"><SortUp /></el-icon>
+							<el-icon class="remove-btn" @pointerdown="removeConstant(parameter.uuid)"><Close /></el-icon>
 						</div>
 					</el-scrollbar>
 				</el-tab-pane>
 				<el-tab-pane :label="tm('programming.glyph-parameters')" name="glyph-parameters">
 					<el-scrollbar>
-						<el-button class="add-parameter-button" @click="addParameter">{{ t('programming.new-parameter') }}</el-button>
+						<el-button class="add-parameter-button" @pointerdown="addParameter">{{ t('programming.new-parameter') }}</el-button>
 						<div class="parameter-item" v-for="parameter in parameters">
 							<div class="parameter-name">
 								<span class="parameter-name-label" v-show="!editMap[parameter.uuid]">{{ parameter.name }}</span>
@@ -430,7 +430,7 @@
 									v-show="editMap[parameter.uuid]" v-model="parameter.name"
 									@keyup.enter.native="toggleEdit(parameter.uuid, false)"
 								></el-input>
-								<el-icon class="edit-icon" v-show="!editMap[parameter.uuid]" @click="toggleEdit(parameter.uuid, true)"><Edit /></el-icon>
+								<el-icon class="edit-icon" v-show="!editMap[parameter.uuid]" @pointerdown="toggleEdit(parameter.uuid, true)"><Edit /></el-icon>
 							</div>
 							<el-select v-model="parameter.type" class="parameter-type-select" :placeholder="tm('programming.type')" @change="onParamTypeChange(parameter)">
 								<el-option
@@ -488,7 +488,7 @@
 										</el-form-item>
 									</el-tab-pane>
 									<el-tab-pane label="params">
-										<el-button class="add-parameter-button" @click="addParam(parameter.value)">{{ t('programming.new-parameter') }}</el-button>
+										<el-button class="add-parameter-button" @pointerdown="addParam(parameter.value)">{{ t('programming.new-parameter') }}</el-button>
 										<el-collapse>
 											<el-collapse-item v-for="param in (parameter.value as IRingParameter).params" :title="param.name" name="1">
 												<el-form-item label="name" label-width="42px">
@@ -508,9 +508,9 @@
 									</el-tab-pane>
 								</el-tabs>
 							</div>
-							<el-icon class="sort-down-btn" @click="sortDownParameter(parameter.uuid)"><SortDown /></el-icon>
-							<el-icon class="sort-up-btn" @click="sortUpParameter(parameter.uuid)"><SortUp /></el-icon>
-							<el-icon class="remove-btn" @click="removeParameter(parameter.uuid)"><Close /></el-icon>
+							<el-icon class="sort-down-btn" @pointerdown="sortDownParameter(parameter.uuid)"><SortDown /></el-icon>
+							<el-icon class="sort-up-btn" @pointerdown="sortUpParameter(parameter.uuid)"><SortUp /></el-icon>
+							<el-icon class="remove-btn" @pointerdown="removeParameter(parameter.uuid)"><Close /></el-icon>
 						</div>
 					</el-scrollbar>
 				</el-tab-pane>
@@ -520,7 +520,7 @@
 			<div class="codes-header">
 				<div class="codes-title">{{ t('programming.script') }}</div>
 				<el-button class="reset-btn">{{ t('programming.reset') }}</el-button>
-				<el-button class="execute-btn" type="primary" @click="executeScript()">{{ t('programming.execute') }}</el-button>
+				<el-button class="execute-btn" type="primary" @pointerdown="executeScript()">{{ t('programming.execute') }}</el-button>
 			</div>
 			<div id="codes-container"></div>
 		</div>

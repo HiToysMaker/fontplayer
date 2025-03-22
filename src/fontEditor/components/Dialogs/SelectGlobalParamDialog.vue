@@ -130,8 +130,8 @@
     </div>
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="handleCancel">取消</el-button>
-        <el-button type="primary" @click="handleClick">
+        <el-button @pointerdown="handleCancel">取消</el-button>
+        <el-button type="primary" @pointerdown="handleClick">
           确定
         </el-button>
       </span>

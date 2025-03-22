@@ -1,5 +1,11 @@
+const weights_variation_power = glyph.getParam('字重变化')
+const start_style_type = glyph.getParam('起笔风格')
+const start_style_value = glyph.getParam('起笔数值')
+const turn_style_type = glyph.getParam('转角风格')
+const turn_style_value = glyph.getParam('转角数值')
+const bending_degree = glyph.getParam('弯曲程度')
 const wan_length = glyph.getParam('弯-长度')
-const wan_bendDegree = glyph.getParam('弯-弯曲度')
+const wan_bendDegree = glyph.getParam('弯-弯曲度') + 30 * bending_degree
 const gou_horizonalSpan = glyph.getParam('钩-水平延伸')
 const gou_verticalSpan = glyph.getParam('钩-竖直延伸')
 const weight = glyph.getParam('字重') || 40
@@ -68,8 +74,6 @@ const skeleton = {
 glyph.addRefLine(refline(wan_start, wan_bend))
 glyph.addRefLine(refline(wan_bend, wan_end))
 glyph.addRefLine(refline(gou_start, gou_end))
-
-const bending_degree = glyph.getParam('弯曲程度')
 
 const getLength = (horizonalSpan, verticalSpan) => {
   return Math.sqrt(horizonalSpan * horizonalSpan + verticalSpan * verticalSpan)
@@ -182,7 +186,7 @@ const getComponents = (skeleton) => {
   pen.quadraticBezierTo(in_radius_control.x, in_radius_control.y, in_radius_start.x, in_radius_start.y)
   for (let i = in_wan_curves_final.length - 1; i >= 0; i--) {
     const curve = in_wan_curves_final[i]
-    pen.bezierTo(curve.control2.x, curve.control2.x, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
+    pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
   }
 
   // 绘制轮廓连接线

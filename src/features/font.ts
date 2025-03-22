@@ -525,7 +525,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 const componentsToContours2 = (components: Array<_Component>, offset: {
 	x: number,
 	y: number,
-} = { x: 0, y: 0 }, isGlyph: boolean = false) => {
+} = { x: 0, y: 0 }, isGlyph: boolean = false, contour_type: number = 0) => {
 	let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = []
 	components.map((component) => {
 		if (!component.usedInCharacter) return
@@ -607,7 +607,7 @@ const componentsToContours2 = (components: Array<_Component>, offset: {
 					})
 				}
 				// executeScript(glyph)
-				const contours1 = componentsToContours2(glyph._o.components, { x: ox, y: oy }, isGlyph)
+				const contours1 = componentsToContours2(glyph._o.components, { x: ox, y: oy }, isGlyph, contour_type)
 				contours = contours.concat(contours1)
 				break
 			}
@@ -619,35 +619,68 @@ const componentsToContours2 = (components: Array<_Component>, offset: {
 		}
 	})
 	if (offset.x || offset.y) {
-		const scale = 1
-		contours = R.clone(contours)
-		for (let i = 0; i < contours.length; i++) {
-			const contour = contours[i]
-			for (let j = 0; j < contour.length; j++) {
-				const path = contour[j]
-				if (path.type === PathType.LINE) {
-					path.start.x += offset.x * scale
-					path.start.y -= offset.y * scale
-					path.end.x += offset.x * scale
-					path.end.y -= offset.y * scale
-				} else if (path.type === PathType.QUADRATIC_BEZIER) {
-					path.start.x += offset.x * scale
-					path.start.y -= offset.y * scale
-					path.end.x += offset.x * scale
-					path.end.y -= offset.y * scale
-					path.control.x += offset.x * scale
-					path.control.y -= offset.y * scale
-				} else if (path.type === PathType.CUBIC_BEZIER) {
-					path.start.x += offset.x * scale
-					path.start.y -= offset.y * scale
-					path.end.x += offset.x * scale
-					path.end.y -= offset.y * scale
-					path.control1.x += offset.x * scale
-					path.control1.y -= offset.y * scale
-					path.control2.x += offset.x * scale
-					path.control2.y -= offset.y * scale
+		if (contour_type === 0) {
+			// 生成导出字体最终的轮廓（坐标起始点为字体baseline），y坐标越大，对应点的位置越高
+			const scale = 1
+			for (let i = 0; i < contours.length; i++) {
+				const contour = contours[i]
+				for (let j = 0; j < contour.length; j++) {
+					const path = contour[j]
+					if (path.type === PathType.LINE) {
+						path.start.x += offset.x * scale
+						path.start.y -= offset.y * scale
+						path.end.x += offset.x * scale
+						path.end.y -= offset.y * scale
+					} else if (path.type === PathType.QUADRATIC_BEZIER) {
+						path.start.x += offset.x * scale
+						path.start.y -= offset.y * scale
+						path.end.x += offset.x * scale
+						path.end.y -= offset.y * scale
+						path.control.x += offset.x * scale
+						path.control.y -= offset.y * scale
+					} else if (path.type === PathType.CUBIC_BEZIER) {
+						path.start.x += offset.x * scale
+						path.start.y -= offset.y * scale
+						path.end.x += offset.x * scale
+						path.end.y -= offset.y * scale
+						path.control1.x += offset.x * scale
+						path.control1.y -= offset.y * scale
+						path.control2.x += offset.x * scale
+						path.control2.y -= offset.y * scale
+					}
 				}
-		  }
+			}
+		} else if (contour_type === 1) {
+			// 生成程序中展示所用的轮廓，原点位于canvas左上角，y坐标越大，对应点的位置越往下
+			const scale = 1
+			for (let i = 0; i < contours.length; i++) {
+				const contour = contours[i]
+				for (let j = 0; j < contour.length; j++) {
+					const path = contour[j]
+					if (path.type === PathType.LINE) {
+						path.start.x += offset.x * scale
+						path.start.y += offset.y * scale
+						path.end.x += offset.x * scale
+						path.end.y += offset.y * scale
+					} else if (path.type === PathType.QUADRATIC_BEZIER) {
+						path.start.x += offset.x * scale
+						path.start.y += offset.y * scale
+						path.end.x += offset.x * scale
+						path.end.y += offset.y * scale
+						path.control.x += offset.x * scale
+						path.control.y -= offset.y * scale
+					} else if (path.type === PathType.CUBIC_BEZIER) {
+						path.start.x += offset.x * scale
+						path.start.y += offset.y * scale
+						path.end.x += offset.x * scale
+						path.end.y += offset.y * scale
+						path.control1.x += offset.x * scale
+						path.control1.y += offset.y * scale
+						path.control2.x += offset.x * scale
+						path.control2.y += offset.y * scale
+					}
+				}
+			}
 		}
 	}
 	return contours

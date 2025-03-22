@@ -112,18 +112,18 @@
             v-if="tool === 'translateMover'"
           >
             <template #append>
-              <el-button @click="resetTranslate">{{ t('panels.bottomBar.reset') }}</el-button>
+              <el-button @pointerdown="resetTranslate">{{ t('panels.bottomBar.reset') }}</el-button>
             </template>
           </el-input>
           <font-awesome-icon
             class="translate-btn"
-            @click="onTranslate"
+            @pointerdown="onTranslate"
             icon="fa-regular fa-hand"
             v-if="tool !== 'translateMover'"
           />
           <font-awesome-icon
             class="translate-edit-btn"
-            @click="offTranslate"
+            @pointerdown="offTranslate"
             icon="fa-solid fa-hand"
             v-else-if="tool === 'translateMover'"
           />
@@ -141,25 +141,25 @@
           </el-input>
           <font-awesome-icon
             class="coords-btn"
-            @click="onCoordsViewer"
+            @pointerdown="onCoordsViewer"
             icon="fa-solid fa-arrow-pointer"
             v-if="tool !== 'coordsViewer'"
           />
           <font-awesome-icon
             class="coords-edit-btn"
-            @click="offCoordsViewer"
+            @pointerdown="offCoordsViewer"
             icon="fa-solid fa-arrow-pointer"
             v-else-if="tool === 'coordsViewer'"
           />
         </span>
         <span class="zoom-settings-wrapper">
-          <span class="zoom-out" @click="zoomEditOut">
+          <span class="zoom-out" @pointerdown="zoomEditOut">
             <el-icon><ZoomOut /></el-icon>
           </span>
           <el-input class="zoom-value" :model-value="editGlyph && editGlyph.view.zoom" @input="onZoomChange">
             <template #append>%</template>
           </el-input>
-          <span class="zoom-in" @click="zoomEditIn">
+          <span class="zoom-in" @pointerdown="zoomEditIn">
             <el-icon><ZoomIn /></el-icon>
           </span>
         </span>

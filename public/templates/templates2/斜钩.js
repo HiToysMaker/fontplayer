@@ -1,7 +1,13 @@
+const weights_variation_power = glyph.getParam('字重变化')
+const start_style_type = glyph.getParam('起笔风格')
+const start_style_value = glyph.getParam('起笔数值')
+const turn_style_type = glyph.getParam('转角风格')
+const turn_style_value = glyph.getParam('转角数值')
+const bending_degree = glyph.getParam('弯曲程度')
 const xie_horizonalSpan = glyph.getParam('斜-水平延伸')
 const xie_verticalSpan = glyph.getParam('斜-竖直延伸')
 const xie_bendCursor = glyph.getParam('斜-弯曲游标')
-const xie_bendDegree = glyph.getParam('斜-弯曲度')
+const xie_bendDegree = glyph.getParam('斜-弯曲度') + 30 * bending_degree
 const gou_horizonalSpan = glyph.getParam('钩-水平延伸')
 const gou_verticalSpan = glyph.getParam('钩-竖直延伸')
 const weight = glyph.getParam('字重') || 40
@@ -76,8 +82,6 @@ const skeleton = {
 glyph.addRefLine(refline(xie_start, xie_bend))
 glyph.addRefLine(refline(xie_bend, xie_end))
 glyph.addRefLine(refline(gou_start, gou_end))
-
-const bending_degree = glyph.getParam('弯曲程度')
 
 const getLength = (horizonalSpan, verticalSpan) => {
   return Math.sqrt(horizonalSpan * horizonalSpan + verticalSpan * verticalSpan)

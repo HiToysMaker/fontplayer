@@ -1,8 +1,14 @@
+const weights_variation_power = glyph.getParam('字重变化')
+const start_style_type = glyph.getParam('起笔风格')
+const start_style_value = glyph.getParam('起笔数值')
+const turn_style_type = glyph.getParam('转角风格')
+const turn_style_value = glyph.getParam('转角数值')
+const bending_degree = glyph.getParam('弯曲程度')
 const heng_length = glyph.getParam('横-长度')
 const zhe_horizonalSpan = glyph.getParam('折-水平延伸')
 const zhe_verticalSpan = glyph.getParam('折-竖直延伸')
 const zhe_bendCursor = glyph.getParam('折-弯曲游标')
-const zhe_bendDegree = glyph.getParam('折-弯曲度')
+const zhe_bendDegree = glyph.getParam('折-弯曲度') + 30 * bending_degree
 const wan_length = glyph.getParam('弯-长度')
 const gou_horizonalSpan = glyph.getParam('钩-水平延伸')
 const gou_verticalSpan = glyph.getParam('钩-竖直延伸')
@@ -108,10 +114,6 @@ glyph.addRefLine(refline(zhe_start, zhe_bend))
 glyph.addRefLine(refline(zhe_bend, zhe_end))
 glyph.addRefLine(refline(wan_start, wan_end))
 glyph.addRefLine(refline(gou_start, gou_end))
-
-const start_style_type = glyph.getParam('起笔风格')
-const start_style_value = glyph.getParam('起笔数值')
-const bending_degree = glyph.getParam('弯曲程度')
 
 const getStartStyle = (start_style_type, start_style_value) => {
   if (start_style_type === 1) {

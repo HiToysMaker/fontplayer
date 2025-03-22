@@ -50,8 +50,8 @@
     </div>
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="handleCancel">{{ t('dialogs.exportDialog.cancel') }}</el-button>
-        <el-button type="primary" @click="handleClick">
+        <el-button @pointerdown="handleCancel">{{ t('dialogs.exportDialog.cancel') }}</el-button>
+        <el-button type="primary" @pointerdown="handleClick">
           {{ t('dialogs.exportDialog.confirm') }}
         </el-button>
       </span>

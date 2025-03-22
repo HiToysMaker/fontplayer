@@ -208,7 +208,7 @@
 					class="glyph"
 					v-for="glyph in glyphs"
 					:key="glyph.uuid"
-					@click="editGlyph(glyph.uuid)"
+					@pointerdown="editGlyph(glyph.uuid)"
 				>
 					<span class="preview">
 						<div class="empty-line-1"></div>
@@ -223,11 +223,11 @@
 					<span class="info">
 						<span class="name">{{ glyph.name }}</span>
 					</span>
-					<span class="delete-icon" @click="(e) => deleteCharacter(e, glyph.uuid)">
+					<span class="delete-icon" @pointerdown="(e) => deleteCharacter(e, glyph.uuid)">
 						<el-icon><Close /></el-icon>
 					</span>
 				</div> -->
-				<!-- <div class="default-glyph" @click="setAddGlyphDialogVisible(true)">
+				<!-- <div class="default-glyph" @pointerdown="setAddGlyphDialogVisible(true)">
 					<div class="add-glyph-btn-wrapper">
 						<el-icon><Plus /></el-icon>
 					</div>

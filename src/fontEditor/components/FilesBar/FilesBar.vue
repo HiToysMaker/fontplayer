@@ -38,7 +38,7 @@
           'selected': file.uuid === selectedFileUUID
         }"
       >
-        <span class="file-info-wrapper" @click="() => selectFile(file.uuid)">
+        <span class="file-info-wrapper" @pointerdown="() => selectFile(file.uuid)">
           <span class="file-name">
             {{ file.name }}
           </span>
@@ -46,7 +46,7 @@
             <font-awesome-icon icon="fa-solid fa-circle" />
           </span>-->
         </span>
-        <span class="close-btn" @click="() => closeFile(file.uuid)">
+        <span class="close-btn" @pointerdown="() => closeFile(file.uuid)">
           <el-icon><Close /></el-icon>
         </span>
       </span>
@@ -84,7 +84,7 @@
               </div>
             </div>
           </el-popover>
-        <el-icon class="right-btn" @click="setFontSettingsDialogVisible(true)"><Tools /></el-icon>
+        <el-icon class="right-btn" @pointerdown="setFontSettingsDialogVisible(true)"><Tools /></el-icon>
       </div>
     </el-row>
 		<el-row class="files-bar-row" v-else-if="editStatus === Status.Edit">

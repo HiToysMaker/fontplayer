@@ -283,7 +283,7 @@
           'tool-icon': true,
           'selected': tool === 'select',
         }"
-        @click="switchTool('select')"
+        @pointerdown="switchTool('select')"
       >
         <font-awesome-icon icon="fa-solid fa-arrow-pointer" />
       </el-icon>
@@ -292,7 +292,7 @@
           'tool-icon': true,
           'selected': tool === 'pen',
         }"
-        @click="switchTool('pen')"
+        @pointerdown="switchTool('pen')"
       >
         <font-awesome-icon icon="fa-solid fa-pen-nib" />
       </el-icon>
@@ -301,7 +301,7 @@
           'tool-icon': true,
           'selected': tool === 'ellipse',
         }"
-        @click="switchTool('ellipse')"
+        @pointerdown="switchTool('ellipse')"
       >
         <font-awesome-icon icon="fa-regular fa-circle" />
       </el-icon>
@@ -310,7 +310,7 @@
           'tool-icon': true,
           'selected': tool === 'rectangle',
         }"
-        @click="switchTool('rectangle')"
+        @pointerdown="switchTool('rectangle')"
       >
         <font-awesome-icon icon="fa-regular fa-square" />
       </el-icon>
@@ -319,7 +319,7 @@
           'tool-icon': true,
           'selected': tool === 'polygon',
         }"
-        @click="switchTool('polygon')"
+        @pointerdown="switchTool('polygon')"
       >
         <font-awesome-icon icon="fa-solid fa-draw-polygon" />
       </el-icon>
@@ -328,7 +328,7 @@
           'tool-icon': true,
           'selected': tool === 'picture',
         }"
-        @click="switchTool('picture')"
+        @pointerdown="switchTool('picture')"
         v-show="editStatus === Status.Edit"
       >
         <font-awesome-icon icon="fa-solid fa-image" />
@@ -338,14 +338,14 @@
           'tool-icon': true,
           'selected': tool === 'glyph',
         }"
-        @click="glyphComponentsDialogVisible2 = true"
+        @pointerdown="glyphComponentsDialogVisible2 = true"
         v-show="editStatus === Status.Edit || editStatus === Status.Glyph"
       >
         <font-awesome-icon :icon="['fas', 'font']" />
       </el-icon>
       <el-icon
         class="code-icon"
-        @click="showProgrammingWindow"
+        @pointerdown="showProgrammingWindow"
         v-show="editStatus === Status.Edit || editStatus === Status.Glyph"
       >
         <font-awesome-icon :icon="['fas', 'terminal']" />
@@ -355,7 +355,7 @@
           'tool-icon': true,
           'selected': tool === 'params',
         }"
-        @click="switchTool('params')"
+        @pointerdown="switchTool('params')"
         v-show="editStatus === Status.Glyph"
       >
         <font-awesome-icon :icon="['fas', 'sliders']" />
@@ -366,7 +366,7 @@
           'tool-icon': true,
           'selected': tool === 'grid',
         }"
-        @click="switchTool('grid')"
+        @pointerdown="switchTool('grid')"
       >
         <font-awesome-icon :icon="['fas', 'table-cells']" />
       </el-icon>
@@ -376,11 +376,11 @@
           'tool-icon': true,
           'selected': tool === 'metrics',
         }"
-        @click="switchTool('metrics')"
+        @pointerdown="switchTool('metrics')"
       >
         <font-awesome-icon :icon="['fas', 'text-width']" />
       </el-icon>
-      <div class="to-list" @click="toList">
+      <div class="to-list" @pointerdown="toList">
         <el-icon class="to-list-icon"><Grid /></el-icon>
         <span class="to-list-label">字符列表</span>
       </div>

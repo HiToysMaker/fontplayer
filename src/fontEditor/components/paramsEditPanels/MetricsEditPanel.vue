@@ -209,10 +209,10 @@
       </el-form-item>
     </el-form>
 		<div class="metrics-settings">
-			<el-button class="metrics-confirm-btn" @click="confirmMetricsChange" type="primary">
+			<el-button class="metrics-confirm-btn" @pointerdown="confirmMetricsChange" type="primary">
 				应用度量变换
 			</el-button>
-			<el-button class="metrics-reset-btn" @click="resetMetrics">
+			<el-button class="metrics-reset-btn" @pointerdown="resetMetrics">
 				重置度量变换
 			</el-button>
 		</div>

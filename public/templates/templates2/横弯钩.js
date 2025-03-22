@@ -1,3 +1,9 @@
+const weights_variation_power = glyph.getParam('字重变化')
+const start_style_type = glyph.getParam('起笔风格')
+const start_style_value = glyph.getParam('起笔数值')
+const turn_style_type = glyph.getParam('转角风格')
+const turn_style_value = glyph.getParam('转角数值')
+const bending_degree = glyph.getParam('弯曲程度')
 const heng_length = glyph.getParam('横-长度')
 const wan_horizonalSpan = glyph.getParam('弯-水平延伸')
 const wan_verticalSpan = glyph.getParam('弯-竖直延伸')
@@ -46,7 +52,6 @@ const wan_end = new FP.Joint(
     y: wan_start.y + wan_verticalSpan,
   },
 )
-
 const wan_length = distance(wan_start, wan_end)
 const wan_cursor_x = wan_start.x + wan_bendCursor * wan_horizonalSpan
 const wan_cursor_y = wan_start.y + wan_bendCursor * wan_verticalSpan
@@ -92,10 +97,6 @@ glyph.addRefLine(refline(heng_start, heng_end))
 glyph.addRefLine(refline(wan_start, wan_bend))
 glyph.addRefLine(refline(wan_bend, wan_end))
 glyph.addRefLine(refline(gou_start, gou_end))
-
-const start_style_type = glyph.getParam('起笔风格')
-const start_style_value = glyph.getParam('起笔数值')
-const bending_degree = glyph.getParam('弯曲程度')
 
 const getStartStyle = (start_style_type, start_style_value) => {
   if (start_style_type === 1) {
@@ -170,7 +171,8 @@ const getComponents = (skeleton) => {
     { type: 'curve', points: out_wan_points },
     { type: 'line', start: out_gou_start, end: out_gou_end },
   )
-  let { curves: in_wan_curves_final } = FP.fitCurvesByPoints(in_wan_points.slice(in_corner_index_heng_wan))
+  let in_wan_points_final = in_wan_points.slice(in_corner_index_heng_wan)
+  let { curves: in_wan_curves_final } = FP.fitCurvesByPoints(in_wan_points_final)
   let { curves: out_wan_curves_final } = FP.fitCurvesByPoints(out_wan_points.slice(0, out_corner_index_wan_gou))
 
   // 计算弯钩拐角处内外圆角相关的点与数据
@@ -191,7 +193,8 @@ const getComponents = (skeleton) => {
   if (out_radius >= out_radius_min_length) {
     out_radius = out_radius_min_length
   }
-  const in_radius_data = FP.getRadiusPointsOnCurve(FP.getCurvesPoints(in_wan_curves_final), in_radius, true)
+  //const in_radius_data = FP.getRadiusPointsOnCurve(FP.getCurvesPoints(in_wan_curves_final), in_radius, true)
+  const in_radius_data = FP.getRadiusPointsOnCurve(in_wan_points_final, in_radius, true)
   const in_radius_control = FP.getIntersection(
     { type: 'line', start: in_radius_data.tangent.start, end: in_radius_data.tangent.end },
     { type: 'line', start: in_gou_start, end: in_gou_end },
@@ -214,7 +217,17 @@ const getComponents = (skeleton) => {
     radius: out_radius,
   })
   in_wan_curves_final = in_radius_data.final_curves
+  in_wan_points_final = in_wan_points_final.slice(0, in_wan_curves_final.length - in_radius_data.index + 1)
   out_wan_curves_final = out_radius_data.final_curves
+  in_wan_points.map((p, index) => {
+    glyph.addJoint(new FP.Joint(
+      'test' + index,
+      {
+        x: p.x,
+        y: p.y,
+      },
+    ))
+  })
 
   // 创建钢笔组件
   const pen = new FP.PenComponent()
@@ -259,7 +272,7 @@ const getComponents = (skeleton) => {
   pen.quadraticBezierTo(in_radius_control.x, in_radius_control.y, in_radius_start.x, in_radius_start.y)
   for (let i = in_wan_curves_final.length - 1; i >= 0; i--) {
     const curve = in_wan_curves_final[i]
-    pen.bezierTo(curve.control2.x, curve.control2.x, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
+    pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
   }
   if (start_style_type === 0) {
     // 无起笔样式
@@ -297,7 +310,7 @@ const getComponents = (skeleton) => {
   }
 
   pen.closePath()
-  return [ pen ]
+  return [pen]
 }
 
 const components = getComponents(skeleton)

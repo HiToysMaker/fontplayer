@@ -1,7 +1,13 @@
+const weights_variation_power = glyph.getParam('字重变化')
+const start_style_type = glyph.getParam('起笔风格')
+const start_style_value = glyph.getParam('起笔数值')
+const turn_style_type = glyph.getParam('转角风格')
+const turn_style_value = glyph.getParam('转角数值')
+const bending_degree = glyph.getParam('弯曲程度')
 const horizonalSpan = glyph.getParam('水平延伸')
 const verticalSpan = glyph.getParam('竖直延伸')
 const bendCursor = glyph.getParam('弯曲游标')
-const bendDegree = glyph.getParam('弯曲度')
+const bendDegree = glyph.getParam('弯曲度') + 30 * bending_degree
 const weight = glyph.getParam('字重') || 40
 const ox = 500
 const oy = 500
@@ -53,8 +59,6 @@ const skeleton = {
 
 glyph.addRefLine(refline(start, bend))
 glyph.addRefLine(refline(bend, end))
-
-const weights_variation_power = glyph.getParam('字重变化')
 
 const getComponents = (skeleton) => {
   // 根据骨架计算轮廓关键点

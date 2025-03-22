@@ -163,7 +163,7 @@ const removeItem = (index) => {
             :value="item.value"
           />
         </el-select>
-        <el-button @click="() => removeItem(index)" v-show="!item.default" type="danger" :icon="Delete" :style="{
+        <el-button @pointerdown="() => removeItem(index)" v-show="!item.default" type="danger" :icon="Delete" :style="{
           backgroundColor: 'rgb(196, 86.4, 86.4)',
           color: 'var(--light-0)',
           border: '1px solid var(--light-5)',
@@ -182,7 +182,7 @@ const removeItem = (index) => {
       </div>
     </div>
     <div class="add-item-btn">
-      <el-button @click="addItem">添加</el-button>
+      <el-button @pointerdown="addItem">添加</el-button>
     </div>
   </el-scrollbar>
 </template>

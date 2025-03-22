@@ -1,9 +1,15 @@
+const weights_variation_power = glyph.getParam('字重变化')
+const start_style_type = glyph.getParam('起笔风格')
+const start_style_value = glyph.getParam('起笔数值')
+const turn_style_type = glyph.getParam('转角风格')
+const turn_style_value = glyph.getParam('转角数值')
+const bending_degree = glyph.getParam('弯曲程度')
 const heng_length = glyph.getParam('横-长度')
 const pie_horizonalSpan = glyph.getParam('撇-水平延伸')
 const pie_verticalSpan = glyph.getParam('撇-竖直延伸')
 const wangou_verticalSpan = glyph.getParam('弯钩-竖直延伸')
 const wangou_bendCursor = glyph.getParam('弯钩-弯曲游标')
-const wangou_bendDegree = glyph.getParam('弯钩-弯曲度')
+const wangou_bendDegree = glyph.getParam('弯钩-弯曲度') + 30 * bending_degree
 const weight = glyph.getParam('字重') || 40
 const ox = 500
 const oy = 500
@@ -90,11 +96,6 @@ glyph.addRefLine(refline(heng_start, heng_end))
 glyph.addRefLine(refline(pie_start, pie_end))
 glyph.addRefLine(refline(wangou_start, wangou_bend))
 glyph.addRefLine(refline(wangou_bend, wangou_end))
-
-const start_style_type = glyph.getParam('起笔风格')
-const start_style_value = glyph.getParam('起笔数值')
-const turn_style_type = glyph.getParam('转角风格')
-const turn_style_value = glyph.getParam('转角数值')
 
 const getStartStyle = (start_style_type, start_style_value) => {
   if (start_style_type === 1) {

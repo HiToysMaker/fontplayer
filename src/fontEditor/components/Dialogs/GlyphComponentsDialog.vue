@@ -294,28 +294,28 @@
           <div class="list-switch">
             <span
               class="stroke-glyph-list"
-              @click="selectedTab = Status.StrokeGlyphList"
+              @pointerdown="selectedTab = Status.StrokeGlyphList"
               :class="{
                 selected: selectedTab === Status.StrokeGlyphList
               }"
             >{{ t('programming.stroke') }}</span>
             <span
               class="radical-glyph-list"
-              @click="selectedTab = Status.RadicalGlyphList"
+              @pointerdown="selectedTab = Status.RadicalGlyphList"
               :class="{
                 selected: selectedTab === Status.RadicalGlyphList
               }"
             >{{ t('programming.radical') }}</span>
             <span
               class="comp-glyph-list"
-              @click="selectedTab = Status.CompGlyphList"
+              @pointerdown="selectedTab = Status.CompGlyphList"
               :class="{
                 selected: selectedTab === Status.CompGlyphList
               }"
             >{{ t('programming.comp') }}</span>
             <span
               class="glyph-list"
-              @click="selectedTab = Status.GlyphList"
+              @pointerdown="selectedTab = Status.GlyphList"
               :class="{
                 selected: selectedTab === Status.GlyphList
               }"
@@ -340,7 +340,7 @@
               class="glyph"
               v-for="glyph in glyphs"
               :key="glyph.uuid"
-              @click="addGlyph(glyph)"
+              @pointerdown="addGlyph(glyph)"
             >
               <span class="preview">
                 <div class="empty-line-1"></div>
@@ -363,10 +363,10 @@
         <span class="dialog-footer">
           <el-switch v-model="multi_glyph_selection" active-text="多选" inactive-text="单选" />
           <div class="selected-glyphs-wrapper">
-            <el-button v-for="glyph in selected_glyphs" @click="cancelSelect(glyph.uuid)">{{ glyph.name }}</el-button>
+            <el-button v-for="glyph in selected_glyphs" @pointerdown="cancelSelect(glyph.uuid)">{{ glyph.name }}</el-button>
           </div>
-          <el-button :disabled="!glyphComponentsDialogVisible2" @click="handleCancel">{{ t('dialogs.glyphComponentDialog.cancel') }}</el-button>
-          <el-button :disabled="!glyphComponentsDialogVisible2" type="primary" @click="handleConfirm">{{ t('dialogs.glyphComponentDialog.confirm') }}</el-button>
+          <el-button :disabled="!glyphComponentsDialogVisible2" @pointerdown="handleCancel">{{ t('dialogs.glyphComponentDialog.cancel') }}</el-button>
+          <el-button :disabled="!glyphComponentsDialogVisible2" type="primary" @pointerdown="handleConfirm">{{ t('dialogs.glyphComponentDialog.confirm') }}</el-button>
         </span>
       </template>
     </el-dialog>

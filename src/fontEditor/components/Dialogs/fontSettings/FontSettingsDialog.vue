@@ -28,11 +28,11 @@
   const updateFont = () => {
     if ( selectedFile.value.fontSettings) {
       selectedFile.value.fontSettings.tables = {
-        head: head_data,
-        hhea: hhea_data,
-        os2: os2_data,
-        name: name_data,
-        post: post_data,
+        head: head_data.value,
+        hhea: hhea_data.value,
+        os2: os2_data.value,
+        name: name_data.value,
+        post: post_data.value,
       }
     }
     setFontSettings2DialogVisible(false)
@@ -59,10 +59,10 @@
     </el-tabs>
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="setFontSettings2DialogVisible(false)">{{ t('dialogs.fontSettingsDialog.cancel') }}</el-button>
+        <el-button @pointerdown="setFontSettings2DialogVisible(false)">{{ t('dialogs.fontSettingsDialog.cancel') }}</el-button>
         <el-button
           type="primary"
-          @click="() => updateFont()"
+          @pointerdown="() => updateFont()"
         >
           {{ t('dialogs.fontSettingsDialog.confirm') }}
         </el-button>

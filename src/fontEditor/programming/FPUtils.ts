@@ -335,7 +335,7 @@ const calculateLineIntersection = (p1, p2, p3, p4) => {
 }
 
 const fitCurvesByPoints = (points: Array<{ x: number, y: number }>) => {
-	const _curves = fitCurve(points, 2)
+	const _curves = fitCurve(points, 3.5)
 	const curves = []
 	for (let i = 0; i < _curves.length; i++) {
 		const curve = _curves[i]

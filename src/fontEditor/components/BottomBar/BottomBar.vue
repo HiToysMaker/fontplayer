@@ -128,18 +128,18 @@
             v-if="tool === 'translateMover'"
           >
             <template #append>
-              <el-button @click="resetTranslate">归零</el-button>
+              <el-button @pointerdown="resetTranslate">归零</el-button>
             </template>
           </el-input>
           <font-awesome-icon
             class="translate-btn"
-            @click="onTranslate"
+            @pointerdown="onTranslate"
             icon="fa-regular fa-hand"
             v-if="tool !== 'translateMover'"
           />
           <font-awesome-icon
             class="translate-edit-btn"
-            @click="offTranslate"
+            @pointerdown="offTranslate"
             icon="fa-solid fa-hand"
             v-if="tool === 'translateMover'"
           />
@@ -157,25 +157,25 @@
           </el-input>
           <font-awesome-icon
             class="coords-btn"
-            @click="onCoordsViewer"
+            @pointerdown="onCoordsViewer"
             icon="fa-solid fa-arrow-pointer"
             v-if="tool !== 'coordsViewer'"
           />
           <font-awesome-icon
             class="coords-edit-btn"
-            @click="offCoordsViewer"
+            @pointerdown="offCoordsViewer"
             icon="fa-solid fa-arrow-pointer"
             v-else-if="tool === 'coordsViewer'"
           />
         </span>
         <span class="zoom-settings-wrapper">
-          <span class="zoom-out" @click="zoomEditOut">
+          <span class="zoom-out" @pointerdown="zoomEditOut">
             <el-icon><ZoomOut /></el-icon>
           </span>
           <el-input class="zoom-value" :model-value="editCharacterFile && editCharacterFile.view.zoom" @input="onZoomChange">
             <template #append>%</template>
           </el-input>
-          <span class="zoom-in" @click="zoomEditIn">
+          <span class="zoom-in" @pointerdown="zoomEditIn">
             <el-icon><ZoomIn /></el-icon>
           </span>
         </span>
@@ -183,13 +183,13 @@
     </el-row>
     <el-row class="bottom-bar-row" v-if="editStatus === Status.Pic">
       <span class="zoom-settings-wrapper">
-        <span class="zoom-out" @click="zoomPicOut">
+        <span class="zoom-out" @pointerdown="zoomPicOut">
           <el-icon><ZoomOut /></el-icon>
         </span>
         <el-input class="zoom-value" :model-value="picZoom">
           <template #append>%</template>
         </el-input>
-        <span class="zoom-in" @click="zoomPicIn">
+        <span class="zoom-in" @pointerdown="zoomPicIn">
           <el-icon><ZoomIn /></el-icon>
         </span>
       </span>

@@ -217,7 +217,7 @@
     } else if (editStatus.value === Status.Glyph) {
       emitter.emit('renderGlyph')
     }
-    _selectedComponent.value.value._o.renderJoints(canvas.value, {
+    _selectedComponent.value.value._o?.renderJoints(canvas.value, {
       type: 'selected',
       joints: Object.keys(jointsCheckedMap.value).filter((name) => !!jointsCheckedMap.value[name]),
     })
@@ -354,7 +354,7 @@
 							<div class="ratio-item">
 								<font-awesome-icon class="ratio-icon" :class="{
 									selected: _selectedComponent.value.layout.ratioedMap && _selectedComponent.value.layout.ratioedMap[key].ratioed
-								}" @click="() => {
+								}" @pointerdown="() => {
 									if (!_selectedComponent.value.layout.ratioedMap) {
 										_selectedComponent.value.layout.ratioedMap = new Map()
 									}
@@ -457,18 +457,18 @@
 							<div class="param-btn-group">
 								<el-button
 									v-show="parameter.type === ParameterType.Constant"
-									@click="cancelGlobalParam(parameter)"
+									@pointerdown="cancelGlobalParam(parameter)"
 								>取消全局变量</el-button>
 								<el-button
-									@click="setAsGlobalParam(parameter)"
+									@pointerdown="setAsGlobalParam(parameter)"
 								>设为全局变量</el-button>
 								<el-button
-									@click="selectGlobalParam(parameter)"
+									@pointerdown="selectGlobalParam(parameter)"
 								>选择全局变量</el-button>
 								<el-button
 									v-show="parameter.type === ParameterType.Constant"
 									type="primary"
-									@click="updateGlobalParam(parameter)"
+									@pointerdown="updateGlobalParam(parameter)"
 								>更新全局变量</el-button>
 							</div>
 						</el-popover>
@@ -497,14 +497,14 @@
 								@input="(value) => handleChangeParameter(parameter, value)"
 								v-model="parameter.value" v-show="parameter.type === ParameterType.Number"
 							/>
-							<div class="down-menu-icon-wrap" @click="collapsedMap[parameter.uuid] = !collapsedMap[parameter.uuid]">
+							<div class="down-menu-icon-wrap" @pointerdown="collapsedMap[parameter.uuid] = !collapsedMap[parameter.uuid]">
 								<font-awesome-icon :icon="['fas', 'arrow-down-wide-short']" />
 							</div>
 							<div class="down-menu" v-show="collapsedMap[parameter.uuid]">
 								<div class="ratio-item">
 									<font-awesome-icon class="ratio-icon" :class="{
 										selected: parameter.ratioed
-									}" @click="() => {
+									}" @pointerdown="() => {
 										parameter.ratioed = !parameter.ratioed
 										if (!parameter.ratioed && _selectedComponent.value.system_script && _selectedComponent.value.system_script[parameter.name]) {
 											delete _selectedComponent.value.system_script[parameter.name]

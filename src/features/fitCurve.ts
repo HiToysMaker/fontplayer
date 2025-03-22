@@ -5,7 +5,8 @@
  * this file contains related methods for bezier curves fitting
  */
 
-import { bezierCurve } from "./bezierCurve";
+import { bezierCurve } from "./bezierCurve"
+import paper from 'paper'
 
 export interface IPoint {
 	x: number;
@@ -17,7 +18,23 @@ interface IVector {
 	y: number;
 }
 
-const fitCurve = (points: Array<IPoint>, maxError: number) => {
+const fitCurve = (points: Array<IPoint>, _maxError: number) => {
+	const maxError = _maxError
+	//const simplifiedPoints = rdp(points, 2)
+	// const leftTangent = normalize({
+	// 	x: simplifiedPoints[1].x - simplifiedPoints[0].x,
+	// 	y: simplifiedPoints[1].y - simplifiedPoints[0].y,
+	// })
+	// const rightTangent = normalize({
+	// 	x: simplifiedPoints[simplifiedPoints.length - 2].x - simplifiedPoints[simplifiedPoints.length - 1].x,
+	// 	y: simplifiedPoints[simplifiedPoints.length - 2].y - simplifiedPoints[simplifiedPoints.length - 1].y,
+	// })
+	// return fitCubic(
+	// 	simplifiedPoints,
+	// 	leftTangent,
+	// 	rightTangent,
+	// 	maxError,
+	// )
 	const leftTangent = normalize({
 		x: points[1].x - points[0].x,
 		y: points[1].y - points[0].y,
@@ -71,6 +88,7 @@ const fitCubic: (
 		maxDist: number,
 		splitPoint: number,
 	}
+
 	if (maxError < error) {
 		return [bezCurve]
 	}
@@ -302,6 +320,39 @@ const norm = (vec: IVector) => {
 const dot = (p1: IPoint, p2: IPoint) => {
 	return p1.x * p2.x + p1.y * p2.y
 }
+
+const rdp = (points, epsilon) => {
+	if (points.length <= 2) return points;
+
+	let maxDist = 0;
+	let index = 0;
+	const start = points[0];
+	const end = points[points.length - 1];
+
+	for (let i = 1; i < points.length - 1; i++) {
+		const dist = perpendicularDistance(points[i], start, end);
+		if (dist > maxDist) {
+			maxDist = dist;
+			index = i;
+		}
+	}
+
+	if (maxDist > epsilon) {
+		const left = rdp(points.slice(0, index + 1), epsilon);
+		const right = rdp(points.slice(index), epsilon);
+		return left.slice(0, -1).concat(right);
+	} else {
+		return [start, end];
+	}
+};
+
+const perpendicularDistance = (point, start, end) => {
+	const area = Math.abs(
+			(start.x * (end.y - point.y) + end.x * (point.y - start.y) + point.x * (start.y - end.y)) / 2
+	);
+	const base = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
+	return (2 * area) / base;
+};
 
 export {
 	fitCurve,

@@ -13,7 +13,7 @@
   import { ref, type Ref } from 'vue'
   import router from '../../../router'
   import { useI18n } from 'vue-i18n'
-  import { getEnName, name_data } from '../../stores/settings'
+  import { getEnName, name_data, head_data, hhea_data, os2_data, post_data } from '../../stores/settings'
   const { tm, t } = useI18n()
 
   const name: Ref<string> = ref('untitled')
@@ -24,33 +24,6 @@
   const createFont = () => {
     //total.value = (glyphs.value.length + stroke_glyphs.value.length + radical_glyphs.value.length + comp_glyphs.value.length) * 2
     //loaded.value = 0
-    const file: IFile = {
-      uuid: genUUID(),
-      width: unitsPerEm.value,
-      height: unitsPerEm.value,
-      name: name.value,
-      saved: false,
-      characterList: [],
-      iconsCount: 0,
-      fontSettings: {
-        unitsPerEm: unitsPerEm.value,
-        ascender: ascender.value,
-        descender: descender.value,
-      }
-    }
-    addFile(file)
-    setSelectedFileUUID(file.uuid)
-    setEditStatus(Status.CharacterList)
-    //loading.value = true
-    if (router.currentRoute.value.name === 'welcome') {
-      router.push('/editor')
-    }
-    //setTimeout(() => {
-    //  //loading.value = true
-    //  if (router.currentRoute.value.name === 'welcome') {
-    //    router.push('/editor')
-    //  }
-    //}, 100)
     name_data.value = [
       {
         nameID: 1,
@@ -143,6 +116,40 @@
         default: true,
       }
     ]
+    const file: IFile = {
+      uuid: genUUID(),
+      width: unitsPerEm.value,
+      height: unitsPerEm.value,
+      name: name.value,
+      saved: false,
+      characterList: [],
+      iconsCount: 0,
+      fontSettings: {
+        unitsPerEm: unitsPerEm.value,
+        ascender: ascender.value,
+        descender: descender.value,
+        tables: {
+          head: head_data.value,
+          hhea: hhea_data.value,
+          os2: os2_data.value,
+          name: name_data.value,
+          post: post_data.value,
+        }
+      }
+    }
+    addFile(file)
+    setSelectedFileUUID(file.uuid)
+    setEditStatus(Status.CharacterList)
+    //loading.value = true
+    if (router.currentRoute.value.name === 'welcome') {
+      router.push('/editor')
+    }
+    //setTimeout(() => {
+    //  //loading.value = true
+    //  if (router.currentRoute.value.name === 'welcome') {
+    //    router.push('/editor')
+    //  }
+    //}, 100)
     setCreateFileDialogVisible(false)
   }
 

@@ -277,7 +277,7 @@
 								@dragover="(e: DragEvent) => onDragOver(e, component.uuid)"
 								@dragend="(e: DragEvent) => onDragEnd(e, component.uuid)"
 								@drop="(e: DragEvent) => onDrop(e, component.uuid)"
-								@click="(e: MouseEvent) => selectComponent(e, component.uuid)"
+								@pointerdown="(e: MouseEvent) => selectComponent(e, component.uuid)"
 								@contextmenu="(e: MouseEvent) => openPopover(e, component.uuid)"
 							>
 								<span class="name">
@@ -286,21 +286,21 @@
 								<span class="tool-wrapper">
 									<el-icon
 										class="tool-icon used-in-character"
-										@click="(e: MouseEvent) => toggleUsedInCharacter(component.uuid, !component.usedInCharacter, component.type)"
+										@pointerdown="(e: MouseEvent) => toggleUsedInCharacter(component.uuid, !component.usedInCharacter, component.type)"
 									>
 										<CircleCheck v-if="component.usedInCharacter" />
 										<CircleClose v-if="!component.usedInCharacter" />
 									</el-icon>
 									<el-icon
 										class="tool-icon lock"
-										@click="(e: MouseEvent) => toggleLock(component.uuid, !component.lock)"
+										@pointerdown="(e: MouseEvent) => toggleLock(component.uuid, !component.lock)"
 									>
 										<Unlock v-if="component.lock"/>
 										<Lock v-if="!component.lock"/>
 									</el-icon>
 									<el-icon
 										class="tool-icon visible"
-										@click="(e: MouseEvent) =>
+										@pointerdown="(e: MouseEvent) =>
 											toggleVisibility(
 												component.uuid,
 												!component.visible
@@ -313,16 +313,16 @@
 							</div>
 						</template>
 						<div class="component-menu">
-							<div class="component-menu-item" @click="(e: MouseEvent) => clip(component.uuid)">
+							<div class="component-menu-item" @pointerdown="(e: MouseEvent) => clip(component.uuid)">
 								{{ t('panels.componentList.menu.cut') }}
 							</div>
-							<div class="component-menu-item" @click="(e: MouseEvent) => copy(component.uuid)">
+							<div class="component-menu-item" @pointerdown="(e: MouseEvent) => copy(component.uuid)">
 								{{ t('panels.componentList.menu.copy') }}
 							</div>
-							<div class="component-menu-item" @click="(e: MouseEvent) => paste(component.uuid)">
+							<div class="component-menu-item" @pointerdown="(e: MouseEvent) => paste(component.uuid)">
 								{{ t('panels.componentList.menu.paste') }}
 							</div>
-							<div class="component-menu-item" @click="(e: MouseEvent) => remove(component.uuid)">
+							<div class="component-menu-item" @pointerdown="(e: MouseEvent) => remove(component.uuid)">
 								{{ t('panels.componentList.menu.delete') }}
 							</div>
 						</div>
@@ -340,7 +340,7 @@
 									'component': true,
 									'selected': selectedComponentsUUIDs.indexOf(component.uuid) !== -1,
 								}"
-								@click="(e: MouseEvent) => selectComponent(e, component.uuid)"
+								@pointerdown="(e: MouseEvent) => selectComponent(e, component.uuid)"
 							>
 								<span class="name">
 									{{ component.name || component.type }}
@@ -348,21 +348,21 @@
 								<span class="tool-wrapper">
 									<el-icon
 										class="tool-icon used-in-character"
-										@click="(e: MouseEvent) => toggleUsedInCharacter(component.uuid, !component.usedInCharacter, component.type)"
+										@pointerdown="(e: MouseEvent) => toggleUsedInCharacter(component.uuid, !component.usedInCharacter, component.type)"
 									>
 										<CircleCheck v-if="component.usedInCharacter" />
 										<CircleClose v-if="!component.usedInCharacter" />
 									</el-icon>
 									<el-icon
 										class="tool-icon lock"
-										@click="(e: MouseEvent) => toggleLock(component.uuid, !component.lock)"
+										@pointerdown="(e: MouseEvent) => toggleLock(component.uuid, !component.lock)"
 									>
 										<Unlock v-if="component.lock"/>
 										<Lock v-if="!component.lock"/>
 									</el-icon>
 									<el-icon
 										class="tool-icon visible"
-										@click="(e: MouseEvent) =>
+										@pointerdown="(e: MouseEvent) =>
 											toggleVisibility(
 												component.uuid,
 												!component.visible
@@ -375,16 +375,16 @@
 							</div>
 						</template>
 						<div class="component-menu">
-							<div class="component-menu-item" @click="(e: MouseEvent) => clip(component.uuid)">
+							<div class="component-menu-item" @pointerdown="(e: MouseEvent) => clip(component.uuid)">
 								{{ t('panels.componentList.menu.cut') }}
 							</div>
-							<div class="component-menu-item" @click="(e: MouseEvent) => copy(component.uuid)">
+							<div class="component-menu-item" @pointerdown="(e: MouseEvent) => copy(component.uuid)">
 								{{ t('panels.componentList.menu.copy') }}
 							</div>
-							<div class="component-menu-item" @click="(e: MouseEvent) => paste(component.uuid)">
+							<div class="component-menu-item" @pointerdown="(e: MouseEvent) => paste(component.uuid)">
 								{{ t('panels.componentList.menu.paste') }}
 							</div>
-							<div class="component-menu-item" @click="(e: MouseEvent) => remove(component.uuid)">
+							<div class="component-menu-item" @pointerdown="(e: MouseEvent) => remove(component.uuid)">
 								{{ t('panels.componentList.menu.delete') }}
 							</div>
 						</div>
