@@ -16,8 +16,9 @@
     executeScript,
     selectedSubComponent,
     SubComponentsRoot,
+    tempScript,
+    scripts_map,
   } from '../../stores/glyph'
-  import { linkComponentsForJoints } from '../../programming/Joint'
   import { onMounted, ref, type Ref, watch, onUnmounted, nextTick } from 'vue'
   import {
     mapCanvasWidth,
@@ -56,6 +57,7 @@
 	import { emitter } from '../../Event/bus'
   import { initCoordsViewer } from '../../tools/coordsViewer'
   import { clearState, OpType, redo, saveState, StoreType, undo } from '../../stores/edit'
+  import { renderJoints, renderRefLines } from '../../programming/Joint'
 
   const mounted: Ref<boolean> = ref(false)
   let closeTool: Function | null = null
@@ -70,6 +72,8 @@
   // onMounted initialization
   onMounted(async () => {
     document.addEventListener('keydown', onKeyDown)
+    // 缓存字符中所有组件用到的脚本，以便executeScript时快速查找
+    tempScript(editGlyph.value)
     editStatus.value = Status.Glyph
     executeScript(editGlyph.value)
     const _canvas = editCanvas.value as HTMLCanvasElement
@@ -116,6 +120,7 @@
   // onUnmounted关闭工具栏和布局编辑器
   // onUnmounted operation
   onUnmounted(() => {
+    scripts_map.value = {}
     emitter.off('renderGlyph')
     emitter.off('renderGlyph_forceUpdate')
     emitter.off('updateGlyphView')
@@ -138,27 +143,42 @@
       renderLayoutEditor(canvas.value)
     }
     if (!selectedComponentUUID.value) return
-    if (checkJoints.value || checkRefLines.value) {
-      linkComponentsForJoints(selectedComponent?.value)
-    }
     if (checkJoints.value) {
       if (selectedSubComponent.value) {
-        selectedSubComponent.value.value._o.renderJoints(canvas.value)
+        renderJoints(selectedSubComponent.value, canvas.value)
       } else if (SubComponentsRoot.value) {
-        SubComponentsRoot.value.value._o.renderJoints(canvas.value)
-      } else {
-        selectedComponent.value.value._o.renderJoints(canvas.value)
+        renderJoints(SubComponentsRoot.value, canvas.value)
+      } else if (selectedComponent.value) {
+        renderJoints(selectedComponent.value, canvas.value)
       }
     }
     if (checkRefLines.value) {
       if (selectedSubComponent.value) {
-        selectedSubComponent.value.value._o.renderRefLines(canvas.value)
+        renderRefLines(selectedSubComponent.value, canvas.value)
       } else if (SubComponentsRoot.value) {
-        SubComponentsRoot.value.value._o.renderRefLines(canvas.value)
-      } else {
-        selectedComponent.value.value._o.renderRefLines(canvas.value)
+        renderRefLines(SubComponentsRoot.value, canvas.value)
+      } else if (selectedComponent.value) {
+        renderRefLines(selectedComponent.value, canvas.value)
       }
     }
+    // if (checkJoints.value) {
+    //   if (selectedSubComponent.value) {
+    //     selectedSubComponent.value.value._o.renderJoints(canvas.value)
+    //   } else if (SubComponentsRoot.value) {
+    //     SubComponentsRoot.value.value._o.renderJoints(canvas.value)
+    //   } else {
+    //     selectedComponent.value.value._o.renderJoints(canvas.value)
+    //   }
+    // }
+    // if (checkRefLines.value) {
+    //   if (selectedSubComponent.value) {
+    //     selectedSubComponent.value.value._o.renderRefLines(canvas.value)
+    //   } else if (SubComponentsRoot.value) {
+    //     SubComponentsRoot.value.value._o.renderRefLines(canvas.value)
+    //   } else {
+    //     selectedComponent.value.value._o.renderRefLines(canvas.value)
+    //   }
+    // }
     if (draggingJoint.value) {
       renderGlyphSelector(canvas.value)
     }

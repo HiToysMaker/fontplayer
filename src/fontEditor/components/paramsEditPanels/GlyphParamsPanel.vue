@@ -92,12 +92,6 @@
     executeScript(editGlyph.value)
     emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
     emitter.emit('renderGlyph')
-    if (checkJoints.value) {
-      editGlyph.value._o.renderJoints(canvas.value)
-    }
-    if (checkRefLines.value) {
-      editGlyph.value._o.renderRefLines(canvas.value)
-    }
   }
 
   const handleRatioOptionChange = (parameter: IParameter | IParameter2, value: string) => {
@@ -112,12 +106,6 @@
     executeScript(editGlyph.value)
     emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
     emitter.emit('renderGlyph')
-    if (checkJoints.value) {
-      editGlyph.value._o.renderJoints(canvas.value)
-    }
-    if (checkRefLines.value) {
-      editGlyph.value._o.renderRefLines(canvas.value)
-    }
   }
 
   const onChange = (parameter, _radius: number, _degree: number, _params: Array<any>) => {
@@ -130,22 +118,10 @@
     executeScript(editGlyph.value)
     emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
     emitter.emit('renderGlyph')
-    if (checkJoints.value) {
-      editGlyph.value._o.renderJoints(canvas.value)
-    }
-    if (checkRefLines.value) {
-      editGlyph.value._o.renderRefLines(canvas.value)
-    }
   }
 
   watch([checkJoints, checkRefLines], () => {
     emitter.emit('renderGlyph')
-    if (checkJoints.value) {
-      editGlyph.value._o.renderJoints(canvas.value)
-    }
-    if (checkRefLines.value) {
-      editGlyph.value._o.renderRefLines(canvas.value)
-    }
   })
 
   watch(layoutType, () => {

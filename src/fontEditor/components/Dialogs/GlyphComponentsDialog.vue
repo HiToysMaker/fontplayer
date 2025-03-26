@@ -7,7 +7,7 @@
 	 */
 
   import { glyphComponentsDialogVisible, setGlyphComponentsDialogVisible, glyphComponentsDialogVisible2 } from '../../stores/dialogs'
-  import { addComponentForCurrentGlyph, addSelectionGlyphTemplate, editGlyph, executeScript, getGlyphByUUID, glyphs, ICustomGlyph, IGlyphComponent, selected_glyphs, multi_glyph_selection, stroke_glyphs, radical_glyphs, comp_glyphs } from '../../stores/glyph'
+  import { addComponentForCurrentGlyph, addSelectionGlyphTemplate, editGlyph, executeScript, getGlyphByUUID, glyphs, ICustomGlyph, IGlyphComponent, selected_glyphs, multi_glyph_selection, stroke_glyphs, radical_glyphs, comp_glyphs, getParentInfo } from '../../stores/glyph'
   import { addComponentForCurrentCharacterFile, editCharacterFile, selectedFile } from '../../stores/files'
   import { genUUID } from '../../../utils/string'
   import * as R from 'ramda'
@@ -25,7 +25,6 @@
 	import { emitter } from '../../Event/bus'
   import { renderPreview2 } from '../../canvas/canvas'
   import { loaded, loading, setTool, tool, total } from '../../stores/global'
-  import { linkComponentsForJoints } from '../../programming/Joint'
   const { tm, t } = useI18n()
 
 	const selectedTab = ref(Status.StrokeGlyphList)
@@ -247,7 +246,10 @@
 
   const addGlyph = (glyph: ICustomGlyph) => {
     const _glyph = R.clone(glyph)
-    _glyph.parent = editStatus.value === Status.Edit ? editCharacterFile.value : editGlyph.value
+    //_glyph.parent = editStatus.value === Status.Edit ? editCharacterFile.value : editGlyph.value
+    _glyph.parent_reference = getParentInfo(editStatus.value === Status.Edit ? editCharacterFile.value : editGlyph.value)
+    _glyph.script = null
+    _glyph.script_reference = _glyph.uuid
     const component: IGlyphComponent = {
       uuid: genUUID(),
       type: 'glyph',
@@ -263,8 +265,6 @@
     //component.value._o.getJoints().map((joint) => {
     //  joint.component = component
     //})
-
-    linkComponentsForJoints(component)
 
     if (editStatus.value === Status.Edit) {
       addComponentForCurrentCharacterFile(component)

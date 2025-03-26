@@ -21,7 +21,6 @@
     selectedSubComponent,
 		modifySubComponent,
   } from '../../stores/glyph'
-	import { linkComponentsForJoints } from '../../programming/Joint'
 	import { OpType, saveState, StoreType } from '../../stores/edit'
 	import { More } from '@element-plus/icons-vue'
 
@@ -158,12 +157,6 @@
     })
     emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
     emitter.emit('renderGlyph')
-		if (checkJoints.value) {
-      _selectedComponent.value.value._o.renderJoints(canvas.value)
-    }
-    if (checkRefLines.value) {
-			_selectedComponent.value.value._o.renderRefLines(canvas.value)
-    }
   }
 
 	const handleRatioOptionChange = (parameter: IParameter | IParameter2, value: string) => {
@@ -191,12 +184,6 @@
     executeScript(editGlyph.value)
     emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
     emitter.emit('renderGlyph')
-		if (checkJoints.value) {
-      _selectedComponent.value.value._o.renderJoints(canvas.value)
-    }
-    if (checkRefLines.value) {
-			_selectedComponent.value.value._o.renderRefLines(canvas.value)
-    }
   }
 
   watch(jointsCheckedMap, () => {
@@ -215,12 +202,6 @@
 
 	watch([checkJoints, checkRefLines], () => {
     emitter.emit('renderGlyph')
-    if (checkJoints.value) {
-      _selectedComponent.value.value._o.renderJoints(canvas.value)
-    }
-    if (checkRefLines.value) {
-      _selectedComponent.value.value._o.renderRefLines(canvas.value)
-    }
   })
 
   watch(dragOption, () => {
@@ -247,12 +228,6 @@
     executeScript(editGlyph.value)
 		emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
 		emitter.emit('renderGlyph', true)
-		if (checkJoints.value) {
-      _selectedComponent.value.value._o.renderJoints(canvas.value)
-    }
-    if (checkRefLines.value) {
-			_selectedComponent.value.value._o.renderRefLines(canvas.value)
-    }
   }
 
 	const cancelGlobalParam = (parameter: IParameter) => {

@@ -12,7 +12,7 @@ import { getRatioCoords } from '../../features/layout'
 import { draggingJoint, putAtCoord, setEditing, movingJoint } from '../stores/glyphDragger'
 import { draggable, dragOption, checkJoints } from '../../fontEditor/stores/global'
 import { emitter } from '../Event/bus'
-import { linkComponentsForJoints } from '../programming/Joint'
+import { getJoints } from '../programming/Joint'
 
 const getBound = (joints) => {
 	let x_min = Infinity
@@ -209,20 +209,27 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = false)
 	let coords = []
 	const onMouseDown = (e: MouseEvent) => {
 		if (!draggable.value) return
-		const glyph = selectedSubComponent.value ? selectedSubComponent.value.value : selectedComponent?.value?.value
+		// joint数据格式：{x, y, name}
+		let joints = []
+		let glyph = null
+		if (selectedSubComponent.value) {
+			// 当前选中组件为子字形组件
+			joints = getJoints(selectedComponent?.value, selectedSubComponent.value.uuid)
+			glyph = selectedSubComponent.value.value
+		} else if (selectedComponent?.value) {
+			// 当前选中组件为根目录中组件
+			joints = getJoints(selectedComponent?.value, selectedComponent?.value.uuid)
+			glyph = selectedComponent?.value?.value
+		}
 		if (!glyph) return
 		coords = []
 		getLayoutCoords(editCharacterFile.value.info.layoutTree, coords)
-		const joints = glyph._o?.getJoints()
 		mouseDownX = getCoord(e.offsetX)
 		mouseDownY = getCoord(e.offsetY)
 		const d = 20
 		if (checkJoints.value) {
 			for (let i = 0; i < joints.length; i++) {
-				if (!joints[i].component || !joints[i].rootComponent || !joints[i].componentsTree) {
-					linkComponentsForJoints(selectedComponent?.value)
-				}
-				const { x, y } = joints[i].getCoords()
+				const { x, y } = joints[i]
 				if (distance(x, y, mouseDownX, mouseDownY) <= d) {
 					draggingJoint.value = joints[i]
 				}
@@ -287,17 +294,25 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = false)
 				}
 			}
 		} else if (checkJoints.value) {
-			const glyph = selectedSubComponent.value ? selectedSubComponent.value.value : selectedComponent?.value?.value
-			const joints = glyph._o?.getJoints()
+			// joint数据格式：{x, y, name}
+			let joints = []
+			let glyph = null
+			if (selectedSubComponent.value) {
+				// 当前选中组件为子字形组件
+				joints = getJoints(selectedComponent?.value, selectedSubComponent.value.uuid)
+				glyph = selectedSubComponent.value.value
+			} else if (selectedComponent?.value) {
+				// 当前选中组件为根目录中组件
+				joints = getJoints(selectedComponent?.value, selectedComponent?.value.uuid)
+				glyph = selectedComponent?.value?.value
+			}
+			if (!glyph) return
 			const d = 10
 			let mark = false
 			const mouseMoveX = getCoord(e.offsetX)
 			const mouseMoveY = getCoord(e.offsetY)
 			for (let i = 0; i < joints.length; i++) {
-				if (!joints[i].component || !joints[i].rootComponent || !joints[i].componentsTree) {
-					linkComponentsForJoints(selectedComponent?.value)
-				}
-				const { x, y } = joints[i].getCoords()
+				const { x, y } = joints[i]
 				if (distance(x, y, mouseMoveX, mouseMoveY) <= d) {
 					movingJoint.value = joints[i]
 					mark = true

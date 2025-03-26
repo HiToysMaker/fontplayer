@@ -76,9 +76,9 @@ import { getBound, transformPoints } from '../../utils/math'
 import { fitCurve } from '../../features/fitCurve'
 import type { IPoint as IPenPoint, IPoint } from '../stores/pen'
 import { render } from '../canvas/canvas'
-import { ICustomGlyph, IGlyphComponent, IParameter, ParameterType, addComponentForCurrentGlyph, addGlyph, addGlyphTemplate, clearGlyphRenderList, comp_glyphs, constantGlyphMap, constants, constantsMap, editGlyph, executeScript, getGlyphByName, getGlyphByUUID, glyphs, orderedListWithItemsForCurrentGlyph, radical_glyphs, stroke_glyphs } from '../stores/glyph'
+import { ICustomGlyph, IGlyphComponent, IParameter, ParameterType, addComponentForCurrentGlyph, addGlyph, addGlyphTemplate, clearGlyphRenderList, comp_glyphs, constantGlyphMap, constants, constantsMap, editGlyph, executeScript, getGlyphByName, getGlyphByUUID, getParentInfo, glyphs, orderedListWithItemsForCurrentGlyph, radical_glyphs, stroke_glyphs } from '../stores/glyph'
 import { ParametersMap } from '../programming/ParametersMap'
-import { Joint, linkComponentsForJoints } from '../programming/Joint'
+import { Joint } from '../programming/Joint'
 import router from '../../router'
 import { nextTick } from 'vue'
 import { loading } from '../stores/global'
@@ -94,7 +94,12 @@ import { OpType, saveState, StoreType, undo as _undo, redo as _redo } from '../s
 import { getEnName, name_data } from '../stores/settings'
 import { strokes as hei_strokes } from '../templates/strokes_1'
 
-const plainGlyph = (glyph: ICustomGlyph) => {
+interface IPlainGlyphOptions {
+  clearScript: boolean;
+}
+
+const plainGlyph = (glyph: ICustomGlyph, options: IPlainGlyphOptions = { clearScript: false }) => {
+  const { clearScript } = options
   const data: ICustomGlyph = {
     uuid: glyph.uuid,
     type: glyph.type,
@@ -103,7 +108,9 @@ const plainGlyph = (glyph: ICustomGlyph) => {
       const _component = Object.assign({}, component)
       if (component.type === 'glyph') {
         //@ts-ignore
-        _component.value = plainGlyph(component.value)
+        //_component.value = plainGlyph(component.value)
+        // 对于被引用的字形组件，需要清除脚本以减少数据大小
+        _component.value = plainGlyph(component.value, { clearScript: true })
       }
       return _component
     }),
@@ -124,8 +131,14 @@ const plainGlyph = (glyph: ICustomGlyph) => {
     }),
     //@ts-ignore
     reflines: glyph.reflines ? R.clone(glyph.reflines) : [],
-    script: glyph.script,
+    script: clearScript ? null : glyph.script,
   }
+
+  if (clearScript) {
+    // 如果是被引用的字形组件，需要清除script以减少数据大小，但是需要包含脚本引用uuid
+    data.script_reference = glyph.uuid
+  }
+
   // if (glyph.parent) {
   // 	//@ts-ignore
   // 	data.parent = plainGlyph((glyph as ICustomGlyph).parent)
@@ -254,7 +267,9 @@ const plainCharacter = (character: ICharacterFile) => {
       const _component = Object.assign({}, component)
       if (component.type === 'glyph') {
         //@ts-ignore
-        _component.value = plainGlyph(component.value)
+        //_component.value = plainGlyph(component.value)
+        // 对于被引用的字形组件，需要清除脚本以减少数据大小
+        _component.value = plainGlyph(component.value, { clearScript: true })
       }
       return _component
     }),
@@ -286,7 +301,8 @@ const instanceGlyph = (plainGlyph) => {
     if (component.type === 'glyph') {
       //@ts-ignore
       component.value = instanceGlyph(component.value)
-      component.value.parent = plainGlyph
+      //component.value.parent = plainGlyph
+      component.value.parent_reference = getParentInfo(plainGlyph)
     }
     return component
   }) : []
@@ -306,7 +322,8 @@ const instanceCharacter = (plainCharacter) => {
     if (component.type === 'glyph') {
       //@ts-ignore
       component.value = instanceGlyph(component.value)
-      component.value.parent = plainCharacter
+      //component.value.parent = plainCharacter
+      component.value.parent_reference = getParentInfo(plainCharacter)
       component.value._o.getJoints().map((joint) => {
         joint.component = component
       })
@@ -2313,11 +2330,6 @@ const generateComponent = (data) => {
     usedInCharacter: true,
   }
   executeScript(component.value)
-  //component.value._o.getJoints().map((joint) => {
-  //  joint.component = component
-  //})
-
-  linkComponentsForJoints(component)
   return component
 }
 

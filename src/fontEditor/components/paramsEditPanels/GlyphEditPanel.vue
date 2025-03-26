@@ -21,7 +21,6 @@
     selectedSubComponent,
 		type IComponent,
   } from '../../stores/files'
-	import { linkComponentsForJoints } from '../../programming/Joint'
 	import { setSelectGlobalParamDialogVisible, setSetAsGlobalParamDialogVisible } from '../../stores/dialogs'
 	import { More } from '@element-plus/icons-vue'
 	import { OpType, saveState, StoreType } from '../../stores/edit'
@@ -159,12 +158,6 @@
     })
     emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
     emitter.emit('renderCharacter', true)
-		if (checkJoints.value) {
-      _selectedComponent.value.value._o.renderJoints(canvas.value)
-    }
-    if (checkRefLines.value) {
-			_selectedComponent.value.value._o.renderRefLines(canvas.value)
-    }
   }
 
 	const handleRatioOptionChange = (parameter: IParameter | IParameter2, value: string) => {
@@ -192,23 +185,10 @@
     executeCharacterScript(editCharacterFile.value)
     emitter.emit('renderPreviewCanvasByUUID', _selectedComponent.value.value.uuid)
     emitter.emit('renderCharacter')
-		if (checkJoints.value) {
-      _selectedComponent.value.value._o.renderJoints(canvas.value)
-    }
-    if (checkRefLines.value) {
-			_selectedComponent.value.value._o.renderRefLines(canvas.value)
-    }
   }
 
 	watch([checkJoints, checkRefLines], () => {
     emitter.emit('renderCharacter')
-		linkComponentsForJoints(selectedComponent.value)
-    if (checkJoints.value) {
-      _selectedComponent.value.value._o.renderJoints(canvas.value)
-    }
-    if (checkRefLines.value) {
-      _selectedComponent.value.value._o.renderRefLines(canvas.value)
-    }
   })
 
   watch(jointsCheckedMap, () => {
@@ -253,12 +233,6 @@
     executeCharacterScript(editCharacterFile.value)
     emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
     emitter.emit('renderCharacter', true)
-		if (checkJoints.value) {
-      _selectedComponent.value.value._o.renderJoints(canvas.value)
-    }
-    if (checkRefLines.value) {
-      _selectedComponent.value.value._o.renderRefLines(canvas.value)
-    }
   }
 
 	const onLayoutChange = () => {

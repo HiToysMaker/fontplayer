@@ -22,7 +22,12 @@ class CustomGlyph {
 	}
 
 	public getJoints () {
-		return this._glyph.joints ? this._glyph.joints.concat(this._joints) : [].concat(this._joints)
+		if (this._glyph.joints) {
+			return [...this._glyph.joints, ...this._joints]
+		} else {
+			return this._joints
+		}
+		//return this._glyph.joints ? this._glyph.joints.concat(this._joints) : [].concat(this._joints)
 	}
 
 	public getRefLines () {

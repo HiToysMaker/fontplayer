@@ -26,8 +26,6 @@ import { EllipseComponent } from '../fontEditor/programming/EllipseComponent'
 import { RectangleComponent } from '../fontEditor/programming/RectangleComponent'
 import { PenComponent } from '../fontEditor/programming/PenComponent'
 import { PolygonComponent } from '../fontEditor/programming/PolygonComponent'
-import * as R from 'ramda'
-import { linkComponentsForJoints } from '../fontEditor/programming/Joint'
 import { computeCoords } from '../fontEditor/canvas/canvas'
 
 const contoursToComponents = (contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>, options: {
