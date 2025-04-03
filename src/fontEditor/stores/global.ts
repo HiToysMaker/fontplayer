@@ -22,6 +22,8 @@ export interface IBackground {
 	color: string,
 }
 
+const useSkeletonGrid = ref(false)
+
 const jointsCheckedMap = ref({})
 
 const draggable = ref(true)
@@ -156,4 +158,5 @@ export {
 	tips,
 	jointsCheckedMap,
 	gridChanged,
+	useSkeletonGrid,
 }

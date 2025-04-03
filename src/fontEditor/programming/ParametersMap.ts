@@ -15,6 +15,17 @@ class ParametersMap {
 		}
 	}
 
+	public getRange (name: string) {
+		for (let i = 0; i < this.parameters.length; i++) {
+			if (this.parameters[i].name === name) {
+				return {
+					min: this.parameters[i].min || 0,
+					max: this.parameters[i].max || 1000,
+				}
+			}
+		}
+	}
+
 	public set (name: string, value: number) {
 		for (let i = 0; i < this.parameters.length; i++) {
 			const param = this.parameters[i]

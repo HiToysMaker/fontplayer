@@ -9,7 +9,7 @@
   import { getRatioOptions, ParameterType, getConstant, IParameter, executeScript, editGlyph, IRingParameter, IParameter2, getRatioLayout, ICustomGlyph, selectedParam, selectedParamType, constantGlyphMap, ConstantType, getGlyphByUUID, GlyphType } from '../../stores/glyph'
   import { useI18n } from 'vue-i18n'
   import { emitter } from '../../Event/bus'
-  import { canvas } from '../../stores/global'
+  import { checkJoints, checkRefLines } from '../../stores/global'
 	import RingController from '../../components/Widgets/RingController.vue'
   import { editing as editingLayout } from '../../stores/glyphLayoutResizer_glyph'
 	import { nextTick, onMounted, ref, watch } from 'vue'
@@ -20,8 +20,6 @@
   import { OpType, saveState, StoreType } from '../../stores/edit'
   import { editStatus, Status } from '../../stores/font'
   const { t, tm } = useI18n()
-  const checkJoints = ref(false)
-  const checkRefLines = ref(false)
   const controlType = ref(0)
 	const controlTypeOptions = [
 		{

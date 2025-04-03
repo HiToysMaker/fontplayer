@@ -240,6 +240,11 @@
 			<el-button class="grid-reset-btn" @pointerdown="resetGrid">
 				重置布局变换
 			</el-button>
+			<el-form-item label-width="120px" label="使用骨架变换">
+				<el-switch
+					v-model="editCharacterFile.info.useSkeletonGrid"
+				/>
+      </el-form-item>
 		</div>
   </div>
 </template>

@@ -470,6 +470,122 @@ const getTurnAngles = (p1, p2, p3) => {
 	}
 }
 
+const distanceAndFootPoint = (A, B, C) => {
+	const { x: x1, y: y1 } = A;
+	const { x: x2, y: y2 } = B;
+	const { x: x0, y: y0 } = C;
+
+	// 计算线段 AB 的长度
+	const dxAB = x2 - x1;
+	const dyAB = y2 - y1;
+	const ABLength = Math.sqrt(dxAB ** 2 + dyAB ** 2);
+
+	// 辅助变量：交点、newC、比例
+	let footPoint, newC, percentageFromA;
+
+	// 处理垂直线（x1 === x2）
+	if (x1 === x2) {
+		let footY = y0;
+		const minY = Math.min(y1, y2);
+		const maxY = Math.max(y1, y2);
+
+		// 判断交点是否在线段内
+		const isOnSegment = footY >= minY && footY <= maxY;
+		if (!isOnSegment) {
+				footY = footY < minY ? minY : maxY;
+		}
+
+		footPoint = { x: x1, y: footY };
+		newC = isOnSegment ? null : { x: x0, y: footY };
+
+		// 计算比例：沿 AB 的 y 方向
+		const distanceFromA = Math.abs(footY - y1);
+		percentageFromA = ABLength === 0 ? 0 : distanceFromA / Math.abs(y2 - y1);
+		percentageFromA = Math.min(1, Math.max(0, percentageFromA)); // 限制在 [0,1]
+
+		return {
+			distance: Math.abs(x0 - x1),
+			footPoint,
+			newC,
+			percentageFromA,
+		};
+	}
+
+	// 处理水平线（y1 === y2）
+	if (y1 === y2) {
+		let footX = x0;
+		const minX = Math.min(x1, x2);
+		const maxX = Math.max(x1, x2);
+
+		// 判断交点是否在线段内
+		const isOnSegment = footX >= minX && footX <= maxX;
+		if (!isOnSegment) {
+			footX = footX < minX ? minX : maxX;
+		}
+
+		footPoint = { x: footX, y: y1 };
+		newC = isOnSegment ? null : { x: footX, y: y0 };
+
+		// 计算比例：沿 AB 的 x 方向
+		const distanceFromA = Math.abs(footX - x1);
+		percentageFromA = ABLength === 0 ? 0 : distanceFromA / Math.abs(x2 - x1);
+		percentageFromA = Math.min(1, Math.max(0, percentageFromA));
+
+		return {
+			distance: Math.abs(y0 - y1),
+			footPoint,
+			newC,
+			percentageFromA,
+		};
+	}
+
+	// 一般情况（非垂直/水平线）
+	const m = (y2 - y1) / (x2 - x1);
+	const mPerpendicular = -1 / m;
+
+	// 计算交点坐标
+	const x = (m * x1 - y1 + y0 - mPerpendicular * x0) / (m - mPerpendicular);
+	const y = m * (x - x1) + y1;
+
+	// 判断交点是否在线段 AB 内
+	const isOnSegment =
+		x >= Math.min(x1, x2) &&
+		x <= Math.max(x1, x2) &&
+		y >= Math.min(y1, y2) &&
+		y <= Math.max(y1, y2);
+
+	if (!isOnSegment) {
+		// 限制到端点 A 或 B
+		const distToA = Math.sqrt((x - x1) ** 2 + (y - y1) ** 2);
+		const distToB = Math.sqrt((x - x2) ** 2 + (y - y2) ** 2);
+		footPoint = distToA < distToB ? { x: x1, y: y1 } : { x: x2, y: y2 };
+	} else {
+		footPoint = { x, y };
+	}
+
+	// 计算 newC
+	newC = isOnSegment
+		? null
+		: {
+				x: x0 + (footPoint.x - x),
+				y: y0 + (footPoint.y - y),
+			};
+
+	// 计算交点到 A 的沿线段比例
+	const dxFoot = footPoint.x - x1;
+	const dyFoot = footPoint.y - y1;
+	const distanceFromA = Math.sqrt(dxFoot ** 2 + dyFoot ** 2);
+	percentageFromA = ABLength === 0 ? 0 : distanceFromA / ABLength;
+	percentageFromA = Math.min(1, Math.max(0, percentageFromA)); // 确保在 [0,1]
+
+	return {
+		distance: Math.sqrt((x - x0) ** 2 + (y - y0) ** 2),
+		footPoint,
+		newC,
+		percentageFromA,
+	};
+}
+
 const FP = {
 	EllipseComponent,
 	PenComponent,
@@ -487,6 +603,7 @@ const FP = {
 	distance,
 	getCurvesPoints,
 	getTurnAngles,
+	distanceAndFootPoint,
 }
 
 const suggestion_items = [

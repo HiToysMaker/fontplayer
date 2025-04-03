@@ -56,6 +56,7 @@
           size: selectedFile.value.width,
           default: true,
         },
+        useSkeletonGrid: false,
         layout: '',
         layoutTree: [],
       },

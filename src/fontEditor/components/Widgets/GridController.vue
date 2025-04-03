@@ -76,7 +76,8 @@
 				x2: x2.value,
 				y1: y1.value,
 				y2: y2.value,
-			}
+			},
+			useSkeletonGrid: editCharacterFile.value.info?.useSkeletonGrid || false,
 		})
 		canvas.value.addEventListener('mousedown', onMouseDown)
 		canvas.value.addEventListener('mousemove', onMouseMove)
@@ -277,7 +278,8 @@
 				x2: x2.value,
 				y1: y1.value,
 				y2: y2.value,
-			}
+			},
+			useSkeletonGrid: editCharacterFile.value.info?.useSkeletonGrid || false,
 		})
 	}, {
 		deep: true,

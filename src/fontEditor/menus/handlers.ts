@@ -324,9 +324,9 @@ const instanceCharacter = (plainCharacter) => {
       component.value = instanceGlyph(component.value)
       //component.value.parent = plainCharacter
       component.value.parent_reference = getParentInfo(plainCharacter)
-      component.value._o.getJoints().map((joint) => {
-        joint.component = component
-      })
+      // component.value._o.getJoints().map((joint) => {
+      //   joint.component = component
+      // })
     }
     return component
   }) : []
@@ -2289,6 +2289,7 @@ const generateCharFile = (data) => {
         size: selectedFile.value.width,
         default: true,
       },
+      useSkeletonGrid: false,
       layout: '',
       layoutTree: [],
     },

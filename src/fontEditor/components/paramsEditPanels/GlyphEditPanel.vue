@@ -498,6 +498,19 @@
 								</div>
 							</div>
 						</div>
+						<div v-else-if="parameter.type === ParameterType.Enum">
+							<el-select
+								v-model="parameter.value" class="enum-param-select" placeholder="Select"
+								@change="(value) => handleChangeParameter(parameter, value)"
+							>
+								<el-option
+									v-for="option in parameter.options"
+									:key="option.value"
+									:label="option.label"
+									:value="option.value"
+								/>
+							</el-select>
+						</div>
 						<div v-else-if="parameter.type === ParameterType.RingController">
 							<el-select v-model="controlType" class="control-type-select" :placeholder="tm('programming.controlType')">
 								<el-option

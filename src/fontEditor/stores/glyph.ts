@@ -1120,6 +1120,9 @@ const getScript = (glyph) => {
 // execute glyph script
 const executeScript = (targetGlyph) => {
 	try {
+		// 字形实例缓存了数据，表示字形正在拖拽编辑中，则返回不执行脚本运行操作
+		if (targetGlyph._o && targetGlyph._o.tempData) return
+
 		const glyphInstance = new CustomGlyph(targetGlyph)
 		const _glyph = glyphInstance._glyph
 		for (let i = 0; i < targetGlyph.components.length; i++) {

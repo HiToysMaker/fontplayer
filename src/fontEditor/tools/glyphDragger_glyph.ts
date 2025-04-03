@@ -19,7 +19,7 @@ const getBound = (joints) => {
 	let x_max = -Infinity
 	let y_max = -Infinity
 	joints.map(joint => {
-		const { x, y } = joint.getPlainCoords()
+		const { x, y } = joint
 		if (x < x_min) {
 			x_min = x
 		}
@@ -54,10 +54,12 @@ const addScript = () => {
 	if (dragOption.value === 'default' && !selectedSubComponent.value) {
 		if (editGlyph.value?.glyph_script && editGlyph.value?.glyph_script[comp.uuid]) {
 			delete editGlyph.value?.glyph_script[comp.uuid]
+			return
 		}
 	} else if (dragOption.value === 'default' && !!selectedSubComponent.value) {
 		if (SubComponentsRoot.value.value?.glyph_script && SubComponentsRoot.value.value?.glyph_script[comp.uuid]) {
 			delete SubComponentsRoot.value.value?.glyph_script[comp.uuid]
+			return
 		}
 	} else if (dragOption.value === 'layout' && editGlyph.value.layout && !selectedSubComponent.value) {
 		if (draggingJoint.value && putAtCoord.value) {
@@ -154,7 +156,7 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) 
 			joints = getJoints(selectedComponent_glyph?.value, selectedComponent_glyph?.value.uuid)
 			glyph = selectedComponent_glyph?.value?.value
 		}
-		if (!glyph) return
+		if (!glyph || !glyph._o) return
 		mouseDownX = getCoord(e.offsetX)
 		mouseDownY = getCoord(e.offsetY)
 		const d = 10
@@ -163,7 +165,16 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) 
 				const { ox, oy } = getOrigin()
 				const { x, y } = joints[i]
 				if (distance(x, y, mouseDownX, mouseDownY) <= d) {
+					// 拖拽关键点
 					draggingJoint.value = joints[i]
+					// 如果设置了onSkeletonDragStart，则骨架可拖拽
+					if (glyph._o.onSkeletonDragStart) {
+						glyph._o.onSkeletonDragStart({
+							draggingJoint: draggingJoint.value,
+							deltaX: 0,
+							deltaY: 0,
+						})
+					}
 				}
 			}
 		}
@@ -184,6 +195,14 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) 
 		const d = 20
 		const dx = getCoord(e.offsetX) - lastX
 		const dy = getCoord(e.offsetY) - lastY
+		let glyph = null
+		if (selectedSubComponent.value) {
+			// 当前选中组件为子字形组件
+			glyph = selectedSubComponent.value.value
+		} else if (selectedComponent_glyph?.value) {
+			// 当前选中组件为根目录中组件
+			glyph = selectedComponent_glyph?.value?.value
+		}
 		mousemove = true
 		if (mousedown) {
 			// 没有拖拽joint节点
@@ -205,6 +224,14 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) 
 						oy: _oy + dy,
 					})
 				}
+			} else if (glyph._o?.onSkeletonDrag) {
+				// 如果设置了onSkeletonDrag，则骨架可拖拽，拖拽骨架则不再移动字形
+				glyph._o.onSkeletonDrag({
+					draggingJoint: draggingJoint.value,
+					deltaX: dx,
+					deltaY: dy,
+				})
+				emitter.emit('renderGlyph')
 			} else {
 				putAtCoord.value = {
 					x: ox + draggingJoint.value.x + dx,
@@ -231,11 +258,9 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) 
 			if (selectedSubComponent.value) {
 				// 当前选中组件为子字形组件
 				joints = getJoints(selectedComponent_glyph?.value, selectedSubComponent.value.uuid)
-				glyph = selectedSubComponent.value.value
 			} else if (selectedComponent_glyph?.value) {
 				// 当前选中组件为根目录中组件
 				joints = getJoints(selectedComponent_glyph?.value, selectedComponent_glyph?.value.uuid)
-				glyph = selectedComponent_glyph?.value?.value
 			}
 			if (!glyph) return
 			const d = 10
@@ -253,7 +278,24 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) 
 		}
 	}
 	const onMouseUp = (e: MouseEvent) => {
-		//canvas.removeEventListener('mousemove', onMouseMove)
+		let glyph = null
+		if (selectedSubComponent.value) {
+			// 当前选中组件为子字形组件
+			glyph = selectedSubComponent.value.value
+		} else if (selectedComponent_glyph?.value) {
+			// 当前选中组件为根目录中组件
+			glyph = selectedComponent_glyph?.value?.value
+		}
+		const dx = getCoord(e.offsetX) - lastX
+		const dy = getCoord(e.offsetY) - lastY
+		if (glyph._o?.onSkeletonDragEnd && mousedown) {
+			// 如果设置了onSkeletonDragEnd，则骨架可拖拽
+			glyph._o.onSkeletonDragEnd({
+				draggingJoint: draggingJoint.value,
+				deltaX: dx,
+				deltaY: dy,
+			})
+		}
 		setEditing(false)
 		if (mousemove && mousedown) {
 			// addScript(glyph, coords)
@@ -264,6 +306,8 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) 
 		mousemove = false
 		mouseDownX = -1
 		mouseDownY = -1
+		lastX = 0
+		lastY = 0
 		putAtCoord.value = null
 		draggingJoint.value = null
 		movingJoint.value = null
@@ -284,9 +328,29 @@ const renderGlyphSelector = (canvas: HTMLCanvasElement, _editGlyph: boolean = tr
 	const { ox, oy } = getOrigin()
 	if (!glyph) return
 	//executeScript(editGlyph.value)
-	const { x, y, w, h } = getBound(glyph._o?.getJoints())
-	const _x = mapCanvasX(x + ox)
-	const _y = mapCanvasY(y + oy)
+
+	let joints = []
+	if (selectedSubComponent.value) {
+		// 当前选中组件为子字形组件
+		joints = getJoints(selectedComponent_glyph?.value, selectedSubComponent.value.uuid)
+	} else if (selectedComponent_glyph?.value) {
+		// 当前选中组件为根目录中组件
+		joints = getJoints(selectedComponent_glyph?.value, selectedComponent_glyph?.value.uuid)
+	}
+	const getJoint = (name: string) => {
+		for (let i = 0; i < joints.length; i++) {
+			if (joints[i].name === name) {
+				return joints[i]
+			}
+		}
+		return {
+			x: 0,
+			y: 0,
+		}
+	}
+	const { x, y, w, h } = getBound(joints)
+	const _x = mapCanvasX(x)
+	const _y = mapCanvasY(y)
 	const _w = mapCanvasWidth(w)
 	const _h = mapCanvasHeight(h)
 	const d = 5
@@ -301,19 +365,19 @@ const renderGlyphSelector = (canvas: HTMLCanvasElement, _editGlyph: boolean = tr
 	// moving joint
 	if (movingJoint.value && checkJoints.value) {
 		const _d = 10
-		const { x, y } = movingJoint.value.getPlainCoords()
-		const _x = mapCanvasX(x + ox)
-		const _y = mapCanvasY(y + oy)
+		const { x, y } = getJoint(movingJoint.value.name)
+		const _x = mapCanvasX(x)
+		const _y = mapCanvasY(y)
 		ctx.fillStyle = 'red'
 		ctx.fillRect(_x - _d, _y - _d, 2 * _d, 2 * _d)
 	}
 
 	// dragging joint
 	if (draggingJoint.value && checkJoints.value) {
-		const { x, y } = draggingJoint.value
+		const { x, y } = getJoint(draggingJoint.value.name)
 		const _d = 10
-		const _x = mapCanvasX(x + ox)
-		const _y = mapCanvasY(y + oy)
+		const _x = mapCanvasX(x)
+		const _y = mapCanvasY(y)
 		ctx.fillStyle = 'red'
 		ctx.fillRect(_x - _d, _y - _d, 2 * _d, 2 * _d)
 	}

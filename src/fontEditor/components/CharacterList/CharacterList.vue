@@ -112,6 +112,7 @@
 			descender,
 			advanceWidth: unitsPerEm,
 			grid: defaultGrid ? null : characterFile.info.gridSettings,
+			useSkeletonGrid: characterFile.info?.useSkeletonGrid || false,
 		}, { x: 0, y: 0 }, false, true, true)
 		renderPreview2(canvas, contours)
 		// loading.value = false

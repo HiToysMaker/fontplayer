@@ -1,16 +1,22 @@
-const weights_variation_power = glyph.getParam('字重变化')
-const start_style_type = glyph.getParam('起笔风格')
-const start_style_value = glyph.getParam('起笔数值')
-const turn_style_type = glyph.getParam('转角风格')
-const turn_style_value = glyph.getParam('转角数值')
-const bending_degree = glyph.getParam('弯曲程度')
-const wan_length = glyph.getParam('弯-长度')
-const wan_bendDegree = glyph.getParam('弯-弯曲度') + 30 * bending_degree
-const gou_horizonalSpan = glyph.getParam('钩-水平延伸')
-const gou_verticalSpan = glyph.getParam('钩-竖直延伸')
-const weight = glyph.getParam('字重') || 40
 const ox = 500
 const oy = 500
+const x0 = 500
+const y0 = 250
+const global_params = {
+  weights_variation_power: glyph.getParam('字重变化'),
+  start_style_type: glyph.getParam('起笔风格'),
+  start_style_value: glyph.getParam('起笔数值'),
+  turn_style_type: glyph.getParam('转角风格'),
+  turn_style_value: glyph.getParam('转角数值'),
+  bending_degree: glyph.getParam('弯曲程度'),
+  weight: glyph.getParam('字重') || 40,
+}
+const params = {
+  wan_length: glyph.getParam('弯-长度'),
+  wan_bendDegree: glyph.getParam('弯-弯曲度') + 30 * global_params.bending_degree,
+  gou_horizonalSpan: glyph.getParam('钩-水平延伸'),
+  gou_verticalSpan: glyph.getParam('钩-竖直延伸'),
+}
 
 const refline = (p1, p2) => {
   return {
@@ -24,79 +30,249 @@ const distance = (p1, p2) => {
   return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y))
 }
 
-// 弯
-const wan_start = new FP.Joint(
-  'wan_start',
-  {
-    x: ox,
-    y: oy - wan_length / 2,
-  },
-)
-const wan_end = new FP.Joint(
-  'wan_end',
-  {
-    x: ox,
-    y: wan_start.y + wan_length,
-  },
-)
-const wan_bend = new FP.Joint(
-  'wan_bend',
-  {
-    x: ox + wan_bendDegree,
-    y: wan_start.y + wan_length / 2,
-  },
-)
-
-// 钩
-const gou_start = wan_end
-const gou_end = new FP.Joint(
-  'gou_end',
-  {
-    x: gou_start.x - gou_horizonalSpan,
-    y: gou_start.y + gou_verticalSpan,
-  },
-)
-
-glyph.addJoint(wan_start)
-glyph.addJoint(wan_bend)
-glyph.addJoint(wan_end)
-glyph.addJoint(gou_start)
-glyph.addJoint(gou_end)
-
-const skeleton = {
-  wan_start,
-  wan_bend,
-  wan_end,
-  gou_start,
-  gou_end,
-}
-
-glyph.addRefLine(refline(wan_start, wan_bend))
-glyph.addRefLine(refline(wan_bend, wan_end))
-glyph.addRefLine(refline(gou_start, gou_end))
-
-const getLength = (horizonalSpan, verticalSpan) => {
-  return Math.sqrt(horizonalSpan * horizonalSpan + verticalSpan * verticalSpan)
-}
-
-const getDistance = (p1, p2) => {
-  if(!p1 || !p2) return 0
-  return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y))
-}
-
-const getRadiusPoint = (options) => {
-  const { start, end, radius } = options
-  const angle = Math.atan2(end.y - start.y, end.x - start.x)
-  const point = {
-    x: start.x + Math.cos(angle) * radius,
-    y: start.y + Math.sin(angle) * radius,
+const getJointsMap = (data) => {
+  const { draggingJoint, deltaX, deltaY } = data
+  const jointsMap = Object.assign({}, glyph.tempData)
+  switch (draggingJoint.name) {
+    case 'wan_bend': {
+      jointsMap['wan_bend'] = {
+        x: glyph.tempData['wan_bend'].x + deltaX,
+        y: glyph.tempData['wan_bend'].y,
+      }
+      break
+    }
+    case 'wan_end': {
+      jointsMap['wan_end'] = {
+        x: glyph.tempData['wan_end'].x,
+        y: glyph.tempData['wan_end'].y + deltaY,
+      }
+      jointsMap['gou_start'] = {
+        x: glyph.tempData['gou_start'].x,
+        y: glyph.tempData['gou_start'].y + deltaY,
+      }
+      jointsMap['gou_end'] = {
+        x: glyph.tempData['gou_end'].x,
+        y: glyph.tempData['gou_end'].y + deltaY,
+      }
+      const newBend = getBend(jointsMap['wan_start'], jointsMap['wan_end'])
+      jointsMap['wan_bend'] = {
+        x: newBend.x,
+        y: newBend.y,
+      }
+      break
+    }
+    case 'gou_start': {
+      jointsMap['wan_end'] = {
+        x: glyph.tempData['wan_end'].x,
+        y: glyph.tempData['wan_end'].y + deltaY,
+      }
+      jointsMap['gou_start'] = {
+        x: glyph.tempData['gou_start'].x,
+        y: glyph.tempData['gou_start'].y + deltaY,
+      }
+      jointsMap['gou_end'] = {
+        x: glyph.tempData['gou_end'].x,
+        y: glyph.tempData['gou_end'].y + deltaY,
+      }
+      const newBend = getBend(jointsMap['wan_start'], jointsMap['wan_end'])
+      jointsMap['wan_bend'] = {
+        x: newBend.x,
+        y: newBend.y,
+      }
+      break
+    }
+    case 'gou_end': {
+      jointsMap['gou_end'] = {
+        x: glyph.tempData['gou_end'].x + deltaX,
+        y: glyph.tempData['gou_end'].y + deltaY,
+      }
+      break
+    }
   }
-  return point
+  return jointsMap
+}
+
+const getBend = (start, end) => {
+  // 改变end的情况下，不会改变弯曲度和弯曲游标，所以依据现有参数计算新的bend
+  const { wan_bendDegree: bendDegree } = params
+  const verticalSpan = Math.abs(end.y - start.y)
+  const bend = {
+    x: start.x + bendDegree,
+    y: start.y + verticalSpan / 2,
+  }
+
+  return bend
+}
+
+glyph.onSkeletonDragStart = (data) => {
+  // joint数据格式：{x, y, name}
+  const { draggingJoint } = data
+  glyph.tempData = {}
+  glyph.getJoints().map((joint) => {
+    const _joint = {
+      name: joint.name,
+      x: joint.x,
+      y: joint.y,
+    }
+    glyph.tempData[_joint.name] = _joint
+  })
+}
+
+glyph.onSkeletonDrag = (data) => {
+  if (!glyph.tempData) return
+  glyph.clear()
+  // joint数据格式：{x, y, name}
+  const jointsMap = getJointsMap(data)
+  const _params = computeParamsByJoints(jointsMap)
+  updateGlyphByParams(_params, global_params)
+}
+
+glyph.onSkeletonDragEnd = (data) => {
+  if (!glyph.tempData) return
+  glyph.clear()
+  // joint数据格式：{x, y, name}
+  const jointsMap = getJointsMap(data)
+  const _params = computeParamsByJoints(jointsMap)
+  updateGlyphByParams(_params, global_params)
+  glyph.setParam('弯-长度', _params.wan_length)
+  glyph.setParam('弯-弯曲度', _params.wan_bendDegree - 30 * global_params.bending_degree)
+  glyph.setParam('钩-水平延伸', _params.gou_horizonalSpan)
+  glyph.setParam('钩-竖直延伸', _params.gou_verticalSpan)
+  glyph.tempData = null
+}
+
+const range = (value, range) => {
+  if (value < range.min) {
+    return range.min
+  } else if (value > range.max) {
+    return range.max
+  }
+  return value
+}
+
+const computeParamsByJoints = (jointsMap) => {
+  const { wan_start, wan_end, wan_bend, gou_start, gou_end } = jointsMap
+  const wan_length_range = glyph.getParamRange('弯-长度')
+  const wan_bend_degree_range = glyph.getParamRange('弯-弯曲度')
+  const gou_horizonal_span_range = glyph.getParamRange('钩-水平延伸')
+  const gou_vertical_span_range = glyph.getParamRange('钩-竖直延伸')
+  const wan_length = range(wan_end.y - wan_start.y, wan_length_range)
+  const wan_bendDegree = range(wan_bend.x - wan_start.x, wan_bend_degree_range)
+  const gou_horizonalSpan = range(gou_start.x - gou_end.x, gou_horizonal_span_range)
+  const gou_verticalSpan = range(gou_end.y - gou_start.y, gou_vertical_span_range)
+  return {
+    wan_length,
+    wan_bendDegree,
+    gou_horizonalSpan,
+    gou_verticalSpan,
+  }
+}
+
+const updateGlyphByParams = (params, global_params) => {
+  const {
+    wan_length,
+    wan_bendDegree,
+    gou_horizonalSpan,
+    gou_verticalSpan,
+  } = params
+
+  // 弯
+  const wan_start = new FP.Joint(
+    'wan_start',
+    {
+      x: x0,
+      y: y0,
+    },
+  )
+  const wan_end = new FP.Joint(
+    'wan_end',
+    {
+      x: wan_start.x,
+      y: wan_start.y + wan_length,
+    },
+  )
+  const wan_bend = new FP.Joint(
+    'wan_bend',
+    {
+      x: wan_start.x + wan_bendDegree,
+      y: wan_start.y + wan_length / 2,
+    },
+  )
+
+  // 钩
+  const gou_start = new FP.Joint(
+    'gou_start',
+    {
+      x: wan_start.x,
+      y: wan_start.y + wan_length,
+    },
+  )
+  const gou_end = new FP.Joint(
+    'gou_end',
+    {
+      x: gou_start.x - gou_horizonalSpan,
+      y: gou_start.y + gou_verticalSpan,
+    },
+  )
+
+  glyph.addJoint(wan_start)
+  glyph.addJoint(wan_bend)
+  glyph.addJoint(wan_end)
+  glyph.addJoint(gou_start)
+  glyph.addJoint(gou_end)
+
+  const skeleton = {
+    wan_start,
+    wan_bend,
+    wan_end,
+    gou_start,
+    gou_end,
+  }
+
+  glyph.addRefLine(refline(wan_start, wan_bend))
+  glyph.addRefLine(refline(wan_bend, wan_end))
+  glyph.addRefLine(refline(gou_start, gou_end))
+
+  const components = getComponents(skeleton, global_params)
+  for (let i = 0; i < components.length; i++) {
+    glyph.addComponent(components[i])
+  }
+
+  glyph.getSkeleton = () => {
+    return skeleton
+  }
+  glyph.getComponentsBySkeleton = (skeleton) => {
+    return getComponents(skeleton, global_params)
+  }
 }
 
 const getComponents = (skeleton) => {
-  // 根据骨架计算轮廓关键点
+  const {
+    weights_variation_power,
+    start_style_type,
+    start_style_value,
+    turn_style_type,
+    turn_style_value,
+    bending_degree,
+    weight,
+  } = global_params
 
+  const getDistance = (p1, p2) => {
+    if(!p1 || !p2) return 0
+    return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y))
+  }
+  
+  const getRadiusPoint = (options) => {
+    const { start, end, radius } = options
+    const angle = Math.atan2(end.y - start.y, end.x - start.x)
+    const point = {
+      x: start.x + Math.cos(angle) * radius,
+      y: start.y + Math.sin(angle) * radius,
+    }
+    return point
+  }
+
+  // 根据骨架计算轮廓关键点
   const {
     wan_start,
     wan_bend,
@@ -129,7 +305,7 @@ const getComponents = (skeleton) => {
     getDistance(in_corner_wan_gou, in_wan_curves[0].start),
   )
   const out_radius_min_length = Math.min(
-    getLength(gou_horizonalSpan, gou_verticalSpan),
+    getDistance(gou_start, gou_end),
     getDistance(out_wan_curves[0].start, out_wan_curves[out_wan_curves.length - 1].end),
   )
   if (in_radius >= in_radius_min_length) {
@@ -196,7 +372,4 @@ const getComponents = (skeleton) => {
   return [ pen ]
 }
 
-const components = getComponents(skeleton)
-for (let i = 0; i < components.length; i++) {
-  glyph.addComponent(components[i])
-}
+updateGlyphByParams(params, global_params)

@@ -142,8 +142,11 @@
     if (editGlyph.value.layout && editingLayout.value) {
       renderLayoutEditor(canvas.value)
     }
-    if (!selectedComponentUUID.value) return
     if (checkJoints.value) {
+      if (editGlyph.value._o) {
+        // 如果当前编辑字形有自己字形本身的关键点，则渲染这些关键点
+        editGlyph.value._o.renderJoints(canvas.value)
+      }
       if (selectedSubComponent.value) {
         renderJoints(selectedSubComponent.value, canvas.value)
       } else if (SubComponentsRoot.value) {
@@ -153,6 +156,10 @@
       }
     }
     if (checkRefLines.value) {
+      if (editGlyph.value._o) {
+        // 如果当前编辑字形有自己字形本身的辅助线，则渲染这些辅助线
+        editGlyph.value._o.renderRefLines(canvas.value)
+      }
       if (selectedSubComponent.value) {
         renderRefLines(selectedSubComponent.value, canvas.value)
       } else if (SubComponentsRoot.value) {

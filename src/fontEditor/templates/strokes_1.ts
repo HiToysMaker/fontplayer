@@ -1150,13 +1150,7 @@ const strokes = [
     name: '竖弯',
     params: [
       {
-        name: '竖-水平延伸',
-        default: 0,
-        min: 0,
-        max: 200,
-      },
-      {
-        name: '竖-竖直延伸',
+        name: '竖-长度',
         default: 300,
         min: 0,
         max: 1000,

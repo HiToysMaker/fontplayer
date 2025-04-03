@@ -1,7 +1,82 @@
-const length = glyph.getParam('长度')
-const weight = glyph.getParam('字重') || 40
 const ox = 500
 const oy = 500
+const x0 = 250
+const y0 = 500
+const params = {
+  length: glyph.getParam('长度'),
+}
+const global_params = {
+  start_style_type: glyph.getParam('起笔风格'),
+  start_style_value: glyph.getParam('起笔数值'),
+  weight: glyph.getParam('字重') || 40,
+}
+
+const getJointsMap = (data) => {
+  const { draggingJoint, deltaX, deltaY } = data
+  const jointsMap = Object.assign({}, glyph.tempData)
+  switch (draggingJoint.name) {
+    case 'end': {
+      jointsMap['end'] = {
+        x: glyph.tempData['end'].x + deltaX,
+        y: glyph.tempData['end'].y,
+      }
+      break
+    }
+  }
+  return jointsMap
+}
+
+glyph.onSkeletonDragStart = (data) => {
+  // joint数据格式：{x, y, name}
+  const { draggingJoint } = data
+  glyph.tempData = {}
+  glyph.getJoints().map((joint) => {
+    const _joint = {
+      name: joint.name,
+      x: joint.x,
+      y: joint.y,
+    }
+    glyph.tempData[_joint.name] = _joint
+  })
+}
+
+glyph.onSkeletonDrag = (data) => {
+  if (!glyph.tempData) return
+  glyph.clear()
+  // joint数据格式：{x, y, name}
+  const jointsMap = getJointsMap(data)
+  const _params = computeParamsByJoints(jointsMap)
+  updateGlyphByParams(_params, global_params)
+}
+
+glyph.onSkeletonDragEnd = (data) => {
+  if (!glyph.tempData) return
+  glyph.clear()
+  // joint数据格式：{x, y, name}
+  const jointsMap = getJointsMap(data)
+  const _params = computeParamsByJoints(jointsMap)
+  updateGlyphByParams(_params, global_params)
+  glyph.setParam('长度', _params.length)
+  glyph.tempData = null
+}
+
+const range = (value, range) => {
+  if (value < range.min) {
+    return range.min
+  } else if (value > range.max) {
+    return range.max
+  }
+  return value
+}
+
+const computeParamsByJoints = (jointsMap) => {
+  const { start, end } = jointsMap
+  const length_range = glyph.getParamRange('长度')
+  const length = range(end.x - start.x, length_range)
+  return {
+    length,
+  }
+}
 
 const refline = (p1, p2) => {
   return {
@@ -11,57 +86,72 @@ const refline = (p1, p2) => {
   }
 }
 
-const start = new FP.Joint(
-  'start',
-  {
-    x: ox - length / 2,
-    y: oy,
-  },
-)
-const end = new FP.Joint(
-  'end',
-  {
-    x: ox + length / 2,
-    y: oy,
-  },
-)
+const updateGlyphByParams = (params, global_params) => {
+  const { length } = params
 
-glyph.addJoint(start)
-glyph.addJoint(end)
+  const start = new FP.Joint(
+    'start',
+    {
+      x: x0,
+      y: y0,
+    },
+  )
+  const end = new FP.Joint(
+    'end',
+    {
+      x: start.x + length,
+      y: start.y,
+    },
+  )
+  
+  glyph.addJoint(start)
+  glyph.addJoint(end)
 
-const skeleton = {
-  start,
-  end,
-}
-
-glyph.addRefLine(refline(start, end))
-
-const start_style_type = glyph.getParam('起笔风格')
-const start_style_value = glyph.getParam('起笔数值')
-
-const getStartStyle = (start_style_type, start_style_value) => {
-  if (start_style_type === 1) {
-    // 起笔上下凸起长方形
-    return {
-      start_style_decorator_width: start_style_value * 20,
-      start_style_decorator_height: weight * 0.25,
-    }
-  } else if (start_style_type === 2) {
-    // 起笔上下凸起长方形，长方形内侧转角为圆角
-    return {
-      start_style_decorator_width: start_style_value * 20,
-      start_style_decorator_height: weight * 0.25,
-      start_style_decorator_radius: 20,
-    }
+  const skeleton = {
+    start,
+    end,
   }
-  return {}
+  
+  glyph.addRefLine(refline(start, end))
+
+  const components = getComponents(skeleton, global_params)
+  for (let i = 0; i < components.length; i++) {
+    glyph.addComponent(components[i])
+  }
+
+  glyph.getSkeleton = () => {
+    return skeleton
+  }
+  glyph.getComponentsBySkeleton = (skeleton) => {
+    return getComponents(skeleton, global_params)
+  }
 }
 
-const start_style = getStartStyle(start_style_type, start_style_value)
+const getComponents = (skeleton, global_params) => {
+  // 获取骨架以外的全局风格变量
+  const { start_style_type, start_style_value, weight } = global_params
 
-const getComponents = (skeleton) => {
+  const getStartStyle = (start_style_type, start_style_value) => {
+    if (start_style_type === 1) {
+      // 起笔上下凸起长方形
+      return {
+        start_style_decorator_width: start_style_value * 20,
+        start_style_decorator_height: weight * 0.25,
+      }
+    } else if (start_style_type === 2) {
+      // 起笔上下凸起长方形，长方形内侧转角为圆角
+      return {
+        start_style_decorator_width: start_style_value * 20,
+        start_style_decorator_height: weight * 0.25,
+        start_style_decorator_radius: 20,
+      }
+    }
+    return {}
+  }
+
+  const start_style = getStartStyle(start_style_type, start_style_value)
+
   // 根据骨架计算轮廓关键点
-
   const { start, end } = skeleton
 
   // out指上侧（外侧）轮廓线
@@ -137,7 +227,4 @@ const getComponents = (skeleton) => {
   return [ pen ]
 }
 
-const components = getComponents(skeleton)
-for (let i = 0; i < components.length; i++) {
-  glyph.addComponent(components[i])
-}
+updateGlyphByParams(params, global_params)

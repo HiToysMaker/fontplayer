@@ -83,6 +83,7 @@ export interface ICharacterFile {
 			size: number;
 			default?: boolean;
 		};
+		useSkeletonGrid?: boolean;
 		layout?: string;
 		layoutTree?: any;
 		metrics?: {

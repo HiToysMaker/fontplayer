@@ -1,10 +1,22 @@
-const heng_length = glyph.getParam('横-长度')
-const pie_horizonalSpan = glyph.getParam('撇-水平延伸')
-const pie_verticalSpan = glyph.getParam('撇-竖直延伸')
-const pie_bendCursor = glyph.getParam('撇-弯曲游标')
-const weight = glyph.getParam('字重') || 40
 const ox = 500
 const oy = 500
+const x0 = 250
+const y0 = 245
+const params = {
+  heng_length: glyph.getParam('横-长度'),
+  pie_horizonalSpan: glyph.getParam('撇-水平延伸'),
+  pie_verticalSpan: glyph.getParam('撇-竖直延伸'),
+  pie_bendCursor: glyph.getParam('撇-弯曲游标'),
+}
+const global_params = {
+  weights_variation_power: glyph.getParam('字重变化'),
+  start_style_type: glyph.getParam('起笔风格'),
+  start_style_value: glyph.getParam('起笔数值'),
+  turn_style_type: glyph.getParam('转角风格'),
+  turn_style_value: glyph.getParam('转角数值'),
+  bending_degree: glyph.getParam('弯曲程度'),
+  weight: glyph.getParam('字重') || 40,
+}
 
 const refline = (p1, p2) => {
   return {
@@ -18,106 +30,274 @@ const distance = (p1, p2) => {
   return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y))
 }
 
-// 横
-const heng_start = new FP.Joint(
-  'heng_start',
-  {
-    x: ox - heng_length / 2,
-    y: oy - pie_verticalSpan / 2,
-  },
-)
-const heng_end = new FP.Joint(
-  'heng_end',
-  {
-    x: ox + heng_length / 2,
-    y: oy - pie_verticalSpan / 2,
-  },
-)
-
-// 撇
-const pie_start = heng_end
-const pie_end = new FP.Joint(
-  'pie_end',
-  {
-    x: pie_start.x - pie_horizonalSpan,
-    y: pie_start.y + pie_verticalSpan,
-  },
-)
-
-const pie_bend = new FP.Joint(
-  'pie_bend',
-  {
-    x: pie_start.x,
-    y: pie_start.y + pie_bendCursor * pie_verticalSpan,
-  },
-)
-
-glyph.addJoint(heng_start)
-glyph.addJoint(heng_end)
-glyph.addJoint(pie_start)
-glyph.addJoint(pie_end)
-glyph.addJoint(pie_bend)
-
-const skeleton = {
-  heng_start,
-  heng_end,
-  pie_start,
-  pie_end,
-  pie_bend,
-}
-
-glyph.addRefLine(refline(heng_start, heng_end))
-glyph.addRefLine(refline(pie_start, pie_bend))
-glyph.addRefLine(refline(pie_bend, pie_end))
-
-const start_style_type = glyph.getParam('起笔风格')
-const start_style_value = glyph.getParam('起笔数值')
-const turn_style_type = glyph.getParam('转角风格')
-const turn_style_value = glyph.getParam('转角数值')
-const weights_variation_power = glyph.getParam('字重变化')
-
-const getStartStyle = (start_style_type, start_style_value) => {
-  if (start_style_type === 1) {
-    // 起笔上下凸起长方形
-    return {
-      start_style_decorator_width: start_style_value * 20,
-      start_style_decorator_height: weight * 0.25,
+const getJointsMap = (data) => {
+  const { draggingJoint, deltaX, deltaY } = data
+  const jointsMap = Object.assign({}, glyph.tempData)
+  switch (draggingJoint.name) {
+    case 'heng_end': {
+      jointsMap['heng_end'] = {
+        x: glyph.tempData['heng_end'].x + deltaX,
+        y: glyph.tempData['heng_end'].y,
+      }
+      jointsMap['pie_start'] = {
+        x: glyph.tempData['pie_start'].x + deltaX,
+        y: glyph.tempData['pie_start'].y,
+      }
+      jointsMap['pie_bend'] = {
+        x: glyph.tempData['pie_bend'].x + deltaX,
+        y: glyph.tempData['pie_bend'].y,
+      }
+      jointsMap['pie_end'] = {
+        x: glyph.tempData['pie_end'].x + deltaX,
+        y: glyph.tempData['pie_end'].y,
+      }
+      break
     }
-  } else if (start_style_type === 2) {
-    // 起笔上下凸起长方形，长方形内侧转角为圆角
-    return {
-      start_style_decorator_width: start_style_value * 20,
-      start_style_decorator_height: weight * 0.25,
-      start_style_decorator_radius: 20,
+    case 'pie_start': {
+      jointsMap['heng_end'] = {
+        x: glyph.tempData['heng_end'].x + deltaX,
+        y: glyph.tempData['heng_end'].y,
+      }
+      jointsMap['pie_start'] = {
+        x: glyph.tempData['pie_start'].x + deltaX,
+        y: glyph.tempData['pie_start'].y,
+      }
+      jointsMap['pie_bend'] = {
+        x: glyph.tempData['pie_bend'].x + deltaX,
+        y: glyph.tempData['pie_bend'].y,
+      }
+      jointsMap['pie_end'] = {
+        x: glyph.tempData['pie_end'].x + deltaX,
+        y: glyph.tempData['pie_end'].y,
+      }
+      break
+    }
+    case 'pie_bend': {
+      jointsMap['pie_bend'] = {
+        x: glyph.tempData['pie_bend'].x,
+        y: glyph.tempData['pie_bend'].y + deltaY,
+      }
+      break
+    }
+    case 'pie_end': {
+      jointsMap['pie_end'] = {
+        x: glyph.tempData['pie_end'].x + deltaX,
+        y: glyph.tempData['pie_end'].y + deltaY,
+      }
+      const newBend = getBend(jointsMap['pie_start'], jointsMap['pie_end'])
+      jointsMap['pie_bend'] = {
+        x: newBend.x,
+        y: newBend.y,
+      }
+      break
     }
   }
-  return {}
+  return jointsMap
 }
 
-const start_style = getStartStyle(start_style_type, start_style_value)
+const getBend = (start, end) => {
+  // 改变撇end的情况下，不会改变弯曲游标，所以依据现有参数计算新的bend
+  const { pie_bendCursor } = params
+  const verticalSpan = Math.abs(end.y - start.y)
 
-const getLength = (horizonalSpan, verticalSpan) => {
-  return Math.sqrt(horizonalSpan * horizonalSpan + verticalSpan * verticalSpan)
-}
-
-const getDistance = (p1, p2) => {
-  if(!p1 || !p2) return 0
-  return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y))
-}
-
-const getRadiusPoint = (options) => {
-  const { start, end, radius } = options
-  const angle = Math.atan2(end.y - start.y, end.x - start.x)
-  const point = {
-    x: start.x + Math.cos(angle) * radius,
-    y: start.y + Math.sin(angle) * radius,
+  const bend = {
+    x: start.x,
+    y: start.y + pie_bendCursor * verticalSpan,
   }
-  return point
+
+  return bend
+}
+
+glyph.onSkeletonDragStart = (data) => {
+  // joint数据格式：{x, y, name}
+  const { draggingJoint } = data
+  glyph.tempData = {}
+  glyph.getJoints().map((joint) => {
+    const _joint = {
+      name: joint.name,
+      x: joint.x,
+      y: joint.y,
+    }
+    glyph.tempData[_joint.name] = _joint
+  })
+}
+
+glyph.onSkeletonDrag = (data) => {
+  if (!glyph.tempData) return
+  glyph.clear()
+  // joint数据格式：{x, y, name}
+  const jointsMap = getJointsMap(data)
+  const _params = computeParamsByJoints(jointsMap)
+  updateGlyphByParams(_params, global_params)
+}
+
+glyph.onSkeletonDragEnd = (data) => {
+  if (!glyph.tempData) return
+  glyph.clear()
+  // joint数据格式：{x, y, name}
+  const jointsMap = getJointsMap(data)
+  const _params = computeParamsByJoints(jointsMap)
+  updateGlyphByParams(_params, global_params)
+  glyph.setParam('横-长度', _params.heng_length)
+  glyph.setParam('撇-水平延伸', _params.pie_horizonalSpan)
+  glyph.setParam('撇-竖直延伸', _params.pie_verticalSpan)
+  glyph.setParam('撇-弯曲游标', _params.pie_bendCursor)
+  glyph.tempData = null
+}
+
+const range = (value, range) => {
+  if (value < range.min) {
+    return range.min
+  } else if (value > range.max) {
+    return range.max
+  }
+  return value
+}
+
+const computeParamsByJoints = (jointsMap) => {
+  const { heng_start, heng_end, pie_start, pie_bend, pie_end } = jointsMap
+  const heng_length_range = glyph.getParamRange('横-长度')
+  const pie_horizonal_span_range = glyph.getParamRange('撇-水平延伸')
+  const pie_vertical_span_range = glyph.getParamRange('撇-竖直延伸')
+  const pie_bend_cursor_range = glyph.getParamRange('撇-弯曲游标')
+  const heng_length = range(heng_end.x - heng_start.x, heng_length_range)
+  const pie_horizonalSpan = range(pie_start.x - pie_end.x, pie_horizonal_span_range)
+  const pie_verticalSpan = range(pie_end.y - pie_start.y, pie_vertical_span_range)
+  const pie_bendCursor = range((pie_bend.y - pie_start.y) / pie_verticalSpan, pie_bend_cursor_range)
+  return {
+    heng_length,
+    pie_horizonalSpan,
+    pie_verticalSpan,
+    pie_bendCursor,
+  }
+}
+
+const updateGlyphByParams = (params, global_params) => {
+  const {
+    heng_length,
+    pie_horizonalSpan,
+    pie_verticalSpan,
+    pie_bendCursor,
+  } = params
+
+  // 横
+  const heng_start = new FP.Joint(
+    'heng_start',
+    {
+      x: x0,
+      y: y0,
+    },
+  )
+  const heng_end = new FP.Joint(
+    'heng_end',
+    {
+      x: heng_start.x + heng_length,
+      y: heng_start.y,
+    },
+  )
+
+  // 撇
+  const pie_start = new FP.Joint(
+    'pie_start',
+    {
+      x: heng_end.x,
+      y: heng_end.y,
+    },
+  )
+  const pie_end = new FP.Joint(
+    'pie_end',
+    {
+      x: pie_start.x - pie_horizonalSpan,
+      y: pie_start.y + pie_verticalSpan,
+    },
+  )
+
+  const pie_bend = new FP.Joint(
+    'pie_bend',
+    {
+      x: pie_start.x,
+      y: pie_start.y + pie_bendCursor * pie_verticalSpan,
+    },
+  )
+
+  glyph.addJoint(heng_start)
+  glyph.addJoint(heng_end)
+  glyph.addJoint(pie_start)
+  glyph.addJoint(pie_end)
+  glyph.addJoint(pie_bend)
+
+  const skeleton = {
+    heng_start,
+    heng_end,
+    pie_start,
+    pie_end,
+    pie_bend,
+  }
+
+  glyph.addRefLine(refline(heng_start, heng_end))
+  glyph.addRefLine(refline(pie_start, pie_bend))
+  glyph.addRefLine(refline(pie_bend, pie_end))
+
+  const components = getComponents(skeleton, global_params)
+  for (let i = 0; i < components.length; i++) {
+    glyph.addComponent(components[i])
+  }
+
+  glyph.getSkeleton = () => {
+    return skeleton
+  }
+  glyph.getComponentsBySkeleton = (skeleton) => {
+    return getComponents(skeleton, global_params)
+  }
 }
 
 const getComponents = (skeleton) => {
-  // 根据骨架计算轮廓关键点
+  const {
+    weights_variation_power,
+    start_style_type,
+    start_style_value,
+    turn_style_type,
+    turn_style_value,
+    bending_degree,
+    weight,
+  } = global_params
 
+  const getStartStyle = (start_style_type, start_style_value) => {
+    if (start_style_type === 1) {
+      // 起笔上下凸起长方形
+      return {
+        start_style_decorator_width: start_style_value * 20,
+        start_style_decorator_height: weight * 0.25,
+      }
+    } else if (start_style_type === 2) {
+      // 起笔上下凸起长方形，长方形内侧转角为圆角
+      return {
+        start_style_decorator_width: start_style_value * 20,
+        start_style_decorator_height: weight * 0.25,
+        start_style_decorator_radius: 20,
+      }
+    }
+    return {}
+  }
+  
+  const start_style = getStartStyle(start_style_type, start_style_value)
+  
+  const getDistance = (p1, p2) => {
+    if(!p1 || !p2) return 0
+    return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y))
+  }
+  
+  const getRadiusPoint = (options) => {
+    const { start, end, radius } = options
+    const angle = Math.atan2(end.y - start.y, end.x - start.x)
+    const point = {
+      x: start.x + Math.cos(angle) * radius,
+      y: start.y + Math.sin(angle) * radius,
+    }
+    return point
+  }
+
+  // 根据骨架计算轮廓关键点
   const {
     heng_start,
     heng_end,
@@ -277,7 +457,4 @@ const getComponents = (skeleton) => {
   return [ pen ]
 }
 
-const components = getComponents(skeleton)
-for (let i = 0; i < components.length; i++) {
-  glyph.addComponent(components[i])
-}
+updateGlyphByParams(params, global_params)

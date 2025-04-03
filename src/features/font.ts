@@ -21,7 +21,7 @@ import { fitCurve, type IPoint } from '../features/fitCurve'
 import { getEllipsePoints, getRectanglePoints, transformPoints } from '../utils/math'
 import { genUUID } from '../utils/string'
 import { width } from '../fontEditor/stores/global'
-import { ICustomGlyph, IGlyphComponent, executeScript, modifyComponentForGlyph } from '../fontEditor/stores/glyph'
+import { ICustomGlyph, IGlyphComponent, executeScript, modifyComponentForGlyph, orderedListWithItemsForGlyph } from '../fontEditor/stores/glyph'
 import { EllipseComponent } from '../fontEditor/programming/EllipseComponent'
 import { RectangleComponent } from '../fontEditor/programming/RectangleComponent'
 import { PenComponent } from '../fontEditor/programming/PenComponent'
@@ -216,6 +216,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 	descender: number,
 	advanceWidth: number,
 	grid?: any,
+	useSkeletonGrid?: number,
 }, offset: {
 	x: number,
 	y: number,
@@ -223,6 +224,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 	//-------
 	// forceUpdate = true
 	//-------
+	const useSkeletonGrid = (options && options.useSkeletonGrid) || false
 	let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = []
 	components.map((component) => {
 		if (!component.usedInCharacter) return
@@ -237,7 +239,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 					})
 					transformed_points = transformed_points.map((point) => {
 						const p = translate(point, offset)
-						if (options.grid) {
+						if (options.grid && !useSkeletonGrid) {
 							return computeCoords(options.grid, p)
 						} else {
 							return p
@@ -272,7 +274,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 					})
 					transformed_points = transformed_points.map((point) => {
 						const p = translate(point, offset)
-						if (options.grid) {
+						if (options.grid && !useSkeletonGrid) {
 							return computeCoords(options.grid, p)
 						} else {
 							return p
@@ -314,7 +316,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 					})
 					transformed_points = transformed_points.map((point) => {
 						const p = translate(point, offset)
-						if (options.grid) {
+						if (options.grid && !useSkeletonGrid) {
 							return computeCoords(options.grid, p)
 						} else {
 							return p
@@ -358,7 +360,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 					})
 					transformed_points = transformed_points.map((point) => {
 						const p = translate(point, offset)
-						if (options.grid) {
+						if (options.grid && !useSkeletonGrid) {
 							return computeCoords(options.grid, p)
 						} else {
 							return p
@@ -389,7 +391,13 @@ const componentsToContours = (components: Array<_Component>, options: {
 			}
 			case 'glyph-pen': {
 				if (!(component as PenComponent).contour || !(component as PenComponent).contour.length || forceUpdate) {
-					(component as PenComponent).updateData(isGlyph, offset, options.grid)
+					if (!options.grid || useSkeletonGrid) {
+						// 不使用布局调整或使用骨架布局调整的情况下，使用给定组件本身的数据，不进行布局调整。
+						// 注意如果使用骨架布局调整，给定的组件是根据调整后骨架计算出的组件，所以不用再次进行调整
+						(component as PenComponent).updateData(isGlyph, offset)
+					} else {
+						(component as PenComponent).updateData(isGlyph, offset, options.grid)
+					}
 				}
 				if (!preview) {
 					contours.push((component as PenComponent).contour)
@@ -400,7 +408,13 @@ const componentsToContours = (components: Array<_Component>, options: {
 			}
 			case 'glyph-polygon': {
 				if (!(component as PolygonComponent).contour || !(component as PolygonComponent).contour.length || forceUpdate) {
-					(component as PolygonComponent).updateData(isGlyph, offset, options.grid)
+					if (!options.grid || useSkeletonGrid) {
+						// 不使用布局调整或使用骨架布局调整的情况下，使用给定组件本身的数据，不进行布局调整。
+						// 注意如果使用骨架布局调整，给定的组件是根据调整后骨架计算出的组件，所以不用再次进行调整
+						(component as PolygonComponent).updateData(isGlyph, offset)
+					} else {
+						(component as PolygonComponent).updateData(isGlyph, offset, options.grid)
+					}
 				}
 				if (!preview) {
 					contours.push((component as PolygonComponent).contour)
@@ -411,7 +425,13 @@ const componentsToContours = (components: Array<_Component>, options: {
 			}
 			case 'glyph-rectangle': {
 				if (!(component as RectangleComponent).contour || !(component as RectangleComponent).contour.length || forceUpdate) {
-					(component as RectangleComponent).updateData(isGlyph, offset, options.grid)
+					if (!options.grid || useSkeletonGrid) {
+						// 不使用布局调整或使用骨架布局调整的情况下，使用给定组件本身的数据，不进行布局调整。
+						// 注意如果使用骨架布局调整，给定的组件是根据调整后骨架计算出的组件，所以不用再次进行调整
+						(component as RectangleComponent).updateData(isGlyph, offset)
+					} else {
+						(component as RectangleComponent).updateData(isGlyph, offset, options.grid)
+					}
 				}
 				if (!preview) {
 					contours.push((component as RectangleComponent).contour)
@@ -422,7 +442,13 @@ const componentsToContours = (components: Array<_Component>, options: {
 			}
 			case 'glyph-ellipse': {
 				if (!(component as EllipseComponent).contour || !(component as EllipseComponent).contour.length || forceUpdate) {
-					(component as EllipseComponent).updateData(isGlyph, offset, options.grid)
+					if (!options.grid || useSkeletonGrid) {
+						// 不使用布局调整或使用骨架布局调整的情况下，使用给定组件本身的数据，不进行布局调整。
+						// 注意如果使用骨架布局调整，给定的组件是根据调整后骨架计算出的组件，所以不用再次进行调整
+						(component as EllipseComponent).updateData(isGlyph, offset)
+					} else {
+						(component as EllipseComponent).updateData(isGlyph, offset, options.grid)
+					}
 				}
 				if (!preview) {
 					contours.push((component as EllipseComponent).contour)
@@ -436,13 +462,35 @@ const componentsToContours = (components: Array<_Component>, options: {
 				const glyph = (component as Component).value as unknown as ICustomGlyph
 				if (!glyph._o || forceUpdate) {
 					executeScript(glyph)
-					glyph._o.getJoints().map((joint) => {
-						joint.component = component as IGlyphComponent
-					})
+					// glyph._o.getJoints().map((joint) => {
+					// 	joint.component = component as IGlyphComponent
+					// })
 				}
 				// executeScript(glyph)
-				const contours1 = componentsToContours(glyph._o.components, options, { x: offset.x + ox, y: offset.y + oy }, isGlyph, preview, true)
-				contours = contours.concat(contours1)
+				if (useSkeletonGrid && options.grid) {
+					// 使用骨架布局调整的情况下，对于非字形实例本身组件，也就是非使用脚本提交的组件，正常计算
+					// 对于字形实例本身实用脚本创建的组件，先计算调整后骨架，再依据调整后的骨架计算最终组件
+					const _skeleton = glyph._o.getSkeleton()
+					const skeleton = {}
+					const keys = Object.keys(_skeleton)
+					for (let i = 0; i < keys.length; i++) {
+						const key = keys[i]
+						const _joint = _skeleton[key]
+						const joint = {
+							x: _joint.x + offset.x,
+							y: _joint.y + offset.y,
+						}
+						skeleton[key] = computeCoords(options.grid, joint)
+					}
+					const components1 = glyph._o.getComponentsBySkeleton(skeleton)
+					const components2 = orderedListWithItemsForGlyph(glyph)
+					const contours1 = componentsToContours(components1.concat(components2), options, { x: offset.x + ox, y: offset.y + oy }, isGlyph, preview, true)
+					contours = contours.concat(contours1)
+				} else {
+					// 不使用骨架布局调整
+					const contours1 = componentsToContours(glyph._o.components, options, { x: offset.x + ox, y: offset.y + oy }, isGlyph, preview, true)
+					contours = contours.concat(contours1)
+				}
 				break
 			}
 			default: {
@@ -600,9 +648,9 @@ const componentsToContours2 = (components: Array<_Component>, offset: {
 				const glyph = (component as Component).value as unknown as ICustomGlyph
 				if (!glyph._o) {
 					executeScript(glyph)
-					glyph._o.getJoints().map((joint) => {
-						joint.component = component as IGlyphComponent
-					})
+					// glyph._o.getJoints().map((joint) => {
+					// 	joint.component = component as IGlyphComponent
+					// })
 				}
 				// executeScript(glyph)
 				const contours1 = componentsToContours2(glyph._o.components, { x: ox, y: oy }, isGlyph, contour_type)

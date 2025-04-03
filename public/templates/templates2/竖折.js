@@ -1,9 +1,21 @@
-const shu_horizonalSpan = glyph.getParam('竖-水平延伸')
-const shu_verticalSpan = glyph.getParam('竖-竖直延伸')
-const zhe_length = glyph.getParam('折-长度')
-const weight = glyph.getParam('字重') || 40
 const ox = 500
 const oy = 500
+const x0 = 250
+const y0 = 250
+const params = {
+  shu_horizonalSpan: glyph.getParam('竖-水平延伸'),
+  shu_verticalSpan: glyph.getParam('竖-竖直延伸'),
+  zhe_length: glyph.getParam('折-长度'),
+}
+const global_params = {
+  weights_variation_power: glyph.getParam('字重变化'),
+  start_style_type: glyph.getParam('起笔风格'),
+  start_style_value: glyph.getParam('起笔数值'),
+  turn_style_type: glyph.getParam('转角风格'),
+  turn_style_value: glyph.getParam('转角数值'),
+  bending_degree: glyph.getParam('弯曲程度'),
+  weight: glyph.getParam('字重') || 40,
+}
 
 const refline = (p1, p2) => {
   return {
@@ -17,95 +29,225 @@ const distance = (p1, p2) => {
   return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y))
 }
 
-// 竖
-const shu_start = new FP.Joint(
-  'shu_start',
-  {
-    x: ox - (shu_horizonalSpan + zhe_length) / 2,
-    y: oy - shu_verticalSpan / 2,
-  },
-)
-const shu_end = new FP.Joint(
-  'shu_end',
-  {
-    x: shu_start.x + shu_horizonalSpan,
-    y: shu_start.y + shu_verticalSpan,
-  },
-)
-
-// 折
-const zhe_start = shu_end
-const zhe_end = new FP.Joint(
-  'zhe_end',
-  {
-    x: zhe_start.x + zhe_length,
-    y: zhe_start.y,
-  },
-)
-
-glyph.addJoint(shu_start)
-glyph.addJoint(shu_end)
-glyph.addJoint(zhe_start)
-glyph.addJoint(zhe_end)
-
-const skeleton = {
-  shu_start,
-  shu_end,
-  zhe_start,
-  zhe_end,
-}
-
-glyph.addRefLine(refline(shu_start, shu_end))
-glyph.addRefLine(refline(zhe_start, zhe_end))
-
-const start_style_type = glyph.getParam('起笔风格')
-const start_style_value = glyph.getParam('起笔数值')
-const bending_degree = glyph.getParam('弯曲程度')
-const turn_style_type = glyph.getParam('转角风格')
-const turn_style_value = glyph.getParam('转角数值')
-
-const getStartStyle = (start_style_type, start_style_value) => {
-  if (start_style_type === 1) {
-    // 起笔上下凸起长方形
-    return {
-      start_style_decorator_height: start_style_value * 20,
-      start_style_decorator_width: weight * 0.25,
+const getJointsMap = (data) => {
+  const { draggingJoint, deltaX, deltaY } = data
+  const jointsMap = Object.assign({}, glyph.tempData)
+  switch (draggingJoint.name) {
+    case 'shu_end': {
+      jointsMap['shu_end'] = {
+        x: glyph.tempData['shu_end'].x + deltaX,
+        y: glyph.tempData['shu_end'].y + deltaY,
+      }
+      jointsMap['zhe_start'] = {
+        x: glyph.tempData['zhe_start'].x + deltaX,
+        y: glyph.tempData['zhe_start'].y + deltaY,
+      }
+      jointsMap['zhe_end'] = {
+        x: glyph.tempData['zhe_end'].x + deltaX,
+        y: glyph.tempData['zhe_end'].y + deltaY,
+      }
+      break
     }
-  } else if (start_style_type === 2) {
-    // 起笔上下凸起长方形，长方形内侧转角为圆角
-    return {
-      start_style_decorator_height: start_style_value * 20,
-      start_style_decorator_width: weight * 0.25,
-      start_style_decorator_radius: 20,
+    case 'zhe_start': {
+      jointsMap['shu_end'] = {
+        x: glyph.tempData['shu_end'].x + deltaX,
+        y: glyph.tempData['shu_end'].y + deltaY,
+      }
+      jointsMap['zhe_start'] = {
+        x: glyph.tempData['zhe_start'].x + deltaX,
+        y: glyph.tempData['zhe_start'].y + deltaY,
+      }
+      jointsMap['zhe_end'] = {
+        x: glyph.tempData['zhe_end'].x + deltaX,
+        y: glyph.tempData['zhe_end'].y + deltaY,
+      }
+      break
+    }
+    case 'zhe_end': {
+      jointsMap['zhe_end'] = {
+        x: glyph.tempData['zhe_end'].x + deltaX,
+        y: glyph.tempData['zhe_end'].y,
+      }
+      break
     }
   }
-  return {}
+  return jointsMap
 }
 
-const start_style = getStartStyle(start_style_type, start_style_value)
-
-const getLength = (horizonalSpan, verticalSpan) => {
-  return Math.sqrt(horizonalSpan * horizonalSpan + verticalSpan * verticalSpan)
+glyph.onSkeletonDragStart = (data) => {
+  // joint数据格式：{x, y, name}
+  const { draggingJoint } = data
+  glyph.tempData = {}
+  glyph.getJoints().map((joint) => {
+    const _joint = {
+      name: joint.name,
+      x: joint.x,
+      y: joint.y,
+    }
+    glyph.tempData[_joint.name] = _joint
+  })
 }
 
-const getDistance = (p1, p2) => {
-  if(!p1 || !p2) return 0
-  return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y))
+glyph.onSkeletonDrag = (data) => {
+  if (!glyph.tempData) return
+  glyph.clear()
+  // joint数据格式：{x, y, name}
+  const jointsMap = getJointsMap(data)
+  const _params = computeParamsByJoints(jointsMap)
+  updateGlyphByParams(_params, global_params)
 }
 
-const getRadiusPoint = (options) => {
-  const { start, end, radius } = options
-  const angle = Math.atan2(end.y - start.y, end.x - start.x)
-  const point = {
-    x: start.x + Math.cos(angle) * radius,
-    y: start.y + Math.sin(angle) * radius,
+glyph.onSkeletonDragEnd = (data) => {
+  if (!glyph.tempData) return
+  glyph.clear()
+  // joint数据格式：{x, y, name}
+  const jointsMap = getJointsMap(data)
+  const _params = computeParamsByJoints(jointsMap)
+  updateGlyphByParams(_params, global_params)
+  glyph.setParam('竖-水平延伸', _params.shu_horizonalSpan)
+  glyph.setParam('竖-竖直延伸', _params.shu_verticalSpan)
+  glyph.setParam('折-长度', _params.zhe_length)
+  glyph.tempData = null
+}
+
+const range = (value, range) => {
+  if (value < range.min) {
+    return range.min
+  } else if (value > range.max) {
+    return range.max
   }
-  return point
+  return value
+}
+
+const computeParamsByJoints = (jointsMap) => {
+  const { shu_start, shu_end, zhe_start, zhe_end } = jointsMap
+  const shu_horizonal_span_range = glyph.getParamRange('竖-水平延伸')
+  const shu_vertical_span_range = glyph.getParamRange('竖-竖直延伸')
+  const zhe_length_range = glyph.getParamRange('折-长度')
+  const shu_horizonalSpan = range(shu_end.x - shu_start.x, shu_horizonal_span_range)
+  const shu_verticalSpan = range(shu_end.y - shu_start.y, shu_vertical_span_range)
+  const zhe_length = range(zhe_end.x - zhe_start.x, zhe_length_range)
+  return {
+    shu_horizonalSpan,
+    shu_verticalSpan,
+    zhe_length,
+  }
+}
+
+const updateGlyphByParams = (params, global_params) => {
+  const {
+    shu_horizonalSpan,
+    shu_verticalSpan,
+    zhe_length,
+  } = params
+
+  // 竖
+  const shu_start = new FP.Joint(
+    'shu_start',
+    {
+      x: x0,
+      y: y0,
+    },
+  )
+  const shu_end = new FP.Joint(
+    'shu_end',
+    {
+      x: shu_start.x + shu_horizonalSpan,
+      y: shu_start.y + shu_verticalSpan,
+    },
+  )
+
+  // 折
+  const zhe_start = new FP.Joint(
+    'zhe_start',
+    {
+      x: shu_start.x + shu_horizonalSpan,
+      y: shu_start.y + shu_verticalSpan,
+    },
+  )
+  const zhe_end = new FP.Joint(
+    'zhe_end',
+    {
+      x: zhe_start.x + zhe_length,
+      y: zhe_start.y,
+    },
+  )
+
+  glyph.addJoint(shu_start)
+  glyph.addJoint(shu_end)
+  glyph.addJoint(zhe_start)
+  glyph.addJoint(zhe_end)
+
+  const skeleton = {
+    shu_start,
+    shu_end,
+    zhe_start,
+    zhe_end,
+  }
+
+  glyph.addRefLine(refline(shu_start, shu_end))
+  glyph.addRefLine(refline(zhe_start, zhe_end))
+
+  const components = getComponents(skeleton, global_params)
+  for (let i = 0; i < components.length; i++) {
+    glyph.addComponent(components[i])
+  }
+
+  glyph.getSkeleton = () => {
+    return skeleton
+  }
+  glyph.getComponentsBySkeleton = (skeleton) => {
+    return getComponents(skeleton, global_params)
+  }
 }
 
 const getComponents = (skeleton) => {
-  // 根据骨架计算轮廓关键点
+  const {
+    weights_variation_power,
+    start_style_type,
+    start_style_value,
+    turn_style_type,
+    turn_style_value,
+    bending_degree,
+    weight,
+  } = global_params
 
+  const getStartStyle = (start_style_type, start_style_value) => {
+    if (start_style_type === 1) {
+      // 起笔上下凸起长方形
+      return {
+        start_style_decorator_height: start_style_value * 20,
+        start_style_decorator_width: weight * 0.25,
+      }
+    } else if (start_style_type === 2) {
+      // 起笔上下凸起长方形，长方形内侧转角为圆角
+      return {
+        start_style_decorator_height: start_style_value * 20,
+        start_style_decorator_width: weight * 0.25,
+        start_style_decorator_radius: 20,
+      }
+    }
+    return {}
+  }
+  
+  const start_style = getStartStyle(start_style_type, start_style_value)
+  
+  const getDistance = (p1, p2) => {
+    if(!p1 || !p2) return 0
+    return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y))
+  }
+  
+  const getRadiusPoint = (options) => {
+    const { start, end, radius } = options
+    const angle = Math.atan2(end.y - start.y, end.x - start.x)
+    const point = {
+      x: start.x + Math.cos(angle) * radius,
+      y: start.y + Math.sin(angle) * radius,
+    }
+    return point
+  }
+
+  // 根据骨架计算轮廓关键点
   const {
     shu_start,
     shu_end,
@@ -335,7 +477,4 @@ const getComponents = (skeleton) => {
   return [ pen ]
 }
 
-const components = getComponents(skeleton)
-for (let i = 0; i < components.length; i++) {
-  glyph.addComponent(components[i])
-}
+updateGlyphByParams(params, global_params)
