@@ -27,6 +27,7 @@ import { RectangleComponent } from '../fontEditor/programming/RectangleComponent
 import { PenComponent } from '../fontEditor/programming/PenComponent'
 import { PolygonComponent } from '../fontEditor/programming/PolygonComponent'
 import { computeCoords } from '../fontEditor/canvas/canvas'
+import { executeScript as executeScript_playground } from '../fontEditor/stores/playground'
 
 const contoursToComponents = (contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>, options: {
 	unitsPerEm: number,
@@ -216,7 +217,8 @@ const componentsToContours = (components: Array<_Component>, options: {
 	descender: number,
 	advanceWidth: number,
 	grid?: any,
-	useSkeletonGrid?: number,
+	useSkeletonGrid?: boolean,
+	playground?: boolean,
 }, offset: {
 	x: number,
 	y: number,
@@ -461,13 +463,17 @@ const componentsToContours = (components: Array<_Component>, options: {
 				const { ox, oy } = component as IGlyphComponent
 				const glyph = (component as Component).value as unknown as ICustomGlyph
 				if (!glyph._o || forceUpdate) {
-					executeScript(glyph)
+					if (options && options.playground) {
+						executeScript_playground(glyph)
+					} else {
+						executeScript(glyph)
+					}
 					// glyph._o.getJoints().map((joint) => {
 					// 	joint.component = component as IGlyphComponent
 					// })
 				}
 				// executeScript(glyph)
-				if (useSkeletonGrid && options.grid) {
+				if (useSkeletonGrid && options.grid && glyph._o?.getSkeleton) {
 					// 使用骨架布局调整的情况下，对于非字形实例本身组件，也就是非使用脚本提交的组件，正常计算
 					// 对于字形实例本身实用脚本创建的组件，先计算调整后骨架，再依据调整后的骨架计算最终组件
 					const _skeleton = glyph._o.getSkeleton()

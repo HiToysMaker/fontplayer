@@ -727,9 +727,6 @@ const renderPreview2 = (canvas: HTMLCanvasElement, contours: Array<Array<ILine |
         )
       }
     }
-    // ctx.closePath()
-    //ctx.fillStyle = '#000'
-    //ctx.fill()
   }
   ctx.closePath()
   ctx.fillStyle = '#000'

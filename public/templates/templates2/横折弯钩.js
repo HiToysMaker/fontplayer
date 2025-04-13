@@ -22,12 +22,16 @@ const params = {
   gou_verticalSpan: glyph.getParam('钩-竖直延伸'),
 }
 
-const refline = (p1, p2) => {
-  return {
+const refline = (p1, p2, type) => {
+  const refline =  {
     name: `${p1.name}-${p2.name}`,
     start: p1.name,
     end: p2.name,
   }
+  if (type) {
+    refline.type = type
+  }
+  return refline
 }
 
 const distance = (p1, p2) => {
@@ -307,6 +311,7 @@ const computeParamsByJoints = (jointsMap) => {
     wan_length,
     gou_verticalSpan,
     gou_horizonalSpan,
+    skeletonRefPos: glyph.getParam('参考位置'),
   }
 }
 

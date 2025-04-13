@@ -27,13 +27,25 @@
 		//@ts-ignore
 		if (!!window.__TAURI_INTERNALS__) {
 			const unlistenClose = await getCurrentWindow().onCloseRequested(async (event) => {
-				await emit('on-webview-close')
-				if (codeEditor) {
-					document.getElementById('codes-container').innerHTML = ''
-					codeEditor = null
+				try {
+					if (codeEditor) {
+						codeEditor.toTextArea()
+						codeEditor = null
+						document.getElementById('codes-container').innerHTML = ''
+					}
+					await emit('on-webview-close')
+					unlistenInitData && unlistenInitData()
+					unlistenClose && unlistenClose()
+				} catch (e) {
+					console.error(e)
 				}
-				unlistenInitData && unlistenInitData()
-				unlistenClose && unlistenClose()
+				// await emit('on-webview-close')
+				// if (codeEditor) {
+				// 	document.getElementById('codes-container').innerHTML = ''
+				// 	codeEditor = null
+				// }
+				// unlistenInitData && unlistenInitData()
+				// unlistenClose && unlistenClose()
 			})
 			unlistenInitData = await listen('init-data', (event) => {
 				const { __constants, __script, __isWeb } = event.payload as any

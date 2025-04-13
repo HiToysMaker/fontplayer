@@ -227,9 +227,9 @@ class PenComponent {
 			advanceWidth: 1000,
 		}
 		if (!isGlyph) {
-			options.unitsPerEm = selectedFile.value.fontSettings.unitsPerEm
-			options.descender = selectedFile.value.fontSettings.descender
-			options.advanceWidth = selectedFile.value.fontSettings.unitsPerEm
+			options.unitsPerEm = selectedFile.value?.fontSettings.unitsPerEm || 1000
+			options.descender = selectedFile.value?.fontSettings.descender || -200
+			options.advanceWidth = selectedFile.value?.fontSettings.unitsPerEm || 1000
 		}
 		const contour_points = formatPoints(points, options, 1)
 		const contour = genPenContour(contour_points)

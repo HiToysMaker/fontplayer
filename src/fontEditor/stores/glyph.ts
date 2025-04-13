@@ -73,6 +73,7 @@ export interface IRefLine {
 	name: string;
 	start: string;
 	end: string;
+	type?: string;
 }
 
 // 关键点
@@ -125,6 +126,7 @@ export interface IConstant {
 	max?: number;
 	ratio?: string;
 	ratioed?: boolean;
+	options?: Array<IEnumOption>;
 }
 
 // 参数类型

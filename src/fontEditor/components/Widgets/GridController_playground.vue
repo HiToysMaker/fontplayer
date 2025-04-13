@@ -1,26 +1,11 @@
 <script lang="ts" setup>
 	import { ref, type Ref, toRefs, onMounted, watch, computed, onUnmounted, onBeforeUnmount } from 'vue'
 	import { renderLayout } from '../../../features/layout'
-	import { editCharacterFile, executeCharacterScript, orderedListWithItemsForCurrentCharacterFile } from '../../stores/files'
+  import { editCharacterFile, orderedListWithItemsForCurrentCharacterFile, renderPreview } from '../../stores/playground'
 	import { emitter } from '../../Event/bus'
 	import { renderCanvas as renderCharacter, renderGridCanvas } from '../../canvas/canvas'
-	import { gridChanged, gridSettings, tool } from '../../stores/global'
 	import { ElMessageBox } from 'element-plus'
 	import { OpType, saveState, StoreType } from '../../stores/edit'
-	interface LayoutNode {
-		id: string;
-		coords: string;
-		label: string;
-		children?: LayoutNode[];
-		rect: {
-			x: number;
-			y: number;
-			w: number;
-			h: number;
-		},
-		showCoords?: string,
-		coordsSegment?: number,
-	}
 	const props = defineProps({
 		dx: {
 			type: Number,
@@ -38,13 +23,9 @@
 			type: Number,
 			default: 500,
 		},
-		layoutTree: {
-			type: Array<LayoutNode>,
-			default: [],
-		},
 		onChange: Function,
 	})
-	const { dx, dy, centerSquareSize, size, onChange, layoutTree } = toRefs(props)
+	const { dx, dy, centerSquareSize, size, onChange } = toRefs(props)
 
 	const barycenter = computed(() => [mapCanvas(size.value / 2) + mapCanvas(dx.value), mapCanvas(size.value / 2) + mapCanvas(dy.value)])
 	const canvas: Ref<HTMLCanvasElement> = ref(null)
@@ -60,38 +41,12 @@
 	const y2 = computed(() => Math.round((size.value - centerSquareSize.value) / 2 + centerSquareSize.value) + dy.value)
 
 	onMounted(() => {
-		render()
-		executeCharacterScript(editCharacterFile.value)
-		renderGridCanvas(orderedListWithItemsForCurrentCharacterFile.value, canvas.value as unknown as HTMLCanvasElement, {
-			scale: 0.5,
-			forceUpdate: false,
-			fill: false,
-    	offset: { x: 0, y: 0 },
-			grid: {
-				dx: dx.value,
-				dy: dy.value,
-				size: size.value,
-				centerSquareSize: centerSquareSize.value,
-				x1: x1.value,
-				x2: x2.value,
-				y1: y1.value,
-				y2: y2.value,
-			},
-			useSkeletonGrid: editCharacterFile.value.info?.useSkeletonGrid || false,
-		})
 		canvas.value.addEventListener('mousedown', onMouseDown)
 		canvas.value.addEventListener('mousemove', onMouseMove)
 	})
 	onBeforeUnmount(() => {
 		canvas.value.removeEventListener('mousedown', onMouseDown)
 		canvas.value.removeEventListener('mousemove', onMouseMove)
-		if (tool.value === 'grid') {
-			ElMessageBox.alert(
-				'为方便用户进行组件编辑操作，离开布局编辑界面会恢复默认布局。如果您已经应用布局变换，预览及导出字体库会使用应用变换后的布局，但是如果之后执行了其他编辑操作，会重置为默认布局。',
-				'提示：您已经离开布局编辑界面', {
-				confirmButtonText: '确定',
-			})
-		}
 	})
 	const status = ref('none')
 	const style = ref('default')
@@ -221,49 +176,8 @@
 		document.body.removeEventListener('mouseup', onMouseUp)
 	}
 
-	const saveGridEditState = (options) => {
-    // 保存状态
-		saveState('编辑布局', [
-			StoreType.Grid
-		],
-			OpType.Undo,
-			options,
-		)
-  }
-
-	let timer = null
-  let opstatus = false
-	watch([gridSettings, gridChanged], (newValue, oldValue) => {
-		if (timer) {
-      clearTimeout(timer)
-    }
-    timer = setTimeout(() => {
-      opstatus = false
-			clearTimeout(timer)
-    }, 500)
-    if (!opstatus) {
-      saveGridEditState({
-				gridSettings: oldValue[0],
-				gridChanged: oldValue[1],
-				newRecord: true,
-			})
-      opstatus = true
-    }
-	}, {
-		deep: true,
-	})
-
-	watch([dx, dy, size, centerSquareSize, layoutTree], (newValue, oldValue) => {
-		render()
-		executeCharacterScript(editCharacterFile.value)
-		// emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
-		// emitter.emit('renderCharacter', true)
-		// renderCharacter(orderedListWithItemsForCurrentCharacterFile.value, canvas.value as unknown as HTMLCanvasElement, {
-		// 	scale: 0.5,
-		// 	forceUpdate: false,
-		// 	fill: false,
-    // 	offset: { x: 0, y: 0 },
-		// })
+  emitter.on('refreshPlaygroundGridController', () => {
+    render()
 		renderGridCanvas(orderedListWithItemsForCurrentCharacterFile.value, canvas.value as unknown as HTMLCanvasElement, {
 			scale: 0.5,
 			forceUpdate: false,
@@ -279,27 +193,33 @@
 				y1: y1.value,
 				y2: y2.value,
 			},
-			useSkeletonGrid: editCharacterFile.value.info?.useSkeletonGrid || false,
+			useSkeletonGrid: true,
+		})
+  })
+
+	watch([dx, dy, size, centerSquareSize], (newValue, oldValue) => {
+		render()
+		renderGridCanvas(orderedListWithItemsForCurrentCharacterFile.value, canvas.value as unknown as HTMLCanvasElement, {
+			scale: 0.5,
+			forceUpdate: false,
+			fill: false,
+    	offset: { x: 0, y: 0 },
+			grid: {
+				dx: dx.value,
+				dy: dy.value,
+				size: size.value,
+				centerSquareSize: centerSquareSize.value,
+				x1: x1.value,
+				x2: x2.value,
+				y1: y1.value,
+				y2: y2.value,
+			},
+			useSkeletonGrid: true,
 		})
 	}, {
 		deep: true,
 	})
-	watch([tool], () => {
-		if (tool.value === 'grid' && orderedListWithItemsForCurrentCharacterFile.value.length) {
-			render()
-			executeCharacterScript(editCharacterFile.value)
-			emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
-			emitter.emit('renderCharacter', true)
-			renderCharacter(orderedListWithItemsForCurrentCharacterFile.value, canvas.value as unknown as HTMLCanvasElement, {
-				scale: 0.5,
-				forceUpdate: false,
-				fill: false,
-				offset: { x: 0, y: 0 },
-			})
-		}
-	}, {
-		deep: true,
-	})
+
 	const render = () => {
 		const ctx = (canvas.value as unknown as HTMLCanvasElement).getContext('2d') as CanvasRenderingContext2D
 		ctx.clearRect(0, 0, size.value, size.value)
@@ -350,17 +270,6 @@
 		)
 		ctx.closePath()
 		ctx.fill()
-
-		if (layoutTree.value.length) {
-			// layout
-			renderLayout(
-				layoutTree.value,
-				{ x: 0, y: 0, w: size.value, h: size.value },
-				1,
-				{ x1: x1.value, x2: x2.value, y1: y1.value, y2: y2.value, l: size.value },
-				canvas.value,
-			)
-		}
 	}
 </script>
 

@@ -1,12 +1,10 @@
 const ox = 500
 const oy = 500
-const x0 = 425
-const y0 = 245
+const x0 = 250
+const y0 = 345
 const params = {
   heng_length: glyph.getParam('横-长度'),
   zhe_length: glyph.getParam('折-长度'),
-  tiao_horizonalSpan: glyph.getParam('挑-水平延伸'),
-  tiao_verticalSpan: glyph.getParam('挑-竖直延伸'),
   skeletonRefPos: glyph.getParam('参考位置'),
 }
 const global_params = {
@@ -52,14 +50,6 @@ const getJointsMap = (data) => {
         x: glyph.tempData['zhe_end'].x + deltaX,
         y: glyph.tempData['zhe_end'].y,
       }
-      jointsMap['tiao_start'] = {
-        x: glyph.tempData['tiao_start'].x + deltaX,
-        y: glyph.tempData['tiao_start'].y,
-      }
-      jointsMap['tiao_end'] = {
-        x: glyph.tempData['tiao_end'].x + deltaX,
-        y: glyph.tempData['tiao_end'].y,
-      }
       break
     }
     case 'zhe_start': {
@@ -75,50 +65,12 @@ const getJointsMap = (data) => {
         x: glyph.tempData['zhe_end'].x + deltaX,
         y: glyph.tempData['zhe_end'].y,
       }
-      jointsMap['tiao_start'] = {
-        x: glyph.tempData['tiao_start'].x + deltaX,
-        y: glyph.tempData['tiao_start'].y,
-      }
-      jointsMap['tiao_end'] = {
-        x: glyph.tempData['tiao_end'].x + deltaX,
-        y: glyph.tempData['tiao_end'].y,
-      }
       break
     }
     case 'zhe_end': {
       jointsMap['zhe_end'] = {
-        x: glyph.tempData['zhe_end'].x,
+        x: glyph.tempData['zhe_end'].x + deltaX,
         y: glyph.tempData['zhe_end'].y + deltaY,
-      }
-      jointsMap['tiao_start'] = {
-        x: glyph.tempData['tiao_start'].x,
-        y: glyph.tempData['tiao_start'].y + deltaY,
-      }
-      jointsMap['tiao_end'] = {
-        x: glyph.tempData['tiao_end'].x,
-        y: glyph.tempData['tiao_end'].y + deltaY,
-      }
-      break
-    }
-    case 'tiao_start': {
-      jointsMap['zhe_end'] = {
-        x: glyph.tempData['zhe_end'].x,
-        y: glyph.tempData['zhe_end'].y + deltaY,
-      }
-      jointsMap['tiao_start'] = {
-        x: glyph.tempData['tiao_start'].x,
-        y: glyph.tempData['tiao_start'].y + deltaY,
-      }
-      jointsMap['tiao_end'] = {
-        x: glyph.tempData['tiao_end'].x,
-        y: glyph.tempData['tiao_end'].y + deltaY,
-      }
-      break
-    }
-    case 'tiao_end': {
-      jointsMap['tiao_end'] = {
-        x: glyph.tempData['tiao_end'].x + deltaX,
-        y: glyph.tempData['tiao_end'].y + deltaY,
       }
       break
     }
@@ -157,9 +109,8 @@ glyph.onSkeletonDragEnd = (data) => {
   const _params = computeParamsByJoints(jointsMap)
   updateGlyphByParams(_params, global_params)
   glyph.setParam('横-长度', _params.heng_length)
-  glyph.setParam('折-长度', _params.zhe_length)
-  glyph.setParam('挑-水平延伸', _params.tiao_horizonalSpan)
-  glyph.setParam('挑-竖直延伸', _params.tiao_verticalSpan)
+  glyph.setParam('折-水平延伸', _params.zhe_horizonalSpan)
+  glyph.setParam('折-竖直延伸', _params.zhe_verticalSpan)
   glyph.tempData = null
 }
 
@@ -173,20 +124,17 @@ const range = (value, range) => {
 }
 
 const computeParamsByJoints = (jointsMap) => {
-  const { heng_start, heng_end, zhe_start, zhe_end, tiao_start, tiao_end } = jointsMap
+  const { heng_start, heng_end, zhe_start, zhe_end } = jointsMap
   const heng_length_range = glyph.getParamRange('横-长度')
-  const zhe_length_range = glyph.getParamRange('折-长度')
-  const tiao_horizonal_span_range = glyph.getParamRange('挑-水平延伸')
-  const tiao_vertical_span_range = glyph.getParamRange('挑-竖直延伸')
+  const zhe_horizonal_span_range = glyph.getParamRange('折-水平延伸')
+  const zhe_vertical_span_range = glyph.getParamRange('折-竖直延伸')
   const heng_length = range(heng_end.x - heng_start.x, heng_length_range)
-  const zhe_length = range(zhe_end.y - zhe_start.y, zhe_length_range)
-  const tiao_horizonalSpan = range(tiao_end.x - tiao_start.x, tiao_horizonal_span_range)
-  const tiao_verticalSpan = range(tiao_start.y - tiao_end.y, tiao_vertical_span_range)
+  const zhe_horizonalSpan = range(zhe_start.x - zhe_end.x, zhe_horizonal_span_range)
+  const zhe_verticalSpan = range(zhe_end.y - zhe_start.y, zhe_vertical_span_range)
   return {
     heng_length,
-    zhe_length,
-    tiao_horizonalSpan,
-    tiao_verticalSpan,
+    zhe_horizonalSpan,
+    zhe_verticalSpan,
     skeletonRefPos: glyph.getParam('参考位置'),
   }
 }
@@ -195,8 +143,6 @@ const updateGlyphByParams = (params, global_params) => {
   const {
     heng_length,
     zhe_length,
-    tiao_horizonalSpan,
-    tiao_verticalSpan,
     skeletonRefPos,
   } = params
   const { weight } = global_params
@@ -339,41 +285,20 @@ const updateGlyphByParams = (params, global_params) => {
   glyph.addJoint(zhe_end_ref)
   glyph.addRefLine(refline(zhe_start_ref, zhe_end_ref, 'ref'))
 
-  // 挑
-  const tiao_start = new FP.Joint(
-    'tiao_start',
-    {
-      x: zhe_start.x,
-      y: zhe_start.y + zhe_length,
-    },
-  )
-  const tiao_end = new FP.Joint(
-    'tiao_end',
-    {
-      x: tiao_start.x + tiao_horizonalSpan,
-      y: tiao_start.y - tiao_verticalSpan,
-    },
-  )
-
   glyph.addJoint(heng_start)
   glyph.addJoint(heng_end)
   glyph.addJoint(zhe_start)
   glyph.addJoint(zhe_end)
-  glyph.addJoint(tiao_start)
-  glyph.addJoint(tiao_end)
 
   const skeleton = {
     heng_start,
     heng_end,
     zhe_start,
     zhe_end,
-    tiao_start,
-    tiao_end,
   }
 
   glyph.addRefLine(refline(heng_start, heng_end))
   glyph.addRefLine(refline(zhe_start, zhe_end))
-  glyph.addRefLine(refline(tiao_start, tiao_end))
 
   const components = getComponents(skeleton, global_params)
   for (let i = 0; i < components.length; i++) {
@@ -440,57 +365,76 @@ const getComponents = (skeleton) => {
     heng_end,
     zhe_start,
     zhe_end,
-    tiao_start,
-    tiao_end,
   } = skeleton
 
-  // out指左侧（外侧）轮廓线
-  // in指右侧（内侧）轮廓线
-  const { out_heng_start, out_heng_end, in_heng_start, in_heng_end } = FP.getLineContours('heng', { heng_start, heng_end }, weight, {
-    unticlockwise: true,
-  })
-  const { out_zhe_start, out_zhe_end, in_zhe_start, in_zhe_end } = FP.getLineContours('zhe', { zhe_start, zhe_end }, weight, {
-    unticlockwise: true,
-  })
-  const { out_tiao_start, out_tiao_end, in_tiao_start, in_tiao_end } = FP.getLineContours('tiao', { tiao_start, tiao_end }, weight, {
-    unticlockwise: true,
-  })
-  const { corner: out_corner_heng_zhe } = FP.getIntersection(
-    { type: 'line', start: out_heng_start, end: out_heng_end },
-    { type: 'line', start: out_zhe_start, end: out_zhe_end },
-  )
+  // out指右侧（外侧）轮廓线
+  // in指左侧（内侧）轮廓线
+  const { out_heng_start, out_heng_end, in_heng_start, in_heng_end } = FP.getLineContours('heng', { heng_start, heng_end }, weight)
+  const { out_zhe_start, out_zhe_end, in_zhe_start, in_zhe_end } = FP.getLineContours('zhe', { zhe_start, zhe_end }, weight)
   const { corner: in_corner_heng_zhe } = FP.getIntersection(
     { type: 'line', start: in_heng_start, end: in_heng_end },
     { type: 'line', start: in_zhe_start, end: in_zhe_end },
   )
-  const { corner: out_corner_zhe_tiao } = FP.getIntersection(
+  const { corner: out_corner_heng_zhe } = FP.getIntersection(
+    { type: 'line', start: out_heng_start, end: out_heng_end },
     { type: 'line', start: out_zhe_start, end: out_zhe_end },
-    { type: 'line', start: out_tiao_start, end: out_tiao_end },
   )
-  const { corner: in_corner_zhe_tiao, corner_index: in_corner_index_zhe_tiao } = FP.getIntersection(
-    { type: 'line', start: in_zhe_start, end: in_zhe_end },
-    { type: 'line', start: in_tiao_start, end: in_tiao_end },
+  const { corner: out_corner_heng_zhe_down } = FP.getIntersection(
+    { type: 'line', start: out_zhe_start, end: in_zhe_end },
+    { type: 'line', start: in_heng_start, end: in_heng_end }
   )
-  const tiao_angle = Math.atan2(tiao_start.y - tiao_end.y, tiao_end.x - tiao_start.x)
-  const out_corner_zhe_tiao_1 = {
-    x: out_corner_zhe_tiao.x - weight * Math.sin(tiao_angle),
-    y: out_corner_zhe_tiao.y - weight * Math.cos(tiao_angle)
+  const out_corner_heng_zhe_up = {
+    x: out_corner_heng_zhe_down.x,
+    y: out_corner_heng_zhe_down.y - weight,
   }
-  const { corner: out_corner_zhe_tiao_2 } = FP.getIntersection(
-    { type: 'line', start: out_zhe_start, end: out_zhe_end },
-    { type: 'line', start: in_tiao_start, end: in_tiao_end },
+
+  // 计算横折拐角处内外圆角相关的点与数据
+  let in_radius_heng_zhe = bending_degree > 1 ? 60 * (bending_degree - 1) : 0
+  let out_radius_heng_zhe = bending_degree > 1 ? 80 * (bending_degree - 1) : 0
+  // 如果in_radius超出横或折长度，取横或折的最小长度
+  const in_radius_min_length_heng_zhe = Math.min(
+    getDistance(in_corner_heng_zhe, in_heng_start),
+    getDistance(in_corner_heng_zhe, in_zhe_end),
   )
+  const out_radius_min_length_heng_zhe = Math.min(
+    getDistance(out_zhe_end, out_heng_start),
+    getDistance(out_zhe_start, out_zhe_end),
+  )
+  if (in_radius_heng_zhe >= in_radius_min_length_heng_zhe) {
+    in_radius_heng_zhe = in_radius_min_length_heng_zhe
+  }
+  if (out_radius_heng_zhe >= out_radius_min_length_heng_zhe) {
+    out_radius_heng_zhe = out_radius_min_length_heng_zhe
+  }
+  const in_radius_start_heng_zhe = {
+    x: in_corner_heng_zhe.x - in_radius_heng_zhe,
+    y: in_corner_heng_zhe.y,
+  }
+  const in_radius_end_heng_zhe = getRadiusPoint({
+    start: in_corner_heng_zhe,
+    end: in_zhe_end,
+    radius: in_radius_heng_zhe,
+  })
+  const out_radius_start_heng_zhe = {
+    x: out_corner_heng_zhe.x - out_radius_heng_zhe,
+    y: out_corner_heng_zhe.y,
+  }
+  const out_radius_end_heng_zhe = getRadiusPoint({
+    start: out_corner_heng_zhe,
+    end: out_zhe_end,
+    radius: out_radius_heng_zhe,
+  })
 
   let turn_data = {}
   if (turn_style_type === 1) {
     // 计算转角风格1（凸起，圆滑连接）所需要的数据
     const turn_length = 20 * turn_style_value
-    const { inner_angle, mid_angle, angle1, angle2 } = FP.getTurnAngles(in_heng_start, in_corner_heng_zhe, in_zhe_end)
+    const { inner_angle, mid_angle, angle1, angle2 } = FP.getTurnAngles(out_heng_start, out_corner_heng_zhe, out_zhe_end)
     const inner_corner_length = weight
     const corner_radius = (inner_corner_length / 2) / Math.sin(inner_angle / 2)
     const turn_control_1 = {
-      x: in_corner_heng_zhe.x - corner_radius,
-      y: in_corner_heng_zhe.y,
+      x: out_corner_heng_zhe.x - corner_radius,
+      y: out_corner_heng_zhe.y,
     }
     const turn_start_1 = {
       x: turn_control_1.x - corner_radius,
@@ -501,13 +445,13 @@ const getComponents = (skeleton) => {
       y: turn_control_1.y - turn_length * Math.sin(mid_angle),
     }
     const turn_control_2 = getRadiusPoint({
-      start: in_corner_heng_zhe,
-      end: in_zhe_end,
+      start: out_corner_heng_zhe,
+      end: out_zhe_end,
       radius: corner_radius,
     })
     const turn_start_2 = getRadiusPoint({
       start: turn_control_2,
-      end: in_zhe_end,
+      end: out_zhe_end,
       radius: corner_radius,
     })
     const turn_end_2 = {
@@ -528,19 +472,19 @@ const getComponents = (skeleton) => {
   const pen = new FP.PenComponent()
   pen.beginPath()
 
-  // 绘制左侧（外侧）轮廓
+  // 绘制右侧（外侧）轮廓
   if (start_style_type === 0) {
     // 无起笔样式
     pen.moveTo(out_heng_start.x, out_heng_start.y)
   } else if (start_style_type === 1) {
     // 起笔上下凸起长方形
-    pen.moveTo(out_heng_start.x, out_heng_start.y + start_style.start_style_decorator_height)
-    pen.lineTo(out_heng_start.x + start_style.start_style_decorator_width, out_heng_start.y + start_style.start_style_decorator_height)
+    pen.moveTo(out_heng_start.x, out_heng_start.y - start_style.start_style_decorator_height)
+    pen.lineTo(out_heng_start.x + start_style.start_style_decorator_width, out_heng_start.y - start_style.start_style_decorator_height)
     pen.lineTo(out_heng_start.x + start_style.start_style_decorator_width, out_heng_start.y)
   } else if (start_style_type === 2) {
     // 起笔上下凸起长方形，长方形内侧转角为圆角
-    pen.moveTo(out_heng_start.x, out_heng_start.y + start_style.start_style_decorator_height)
-    pen.lineTo(out_heng_start.x + start_style.start_style_decorator_width, out_heng_start.y + start_style.start_style_decorator_height)
+    pen.moveTo(out_heng_start.x, out_heng_start.y - start_style.start_style_decorator_height)
+    pen.lineTo(out_heng_start.x + start_style.start_style_decorator_width, out_heng_start.y - start_style.start_style_decorator_height)
     pen.quadraticBezierTo(
       out_heng_start.x + start_style.start_style_decorator_width,
       out_heng_start.y,
@@ -548,26 +492,33 @@ const getComponents = (skeleton) => {
       out_heng_start.y,
     )
   }
-  pen.lineTo(out_corner_heng_zhe.x, out_corner_heng_zhe.y)
-  pen.lineTo(out_corner_zhe_tiao_2.x, out_corner_zhe_tiao_2.y)
-  pen.lineTo(out_corner_zhe_tiao_1.x, out_corner_zhe_tiao_1.y)
-  pen.lineTo(out_corner_zhe_tiao.x, out_corner_zhe_tiao.y)
-  pen.lineTo(out_tiao_end.x, out_tiao_end.y)
-
-  // 绘制轮廓连接线
-  pen.lineTo(in_tiao_end.x, in_tiao_end.y)
-
-  // 绘制右侧（内侧）轮廓
-  pen.lineTo(in_corner_zhe_tiao.x, in_corner_zhe_tiao.y)
-  if (turn_style_type === 0) {
-    // 默认转角样式
-    pen.lineTo(in_corner_heng_zhe.x, in_corner_heng_zhe.y)
+  if (bending_degree > 1 && turn_style_type === 0) {
+    // 绘制外侧横折圆角
+    pen.lineTo(out_radius_start_heng_zhe.x, out_radius_start_heng_zhe.y)
+    pen.quadraticBezierTo(out_corner_heng_zhe.x, out_corner_heng_zhe.y, out_radius_end_heng_zhe.x, out_radius_end_heng_zhe.y)
+  } else if (turn_style_type === 0) {
+    pen.lineTo(out_corner_heng_zhe_up.x, out_corner_heng_zhe_up.y)
+    pen.lineTo(out_corner_heng_zhe_down.x, out_corner_heng_zhe_down.y)
   } else if (turn_style_type === 1) {
     // 转角样式1
-    pen.lineTo(turn_data.turn_start_2.x, turn_data.turn_start_2.y)
-    pen.quadraticBezierTo(turn_data.turn_control_2.x, turn_data.turn_control_2.y, turn_data.turn_end_2.x, turn_data.turn_end_2.y)
-    pen.lineTo(turn_data.turn_end_1.x, turn_data.turn_end_1.y)
-    pen.quadraticBezierTo(turn_data.turn_control_1.x, turn_data.turn_control_1.y, turn_data.turn_start_1.x, turn_data.turn_start_1.y)
+    pen.lineTo(turn_data.turn_start_1.x, turn_data.turn_start_1.y)
+    pen.quadraticBezierTo(turn_data.turn_control_1.x, turn_data.turn_control_1.y, turn_data.turn_end_1.x, turn_data.turn_end_1.y)
+    pen.lineTo(turn_data.turn_end_2.x, turn_data.turn_end_2.y)
+    pen.quadraticBezierTo(turn_data.turn_control_2.x, turn_data.turn_control_2.y, turn_data.turn_start_2.x, turn_data.turn_start_2.y)
+  }
+  // 绘制外侧折
+  pen.lineTo(out_zhe_end.x, out_zhe_end.y)
+
+  // 绘制轮廓连接线
+  pen.lineTo(in_zhe_end.x, in_zhe_end.y)
+
+  // 绘制左侧（内侧）轮廓
+  // 绘制内侧横折圆角
+  if (bending_degree > 1 && turn_style_type === 0) {
+    pen.lineTo(in_radius_end_heng_zhe.x, in_radius_end_heng_zhe.y)
+    pen.quadraticBezierTo(in_corner_heng_zhe.x, in_corner_heng_zhe.y, in_radius_start_heng_zhe.x, in_radius_start_heng_zhe.y)
+  } else {
+    pen.lineTo(in_corner_heng_zhe.x, in_corner_heng_zhe.y)
   }
   if (start_style_type === 0) {
     // 无起笔样式
@@ -575,8 +526,8 @@ const getComponents = (skeleton) => {
   } else if (start_style_type === 1) {
     // 起笔上下凸起长方形
     pen.lineTo(in_heng_start.x + start_style.start_style_decorator_width, in_heng_start.y)
-    pen.lineTo(in_heng_start.x + start_style.start_style_decorator_width, in_heng_start.y - start_style.start_style_decorator_height)
-    pen.lineTo(in_heng_start.x, in_heng_start.y - start_style.start_style_decorator_height)
+    pen.lineTo(in_heng_start.x + start_style.start_style_decorator_width, in_heng_start.y + start_style.start_style_decorator_height)
+    pen.lineTo(in_heng_start.x, in_heng_start.y + start_style.start_style_decorator_height)
   } else if (start_style_type === 2) {
     // 起笔上下凸起长方形，长方形内侧转角为圆角
     pen.lineTo(
@@ -587,21 +538,22 @@ const getComponents = (skeleton) => {
       in_heng_start.x + start_style.start_style_decorator_width,
       in_heng_start.y,
       in_heng_start.x + start_style.start_style_decorator_width,
-      in_heng_start.y - start_style.start_style_decorator_height,
+      in_heng_start.y + start_style.start_style_decorator_height,
     )
-    pen.lineTo(in_heng_start.x, in_heng_start.y - start_style.start_style_decorator_height)
+    pen.lineTo(in_heng_start.x, in_heng_start.y + start_style.start_style_decorator_height)
   }
 
   // 绘制轮廓连接线
+  pen.lineTo(out_heng_start.x, out_heng_start.y)
   if (start_style_type === 0) {
     // 无起笔样式
     pen.lineTo(out_heng_start.x, out_heng_start.y)
   } else if (start_style_type === 1) {
     // 起笔上下凸起长方形
-    pen.lineTo(out_heng_start.x, out_heng_start.y + start_style.start_style_decorator_height)
+    pen.lineTo(out_heng_start.x, out_heng_start.y - start_style.start_style_decorator_height)
   } else if (start_style_type === 2) {
     // 起笔上下凸起长方形，长方形内侧转角为圆角
-    pen.lineTo(out_heng_start.x, out_heng_start.y + start_style.start_style_decorator_height)
+    pen.lineTo(out_heng_start.x, out_heng_start.y - start_style.start_style_decorator_height)
   }
 
   pen.closePath()

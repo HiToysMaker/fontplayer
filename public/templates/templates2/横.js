@@ -4,6 +4,7 @@ const x0 = 250
 const y0 = 500
 const params = {
   length: glyph.getParam('长度'),
+  skeletonRefPos: glyph.getParam('参考位置'),
 }
 const global_params = {
   start_style_type: glyph.getParam('起笔风格'),
@@ -75,34 +76,93 @@ const computeParamsByJoints = (jointsMap) => {
   const length = range(end.x - start.x, length_range)
   return {
     length,
+    skeletonRefPos: glyph.getParam('参考位置'),
   }
 }
 
-const refline = (p1, p2) => {
-  return {
+const refline = (p1, p2, type) => {
+  const refline =  {
     name: `${p1.name}-${p2.name}`,
     start: p1.name,
     end: p2.name,
   }
+  if (type) {
+    refline.type = type
+  }
+  return refline
 }
 
 const updateGlyphByParams = (params, global_params) => {
-  const { length } = params
+  const { length, skeletonRefPos } = params
+  const { weight } = global_params
 
-  const start = new FP.Joint(
-    'start',
+  let start, end
+  const start_ref = new FP.Joint(
+    'start_ref',
     {
       x: x0,
       y: y0,
     },
   )
-  const end = new FP.Joint(
-    'end',
+  const end_ref = new FP.Joint(
+    'end_ref',
     {
-      x: start.x + length,
-      y: start.y,
+      x: start_ref.x + length,
+      y: start_ref.y,
     },
   )
+  if (skeletonRefPos === 1) {
+    // 骨架参考位置为右侧（上侧）
+    start = new FP.Joint(
+      'start',
+      {
+        x: start_ref.x,
+        y: start_ref.y + weight / 2,
+      },
+    )
+    end = new FP.Joint(
+      'end',
+      {
+        x: end_ref.x,
+        y: end_ref.y + weight / 2,
+      },
+    )
+  } else if (skeletonRefPos === 2) {
+    // 骨架参考位置为左侧（下侧）
+    start = new FP.Joint(
+      'start',
+      {
+        x: start_ref.x,
+        y: start_ref.y - weight / 2,
+      },
+    )
+    end = new FP.Joint(
+      'end',
+      {
+        x: end_ref.x,
+        y: end_ref.y - weight / 2,
+      },
+    )
+  } else {
+    // 默认骨架参考位置，即骨架参考位置为中间实际绘制的骨架位置
+    start = new FP.Joint(
+      'start',
+      {
+        x: start_ref.x,
+        y: start_ref.y,
+      },
+    )
+    end = new FP.Joint(
+      'end',
+      {
+        x: end_ref.x,
+        y: end_ref.y,
+      },
+    )
+  }
+  glyph.addJoint(start_ref)
+  glyph.addJoint(end_ref)
+  glyph.addRefLine(refline(start_ref, end_ref, 'ref'))
   
   glyph.addJoint(start)
   glyph.addJoint(end)

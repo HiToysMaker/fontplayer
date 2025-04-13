@@ -356,11 +356,11 @@ const renderGlyphSelector = (canvas: HTMLCanvasElement, _editGlyph: boolean = tr
 	const d = 5
 	const ctx = canvas.getContext('2d')
 	ctx.strokeStyle = '#79bbff'
-	ctx.strokeRect(_x, _y, _w, _h)
-	ctx.strokeRect(_x - d, _y - d, d * 2, d * 2)
-	ctx.strokeRect(_x + _w - d, _y - d, d * 2, d * 2)
-	ctx.strokeRect(_x - d, _y + _h - d, d * 2, d * 2)
-	ctx.strokeRect(_x + _w - d, _y + _h - d, d * 2, d * 2)
+	// ctx.strokeRect(_x, _y, _w, _h)
+	// ctx.strokeRect(_x - d, _y - d, d * 2, d * 2)
+	// ctx.strokeRect(_x + _w - d, _y - d, d * 2, d * 2)
+	// ctx.strokeRect(_x - d, _y + _h - d, d * 2, d * 2)
+	// ctx.strokeRect(_x + _w - d, _y + _h - d, d * 2, d * 2)
 
 	// moving joint
 	if (movingJoint.value && checkJoints.value) {

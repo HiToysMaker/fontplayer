@@ -83,7 +83,7 @@ const renderRefLine = (canvas, refline) => {
 	const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 	const p1 = refline.start
 	const p2 = refline.end
-	ctx.strokeStyle = 'blue'
+	ctx.strokeStyle = refline.type === 'ref' ? 'red' : 'blue'
 	ctx.beginPath()
 	ctx.moveTo(mapCanvasX(p1.x), mapCanvasY(p1.y))
 	ctx.lineTo(mapCanvasX(p2.x), mapCanvasY(p2.y))
@@ -125,7 +125,8 @@ const renderRefLines = (rootComponent, canvas) => {
 				end: {
 					x: end.x + ox,
 					y: end.y + oy,
-				}
+				},
+				type: _refline.type,
 			}
 			renderRefLine(canvas, refline)
 		})

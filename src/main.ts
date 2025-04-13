@@ -95,6 +95,10 @@ library.add(
 
 const app = createApp(App)
 
+app.config.errorHandler = (err, vm, info) => {
+  console.error('全局错误:', err)
+}
+
 app.component('font-awesome-icon', FontAwesomeIcon)
 app.use(ElementPlus)
 // for (const [key, component] of Object.entries(ElementPlusIconsVue)) {

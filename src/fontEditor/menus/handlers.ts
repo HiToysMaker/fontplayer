@@ -1905,6 +1905,29 @@ const importTemplate2 = async () => {
         max: param.max || 1000,
       })
     }
+    // 添加Enum参数骨架参考位置
+    // 骨架参考位置用于当字重变化时，固定参考位置
+    // 如果不设置骨架参考位置，当字重变化时，很可能横竖交叠处会露出棱角，变得不规则
+    parameters.push({
+      uuid: genUUID(),
+      name: '参考位置',
+      type: ParameterType.Enum,
+      value: 0,
+      options: [
+        {
+          value: 0,
+          label: '默认',
+        },
+        {
+          value: 1,
+          label: '右侧（上侧）',
+        },
+        {
+          value: 2,
+          label: '左侧（下侧）',
+        }
+      ]
+    })
     // 添加Enum参数起笔风格类型
     parameters.push({
       uuid: genUUID(),
@@ -2694,4 +2717,6 @@ export {
   computeOverlapRemovedContours,
   tauri_handlers,
   nativeImportFile,
+  instanceCharacter,
+  nativeSaveBinary,
 }

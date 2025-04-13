@@ -715,9 +715,9 @@ const componentsToSvg = (components: Array<IComponent>, width: number, height: n
 			const glyph = component.value as unknown as ICustomGlyph
 			if (!glyph._o) {
 				executeScript(glyph)
-				glyph._o.getJoints().map((joint) => {
-					joint.component = component as unknown as IGlyphComponent
-				})
+				// glyph._o.getJoints().map((joint) => {
+				// 	joint.component = component as unknown as IGlyphComponent
+				// })
 			}
 			const subSvg = componentsToSvg(glyph._o.components, width, height, renderStyle, {
 				isSub: true,

@@ -6,6 +6,7 @@ const params = {
   heng_length: glyph.getParam('横-长度'),
   zhe_horizonalSpan: glyph.getParam('折-水平延伸'),
   zhe_verticalSpan: glyph.getParam('折-竖直延伸'),
+  skeletonRefPos: glyph.getParam('参考位置'),
 }
 const global_params = {
   weights_variation_power: glyph.getParam('字重变化'),
@@ -17,12 +18,16 @@ const global_params = {
   weight: glyph.getParam('字重') || 40,
 }
 
-const refline = (p1, p2) => {
-  return {
+const refline = (p1, p2, type) => {
+  const refline =  {
     name: `${p1.name}-${p2.name}`,
     start: p1.name,
     end: p2.name,
   }
+  if (type) {
+    refline.type = type
+  }
+  return refline
 }
 
 const distance = (p1, p2) => {
@@ -131,6 +136,7 @@ const computeParamsByJoints = (jointsMap) => {
     heng_length,
     zhe_horizonalSpan,
     zhe_verticalSpan,
+    skeletonRefPos: glyph.getParam('参考位置'),
   }
 }
 
@@ -139,23 +145,78 @@ const updateGlyphByParams = (params, global_params) => {
     heng_length,
     zhe_horizonalSpan,
     zhe_verticalSpan,
+    skeletonRefPos,
   } = params
+  const { weight } = global_params
 
   // 横
-  const heng_start = new FP.Joint(
-    'heng_start',
+  let heng_start, heng_end
+  const heng_start_ref = new FP.Joint(
+    'heng_start_ref',
     {
       x: x0,
       y: y0,
     },
   )
-  const heng_end = new FP.Joint(
-    'heng_end',
+  const heng_end_ref = new FP.Joint(
+    'heng_end_ref',
     {
-      x: heng_start.x + heng_length,
-      y: heng_start.y,
+      x: heng_start_ref.x + heng_length,
+      y: heng_start_ref.y,
     },
   )
+  if (skeletonRefPos === 1) {
+    // 骨架参考位置为右侧（上侧）
+    heng_start = new FP.Joint(
+      'heng_start',
+      {
+        x: heng_start_ref.x,
+        y: heng_start_ref.y + weight / 2,
+      },
+    )
+    heng_end = new FP.Joint(
+      'heng_end',
+      {
+        x: heng_end_ref.x,
+        y: heng_end_ref.y + weight / 2,
+      },
+    )
+  } else if (skeletonRefPos === 2) {
+    // 骨架参考位置为左侧（下侧）
+    heng_start = new FP.Joint(
+      'heng_start',
+      {
+        x: heng_start_ref.x,
+        y: heng_start_ref.y - weight / 2,
+      },
+    )
+    heng_end = new FP.Joint(
+      'heng_end',
+      {
+        x: heng_end_ref.x,
+        y: heng_end_ref.y - weight / 2,
+      },
+    )
+  } else {
+    // 默认骨架参考位置，即骨架参考位置为中间实际绘制的骨架位置
+    heng_start = new FP.Joint(
+      'heng_start',
+      {
+        x: heng_start_ref.x,
+        y: heng_start_ref.y,
+      },
+    )
+    heng_end = new FP.Joint(
+      'heng_end',
+      {
+        x: heng_end_ref.x,
+        y: heng_end_ref.y,
+      },
+    )
+  }
+  glyph.addJoint(heng_start_ref)
+  glyph.addJoint(heng_end_ref)
+  glyph.addRefLine(refline(heng_start_ref, heng_end_ref, 'ref'))
 
   // 折
   const zhe_start = new FP.Joint(

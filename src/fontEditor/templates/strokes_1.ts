@@ -1071,6 +1071,29 @@ const strokes = [
     ]
   },
   {
+    name: '横折2',
+    params: [
+      {
+        name: '横-长度',
+        default: 500,
+        min: 0,
+        max: 1000,
+      },
+      {
+        name: '折-长度',
+        default: 300,
+        min: 0,
+        max: 1000,
+      },
+      {
+        name: '字重',
+        default: 50,
+        min: 0,
+        max: 200,
+      },
+    ]
+  },
+  {
     name: '二横折',
     params: [
       {

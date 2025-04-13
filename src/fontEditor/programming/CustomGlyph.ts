@@ -207,7 +207,7 @@ class CustomGlyph {
 				const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 				const p1 = this.getJoint(refline.start).getCoords()
 				const p2 = this.getJoint(refline.end).getCoords()
-				ctx.strokeStyle = 'blue'
+				ctx.strokeStyle = refline.type === 'ref' ? 'red' : 'blue'
 				ctx.beginPath()
 				ctx.moveTo(mapCanvasX(p1.x), mapCanvasY(p1.y))
 				ctx.lineTo(mapCanvasX(p2.x), mapCanvasY(p2.y))
@@ -219,7 +219,7 @@ class CustomGlyph {
 					const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 					const p1 = this.getJoint(refline.start).getCoords()
 					const p2 = this.getJoint(refline.end).getCoords()
-					ctx.strokeStyle = 'blue'
+					ctx.strokeStyle = refline.type === 'ref' ? 'red' : 'blue'
 					ctx.beginPath()
 					ctx.moveTo(mapCanvasX(p1.x), mapCanvasY(p1.y))
 					ctx.lineTo(mapCanvasX(p2.x), mapCanvasY(p2.y))
