@@ -1892,7 +1892,7 @@ const importTemplate2 = async () => {
 
   for (let i = 0; i < hei_strokes.length; i++) {
     const stroke = hei_strokes[i]
-    const { name, params } = stroke
+    const { name, params, uuid } = stroke
     const parameters: Array<IParameter> = []
     for (let j = 0; j < params.length; j++) {
       const param = params[j]
@@ -2005,7 +2005,7 @@ const importTemplate2 = async () => {
     let stroke_script_res = await fetch(base + `templates/templates2/${name}.js`)
     let stroke_script = await stroke_script_res.text()
 
-    const uuid = genUUID()
+    //const uuid = genUUID()
     const glyph = {
       uuid,
       type: 'system',

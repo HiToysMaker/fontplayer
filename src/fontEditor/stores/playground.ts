@@ -12,12 +12,16 @@ import { toArrayBuffer } from "../../fontManager"
 import { create, PathType } from '../../fontManager'
 import { genUUID } from '../../utils/string'
 import { FP } from '../programming/FPUtils'
+import { strokes as hei_strokes } from '../templates/strokes_1'
+import { ParametersMap } from "../programming/ParametersMap"
+import { IParameter } from "./glyph"
 
 // 参数类型
 // parameter type
 export enum ParameterType {
 	Number,
 	Constant,
+  PlaygroundConstant,
 	RingController,
 	Enum,
 }
@@ -93,6 +97,14 @@ const constants = ref([
     min: 0,
     max: 2,
   },
+  {
+    uuid: genUUID(),
+    name: '字重',
+    type: ParameterType.Number,
+    value: 50,
+    min: 40,
+    max: 100,
+  },
 ])
 const editCharacterFile = ref(null)
 const loading = ref(false)
@@ -143,12 +155,142 @@ const initPlayground = async () => {
   wrapper.innerHTML = ''
   const res = await fetch(base + `templates/playground.json`)
   const data = JSON.parse(await res.text())
-  {
-    const plainGlyphs = data.stroke_glyphs
-    const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
-    _glyphs.map((glyph) => {
-      glyphs.value.push(glyph)
+
+  for (let i = 0; i < hei_strokes.length; i++) {
+    const stroke = hei_strokes[i]
+    const { name, params, uuid } = stroke
+    let stroke_script_res = await fetch(base + `templates/templates2/${name}.js`)
+    let stroke_script = await stroke_script_res.text()
+
+    const parameters: Array<IParameter> = []
+    for (let j = 0; j < params.length; j++) {
+      const param = params[j]
+      parameters.push({
+        uuid: genUUID(),
+        name: param.name,
+        type: ParameterType.Number,
+        value: param.default,
+        min: param.min || 0,
+        max: param.max || 1000,
+      })
+    }
+    // 添加Enum参数骨架参考位置
+    // 骨架参考位置用于当字重变化时，固定参考位置
+    // 如果不设置骨架参考位置，当字重变化时，很可能横竖交叠处会露出棱角，变得不规则
+    parameters.push({
+      uuid: genUUID(),
+      name: '参考位置',
+      type: ParameterType.Enum,
+      value: 0,
+      options: [
+        {
+          value: 0,
+          label: '默认',
+        },
+        {
+          value: 1,
+          label: '右侧（上侧）',
+        },
+        {
+          value: 2,
+          label: '左侧（下侧）',
+        }
+      ]
     })
+    // 添加Enum参数起笔风格类型
+    parameters.push({
+      uuid: genUUID(),
+      name: '起笔风格',
+      type: ParameterType.Enum,
+      value: 2,
+      options: [
+        {
+          value: 0,
+          label: '无起笔样式',
+        },
+        {
+          value: 1,
+          label: '凸笔起笔',
+        },
+        {
+          value: 2,
+          label: '凸笔圆角起笔',
+        }
+      ]
+    })
+    // 添加起笔数值
+    parameters.push({
+      uuid: genUUID(),
+      name: '起笔数值',
+      type: ParameterType.Number,
+      value: 1,
+      min: 0,
+      max: 2,
+    })
+    // 添加Enum参数转角风格类型
+    parameters.push({
+      uuid: genUUID(),
+      name: '转角风格',
+      type: ParameterType.Enum,
+      value: 1,
+      options: [
+        {
+          value: 0,
+          label: '默认转角样式',
+        },
+        {
+          value: 1,
+          label: '转角圆滑凸起',
+        }
+      ]
+    })
+    // 添加转角数值
+    parameters.push({
+      uuid: genUUID(),
+      name: '转角数值',
+      type: ParameterType.Number,
+      value: 1,
+      min: 1,
+      max: 2,
+    })
+    // 添加字重变化
+    parameters.push({
+      uuid: genUUID(),
+      name: '字重变化',
+      type: ParameterType.Number,
+      value: 0,
+      min: 0,
+      max: 2,
+    })
+    // 添加弯曲程度
+    parameters.push({
+      uuid: genUUID(),
+      name: '弯曲程度',
+      type: ParameterType.Number,
+      value: 1,
+      min: 0,
+      max: 2,
+    })
+  
+    //const uuid = genUUID()
+    const glyph = {
+      uuid,
+      type: 'system',
+      name,
+      components: [],
+      groups: [],
+      orderedList: [],
+      selectedComponentsUUIDs: [],
+      view: {
+        zoom: 100,
+        translateX: 0,
+        translateY: 0,
+      },
+      parameters: new ParametersMap(parameters),
+      joints: [],
+      script: `function script_${uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t${stroke_script}\n}`,
+    }
+    glyphs.value.push(glyph)
   }
 
   const file = data.file
@@ -156,6 +298,40 @@ const initPlayground = async () => {
     const characterFile = instanceCharacter(character)
     wrapper.appendChild(generateCharacterTemplate(characterFile))
     characters.value.push(characterFile)
+    // 初始化字符中调用的字形组件参数
+    for (let i = 0; i < characterFile.components.length; i++) {
+      const comp = characterFile.components[i]
+      if (comp.type === 'glyph') {
+        // 组件类型是glyph
+        const glyph = comp.value
+        const params = glyph.parameters.parameters
+        for (let j = 0; j < params.length; j++) {
+          const param = params[j]
+          if (param.name === '起笔风格' && param.value !== 0) {
+            param.type = ParameterType.PlaygroundConstant
+            param.value = constants.value[0].uuid
+          } else if (param.name === '起笔数值') {
+            param.type = ParameterType.PlaygroundConstant
+            param.value = constants.value[1].uuid
+          } else if (param.name === '转角风格') {
+            param.type = ParameterType.PlaygroundConstant
+            param.value = constants.value[2].uuid
+          } else if (param.name === '转角数值') {
+            param.type = ParameterType.PlaygroundConstant
+            param.value = constants.value[3].uuid
+          } else if (param.name === '字重变化') {
+            param.type = ParameterType.PlaygroundConstant
+            param.value = constants.value[4].uuid
+          } else if (param.name === '弯曲程度') {
+            param.type = ParameterType.PlaygroundConstant
+            param.value = constants.value[5].uuid
+          } else if (param.name === '字重') {
+            param.type = ParameterType.PlaygroundConstant
+            param.value = constants.value[6].uuid
+          }
+        }
+      }
+    }
     // 获取字符预览canvas
     const canvas: HTMLCanvasElement = document.getElementById(`playground-preview-canvas-${character.uuid}`) as HTMLCanvasElement
     if (!canvas) return
@@ -209,7 +385,7 @@ const updateCharactersAndPreview = () => {
       descender: -200,
       advanceWidth: 1000,
       grid: character.info.gridSettings,
-      useSkeletonGrid: character.info?.useSkeletonGrid || false,
+      useSkeletonGrid: true,//character.info?.useSkeletonGrid || false,
       playground: true,
     }, { x: 0, y: 0 }, false, true, true)
     // 渲染字符
@@ -469,4 +645,5 @@ export {
   executeScript,
   updateCharactersAndPreview,
   initPlayground,
+  constantsMap,
 }

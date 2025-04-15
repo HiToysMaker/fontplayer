@@ -22,18 +22,23 @@ const onGridChange = (dx, dy, centerSquareSize) => {
 
 let timer = null
 watch(constants, () => {
-  if (timer) {
-    clearTimeout(timer)
-  }
-  timer = setTimeout(() => {
-    updateCharactersAndPreview()
-  }, 100)
+  updateCharactersAndPreview()
+  // if (timer) {
+  //   clearTimeout(timer)
+  // } else {
+  //   updateCharactersAndPreview()
+  //   timer = setTimeout(() => {
+  //     timer = null
+  //   }, 100)
+  // }
+}, {
+  deep: true,
 })
 
 const switchStarterStyle = () => {
   let value = constants.value[0].value
   value += 1
-  if (value > (constants.value[0] as IConstant).options.length) {
+  if (value >= (constants.value[0] as IConstant).options.length) {
     value = 0
   }
   constants.value[0].value = value
@@ -42,7 +47,7 @@ const switchStarterStyle = () => {
 const switchTurningStyle = () => {
   let value = constants.value[2].value
   value += 1
-  if (value > (constants.value[2] as IConstant).options.length) {
+  if (value >= (constants.value[2] as IConstant).options.length) {
     value = 0
   }
   constants.value[2].value = value
@@ -65,26 +70,30 @@ const switchTurningStyle = () => {
           </div>
         </div>
         <div class="params-panel">
-          <div class="row">
-            <el-form-item label-width="72px" label="起笔风格">
-              <el-button @pointerdown="switchStarterStyle">切换风格</el-button>
-              <el-input-number v-model="constants[1].value"></el-input-number>
-              <el-slider v-model="constants[1].value"></el-slider>
+          <div class="column column-1">
+            <el-form-item label-width="80px" label="起笔风格">
+              <el-button size="small" @pointerdown="switchStarterStyle">切换风格</el-button>
+              <!-- <el-input-number size="small" v-model="constants[1].value"></el-input-number> -->
+              <el-slider size="small" :step="0.05" v-model="constants[1].value" :min="constants[1].min" :max="constants[1].max"></el-slider>
             </el-form-item>
-            <el-form-item label-width="72px" label="转角风格">
-              <el-button @pointerdown="switchTurningStyle">切换风格</el-button>
-              <el-input-number v-model="constants[3].value"></el-input-number>
-              <el-slider v-model="constants[3].value"></el-slider>
+            <el-form-item label-width="80px" label="转角风格">
+              <el-button size="small" @pointerdown="switchTurningStyle">切换风格</el-button>
+              <!-- <el-input-number size="small" v-model="constants[3].value"></el-input-number> -->
+              <el-slider size="small" :step="0.05" v-model="constants[3].value" :min="constants[3].min" :max="constants[3].max"></el-slider>
             </el-form-item>
           </div>
-          <div class="row">
-            <el-form-item label-width="72px" label="弯曲程度">
-              <el-input-number v-model="constants[4].value"></el-input-number>
-              <el-slider v-model="constants[4].value"></el-slider>
+          <div class="column">
+            <el-form-item label-width="80px" label="字重">
+              <!-- <el-input-number size="small" v-model="constants[6].value"></el-input-number> -->
+              <el-slider size="small" v-model="constants[6].value" :min="constants[6].min" :max="constants[6].max"></el-slider>
             </el-form-item>
-            <el-form-item label-width="72px" label="字重变化">
-              <el-input-number v-model="constants[5].value"></el-input-number>
-              <el-slider v-model="constants[5].value"></el-slider>
+            <el-form-item label-width="80px" label="弯曲程度">
+              <!-- <el-input-number size="small" v-model="constants[4].value"></el-input-number> -->
+              <el-slider size="small" :step="0.05" v-model="constants[5].value" :min="constants[5].min" :max="constants[5].max"></el-slider>
+            </el-form-item>
+            <el-form-item label-width="80px" label="字重变化">
+              <!-- <el-input-number size="small" v-model="constants[5].value"></el-input-number> -->
+              <el-slider size="small" :step="0.05" v-model="constants[4].value" :min="constants[4].min" :max="constants[4].max"></el-slider>
             </el-form-item>
           </div>
         </div>
@@ -142,28 +151,40 @@ const switchTurningStyle = () => {
     }
     .params-panel {
       flex: 0 0 270px;
-      padding-top: 20px;
+      padding-top: 50px;
       padding-right: 10px;
       box-sizing: border-box;
       display: flex;
-      flex-direction: column;
-      .row {
+      flex-direction: row;
+      gap: 10px;
+      .column-1 {
+        margin-right: 20px;
+      }
+      .column {
         display: flex;
-        flex-direction: row;
-        gap: 10px;
+        flex-direction: column;
+        gap: 5px;
+        flex: 0 0 280px;
         .el-form-item {
-          flex: 1;
+          flex: 0 0 50px;
+          margin: 0;
+          .el-form-item__content {
+            flex-direction: column;
+            gap: 8px;
+            margin-left: 10px;
+          }
           .el-button {
             width: 100%;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
+            margin-top: 6px;
           }
           .el-input-number {
             width: 100%;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
           }
           .el-slider {
             width: 100%;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
           }
         }
       }

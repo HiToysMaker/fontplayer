@@ -134,6 +134,7 @@ export interface IConstant {
 export enum ParameterType {
 	Number,
 	Constant,
+	PlaygroundConstant,
 	RingController,
 	Enum,
 }

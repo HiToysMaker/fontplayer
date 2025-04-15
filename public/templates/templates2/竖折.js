@@ -470,68 +470,67 @@ const getComponents = (skeleton) => {
   const pen = new FP.PenComponent()
   pen.beginPath()
 
-  // 绘制左侧（外侧）轮廓
+  // 绘制右侧（内侧）轮廓
   if (start_style_type === 0) {
     // 无起笔样式
-    pen.moveTo(out_shu_start.x, out_shu_start.y)
+    pen.moveTo(in_shu_start.x, in_shu_start.y)
   } else if (start_style_type === 1) {
     // 起笔左右凸起长方形
-    pen.moveTo(start_data.left_up.x, start_data.left_up.y)
-    pen.lineTo(start_data.left_down.x, start_data.left_down.y)
-    pen.lineTo(start_data.left_control.x, start_data.left_control.y)
+    pen.moveTo(start_data.right_up.x, start_data.right_up.y)
+    pen.lineTo(start_data.right_down.x, start_data.right_down.y)
+    pen.lineTo(start_data.right_control.x, start_data.right_control.y)
   } else if (start_style_type === 2) {
     // 起笔左右凸起长方形，长方形内侧转角为圆角
-    pen.moveTo(start_data.left_up.x, start_data.left_up.y)
-    pen.lineTo(start_data.left_down.x, start_data.left_down.y)
-    pen.quadraticBezierTo(start_data.left_control.x, start_data.left_control.y, start_data.left_end.x, start_data.left_end.y)
+    pen.moveTo(start_data.right_up.x, start_data.right_up.y)
+    pen.lineTo(start_data.right_down.x, start_data.right_down.y)
+    pen.quadraticBezierTo(start_data.right_control.x, start_data.right_control.y, start_data.right_end.x, start_data.right_end.y)
   }
+  pen.lineTo(in_radius_start_shu_zhe.x, in_radius_start_shu_zhe.y)
+  pen.quadraticBezierTo(in_corner_shu_zhe.x, in_corner_shu_zhe.y, in_radius_end_shu_zhe.x, in_radius_end_shu_zhe.y)
+  // 绘制内侧折
+  pen.lineTo(in_zhe_end.x, in_zhe_end.y)
+
+  // 绘制轮廓连接线
+  pen.lineTo(out_zhe_end.x, out_zhe_end.y)
+
+  // 绘制左侧（外侧）轮廓
   if (turn_style_type === 0) {
     // 默认转角样式
     // 绘制外侧竖折圆角
-    pen.lineTo(out_radius_start_shu_zhe.x, out_radius_start_shu_zhe.y)
-    pen.quadraticBezierTo(out_corner_shu_zhe.x, out_corner_shu_zhe.y, out_radius_end_shu_zhe.x, out_radius_end_shu_zhe.y)
+    pen.lineTo(out_radius_end_shu_zhe.x, out_radius_end_shu_zhe.y)
+    pen.quadraticBezierTo(out_corner_shu_zhe.x, out_corner_shu_zhe.y, out_radius_start_shu_zhe.x, out_radius_start_shu_zhe.y)
   } else if (turn_style_type === 1) {
     // 转角样式1
-    pen.lineTo(turn_data.turn_start_1.x, turn_data.turn_start_1.y)
-    pen.quadraticBezierTo(turn_data.turn_control_1.x, turn_data.turn_control_1.y, turn_data.turn_end_1.x, turn_data.turn_end_1.y)
-    pen.lineTo(turn_data.turn_end_2.x, turn_data.turn_end_2.y)
-    pen.quadraticBezierTo(turn_data.turn_control_2.x, turn_data.turn_control_2.y, turn_data.turn_start_2.x, turn_data.turn_start_2.y)
+    pen.lineTo(turn_data.turn_start_2.x, turn_data.turn_start_2.y)
+    pen.quadraticBezierTo(turn_data.turn_control_2.x, turn_data.turn_control_2.y, turn_data.turn_end_2.x, turn_data.turn_end_2.y)
+    pen.lineTo(turn_data.turn_end_1.x, turn_data.turn_end_1.y)
+    pen.quadraticBezierTo(turn_data.turn_control_1.x, turn_data.turn_control_1.y, turn_data.turn_start_1.x, turn_data.turn_start_1.y)
   }
-  // 绘制外侧折
-  pen.lineTo(out_zhe_end.x, out_zhe_end.y)
-
-  // 绘制轮廓连接线
-  pen.lineTo(in_zhe_end.x, in_zhe_end.y)
-
-  // 绘制右侧（内侧）轮廓
-  // 绘制内侧竖折圆角
-  pen.lineTo(in_radius_end_shu_zhe.x, in_radius_end_shu_zhe.y)
-  pen.quadraticBezierTo(in_corner_shu_zhe.x, in_corner_shu_zhe.y, in_radius_start_shu_zhe.x, in_radius_start_shu_zhe.y)
-  if (start_style_type === 0) {
-    // 无起笔样式
-    pen.lineTo(in_shu_start.x, in_shu_start.y)
-  } else if (start_style_type === 1) {
-    // 起笔上下凸起长方形
-    pen.lineTo(start_data.right_control.x, start_data.right_control.y)
-    pen.lineTo(start_data.right_down.x, start_data.right_down.y)
-    pen.lineTo(start_data.right_up.x, start_data.right_up.y)
-  } else if (start_style_type === 2) {
-    // 起笔上下凸起长方形，长方形内侧转角为圆角
-    pen.lineTo(start_data.right_end.x, start_data.right_end.y)
-    pen.quadraticBezierTo(start_data.right_control.x, start_data.right_control.y, start_data.right_down.x, start_data.right_down.y)
-    pen.lineTo(start_data.right_up.x, start_data.right_up.y)
-  }
-
-  // 绘制轮廓连接线
   if (start_style_type === 0) {
     // 无起笔样式
     pen.lineTo(out_shu_start.x, out_shu_start.y)
   } else if (start_style_type === 1) {
     // 起笔上下凸起长方形
+    pen.lineTo(start_data.left_control.x, start_data.left_control.y)
+    pen.lineTo(start_data.left_down.x, start_data.left_down.y)
     pen.lineTo(start_data.left_up.x, start_data.left_up.y)
   } else if (start_style_type === 2) {
     // 起笔上下凸起长方形，长方形内侧转角为圆角
+    pen.lineTo(start_data.left_end.x, start_data.left_end.y)
+    pen.quadraticBezierTo(start_data.left_control.x, start_data.left_control.y, start_data.left_down.x, start_data.left_down.y)
     pen.lineTo(start_data.left_up.x, start_data.left_up.y)
+  }
+
+  // 绘制轮廓连接线
+  if (start_style_type === 0) {
+    // 无起笔样式
+    pen.lineTo(in_shu_start.x, in_shu_start.y)
+  } else if (start_style_type === 1) {
+    // 起笔上下凸起长方形
+    pen.lineTo(start_data.right_up.x, start_data.right_up.y)
+  } else if (start_style_type === 2) {
+    // 起笔上下凸起长方形，长方形内侧转角为圆角
+    pen.lineTo(start_data.right_up.x, start_data.right_up.y)
   }
 
   pen.closePath()

@@ -1,6 +1,7 @@
 const strokes = [
   {
     name: '横',
+    uuid: 'KXIDGV2F_Pyd7r0C6_TB1',
     params: [
       {
         name: '长度',
@@ -18,6 +19,7 @@ const strokes = [
   },
   {
     name: '竖',
+    uuid: 'aH2ns8O1EHIIESpjVzSy8',
     params: [
       {
         name: '长度',
@@ -35,6 +37,7 @@ const strokes = [
   },
   {
     name: '撇',
+    uuid: 'LrdRipEgPadhamoHzTuJ1',
     params: [
       {
         name: '水平延伸',
@@ -70,6 +73,7 @@ const strokes = [
   },
   {
     name: '竖撇',
+    uuid: 'HcR12pTrOLu4ZOAuQuriM',
     params: [
       {
         name: '竖-长度',
@@ -105,6 +109,7 @@ const strokes = [
   },
   {
     name: '捺',
+    uuid: '-ubJbIG2A8mc-nSDlljeb',
     params: [
       {
         name: '水平延伸',
@@ -140,6 +145,7 @@ const strokes = [
   },
   {
     name: '平捺',
+    uuid: 'NhmE6WShXfKTOUOH4V7zk',
     params: [
       {
         name: '水平延伸',
@@ -175,6 +181,7 @@ const strokes = [
   },
   {
     name: '挑捺',
+    uuid: 'QcHLqxGmyKRhv4yyA0HqR',
     params: [
       {
         name: '挑-水平延伸',
@@ -222,6 +229,7 @@ const strokes = [
   },
   {
     name: '点',
+    uuid: 'ioUJIJq5204Sa43hz5iev',
     params: [
       {
         name: '水平延伸',
@@ -257,6 +265,7 @@ const strokes = [
   },
   {
     name: '挑',
+    uuid: 'krVrPdyfoe9sKIT_wQX-7',
     params: [
       {
         name: '水平延伸',
@@ -292,6 +301,7 @@ const strokes = [
   },
   {
     name: '横撇',
+    uuid: 'lbMVwrKP_q4p1oPHu4anJ',
     params: [
       {
         name: '横-长度',
@@ -327,6 +337,7 @@ const strokes = [
   },
   {
     name: '横折折撇',
+    uuid: 'EPBo33qt9wCQ1qYj1u71k',
     params: [
       {
         name: '横-长度',
@@ -380,6 +391,7 @@ const strokes = [
   },
   {
     name: '撇点',
+    uuid: 'fMIzxBo7oSEFUayQx_cCO',
     params: [
       {
         name: '撇-水平延伸',
@@ -439,6 +451,7 @@ const strokes = [
   },
   {
     name: '撇挑',
+    uuid: 'OXQCmaRKaoLjigiNIwicW',
     params: [
       {
         name: '撇-水平延伸',
@@ -498,6 +511,7 @@ const strokes = [
   },
   {
     name: '竖挑',
+    uuid: 'aiqF1SoB4nhfEDkhRmB3k',
     params: [
       {
         name: '竖-长度',
@@ -527,6 +541,7 @@ const strokes = [
   },
   {
     name: '横折挑',
+    uuid: 'JYSKwaS9xvilKQMcRZ3E0',
     params: [
       {
         name: '横-长度',
@@ -562,6 +577,7 @@ const strokes = [
   },
   {
     name: '竖钩',
+    uuid: '1Qdp3QzLK64BtwctXszQZ',
     params: [
       {
         name: '竖-长度',
@@ -591,6 +607,7 @@ const strokes = [
   },
   {
     name: '横钩',
+    uuid: 'YENGMQs6EL4dBiMrf1-nh',
     params: [
       {
         name: '横-长度',
@@ -620,6 +637,7 @@ const strokes = [
   },
   {
     name: '弯钩',
+    uuid: 'equYbH1yyUiKQ6b34jZea',
     params: [
       {
         name: '弯-长度',
@@ -655,6 +673,7 @@ const strokes = [
   },
   {
     name: '斜钩',
+    uuid: 'hfyoooj2emaeJLcgRctnc',
     params: [
       {
         name: '斜-水平延伸',
@@ -702,6 +721,7 @@ const strokes = [
   },
   {
     name: '竖弯钩',
+    uuid: 'fr4w85QKX0poi7nSBmjFK',
     params: [
       {
         name: '竖-长度',
@@ -737,6 +757,7 @@ const strokes = [
   },
   {
     name: '竖折折钩',
+    uuid: 'FuEXpS2xyTJA73Z2WcrOz',
     params: [
       {
         name: '竖-长度',
@@ -784,6 +805,7 @@ const strokes = [
   },
   {
     name: '横折钩',
+    uuid: 'c8Pd8VSPjClASnXbxipaV',
     params: [
       {
         name: '横-长度',
@@ -825,6 +847,7 @@ const strokes = [
   },
   {
     name: '横弯钩',
+    uuid: '3RKgyX_a2ZvPsfushHJg2',
     params: [
       {
         name: '横-长度',
@@ -878,6 +901,7 @@ const strokes = [
   },
   {
     name: '横折弯钩',
+    uuid: 'R6GeGWSWvEc-yqfuzSuKo',
     params: [
       {
         name: '横-长度',
@@ -937,6 +961,7 @@ const strokes = [
   },
   {
     name: '横撇弯钩',
+    uuid: 'F6ywDDM5lvSxM5XkMnT35',
     params: [
       {
         name: '横-长度',
@@ -984,6 +1009,7 @@ const strokes = [
   },
   {
     name: '横折折弯钩',
+    uuid: 'vLtc_ON5tYCc27bn2gl9f',
     params: [
       {
         name: '横-长度',
@@ -1043,6 +1069,7 @@ const strokes = [
   },
   {
     name: '横折',
+    uuid: 'SeF5EncRABMJnvz2sfGC0',
     params: [
       {
         name: '横-长度',
@@ -1072,6 +1099,7 @@ const strokes = [
   },
   {
     name: '横折2',
+    uuid: 'IInqUl_DAjYg-8Tmw_NHE',
     params: [
       {
         name: '横-长度',
@@ -1095,6 +1123,7 @@ const strokes = [
   },
   {
     name: '二横折',
+    uuid: 'Di0BaW5M-zifjadwEdyPh',
     params: [
       {
         name: '横1-长度',
@@ -1142,11 +1171,12 @@ const strokes = [
   },
   {
     name: '竖折',
+    uuid: 'MqIp7k0ZDGTDWdQIrVHD0',
     params: [
       {
         name: '竖-水平延伸',
         default: 0,
-        min: 0,
+        min: -200,
         max: 200,
       },
       {
@@ -1171,6 +1201,7 @@ const strokes = [
   },
   {
     name: '竖弯',
+    uuid: 'oyP7Yql1-auw4uJDNpxxw',
     params: [
       {
         name: '竖-长度',
@@ -1194,6 +1225,7 @@ const strokes = [
   },
   {
     name: '横折弯',
+    uuid: '3ogIJZDcPTAUT67ob1mmH',
     params: [
       {
         name: '横-长度',

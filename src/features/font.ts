@@ -483,14 +483,15 @@ const componentsToContours = (components: Array<_Component>, options: {
 						const key = keys[i]
 						const _joint = _skeleton[key]
 						const joint = {
-							x: _joint.x + offset.x,
-							y: _joint.y + offset.y,
+							x: _joint.x + offset.x + ox,
+							y: _joint.y + offset.y + oy,
 						}
 						skeleton[key] = computeCoords(options.grid, joint)
 					}
 					const components1 = glyph._o.getComponentsBySkeleton(skeleton)
 					const components2 = orderedListWithItemsForGlyph(glyph)
-					const contours1 = componentsToContours(components1.concat(components2), options, { x: offset.x + ox, y: offset.y + oy }, isGlyph, preview, true)
+					const contours1 = componentsToContours(components1.concat(components2), options, { x: 0, y: 0 }, isGlyph, preview, true)
+					// const contours1 = componentsToContours(components1.concat(components2), options, { x: offset.x + ox, y: offset.y + oy }, isGlyph, preview, true)
 					contours = contours.concat(contours1)
 				} else {
 					// 不使用骨架布局调整
