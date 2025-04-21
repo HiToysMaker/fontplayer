@@ -491,7 +491,7 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 	// }
 
 	const languageTags: Array<any> = []
-	// const nameTable = createNameTable(names, languageTags)
+	//const nameTable = createNameTable(names, languageTags)
 	const nameTable = options.tables ? createNameTable2(options.tables.name) : createNameTable(names, languageTags)
 
 	const _postTable = options.tables ? options.tables.post : {}

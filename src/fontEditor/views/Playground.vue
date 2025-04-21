@@ -3,6 +3,7 @@ import { onMounted, ref, watch } from 'vue'
 import GridController from '../components/Widgets/GridController_playground.vue'
 import { gridSettings, constants, updateCharactersAndPreview, initPlayground, renderPreview } from '../stores/playground'
 import { IConstant } from '../stores/glyph'
+import { emitter } from '../Event/bus'
 
 const test_chars = ref([])
 
@@ -23,6 +24,7 @@ const onGridChange = (dx, dy, centerSquareSize) => {
 let timer = null
 watch(constants, () => {
   updateCharactersAndPreview()
+  emitter.emit('refreshPlaygroundGridController')
   // if (timer) {
   //   clearTimeout(timer)
   // } else {
@@ -52,12 +54,6 @@ const switchTurningStyle = () => {
   }
   constants.value[2].value = value
 }
-
-// 读取初始字符以及字形数据
-// 点击列表中字符时，编辑该字符，重新渲染编辑面板
-// 更新GridController逻辑
-// 全局参数更新时，更新字符列表以及当前编辑字符
-// 导出字库，自动去除重叠
 </script>
 
 <template>

@@ -914,6 +914,41 @@ const createTable2 = (names: Array<any>) => {
 	const nameRecord = [];
 	const stringPool: Array<any> = []
 
+	let fullname = ''
+	let hasUniqueID_en = false
+	let hasUniqueID_zh = false
+
+	for (let i = 0; i < names.length; i++) {
+		const item = names[i]
+		if (item.nameID === 4 && item.langID === 0x409) {
+			fullname = item.value
+		} else if (item.nameID === 3 && item.langID === 0x409) {
+			hasUniqueID_en = true
+		} else if (item.nameID === 3 && item.langID === 0x804) {
+			hasUniqueID_zh = true
+		}
+	}
+
+	!hasUniqueID_zh && names.push({
+		nameID: 3,
+		nameLabel: 'uniqueID',
+		platformID: 3,
+		encodingID: 1,
+		langID: 0x804,
+		value: fullname,
+		default: true,
+	})
+
+	!hasUniqueID_en && names.push({
+		nameID: 3,
+		nameLabel: 'uniqueID',
+		platformID: 3,
+		encodingID: 1,
+		langID: 0x409,
+		value: fullname,
+		default: true,
+	})
+
 	for (let i = 0; i < names.length; i++) {
 		const { value, nameID, langID, encodingID, platformID } = names[i]
 		if (platformID != 3) break

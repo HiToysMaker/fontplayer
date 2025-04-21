@@ -21,9 +21,9 @@ import { IParameter } from "./glyph"
 export enum ParameterType {
 	Number,
 	Constant,
-  PlaygroundConstant,
 	RingController,
 	Enum,
+  PlaygroundConstant,
 }
 
 const characters = ref([])

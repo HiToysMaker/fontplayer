@@ -7,8 +7,12 @@ const params = {
   skeletonRefPos: glyph.getParam('参考位置'),
 }
 const global_params = {
+  weights_variation_power: glyph.getParam('字重变化'),
   start_style_type: glyph.getParam('起笔风格'),
   start_style_value: glyph.getParam('起笔数值'),
+  turn_style_type: glyph.getParam('转角风格'),
+  turn_style_value: glyph.getParam('转角数值'),
+  bending_degree: glyph.getParam('弯曲程度'),
   weight: glyph.getParam('字重') || 40,
 }
 

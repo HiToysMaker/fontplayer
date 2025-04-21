@@ -19,10 +19,12 @@
   const descender: Ref<number> = ref(-200)
 
   onMounted(() => {
-    name.value = selectedFile.value.name
-    unitsPerEm.value = selectedFile.value.fontSettings.unitsPerEm
-    ascender.value = selectedFile.value.fontSettings.ascender
-    descender.value = selectedFile.value.fontSettings.descender
+    if (selectedFile.value) {
+      name.value = selectedFile.value.name
+      unitsPerEm.value = selectedFile.value.fontSettings.unitsPerEm
+      ascender.value = selectedFile.value.fontSettings.ascender
+      descender.value = selectedFile.value.fontSettings.descender
+    }
   })
 
   watch(selectedFile, () => {

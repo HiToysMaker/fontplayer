@@ -85,7 +85,7 @@
         platformID: 3,
         encodingID: 1,
         langID: 0x804,
-        value: '版本 1.0',
+        value: 'Version 1.0',
         default: true,
       },
       {
