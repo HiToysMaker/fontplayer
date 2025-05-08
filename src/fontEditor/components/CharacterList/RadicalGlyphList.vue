@@ -42,12 +42,6 @@
           }
         })
       }
-      //executeScript(glyph)
-      //glyph?.components?.map(component => {
-      //  if (component.type === 'glyph') {
-      //    executeScript(component.value)
-      //  }
-      //})
       const wrapper = document.getElementById('radical-glyph-render-list')
       if (!wrapper) return
       const canvas: HTMLCanvasElement = wrapper.querySelector(`#preview-canvas-${glyph.uuid}`) as HTMLCanvasElement
