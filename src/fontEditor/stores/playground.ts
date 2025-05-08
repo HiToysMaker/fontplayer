@@ -15,6 +15,7 @@ import { FP } from '../programming/FPUtils'
 import { strokes as hei_strokes } from '../templates/strokes_1'
 import { ParametersMap } from "../programming/ParametersMap"
 import { IParameter } from "./glyph"
+import paper from 'paper'
 
 // 参数类型
 // parameter type
@@ -500,7 +501,7 @@ const computeOverlapRemovedContours = () => {
         unitedPath = unitedPath.unite(paths[i])
       }
     }
-    
+
     if (!unitedPath) return
 
     // 根据合并路径生成轮廓数据
@@ -561,9 +562,20 @@ const createFont = () => {
   const ascender = 800
   const descender = -200
   for (let i = 0; i < characters.value.length; i++) {
-    const char: ICharacterFile = characters[i]
+    const char: ICharacterFile = characters.value[i]
     let contours = [[]]
-    contours = char.overlap_removed_contours
+    if (char.overlap_removed_contours) {
+      contours = char.overlap_removed_contours
+    } else {
+      contours = componentsToContours(
+        orderedListWithItemsForCharacterFile(char),
+        {
+          unitsPerEm,
+          descender,
+          advanceWidth: unitsPerEm,
+        }, {x: 0, y: 0}, false, false, false
+      )
+    }
     const { text, unicode } = char.character
     fontCharacters.push({
       name: text,
@@ -646,4 +658,5 @@ export {
   updateCharactersAndPreview,
   initPlayground,
   constantsMap,
+  exportFont,
 }

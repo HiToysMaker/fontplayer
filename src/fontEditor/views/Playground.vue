@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { onMounted, ref, watch } from 'vue'
 import GridController from '../components/Widgets/GridController_playground.vue'
-import { gridSettings, constants, updateCharactersAndPreview, initPlayground, renderPreview } from '../stores/playground'
+import { gridSettings, constants, updateCharactersAndPreview, initPlayground, renderPreview, exportFont } from '../stores/playground'
 import { IConstant } from '../stores/glyph'
 import { emitter } from '../Event/bus'
 
@@ -106,8 +106,8 @@ const switchTurningStyle = () => {
         </div>
         <div class="tips"></div>
         <div class="control-panel">
-          <el-button>生成卡片</el-button>
-          <el-button type="primary">导出字库</el-button>
+          <!-- <el-button>生成卡片</el-button> -->
+          <el-button type="primary" @click="exportFont">导出字库</el-button>
         </div>
       </div>
     </div>
