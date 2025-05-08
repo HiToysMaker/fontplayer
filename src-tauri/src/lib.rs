@@ -435,7 +435,7 @@ pub fn run() {
         &[
           &Submenu::with_items(
             handle,
-            "File",
+            "字玩",
             true,
             &[&MenuItemBuilder::with_id("about", "关于")
               .build(handle)
