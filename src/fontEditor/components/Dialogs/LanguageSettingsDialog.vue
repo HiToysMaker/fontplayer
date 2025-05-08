@@ -25,12 +25,12 @@
 
   const languageOptions = [
     {
-      value: 'cn',
+      value: 'zh',
       label: '中文',
     },
     {
       value: 'en',
-      label: '英语',
+      label: 'English',
     },
   ]
 </script>

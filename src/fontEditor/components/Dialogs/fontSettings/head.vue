@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { validators } from '../../../../fontManager/validators'
 import { head_data as data } from '../../../stores/settings'
+import { useI18n } from 'vue-i18n'
+const { locale } = useI18n()
 
 const validMap = ref({
   majorVersion: {
@@ -40,7 +42,11 @@ const onChange = (key, value) => {
       const valid = validators.uint16(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为uint16'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为uint16'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: uint16 required'
+        }
       }
       validMap.value.majorVersion.valid = valid
       validMap.value.majorVersion.tip = tip
@@ -50,7 +56,11 @@ const onChange = (key, value) => {
       const valid = validators.uint16(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为uint16'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为uint16'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: uint16 required'
+        }
       }
       validMap.value.minorVersion.valid = valid
       validMap.value.minorVersion.tip = tip
@@ -60,7 +70,11 @@ const onChange = (key, value) => {
       const valid = validators.Fixed(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误'
+        if (locale.value === 'zh') {
+          tip = '格式错误'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format'
+        }
       }
       validMap.value.fontRevision.valid = valid
       validMap.value.fontRevision.tip = tip
@@ -70,7 +84,11 @@ const onChange = (key, value) => {
       const valid = validators.LONGDATETIME(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误'
+        if (locale.value === 'zh') {
+          tip = '格式错误'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format'
+        }
       }
       validMap.value.created.valid = valid
       validMap.value.created.tip = tip
@@ -80,7 +98,11 @@ const onChange = (key, value) => {
       const valid = validators.LONGDATETIME(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误'
+        if (locale.value === 'zh') {
+          tip = '格式错误'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format'
+        }
       }
       validMap.value.modified.valid = valid
       validMap.value.modified.tip = tip
@@ -90,7 +112,11 @@ const onChange = (key, value) => {
       const valid = validators.uint16(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为uint16'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为uint16'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: uint16 required'
+        }
       }
       validMap.value.lowestRecPPEM.valid = valid
       validMap.value.lowestRecPPEM.tip = tip
@@ -100,7 +126,11 @@ const onChange = (key, value) => {
       const valid = validators.int16(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为int16'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为int16'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: int16 required'
+        }
       }
       validMap.value.fontDirectionHint.valid = valid
       validMap.value.fontDirectionHint.tip = tip
@@ -117,7 +147,7 @@ const updateModified = (date) => {
   data.value.modified.timestamp = Math.floor(date.getTime() / 1000) + 2082844800
 }
 
-const descriptions = {
+const descriptions_zh = {
   majorVersion: '表版本的主版本号，格式为uint16',
   minorVersion: '表版本的次版本号，格式为uint16',
   fontRevision: '字体版本号，由字体开发者定义，格式为Fixed',
@@ -127,7 +157,7 @@ const descriptions = {
   fontDirectionHint: '字体的排版方向提示信息，通常为 0（左到右排版）',
 }
 
-const flagsDescriptions = [
+const flagsDescriptions_zh = [
   '字体基线位于 `y=0`',
   '左侧起始点位于 `x=0`（仅与 TrueType 光栅化器相关）——参见有关可变字体的附加信息',
   '指令可能依赖于点大小（point size）',
@@ -146,7 +176,7 @@ const flagsDescriptions = [
   '保留位，必须设置为 0。',
 ]
 
-const macStyleDescritions = [
+const macStyleDescriptions_zh = [
   '粗体',
   '斜体',
   '下划线',
@@ -164,6 +194,81 @@ const macStyleDescritions = [
   '保留位',
   '保留位',
 ]
+
+const descriptions_en = {
+  majorVersion: 'Major version number of the table format, must be a uint16',
+  minorVersion: 'Minor version number of the table format, must be a uint16',
+  fontRevision: 'Font revision number defined by the font developer, format: Fixed',
+  created: 'Font creation time represented as seconds since 1904-01-01 00:00:00. Stored as 64-bit integer',
+  modified: 'Font modification time represented as seconds since 1904-01-01 00:00:00. Stored as 64-bit integer',
+  lowestRecPPEM: 'Recommended minimum pixels per em (PPEM) size for this font',
+  fontDirectionHint: 'Font layout direction hint (0 = left-to-right layout)'
+}
+
+const flagsDescriptions_en = [
+  'Baseline at y=0',
+  'Left sidebearing at x=0 (relevant for TrueType rasterizer) - see additional notes for variable fonts',
+  'Instructions may depend on point size',
+  'Force internal scaler to use integer ppem values. **Strongly recommended for hinted fonts**',
+  'Instructions may alter advance width (non-linear scaling)',
+  '[Reserved for Apple] If set, may cause vertical layout divergence on some platforms (see Apple specifications)',
+  '[Unused in OpenType] Must be 0',
+  '[Unused in OpenType] Must be 0', 
+  '[Unused in OpenType] Must be 0',
+  '[Unused in OpenType] Must be 0',
+  '[Unused in OpenType] Must be 0',
+  'Font contains lossless compressed data (e.g., WOFF 2.0). Note: DSIG table may become invalid',
+  'Font contains converted metrics (compatible metrics)',
+  'Optimized for ClearType® rendering',
+  'Last Resort fallback font',
+  'Reserved bit (must be 0)'
+]
+
+const macStyleDescriptions_en = [
+  'Bold',
+  'Italic', 
+  'Underline',
+  'Outline',
+  'Shadow',
+  'Condensed',
+  'Extended',
+  'Reserved bit',
+  'Reserved bit',
+  'Reserved bit', 
+  'Reserved bit',
+  'Reserved bit',
+  'Reserved bit',
+  'Reserved bit',
+  'Reserved bit',
+  'Reserved bit'
+]
+
+const descriptions = computed(() => {
+  if (locale.value === 'zh') {
+    return descriptions_zh
+  } else if (locale.value === 'en') {
+    return descriptions_en
+  }
+  return descriptions_zh
+})
+
+const flagsDescriptions = computed(() => {
+  if (locale.value === 'zh') {
+    return flagsDescriptions_zh
+  } else if (locale.value === 'en') {
+    return flagsDescriptions_en
+  }
+  return flagsDescriptions_zh
+})
+
+const macStyleDescriptions = computed(() => {
+  if (locale.value === 'zh') {
+    return macStyleDescriptions_zh
+  } else if (locale.value === 'en') {
+    return macStyleDescriptions_en
+  }
+  return macStyleDescriptions_zh
+})
 </script>
 
 <template>
@@ -335,49 +440,49 @@ const macStyleDescritions = [
             <el-checkbox v-model="data.macStyle[0]"></el-checkbox>
           </div>
           <div class="mac-style-item-name">Bit-0</div>
-          <div class="mac-style-item-description">{{ macStyleDescritions[0] }}</div>
+          <div class="mac-style-item-description">{{ macStyleDescriptions[0] }}</div>
         </div>
         <div class="mac-style-item">
           <div class="mac-style-item-checkbox">
             <el-checkbox v-model="data.macStyle[1]"></el-checkbox>
           </div>
           <div class="mac-style-item-name">Bit-1</div>
-          <div class="mac-style-item-description">{{ macStyleDescritions[1] }}</div>
+          <div class="mac-style-item-description">{{ macStyleDescriptions[1] }}</div>
         </div>
         <div class="mac-style-item">
           <div class="mac-style-item-checkbox">
             <el-checkbox v-model="data.macStyle[2]"></el-checkbox>
           </div>
           <div class="mac-style-item-name">Bit-2</div>
-          <div class="mac-style-item-description">{{ macStyleDescritions[2] }}</div>
+          <div class="mac-style-item-description">{{ macStyleDescriptions[2] }}</div>
         </div>
         <div class="mac-style-item">
           <div class="mac-style-item-checkbox">
             <el-checkbox v-model="data.macStyle[3]"></el-checkbox>
           </div>
           <div class="mac-style-item-name">Bit-3</div>
-          <div class="mac-style-item-description">{{ macStyleDescritions[3] }}</div>
+          <div class="mac-style-item-description">{{ macStyleDescriptions[3] }}</div>
         </div>
         <div class="mac-style-item">
           <div class="mac-style-item-checkbox">
             <el-checkbox v-model="data.macStyle[4]"></el-checkbox>
           </div>
           <div class="mac-style-item-name">Bit-4</div>
-          <div class="mac-style-item-description">{{ macStyleDescritions[4] }}</div>
+          <div class="mac-style-item-description">{{ macStyleDescriptions[4] }}</div>
         </div>
         <div class="mac-style-item">
           <div class="mac-style-item-checkbox">
             <el-checkbox v-model="data.macStyle[5]"></el-checkbox>
           </div>
           <div class="mac-style-item-name">Bit-5</div>
-          <div class="mac-style-item-description">{{ macStyleDescritions[5] }}</div>
+          <div class="mac-style-item-description">{{ macStyleDescriptions[5] }}</div>
         </div>
         <div class="mac-style-item">
           <div class="mac-style-item-checkbox">
             <el-checkbox v-model="data.macStyle[6]"></el-checkbox>
           </div>
           <div class="mac-style-item-name">Bit-6</div>
-          <div class="mac-style-item-description">{{ macStyleDescritions[6] }}</div>
+          <div class="mac-style-item-description">{{ macStyleDescriptions[6] }}</div>
         </div>
       </div>
     </div>

@@ -27,6 +27,7 @@
 	import { emitter } from '../../Event/bus'
 	import { ElMessage } from 'element-plus'
 	import { OpType, saveState, StoreType } from '../../stores/edit'
+	const { tm, t, locale } = useI18n()
 
 	interface LayoutNode {
 		id: string;
@@ -105,7 +106,7 @@
 		emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
 		ElMessage({
 			type: 'success',
-			message: '应用布局变换',
+			message: tm('panels.paramsPanel.applyGridTransform'),
 		})
 	}
 	const resetGrid = () => {
@@ -133,7 +134,7 @@
 		emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
 		ElMessage({
 			type: 'success',
-			message: '重置布局变换',
+			message: tm('panels.paramsPanel.resetGridTransform'),
 		})
 	}
 </script>
@@ -235,10 +236,10 @@
 		</div> -->
 		<div class="grid-settings">
 			<el-button class="grid-confirm-btn" :disabled="!gridChanged" @pointerdown="confirmGridChange" type="primary">
-				应用布局变换
+				{{ t('panels.paramsPanel.applyGridTransform') }}
 			</el-button>
 			<el-button class="grid-reset-btn" @pointerdown="resetGrid">
-				重置布局变换
+				{{ t('panels.paramsPanel.resetGridTransform') }}
 			</el-button>
 			<el-form-item label-width="120px" label="使用骨架变换">
 				<el-switch

@@ -11,6 +11,8 @@
   import { editStatus, Status } from '../../stores/font'
   import { setCloseFileTipDialogVisible, setFontSettingsDialogVisible } from '../../stores/dialogs'
   import { Close, Search, InfoFilled, Tools } from '@element-plus/icons-vue'
+  import { useI18n } from 'vue-i18n'
+  const { tm, t, locale } = useI18n()
 
   // 关闭文件
   // close file
@@ -53,38 +55,46 @@
       <div class="right-btns" v-if="selectedFile">
         <el-icon class="right-btn"><Search /></el-icon>
         <el-popover
-            placement="bottom-end"
-            :width="120"
-            trigger="hover"
-            popper-class="info-popover"
-          >
-            <template #reference>
-              <el-icon class="right-btn"><InfoFilled /></el-icon>
-            </template>
-            <div class="info-list">
-              <div class="info-item">
-                <span class="info-item-name">字符数量：</span>
-                <span class="info-item-content">{{ selectedFile.characterList.length }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-item-name">笔画数量：</span>
-                <span class="info-item-content">{{ stroke_glyphs.length }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-item-name">部首数量：</span>
-                <span class="info-item-content">{{ radical_glyphs.length }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-item-name">字形数量：</span>
-                <span class="info-item-content">{{ comp_glyphs.length }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-item-name">组件数量：</span>
-                <span class="info-item-content">{{ glyphs.length }}</span>
-              </div>
+          placement="bottom-end"
+          :width="120"
+          trigger="hover"
+          popper-class="info-popover"
+        >
+          <template #reference>
+            <el-icon class="right-btn"><InfoFilled /></el-icon>
+          </template>
+          <div class="info-list">
+            <div class="info-item">
+              <span class="info-item-name">{{ t('programming.charCounts') }}</span>
+              <span class="info-item-content">{{ selectedFile.characterList.length }}</span>
             </div>
-          </el-popover>
+            <div class="info-item">
+              <span class="info-item-name">{{ t('programming.strokeCounts') }}</span>
+              <span class="info-item-content">{{ stroke_glyphs.length }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-item-name">{{ t('programming.radicalCounts') }}</span>
+              <span class="info-item-content">{{ radical_glyphs.length }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-item-name">{{ t('programming.compCounts') }}</span>
+              <span class="info-item-content">{{ comp_glyphs.length }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-item-name">{{ t('programming.glyphCompCounts') }}</span>
+              <span class="info-item-content">{{ glyphs.length }}</span>
+            </div>
+          </div>
+        </el-popover>
         <el-icon class="right-btn" @pointerdown="setFontSettingsDialogVisible(true)"><Tools /></el-icon>
+        <div class="language-settings">
+          <div class="language-choice-item" :class="{
+            selected: locale === 'zh'
+          }" @click="locale = 'zh'">中文</div>
+          <div class="language-choice-item" :class="{
+            selected: locale === 'en'
+          }" @click="locale = 'en'">English</div>
+        </div>
       </div>
     </el-row>
 		<el-row class="files-bar-row" v-else-if="editStatus === Status.Edit">
@@ -131,9 +141,39 @@
   .info-list {
     .info-item {
       margin-bottom: 5px;
+      .info-item-content {
+        margin-left: 20px;
+      }
     }
   }
   .right-btns {
+    .language-settings {
+      color: var(--primary-0);
+			font-weight: bold;
+			display: flex;
+			flex-direction: row;
+      width: 120px;
+      font-size: 14px;
+      gap: 10px;
+      align-items: center;
+      justify-self: center;
+      margin-left: 20px;
+			.language-choice-item {
+				flex: auto;
+				text-align: center;
+				line-height: 22px;
+				cursor: pointer;
+				&.selected {
+					background-color: var(--primary-0);
+					border-radius: 20px;
+          color: var(--light-0);
+				}
+        &:not(.selected):hover {
+					background-color: var(--light-0);
+          border-radius: 20px;
+				}
+			}
+		}
     font-size: 22px;
     line-height: 36px;
     margin-right: 5px;

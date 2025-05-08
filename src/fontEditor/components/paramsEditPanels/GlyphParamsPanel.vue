@@ -277,18 +277,18 @@
               <el-button
                 v-show="parameter.type === ParameterType.Constant"
                 @pointerdown="cancelGlobalParam(parameter)"
-              >取消全局变量</el-button>
+              >{{ t('panels.paramsPanel.cancelGlobalParam') }}</el-button>
               <el-button
                 @pointerdown="setAsGlobalParam(parameter)"
-              >设为全局变量</el-button>
+              >{{ t('panels.paramsPanel.setAsGlobalParam') }}</el-button>
               <el-button
                 @pointerdown="selectGlobalParam(parameter)"
-              >选择全局变量</el-button>
+              >{{ t('panels.paramsPanel.selectGlobalParam') }}</el-button>
 							<el-button
 								v-show="parameter.type === ParameterType.Constant"
 								type="primary"
 								@pointerdown="updateGlobalParam(parameter)"
-							>更新全局变量</el-button>
+							>{{ t('panels.paramsPanel.updateGlobalParam') }}</el-button>
             </div>
           </el-popover>
           <div
@@ -297,7 +297,7 @@
             :class="{
               ring: parameter.type === ParameterType.Constant && getConstant(parameter.value).type === ParameterType.RingController
             }"
-          >全局变量</div>
+          >{{ t('panels.paramsPanel.globalParam') }}</div>
           <div v-if="parameter.type === ParameterType.Number">
             <el-input-number
               :model-value="parameter.value"

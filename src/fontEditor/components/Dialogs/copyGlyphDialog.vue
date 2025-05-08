@@ -14,8 +14,8 @@
 	import * as R from 'ramda'
   import { ref } from 'vue'
   import { useI18n } from 'vue-i18n'
-import { emitter } from '@/fontEditor/Event/bus'
-  const { tm, t } = useI18n()
+  import { emitter } from '@/fontEditor/Event/bus'
+  const { tm, t, locale } = useI18n()
 
   const name = ref('')
 
@@ -25,7 +25,13 @@ import { emitter } from '@/fontEditor/Event/bus'
 
   const handleClick = () => {
     if (!name.value) {
-      ElMessage('请输入字形名称。')
+      let msg = '请输入字形名称。'
+      if (locale.value === 'zh') {
+        msg = '请输入字形名称。'
+      } else if (locale.value === 'en') {
+        msg = 'Please input glyph\'s name.'
+      }
+      ElMessage(msg)
       return
     }
 		let glyph = R.clone(getGlyphByUUID(copiedGlyphUUID.value))

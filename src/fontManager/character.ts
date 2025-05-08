@@ -13,7 +13,12 @@ interface ICharacter {
 	contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>;
 	contourNum: number;
 	advanceWidth?: number;
-	leftSideBearing?: number;
+	leftSideBearing?: number | undefined;
+	rightSideBearing?: number;
+	xMin?: number;
+	xMax?: number;
+	yMin?: number;
+	yMax?: number;
 	index?: number;
 }
 
@@ -99,7 +104,7 @@ const getMetrics = (character: ICharacter) => {
 		yMin: Math.min.apply(null, yCoords),
 		xMax: Math.max.apply(null, xCoords),
 		yMax: Math.max.apply(null, yCoords),
-		leftSideBearing: character.leftSideBearing || 0,
+		leftSideBearing: character.leftSideBearing,
 		rightSideBearing: 0,
 	}
 
@@ -117,6 +122,10 @@ const getMetrics = (character: ICharacter) => {
 
 	if (!isFinite(metrics.yMax)) {
 		metrics.yMax = 0
+	}
+
+	if (!metrics.leftSideBearing) {
+		metrics.leftSideBearing = metrics.xMin
 	}
 
 	metrics.rightSideBearing = (character.advanceWidth || 0) - metrics.leftSideBearing - (metrics.xMax - metrics.xMin)

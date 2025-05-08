@@ -52,7 +52,7 @@ import type {
 import {
   componentsToContours,
   componentsToContours2,
-} from '@/features/font'
+} from '../../features/font'
 import { emitter } from '../Event/bus'
 import {
   IComponentValue,
@@ -93,6 +93,8 @@ import { ENV } from '../stores/system'
 import { OpType, saveState, StoreType, undo as _undo, redo as _redo } from '../stores/edit'
 import { getEnName, name_data } from '../stores/settings'
 import { strokes as hei_strokes } from '../templates/strokes_1'
+import { i18n } from '../../i18n'
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
 interface IPlainGlyphOptions {
   clearScript: boolean;
@@ -985,11 +987,20 @@ const importGlyphs_tauri = async () => {
     emitter.emit('renderCompGlyphPreviewCanvas')
   }
   if (repeatMark) {
-    ElMessageBox.alert(
-      '导入字形时发现有与当前字形相同uuid的重复字形，自动忽略重复字形',
-      '提示', {
-      confirmButtonText: '确定',
-    })
+    const { locale } = i18n.global
+    if (locale === 'zh') {
+      ElMessageBox.alert(
+        '导入字形时发现有与当前字形相同uuid的重复字形，自动忽略重复字形。',
+        'Note', {
+        confirmButtonText: '确定',
+      })
+    } else if (locale === 'en') {
+      ElMessageBox.alert(
+        'Duplicate glyphs with the same UUID as existing ones were detected during import and have been automatically ignored.',
+        'Note', {
+        confirmButtonText: 'Confirm',
+      })
+    }
   }
 }
 
@@ -1041,11 +1052,20 @@ const importGlyphs = () => {
           emitter.emit('renderCompGlyphPreviewCanvas')
         }
         if (repeatMark) {
-          ElMessageBox.alert(
-            '导入字形时发现有与当前字形相同uuid的重复字形，自动忽略重复字形',
-            '提示', {
-            confirmButtonText: '确定',
-          })
+          const { locale } = i18n.global
+          if (locale === 'zh') {
+            ElMessageBox.alert(
+              '导入字形时发现有与当前字形相同uuid的重复字形，自动忽略重复字形。',
+              '提示', {
+              confirmButtonText: '确定',
+            })
+          } else if (locale === 'en') {
+            ElMessageBox.alert(
+              'Duplicate glyphs with the same UUID as existing entries were detected during import and have been automatically ignored.',
+              'Note', {
+              confirmButtonText: 'Confirm',
+            })
+          }
         }
       }
     }
@@ -1106,11 +1126,20 @@ const exportJSON = () => {
 
 const exportGlyphs = () => {
   if (editStatus.value === Status.CharacterList) {
-    ElMessageBox.alert(
-      '字符列表不能导出，只有在笔画、部首、字形、组件列表可以导出相应类型的字形',
-      '提示', {
-      confirmButtonText: '确定',
-    })
+    const { locale } = i18n.global
+    if (locale === 'zh') {
+      ElMessageBox.alert(
+        '字符列表不能导出，只有在笔画、部首、字形、组件列表可以导出相应类型的字形。',
+        '提示', {
+        confirmButtonText: '确定',
+      })
+    } else if (locale === 'en') {
+      ElMessageBox.alert(
+        'The character list cannot be exported. Only Stroke, Radical, Glyph, and Component lists support exporting their corresponding glyph types.',
+        'Note', {
+        confirmButtonText: 'Confirm',
+      })
+    }
     return
   }
   if (ENV.value === 'tauri') {
@@ -1245,6 +1274,7 @@ const createFont = (options?: CreateFontOptions) => {
     contours: [[]] as Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>,
     contourNum: 0,
     advanceWidth: Math.max(_width, _height),
+    leftSideBearing: 0,
   }]
 
   // {
@@ -1282,7 +1312,8 @@ const createFont = (options?: CreateFontOptions) => {
     fontCharacters.push({
       name: text,
       unicode: parseInt(unicode, 16),
-      advanceWidth: unitsPerEm,
+      advanceWidth: char.info?.metrics?.advanceWidth || unitsPerEm,
+      leftSideBearing: char.info?.metrics?.lsb || undefined,
       contours,
       contourNum: contours.length,
     })
@@ -1296,6 +1327,7 @@ const createFont = (options?: CreateFontOptions) => {
       name: ' ',
       unicode: parseInt('0x20', 16),
       advanceWidth: unitsPerEm,
+      leftSideBearing: 0,
       contours: [[]],
       contourNum: 0,
     })
@@ -1792,11 +1824,20 @@ const _syncData = async () => {
   loaded.value = 0
   total.value = file ? file.characterList.length * 2 : 0 + (plainGlyphs.length + plainGlyphs_stroke.length + plainGlyphs_radical.length + plainGlyphs_comp.length) * 3
   if (total.value === 0) {
-    ElMessageBox.alert(
-      '暂时没有缓存',
-      '提示', {
-      confirmButtonText: '确定',
-    })
+    const { locale } = i18n.global
+    if (locale === 'zh') {
+      ElMessageBox.alert(
+        '暂时没有缓存',
+        '提示', {
+        confirmButtonText: '确定',
+      })
+    } else if (locale === 'en') {
+      ElMessageBox.alert(
+        'No cached data available',
+        'Note', {
+        confirmButtonText: 'Confirm',
+      })
+    }
   }
   total.value && (loading.value = true)
 
@@ -2632,6 +2673,34 @@ const removeOverlap = () => {
   }
 }
 
+const openPlayground = () => {
+  //@ts-ignore
+  if (window.__TAURI_INTERNALS__) {
+    const windowOptions = {
+      url: `${location.origin}${location.pathname}#/playground`,
+      width: 1280,
+      height: 800,
+      x: (screen.width - 1280) / 2,
+      y: (screen.height - 800) / 2,
+      //devtools: true,
+    }
+    const webview = new WebviewWindow('glyph-script', windowOptions)
+    webview.once('tauri://created', async () => {
+      console.log('webview created')
+    })
+    webview.once('tauri://error', function (e) {
+      console.log('error creating webview', e)
+    })
+  } else {
+    const playground_window = window.open(
+      // `${location.origin}${base}/#/glyph-programming-editor`,
+      `${location.origin}${location.pathname}#/playground`,
+      'playground',
+      `popup,width=${1280},height=${800},left=${(screen.width - 1280) / 2}`,
+    )
+  }
+}
+
 const tauri_handlers: IHandlerMap = {
   'create-file': createFile,
   'open-file': openFile_tauri,
@@ -2711,6 +2780,7 @@ export {
   plainGlyph,
   mapToObject,
   importTemplate1,
+  importTemplate2,
   importFont,
   exportFont,
   exportFont_tauri,
@@ -2719,4 +2789,5 @@ export {
   nativeImportFile,
   instanceCharacter,
   nativeSaveBinary,
+  openPlayground,
 }

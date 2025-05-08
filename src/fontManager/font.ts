@@ -274,7 +274,7 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 		} else {
 			throw new Error('Unicode ranges bits > 123 are reserved for internal usage');
 		}
-		if (unicode === 0) continue
+		//if (unicode === 0) continue
 		const metrics = getMetrics(character)
 		xMins.push(metrics.xMin)
 		yMins.push(metrics.yMin)
@@ -283,6 +283,16 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 		leftSideBearings.push(metrics.leftSideBearing)
 		rightSideBearings.push(metrics.rightSideBearing)
 		advanceWidths.push(character.advanceWidth)
+		character.xMin = metrics.xMin
+		character.xMax = metrics.xMax
+		character.yMin = metrics.yMin
+		character.yMax = metrics.yMax
+		character.rightSideBearing = metrics.rightSideBearing
+		character.leftSideBearing = metrics.leftSideBearing
+		// leftSideBearings.push(500)
+		// rightSideBearings.push(0)
+		// advanceWidths.push(1000)
+
 	}
 
 	const globals = {

@@ -1,5 +1,5 @@
 const menus = {
-	cn: {
+	zh: {
 		app: '字玩',
     about: '关于',
 		file: {

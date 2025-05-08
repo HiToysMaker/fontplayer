@@ -47,6 +47,8 @@
   import { emitter } from '../../Event/bus'
   import { ArrowLeftBold, ArrowRightBold } from '@element-plus/icons-vue'
   import { addComponentsForGlyph, editGlyphUUID } from '../../stores/glyph'
+  import { useI18n } from 'vue-i18n'
+  const { tm, t, locale } = useI18n()
 
   const previewCanvas1: Ref<HTMLCanvasElement | null> = ref(null)
   const previewCanvas2: Ref<HTMLCanvasElement | null> = ref(null)
@@ -110,7 +112,13 @@
 
   const moveLeft = () => {
     if (step.value === 1 && !!enableLocalBrush.value) {
-      ElMessage('编辑中，请确认后再查看')
+      let msg = '编辑中，请确认后再查看'
+      if (locale.value === 'zh') {
+        msg = '编辑中，请确认后再查看'
+      } else if (locale.value === 'en') {
+        msg = 'In editing, try it later.'
+      }
+      ElMessage(msg)
       return
     }
     previewStatus.value = previewStatus.value <= 0 ? previewList.length - 1 : previewStatus.value - 1
@@ -118,7 +126,13 @@
 
   const moveRight = () => {
     if (step.value === 1 && !!enableLocalBrush.value) {
-      ElMessage('编辑中，请确认后再查看')
+      let msg = '编辑中，请确认后再查看'
+      if (locale.value === 'zh') {
+        msg = '编辑中，请确认后再查看'
+      } else if (locale.value === 'en') {
+        msg = 'In editing, try it later.'
+      }
+      ElMessage(msg)
       return
     }
     previewStatus.value = previewStatus.value >= previewList.length - 1 ? 0 : previewStatus.value + 1
@@ -366,14 +380,14 @@
   <div class="font-edit-pic-wrapper">
     <header class="top-bar">
       <el-button-group class="btn-group">
-        <el-button class="btn delete-btn" @pointerdown="remove" size="small">删除</el-button>
-        <el-button class="btn reset-btn" @pointerdown="reset" size="small">重置</el-button>
+        <el-button class="btn delete-btn" @pointerdown="remove" size="small">{{ t('panels.picEditPanel.remove') }}</el-button>
+        <el-button class="btn reset-btn" @pointerdown="reset" size="small">{{ t('panels.picEditPanel.reset') }}</el-button>
         <el-button
           type="primary"
           class="btn confitm-btn"
           @pointerdown="confirm"
           size="small"
-        >确认</el-button>
+        >{{ t('panels.picEditPanel.confirm') }}</el-button>
       </el-button-group>
     </header>
     <main class="main">

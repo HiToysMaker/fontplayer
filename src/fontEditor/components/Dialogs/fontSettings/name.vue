@@ -4,6 +4,8 @@ import { name_data as data } from '../../../stores/settings'
 import {
   Delete,
 } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
+const { t, tm } = useI18n()
 
 // NameIDs for the name table.
 const nameTableNames = [
@@ -174,7 +176,7 @@ const removeItem = (index) => {
         <el-tooltip
           class="tips"
           effect="dark"
-          content="name表定义了不同语言环境下，与字体相关的字符串信息。"
+          :content="tm('dialogs.fontSettingsDialog.nameTableTip')"
           placement="bottom"
         >
           <el-icon><QuestionFilled /></el-icon>
@@ -182,7 +184,7 @@ const removeItem = (index) => {
       </div>
     </div>
     <div class="add-item-btn">
-      <el-button @pointerdown="addItem">添加</el-button>
+      <el-button @pointerdown="addItem">{{ t('dialogs.fontSettingsDialog.addItem') }}</el-button>
     </div>
   </el-scrollbar>
 </template>

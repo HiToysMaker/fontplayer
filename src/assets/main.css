@@ -336,3 +336,10 @@ div, span {
   user-select: none !important;
   -webkit-user-select: none !important;
 }
+
+label {
+  line-height: 18px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+}

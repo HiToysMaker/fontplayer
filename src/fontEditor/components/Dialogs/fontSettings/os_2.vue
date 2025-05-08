@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { validators } from '../../../../fontManager/validators'
 import { os2_data as data } from '../../../stores/settings'
+import { useI18n } from 'vue-i18n'
+const { locale } = useI18n()
 
 const validMap = ref({
   version: {
@@ -90,7 +92,11 @@ const onChange = (key, value) => {
       const valid = validators.uint16(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为uint16'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为uint16'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: uint16 required'
+        }
       }
       validMap.value.version.valid = valid
       validMap.value.version.tip = tip
@@ -100,7 +106,11 @@ const onChange = (key, value) => {
       const valid = validators.uint16(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为uint16'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为uint16'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: uint16 required'
+        }
       }
       validMap.value.usWeightClass.valid = valid
       validMap.value.usWeightClass.tip = tip
@@ -110,7 +120,11 @@ const onChange = (key, value) => {
       const valid = validators.uint16(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为uint16'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为uint16'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: uint16 required'
+        }
       }
       validMap.value.usWidthClass.valid = valid
       validMap.value.usWidthClass.tip = tip
@@ -120,7 +134,11 @@ const onChange = (key, value) => {
       const valid = validators.uint16(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误'
+        if (locale.value === 'zh') {
+          tip = '格式错误'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format'
+        }
       }
       validMap.value.fsType.valid = valid
       validMap.value.fsType.tip = tip
@@ -130,7 +148,11 @@ const onChange = (key, value) => {
       const valid = validators.FWORD(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为FWORD'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为FWORD'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: FWORD required'
+        }
       }
       validMap.value.ySubscriptXSize.valid = valid
       validMap.value.ySubscriptXSize.tip = tip
@@ -140,7 +162,11 @@ const onChange = (key, value) => {
       const valid = validators.FWORD(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为FWORD'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为FWORD'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: FWORD required'
+        }
       }
       validMap.value.ySubscriptYSize.valid = valid
       validMap.value.ySubscriptYSize.tip = tip
@@ -150,7 +176,11 @@ const onChange = (key, value) => {
       const valid = validators.FWORD(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为FWORD'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为FWORD'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: FWORD required'
+        }
       }
       validMap.value.ySubscriptXOffset.valid = valid
       validMap.value.ySubscriptXOffset.tip = tip
@@ -160,7 +190,11 @@ const onChange = (key, value) => {
       const valid = validators.FWORD(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为FWORD'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为FWORD'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: FWORD required'
+        }
       }
       validMap.value.ySubscriptYOffset.valid = valid
       validMap.value.ySubscriptYOffset.tip = tip
@@ -170,7 +204,11 @@ const onChange = (key, value) => {
       const valid = validators.FWORD(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为FWORD'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为FWORD'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: FWORD required'
+        }
       }
       validMap.value.ySuperscriptXSize.valid = valid
       validMap.value.ySuperscriptXSize.tip = tip
@@ -180,7 +218,11 @@ const onChange = (key, value) => {
       const valid = validators.FWORD(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为FWORD'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为FWORD'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: FWORD required'
+        }
       }
       validMap.value.ySuperscriptYSize.valid = valid
       validMap.value.ySuperscriptYSize.tip = tip
@@ -190,7 +232,11 @@ const onChange = (key, value) => {
       const valid = validators.FWORD(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为FWORD'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为FWORD'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: FWORD required'
+        }
       }
       validMap.value.ySuperscriptXOffset.valid = valid
       validMap.value.ySuperscriptXOffset.tip = tip
@@ -200,7 +246,11 @@ const onChange = (key, value) => {
       const valid = validators.FWORD(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为FWORD'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为FWORD'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: FWORD required'
+        }
       }
       validMap.value.ySuperscriptXOffset.valid = valid
       validMap.value.ySuperscriptYOffset.tip = tip
@@ -210,7 +260,11 @@ const onChange = (key, value) => {
       const valid = validators.FWORD(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为FWORD'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为FWORD'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: FWORD required'
+        }
       }
       validMap.value.yStrikeoutSize.valid = valid
       validMap.value.yStrikeoutSize.tip = tip
@@ -220,7 +274,11 @@ const onChange = (key, value) => {
       const valid = validators.FWORD(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为FWORD'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为FWORD'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: FWORD required'
+        }
       }
       validMap.value.yStrikeoutPosition.valid = valid
       validMap.value.yStrikeoutPosition.tip = tip
@@ -230,7 +288,11 @@ const onChange = (key, value) => {
       const valid = validators.int16(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为int16'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为int16'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: int16 required'
+        }
       }
       validMap.value.sFamilyClass.valid = valid
       validMap.value.sFamilyClass.tip = tip
@@ -240,7 +302,11 @@ const onChange = (key, value) => {
       const valid = validators.Tag(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为Tag achVendID'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为Tag achVendID'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: Tag achVendID required'
+        }
       }
       validMap.value.achVendID.valid = valid
       validMap.value.achVendID.tip = tip
@@ -250,7 +316,11 @@ const onChange = (key, value) => {
       const valid = validators.uint16(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为uint16'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为uint16'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: uint16 required'
+        }
       }
       validMap.value.usMaxContext.valid = valid
       validMap.value.usMaxContext.tip = tip
@@ -260,7 +330,11 @@ const onChange = (key, value) => {
       const valid = validators.uint16(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为uint16'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为int16'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: int16 required'
+        }
       }
       validMap.value.usLowerOpticalPointSize.valid = valid
       validMap.value.usLowerOpticalPointSize.tip = tip
@@ -270,7 +344,11 @@ const onChange = (key, value) => {
       const valid = validators.uint16(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为uint16'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为int16'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: int16 required'
+        }
       }
       validMap.value.usUpperOpticalPointSize.valid = valid
       validMap.value.usUpperOpticalPointSize.tip = tip
@@ -279,7 +357,7 @@ const onChange = (key, value) => {
   }
 }
 
-const descriptions = {
+const descriptions_zh = {
   version: '表的版本号',
   usWeightClass: '字体的字重（Weight），范围为 1–1000，常见值如 400（Regular）、700（Bold）。',
   usWidthClass: '字体的宽度类别，范围为 1（Ultra-condensed）到 9（Ultra-expanded）。',
@@ -305,7 +383,7 @@ const descriptions = {
   usUpperOpticalPointSize: '字体的最高推荐光学字号',
 }
 
-const panoseDescriptions = [
+const panoseDescriptions_zh = [
   {
     name: 'Family Type (字节 1)',
     description: '表示字体的家族类型，比如无衬线字体、衬线字体、等宽字体等。',
@@ -358,7 +436,7 @@ const panoseDescriptions = [
   }
 ]
 
-const fsSelectionDescriptions = [
+const fsSelectionDescriptions_zh = [
   {
     name: 'Italic',
     description: '如果勾选，则表明字体是斜体。'
@@ -400,6 +478,153 @@ const fsSelectionDescriptions = [
     description: '如果勾选，则表明字体是倾斜体（与 Italic 区别在于更机械化的倾斜）。'
   }
 ]
+
+const descriptions_en = {
+  version: 'Table version number',
+  usWeightClass: 'Font weight (1–1000 range, e.g. 400=Regular, 700=Bold)',
+  usWidthClass: 'Font width classification (1=Ultra-condensed to 9=Ultra-expanded)',
+  fsType: 'Font embedding licensing permissions (e.g., print-only embedding restrictions)',
+  ySubscriptXSize: 'Recommended horizontal size for subscript characters',
+  ySubscriptYSize: 'Recommended vertical size for subscript characters',
+  ySubscriptXOffset: 'X-axis offset from baseline for subscript positioning',
+  ySubscriptYOffset: 'Y-axis offset from baseline for subscript positioning',
+  ySuperscriptXSize: 'Recommended horizontal size for superscript characters',
+  ySuperscriptYSize: 'Recommended vertical size for superscript characters',
+  ySuperscriptXOffset: 'X-axis offset from baseline for superscript positioning',
+  ySuperscriptYOffset: 'Y-axis offset from baseline for superscript positioning',
+  yStrikeoutSize: 'Strikeout stroke thickness',
+  yStrikeoutPosition: 'Vertical position of strikeout relative to baseline',
+  sFamilyClass: 'Font family classification (e.g., Serif/Sans-serif design categories)',
+  panose: 'PANOSE classification system for visual font characteristics',
+  achVendID: '4-character font vendor identifier',
+  fsSelection: 'Font style flags (bitmask for Italic/Bold/Regular etc.)',
+  usMaxContext: 'Maximum context length required for glyph substitution',
+  usLowerOpticalPointSize: 'Minimum recommended optical size for this font',
+  usUpperOpticalPointSize: 'Maximum recommended optical size for this font'
+}
+
+const panoseDescriptions_en = [
+  {
+    name: 'Family Type (Byte 1)',
+    description: 'Font classification category (e.g., Sans-serif, Serif, Monospace)',
+    range: 'Range: 0-11 (No Fit/Text Display/Decorative etc.)'
+  },
+  {
+    name: 'Serif Style (Byte 2)',
+    description: 'Serif design characteristics (applies to Serif fonts)',
+    range: 'Range: 0-5 (No Serif/Square/Thin etc.)'
+  },
+  {
+    name: 'Weight (Byte 3)',
+    description: 'Stroke thickness progression from light to black',
+    range: 'Range: 0-9 (Light/Medium/Bold etc.)'
+  },
+  {
+    name: 'Proportion (Byte 4)',
+    description: 'Character width characteristics',
+    range: 'Range: 0-5 (Monospace/Proportional/Old Style etc.)'
+  },
+  {
+    name: 'Contrast (Byte 5)',
+    description: 'Stroke thickness variation between vertical/horizontal elements',
+    range: 'Range: 0-5 (No Contrast/Low/Medium/High etc.)'
+  },
+  {
+    name: 'Stroke Variation (Byte 6)',
+    description: 'Transition between thick/thin stroke elements',
+    range: 'Range: 0-3 (No Variation/Gradual/Abrupt etc.)'
+  },
+  {
+    name: 'Arm Style (Byte 7)',
+    description: 'Terminal treatment of non-curved strokes',
+    range: 'Range: 0-3 (Straight/Single Serif etc.)'
+  },
+  {
+    name: 'Letterform (Byte 8)',
+    description: 'Overall letter shape characteristics',
+    range: 'Range: 0-2 (Normal/Contact/Weighted etc.)'
+  },
+  {
+    name: 'Midline (Byte 9)',
+    description: 'Position of character midline',
+    range: 'Range: 0-2 (Standard/High/Low)'
+  },
+  {
+    name: 'X-height (Byte 10)',
+    description: 'Relative height of lowercase letters (without ascenders/descenders)',
+    range: 'Range: 0-5 (Constant/Small/Medium etc.)'
+  }
+]
+
+const fsSelectionDescriptions_en = [
+  {
+    name: 'Italic',
+    description: 'Indicates italic style'
+  },
+  {
+    name: 'Underscore',
+    description: 'Font contains underline metadata (rarely used)'
+  },
+  {
+    name: 'Negative',
+    description: 'Reverse-video outline effect (white foreground fill)'
+  },
+  {
+    name: 'Outlined',
+    description: 'Font uses outline effect styling'
+  },
+  {
+    name: 'Strikeout',
+    description: 'Font contains strikeout metadata'
+  },
+  {
+    name: 'Bold',
+    description: 'Indicates bold weight style'
+  },
+  {
+    name: 'Regular',
+    description: 'Base style flag (non-italic/non-bold)'
+  },
+  {
+    name: 'UseTypoMetrics',
+    description: 'Use OS/2 table’s sTypoAscender/sTypoDescender for layout'
+  },
+  {
+    name: 'WWS',
+    description: 'Font follows Weight-Width-Slope naming scheme'
+  },
+  {
+    name: 'Oblique',
+    description: 'Mechanical slant style (distinct from italic)'
+  }
+]
+
+const descriptions = computed(() => {
+  if (locale.value === 'zh') {
+    return descriptions_zh
+  } else if (locale.value === 'en') {
+    return descriptions_en
+  }
+  return descriptions_zh
+})
+
+const panoseDescriptions = computed(() => {
+  if (locale.value === 'zh') {
+    return panoseDescriptions_zh
+  } else if (locale.value === 'en') {
+    return panoseDescriptions_en
+  }
+  return panoseDescriptions_zh
+})
+
+const fsSelectionDescriptions = computed(() => {
+  if (locale.value === 'zh') {
+    return fsSelectionDescriptions_zh
+  } else if (locale.value === 'en') {
+    return fsSelectionDescriptions_en
+  }
+  return fsSelectionDescriptions_zh
+})
 </script>
 
 <template>
@@ -675,7 +900,7 @@ const fsSelectionDescriptions = [
             <el-checkbox v-model="data.fsSelection[index]"></el-checkbox>
           </div>
           <div class="fs-selection-item-name">Bit-{{ index }}</div>
-          <div class="fs-selection-item-description">{{ fsSelectionDescriptions[index] }}</div>
+          <div class="fs-selection-item-description">{{ fsSelectionDescriptions[index].description }}</div>
         </div>
       </div>
     </div>

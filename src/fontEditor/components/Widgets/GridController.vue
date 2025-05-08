@@ -7,6 +7,9 @@
 	import { gridChanged, gridSettings, tool } from '../../stores/global'
 	import { ElMessageBox } from 'element-plus'
 	import { OpType, saveState, StoreType } from '../../stores/edit'
+	import { useI18n } from 'vue-i18n'
+  const { tm, t, locale } = useI18n()
+
 	interface LayoutNode {
 		id: string;
 		coords: string;
@@ -87,11 +90,19 @@
 		canvas.value.removeEventListener('mousedown', onMouseDown)
 		canvas.value.removeEventListener('mousemove', onMouseMove)
 		if (tool.value === 'grid') {
-			ElMessageBox.alert(
-				'为方便用户进行组件编辑操作，离开布局编辑界面会恢复默认布局。如果您已经应用布局变换，预览及导出字体库会使用应用变换后的布局，但是在其他编辑操作时，界面仍使用默认布局。',
-				'提示：您已经离开布局编辑界面', {
-				confirmButtonText: '确定',
-			})
+      if (locale.value === 'zh') {
+        ElMessageBox.alert(
+          '为方便用户进行组件编辑操作，离开布局编辑界面会恢复默认布局。如果您已经应用布局变换，预览及导出字体库会使用应用变换后的布局，但是在其他编辑操作时，界面仍使用默认布局。',
+          '提示：您已经离开布局编辑界面', {
+          confirmButtonText: '确定',
+        })
+      } else if (locale.value === 'en') {
+        ElMessageBox.alert(
+          'For user convenience in component editing operations, the default layout will be restored when leaving the layout editing interface. If you have applied layout transformations, the transformed layout will be used for previewing and exporting the font library. However, the default layout will still be used for other editing operations.',
+          'Note: You have left the layout editing interface', {
+          confirmButtonText: 'Confirm',
+        })
+      }
 		}
 	})
 	const status = ref('none')

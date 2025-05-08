@@ -25,7 +25,11 @@
   }
 
   const handleClick = () => {
-    total.value = selectedFile.value.characterList.length * 4
+    if (options.value.remove_overlap) {
+      total.value = selectedFile.value.characterList.length * 4
+    } else {
+      total.value = selectedFile.value.characterList.length * 3
+    }
     loaded.value = 0
     loading.value = true
     if (options.value.remove_overlap) {

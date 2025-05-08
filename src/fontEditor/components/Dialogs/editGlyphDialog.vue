@@ -12,7 +12,7 @@
   import { ElMessage } from 'element-plus';
   import { ref } from 'vue'
   import { useI18n } from 'vue-i18n'
-  const { tm, t } = useI18n()
+  const { tm, t, locale } = useI18n()
 
   const name = ref('')
 
@@ -22,7 +22,13 @@
 
   const handleClick = () => {
     if (!name.value) {
-      ElMessage('请输入字形名称。')
+      let msg = '请输入字形名称。'
+      if (locale.value === 'zh') {
+        msg = '请输入字形名称。'
+      } else if (locale.value === 'en') {
+        msg = 'Please input glyph\'s name.'
+      }
+      ElMessage(msg)
       return
     }
 		modifyGlyph(editedGlyphUUID.value, {

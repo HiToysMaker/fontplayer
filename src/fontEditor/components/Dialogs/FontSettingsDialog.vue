@@ -130,7 +130,7 @@
     </el-form>
     <template #footer>
       <span class="dialog-footer">
-        <el-button @pointerdown="moreSettings">更多设置</el-button>
+        <el-button @pointerdown="moreSettings">{{ t('dialogs.fontSettingsDialog.moreSettings') }}</el-button>
         <el-button @pointerdown="setFontSettingsDialogVisible(false)">{{ t('dialogs.fontSettingsDialog.cancel') }}</el-button>
         <el-button
           type="primary"

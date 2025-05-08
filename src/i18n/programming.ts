@@ -1,5 +1,5 @@
 const programming = {
-	cn: {
+	zh: {
 		'global-constants': '全局常量',
 		'glyph-parameters': '字形参数',
 		'glyph-layout': '字形布局',
@@ -23,6 +23,11 @@ const programming = {
 		reset: '重置',
 		execute: '运行',
 		script: '脚本',
+		charCounts: '字符数量',
+		strokeCounts: '笔画数量',
+		radicalCounts: '部首数量',
+		compCounts: '字形数量',
+		glyphCompCounts: '组件数量',
 	},
 	en: {
 		'global-constants': 'Global Constants',
@@ -48,6 +53,11 @@ const programming = {
 		reset: 'Reset',
 		execute: 'Execute',
 		script: 'Script',
+		charCounts: 'Character',
+		strokeCounts: 'Stroke',
+		radicalCounts: 'Radical',
+		compCounts: 'Glyph',
+		glyphCompCounts: 'Components',
 	}
 }
 

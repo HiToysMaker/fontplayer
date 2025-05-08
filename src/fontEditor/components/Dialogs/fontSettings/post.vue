@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { validators } from '../../../../fontManager/validators'
 import { post_data as data } from '../../../stores/settings'
+import { useI18n } from 'vue-i18n'
+const { locale } = useI18n()
 
 const validMap = ref({
   italicAngle: {
@@ -44,7 +46,11 @@ const onChange = (key, value) => {
       const valid = validators.Fixed(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为Fixed'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为Fixed'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: Fixed required'
+        }
       }
       validMap.value.italicAngle.valid = valid
       validMap.value.italicAngle.tip = tip
@@ -54,7 +60,11 @@ const onChange = (key, value) => {
       const valid = validators.FWORD(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为FWORD'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为FWORD'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: FWORD required'
+        }
       }
       validMap.value.underlinePosition.valid = valid
       validMap.value.underlinePosition.tip = tip
@@ -64,7 +74,11 @@ const onChange = (key, value) => {
       const valid = validators.FWORD(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误'
+        if (locale.value === 'zh') {
+          tip = '格式错误'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format'
+        }
       }
       validMap.value.underlineThickness.valid = valid
       validMap.value.underlineThickness.tip = tip
@@ -74,7 +88,11 @@ const onChange = (key, value) => {
       const valid = validators.uint32(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为uint32'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为uint32'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: uint32 required'
+        }
       }
       validMap.value.isFixedPitch.valid = valid
       validMap.value.isFixedPitch.tip = tip
@@ -84,7 +102,11 @@ const onChange = (key, value) => {
       const valid = validators.uint32(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为uint32'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为uint32'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: uint32 required'
+        }
       }
       validMap.value.minMemType42.valid = valid
       validMap.value.minMemType42.tip = tip
@@ -94,7 +116,11 @@ const onChange = (key, value) => {
       const valid = validators.uint32(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为uint32'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为uint32'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: uint32 required'
+        }
       }
       validMap.value.maxMemType42.valid = valid
       validMap.value.maxMemType42.tip = tip
@@ -104,7 +130,11 @@ const onChange = (key, value) => {
       const valid = validators.uint32(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为uint32'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为uint32'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: uint32 required'
+        }
       }
       validMap.value.minMemType1.valid = valid
       validMap.value.minMemType1.tip = tip
@@ -114,7 +144,11 @@ const onChange = (key, value) => {
       const valid = validators.uint32(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为uint32'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为uint32'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: uint32 required'
+        }
       }
       validMap.value.maxMemType1.valid = valid
       validMap.value.maxMemType1.tip = tip
@@ -123,7 +157,7 @@ const onChange = (key, value) => {
   }
 }
 
-const descriptions = {
+const descriptions_zh = {
   version: 'version 3.0',
   italicAngle: '斜体角度是指从垂直方向开始，逆时针计算的角度。对于直立文本，斜体角度为零；对于向右倾斜（前倾）的文本，斜体角度为负值。',
   underlinePosition: '建议的下划线顶部的 y 坐标。',
@@ -134,6 +168,27 @@ const descriptions = {
   minMemType1: '当 OpenType 字体以 Type 1 字体格式下载时的最小内存使用量。',
   maxMemType1: '当 OpenType 字体以 Type 1 字体格式下载时的最大内存使用量。',
 }
+
+const descriptions_en = {
+  version: 'Version 3.0',
+  italicAngle: 'Italic angle in degrees (counter-clockwise from vertical). Positive for left-leaning, negative for right-leaning italic. Upright=0',
+  underlinePosition: 'Recommended y-coordinate for top of underline stroke',
+  underlineThickness: 'Recommended underline stroke thickness. Should match U+005F LOW LINE glyph and OS/2 table\'s strikeout thickness',
+  isFixedPitch: 'Non-zero value indicates monospace font; 0 indicates proportional font',
+  minMemType42: 'Minimum memory usage when downloading as OpenType/CFF font (Type 42)',
+  maxMemType42: 'Maximum memory usage when downloading as OpenType/CFF font (Type 42)',
+  minMemType1: 'Minimum memory usage when downloaded as Type 1 font',
+  maxMemType1: 'Maximum memory usage when downloaded as Type 1 font'
+}
+
+const descriptions = computed(() => {
+  if (locale.value === 'zh') {
+    return descriptions_zh
+  } else if (locale.value === 'en') {
+    return descriptions_en
+  }
+  return descriptions_zh
+})
 </script>
 
 <template>

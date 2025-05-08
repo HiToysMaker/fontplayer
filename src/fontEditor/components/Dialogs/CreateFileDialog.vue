@@ -7,21 +7,25 @@
    */
 
   import { createFileDialogVisible, setCreateFileDialogVisible } from '../../stores/dialogs'
-  import { addFile, setSelectedFileUUID, type IFile } from '../../stores/files'
+  import { addCharacterForCurrentFile, addCharacterTemplate, addFile, clearCharacterRenderList, generateCharacterTemplate, setSelectedFileUUID, type IFile } from '../../stores/files'
   import { setEditStatus, Status } from '../../stores/font'
   import { genUUID } from '../../../utils/string'
   import { ref, type Ref } from 'vue'
   import router from '../../../router'
+  import { base } from '../../stores/global'
   import { useI18n } from 'vue-i18n'
   import { getEnName, name_data, head_data, hhea_data, os2_data, post_data } from '../../stores/settings'
+  import { importTemplate2, instanceCharacter } from '../../menus/handlers'
+  import { emitter } from '../../Event/bus'
   const { tm, t } = useI18n()
 
   const name: Ref<string> = ref('untitled')
   const unitsPerEm: Ref<number> = ref(1000)
   const ascender: Ref<number> = ref(800)
   const descender: Ref<number> = ref(-200)
+  const useDefaultTemplate: Ref<Boolean> = ref(true)
 
-  const createFont = () => {
+  const createFont = async () => {
     //total.value = (glyphs.value.length + stroke_glyphs.value.length + radical_glyphs.value.length + comp_glyphs.value.length) * 2
     //loaded.value = 0
     name_data.value = [
@@ -150,7 +154,23 @@
     //    router.push('/editor')
     //  }
     //}, 100)
+    await importDefaultTemplate()
     setCreateFileDialogVisible(false)
+  }
+
+  const importDefaultTemplate = async () => {
+    await importTemplate2()
+    const res = await fetch(base + `templates/playground.json`)
+    const data = JSON.parse(await res.text())
+    const file = data.file
+    clearCharacterRenderList()
+    for (let i = 0; i < file.characterList.length; i++) {
+      const character= file.characterList[i]
+      const characterFile = instanceCharacter(character)
+      addCharacterForCurrentFile(characterFile)
+      addCharacterTemplate(generateCharacterTemplate(characterFile))
+    }
+    emitter.emit('renderPreviewCanvas')
   }
 
   const close = () => {
@@ -208,6 +228,11 @@
           @change="onDescenderChange"
         />
       </el-form-item>
+      <el-form-item :label-width="0" class="use-default-template-form-item">
+        <el-checkbox v-model="useDefaultTemplate">
+          {{ t('dialogs.addFileDialog.useDefaultTemplate') }}
+        </el-checkbox>
+      </el-form-item>
     </el-form>
     <template #footer>
       <span class="dialog-footer">
@@ -243,6 +268,9 @@
       &.show {
         display: flex;
       }
+    }
+    .use-default-template-form-item {
+      margin-bottom: 0;
     }
   }
 </style>

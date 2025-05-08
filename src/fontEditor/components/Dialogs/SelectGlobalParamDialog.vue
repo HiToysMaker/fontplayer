@@ -111,12 +111,12 @@
 <template>
   <el-dialog
     v-model="selectGlobalParamDialogVisible"
-    title="选择全局变量"
+    :title="tm('dialogs.selectGlobalParamDialog.title')"
     width="320px"
   >
     <div class="form-wrapper">
       <el-form label-width="80px">
-        <el-form-item label="全局变量">
+        <el-form-item :label="tm('dialogs.selectGlobalParamDialog.globalParam')">
 					<el-select v-model="parameter" class="parameter-const-select">
 							<el-option
 								v-for="item in constants"
@@ -130,9 +130,9 @@
     </div>
     <template #footer>
       <span class="dialog-footer">
-        <el-button @pointerdown="handleCancel">取消</el-button>
+        <el-button @pointerdown="handleCancel">{{ t('dialogs.selectGlobalParamDialog.cancel') }}</el-button>
         <el-button type="primary" @pointerdown="handleClick">
-          确定
+          {{ t('dialogs.selectGlobalParamDialog.confirm') }}
         </el-button>
       </span>
     </template>

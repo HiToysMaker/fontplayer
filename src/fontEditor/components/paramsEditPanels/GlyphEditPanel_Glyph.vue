@@ -23,6 +23,7 @@
   } from '../../stores/glyph'
 	import { OpType, saveState, StoreType } from '../../stores/edit'
 	import { More } from '@element-plus/icons-vue'
+	const { tm, t } = useI18n()
 
 	const saveGlyphEditState = (options) => {
     // 保存状态
@@ -66,7 +67,6 @@
     }
     return comp
   })
-  const { tm, t } = useI18n()
 
 	onUnmounted(() => {
     draggable.value = true
@@ -342,34 +342,34 @@
 								</el-select>
 							</div>
 						</el-form-item>
-						<el-form-item label="编辑结构">
+						<el-form-item :label="tm('panels.paramsPanel.latoutEditing')">
 							<el-switch v-model="editingLayout" />
 						</el-form-item>
 					</el-form>
 				</div>
 				<div class="interactive-settings">
-					<div class="title">交互设定</div>
+					<div class="title">{{ t('panels.paramsPanel.interactive') }}</div>
 					<el-form
 						class="name-form"
 						label-width="80px"
 					>
-						<el-form-item label="拖拽设定">
+						<el-form-item :label="tm('panels.paramsPanel.draggableOption')">
 							<el-checkbox
 								v-model="draggable"
 								class="draggable-check"
 							>
-								可拖拽
+								{{ t('panels.paramsPanel.draggable') }}
 							</el-checkbox>
 						</el-form-item>
-						<el-form-item label="吸附设定">
+						<el-form-item :label="tm('panels.paramsPanel.dragOption')">
 							<el-radio-group v-model="dragOption" class="radio-group">
-								<el-radio value="none" label="none">无</el-radio>
-								<el-radio value="default" label="default">默认标点</el-radio>
+								<el-radio value="none" label="none">{{ t('panels.paramsPanel.dragOptionNone') }}</el-radio>
+								<el-radio value="default" label="default">{{ t('panels.paramsPanel.dragOptionDefault') }}</el-radio>
 								<el-radio
 									value="layout"
 									label="layout"
 									:disabled="(!SubComponentsRoot && !editGlyph.layout) || (!!SubComponentsRoot && !SubComponentsRoot.value.layout)"
-								>布局比例</el-radio>
+								>{{ t('panels.paramsPanel.dragOptionLayout') }}</el-radio>
 							</el-radio-group>
 						</el-form-item>
 					</el-form>
@@ -427,18 +427,18 @@
 								<el-button
 									v-show="parameter.type === ParameterType.Constant"
 									@pointerdown="cancelGlobalParam(parameter)"
-								>取消全局变量</el-button>
+								>{{ t('panels.paramsPanel.cancelGlobalParam') }}</el-button>
 								<el-button
 									@pointerdown="setAsGlobalParam(parameter)"
-								>设为全局变量</el-button>
+								>{{ t('panels.paramsPanel.setAsGlobalParam') }}</el-button>
 								<el-button
 									@pointerdown="selectGlobalParam(parameter)"
-								>选择全局变量</el-button>
+								>{{ t('panels.paramsPanel.selectGlobalParam') }}</el-button>
 								<el-button
 									v-show="parameter.type === ParameterType.Constant"
 									type="primary"
 									@pointerdown="updateGlobalParam(parameter)"
-								>更新全局变量</el-button>
+								>{{ t('panels.paramsPanel.updateGlobalParam') }}</el-button>
 							</div>
 						</el-popover>
 						<div
@@ -447,7 +447,7 @@
 							:class="{
 								ring: parameter.type === ParameterType.Constant && getConstant(parameter.value).type === ParameterType.RingController
 							}"
-						>全局变量</div>
+						>{{ t('panels.paramsPanel.globalParam') }}</div>
 						<div v-if="parameter.type === ParameterType.Number">
 							<el-input-number
 								:model-value="parameter.value"

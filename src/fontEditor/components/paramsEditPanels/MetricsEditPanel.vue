@@ -18,23 +18,25 @@
 	} from '../../../features/font'
   import { editCharacterFile, orderedListWithItemsForCharacterFile, selectedFile } from '../../stores/files'
   import { metrics_data as data } from '../../stores/settings'
+  import { useI18n } from 'vue-i18n'
+  const { tm, t, locale } = useI18n()
 
 	const confirmMetricsChange = () => {
-    selectedFile.value.fontSettings.metrics = {
+    editCharacterFile.value.info.metrics = {
       lsb: data.value.lsb,
       advanceWidth: data.value.advanceWidth,
       useDefaultValues: false,
     }
     ElMessage({
       type: 'success',
-      message: '应用度量变换',
+      message: tm('panels.paramsPanel.applyMetricsTransform'),
     })
 	}
 	const resetMetrics = () => {
-    selectedFile.value.fontSettings.metrics = {
+    editCharacterFile.value.info.metrics = {
       advanceWidth: 1000,
       lsb: 0,
-      default: true,
+      useDefaultValues: true,
     }
     const metrics = getMetrics()
     data.value.lsb = metrics.lsb
@@ -50,15 +52,15 @@
     }
 		ElMessage({
 			type: 'success',
-			message: '重置度量变换',
+			message: tm('panels.paramsPanel.resetMetricsTransform'),
 		})
 	}
   const getMetrics = () => {
     const {
 			unitsPerEm,
 			descender,
-      metrics: _metrics,
 		} = selectedFile.value.fontSettings
+    const { metrics: _metrics } = editCharacterFile.value.info
     let {
       advanceWidth,
       lsb,
@@ -210,10 +212,10 @@
     </el-form>
 		<div class="metrics-settings">
 			<el-button class="metrics-confirm-btn" @pointerdown="confirmMetricsChange" type="primary">
-				应用度量变换
+				{{ t('panels.paramsPanel.applyMetricsTransform') }}
 			</el-button>
 			<el-button class="metrics-reset-btn" @pointerdown="resetMetrics">
-				重置度量变换
+				{{ t('panels.paramsPanel.resetMetricsTransform') }}
 			</el-button>
 		</div>
   </div>

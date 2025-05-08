@@ -6,12 +6,12 @@ import { programming } from './programming'
 import { createI18n } from 'vue-i18n'
 
 const messages = {
-	cn: {
-		menus: menus.cn,
-		dialogs: dialogs.cn,
-		panels: panels.cn,
-		welcome: welcome.cn,
-		programming: programming.cn,
+	zh: {
+		menus: menus.zh,
+		dialogs: dialogs.zh,
+		panels: panels.zh,
+		welcome: welcome.zh,
+		programming: programming.zh,
   },
   en: {
 		menus: menus.en,
@@ -23,7 +23,7 @@ const messages = {
 }
 
 const i18nOptions = {
-  locale: 'cn',
+  locale: 'zh',
 	fallbackLocale: 'en',
   allowComposition: true,
 	messages,

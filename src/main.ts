@@ -34,6 +34,7 @@ import {
 	faTableCells,
 	faHand as faHandSolid,
 	faTextWidth,
+	faGamepad,
 } from '@fortawesome/free-solid-svg-icons'
 import {
 	faHand,
@@ -91,6 +92,7 @@ library.add(
 	faCircle_regular,
 	faHandSolid,
 	faTextWidth,
+	faGamepad,
 )
 
 const app = createApp(App)

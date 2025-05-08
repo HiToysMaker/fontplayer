@@ -361,7 +361,11 @@
       </div>
       <template #footer>
         <span class="dialog-footer">
-          <el-switch v-model="multi_glyph_selection" active-text="多选" inactive-text="单选" />
+          <el-switch
+            v-model="multi_glyph_selection"
+            :active-text="tm('dialogs.glyphComponentDialog.multiSelection')"
+            :inactive-text="tm('dialogs.glyphComponentDialog.singleSelection')"
+          />
           <div class="selected-glyphs-wrapper">
             <el-button v-for="glyph in selected_glyphs" @pointerdown="cancelSelect(glyph.uuid)">{{ glyph.name }}</el-button>
           </div>

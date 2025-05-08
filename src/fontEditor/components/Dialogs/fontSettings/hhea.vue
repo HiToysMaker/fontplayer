@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { validators } from '../../../../fontManager/validators'
-import { hhea_data as data } from '../../../stores/settings';
+import { hhea_data as data } from '../../../stores/settings'
+import { useI18n } from 'vue-i18n'
+const { locale } = useI18n()
 
 const validMap = ref({
   majorVersion: {
@@ -36,7 +38,11 @@ const onChange = (key, value) => {
       const valid = validators.uint16(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为uint16'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为uint16'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: uint16 required'
+        }
       }
       validMap.value.majorVersion.valid = valid
       validMap.value.majorVersion.tip = tip
@@ -46,7 +52,11 @@ const onChange = (key, value) => {
       const valid = validators.uint16(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为uint16'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为uint16'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: uint16 required'
+        }
       }
       validMap.value.minorVersion.valid = valid
       validMap.value.minorVersion.tip = tip
@@ -56,7 +66,11 @@ const onChange = (key, value) => {
       const valid = validators.FWORD(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误'
+        if (locale.value === 'zh') {
+          tip = '格式错误'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format'
+        }
       }
       validMap.value.lineGap.valid = valid
       validMap.value.lineGap.tip = tip
@@ -66,7 +80,11 @@ const onChange = (key, value) => {
       const valid = validators.int16(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为int16'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为uint16'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: uint16 required'
+        }
       }
       validMap.value.caretSlopeRise.valid = valid
       validMap.value.caretSlopeRise.tip = tip
@@ -76,7 +94,11 @@ const onChange = (key, value) => {
       const valid = validators.int16(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为int16'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为int16'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: int16 required'
+        }
       }
       validMap.value.caretSlopeRun.valid = valid
       validMap.value.caretSlopeRun.tip = tip
@@ -86,7 +108,11 @@ const onChange = (key, value) => {
       const valid = validators.int16(value)
       let tip = ''
       if (!valid) {
-        tip = '格式错误，应为int16'
+        if (locale.value === 'zh') {
+          tip = '格式错误，应为int16'
+        } else if (locale.value === 'en') {
+          tip = 'Invalid format: int16 required'
+        }
       }
       validMap.value.caretOffset.valid = valid
       validMap.value.caretOffset.tip = tip
@@ -95,7 +121,7 @@ const onChange = (key, value) => {
   }
 }
 
-const descriptions = {
+const descriptions_zh = {
   majorVersion: '表版本的主版本号，格式为uint16',
   minorVersion: '表版本的次版本号，格式为uint16',
   lineGap: '行间距的额外空间，指两行文本之间的额外间隔，格式为FWORD',
@@ -103,6 +129,24 @@ const descriptions = {
   caretSlopeRun: '光标的斜率的分母部分，定义插入符的倾斜角度（通常为 0）。格式为int16',
   caretOffset: '光标相对于标准位置的水平偏移量，通常为 0。格式为int16',
 }
+
+const descriptions_en = {
+  majorVersion: 'Major version number of the table format (uint16)',
+  minorVersion: 'Minor version number of the table format (uint16)',
+  lineGap: 'Additional space between lines (extra spacing between text rows), format: FWORD',
+  caretSlopeRise: 'Vertical slope component defining caret angle (typically 1). Format: int16',
+  caretSlopeRun: 'Horizontal slope component defining caret angle (typically 0). Format: int16',
+  caretOffset: 'Horizontal offset from standard caret position (usually 0). Format: int16'
+}
+
+const descriptions = computed(() => {
+  if (locale.value === 'zh') {
+    return descriptions_zh
+  } else if (locale.value === 'en') {
+    return descriptions_en
+  }
+  return descriptions_zh
+})
 </script>
 
 <template>
