@@ -6,7 +6,7 @@
    * tool bar
    */
 
-  import { tool, setTool } from '../../stores/global'
+  import { tool, setTool, base } from '../../stores/global'
   import { glyphComponentsDialogVisible2, setGlyphComponentsDialogVisible } from '../../stores/dialogs'
   import { genPictureComponent } from '../../tools/picture'
   import { addComponentForCurrentCharacterFile, editCharacterFile, executeCharacterScript, selectedFile } from '../../stores/files'
@@ -106,9 +106,6 @@
   let char_window = null
   let hasShowWindow = false
 
-  // const base = '/fontplayer_demo'
-  const base = ''
-
   const showProgrammingWindow = async () => {
     if (hasShowWindow) return
     if (ENV.value === 'web') {
@@ -117,12 +114,19 @@
         window.__script = editCharacterFile.value.script
         window.__is_web = ENV.value === 'web'
         window.addEventListener('message', onReceiveMessage)
-        char_window = window.open(
-          // `${location.origin}${base}/#/character-programming-editor`,
-          `${location.origin}${location.pathname}#/character-programming-editor`,
-          'character',
-          `popup,width=${1280},height=${800},left=${(screen.width - 1280) / 2}`,
-        )
+        if (base) {
+          char_window = window.open(
+            `${location.origin}${base}/#/character-programming-editor`,
+            'character',
+            `popup,width=${1280},height=${800},left=${(screen.width - 1280) / 2}`,
+          )
+        } else {
+          char_window = window.open(
+            `${location.origin}${location.pathname}#/character-programming-editor`,
+            'character',
+            `popup,width=${1280},height=${800},left=${(screen.width - 1280) / 2}`,
+          )
+        }
       } else if (editStatus.value === Status.Glyph) {
         window.__constants = constants.value
         window.__parameters = editGlyph.value.parameters.parameters

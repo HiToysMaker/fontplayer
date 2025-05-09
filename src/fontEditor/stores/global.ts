@@ -22,7 +22,7 @@ export interface IBackground {
 	color: string,
 }
 
-const base = ''
+const base = ''//'/fontplayer_demo'
 
 const useSkeletonGrid = ref(false)
 
