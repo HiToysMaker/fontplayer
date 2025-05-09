@@ -1929,6 +1929,7 @@ const _syncData = async () => {
 
 const importTemplate2 = async () => {
   for (let i = 0; i < hei_strokes.length; i++) {
+    loaded.value += 1
     const stroke = hei_strokes[i]
     const { name, params, uuid } = stroke
     const parameters: Array<IParameter> = []
