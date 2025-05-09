@@ -153,13 +153,13 @@ const initPlayground = async () => {
   window.FP = FP
   const wrapper = document.getElementById('playground-characters-list')
   wrapper.innerHTML = ''
-  const res = await fetch(base + `templates/playground.json`)
+  const res = base ? await fetch(base + `/templates/playground.json`) : await fetch(`templates/playground.json`)
   const data = JSON.parse(await res.text())
 
   for (let i = 0; i < hei_strokes.length; i++) {
     const stroke = hei_strokes[i]
     const { name, params, uuid } = stroke
-    let stroke_script_res = await fetch(base + `templates/templates2/${name}.js`)
+    let stroke_script_res = base ? await fetch(base + `/templates/templates2/${name}.js`) : await fetch(`templates/templates2/${name}.js`)
     let stroke_script = await stroke_script_res.text()
 
     const parameters: Array<IParameter> = []

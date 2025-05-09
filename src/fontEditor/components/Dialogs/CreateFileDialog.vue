@@ -12,11 +12,12 @@
   import { genUUID } from '../../../utils/string'
   import { ref, type Ref } from 'vue'
   import router from '../../../router'
-  import { base } from '../../stores/global'
+  import { base, loaded, loading, total } from '../../stores/global'
   import { useI18n } from 'vue-i18n'
   import { getEnName, name_data, head_data, hhea_data, os2_data, post_data } from '../../stores/settings'
   import { importTemplate2, instanceCharacter } from '../../menus/handlers'
   import { emitter } from '../../Event/bus'
+  import { strokes as hei_strokes } from '../../templates/strokes_1'
   const { tm, t } = useI18n()
 
   const name: Ref<string> = ref('untitled')
@@ -144,18 +145,21 @@
     addFile(file)
     setSelectedFileUUID(file.uuid)
     setEditStatus(Status.CharacterList)
+    loading.value = true
+    loaded.value = 0
+    total.value = hei_strokes.length + 20
     //loading.value = true
-    if (router.currentRoute.value.name === 'welcome') {
-      router.push('/editor')
-    }
     //setTimeout(() => {
     //  //loading.value = true
     //  if (router.currentRoute.value.name === 'welcome') {
     //    router.push('/editor')
     //  }
     //}, 100)
-    await importDefaultTemplate()
+    if (router.currentRoute.value.name === 'welcome') {
+      router.push('/editor')
+    }
     setCreateFileDialogVisible(false)
+    await importDefaultTemplate()
   }
 
   const importDefaultTemplate = async () => {
@@ -165,12 +169,14 @@
     const file = data.file
     clearCharacterRenderList()
     for (let i = 0; i < file.characterList.length; i++) {
+      loaded.value += 1
       const character= file.characterList[i]
       const characterFile = instanceCharacter(character)
       addCharacterForCurrentFile(characterFile)
       addCharacterTemplate(generateCharacterTemplate(characterFile))
     }
     emitter.emit('renderPreviewCanvas')
+    loading.value = false
   }
 
   const close = () => {
