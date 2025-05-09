@@ -33,6 +33,7 @@ type Events = {
   updateCharacterInfoPreviewCanvasByUUID: string;
   renderCharacter_forceUpdate: boolean;
   renderGlyph_forceUpdate: boolean;
+  refreshPlaygroundGridController: boolean;
 }
 
 const emitter = mitt<Events>()

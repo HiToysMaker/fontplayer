@@ -9,7 +9,7 @@
   import { getRatioOptions, ParameterType, getConstant, IParameter, executeScript, editGlyph, IRingParameter, IParameter2, getRatioLayout, ICustomGlyph, selectedParam, selectedParamType, constantGlyphMap, ConstantType, getGlyphByUUID, GlyphType } from '../../stores/glyph'
   import { useI18n } from 'vue-i18n'
   import { emitter } from '../../Event/bus'
-  import { canvas } from '../../stores/global'
+  import { checkJoints, checkRefLines } from '../../stores/global'
 	import RingController from '../../components/Widgets/RingController.vue'
   import { editing as editingLayout } from '../../stores/glyphLayoutResizer_glyph'
 	import { nextTick, onMounted, ref, watch } from 'vue'
@@ -20,8 +20,6 @@
   import { OpType, saveState, StoreType } from '../../stores/edit'
   import { editStatus, Status } from '../../stores/font'
   const { t, tm } = useI18n()
-  const checkJoints = ref(false)
-  const checkRefLines = ref(false)
   const controlType = ref(0)
 	const controlTypeOptions = [
 		{
@@ -92,12 +90,6 @@
     executeScript(editGlyph.value)
     emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
     emitter.emit('renderGlyph')
-    if (checkJoints.value) {
-      editGlyph.value._o.renderJoints(canvas.value)
-    }
-    if (checkRefLines.value) {
-      editGlyph.value._o.renderRefLines(canvas.value)
-    }
   }
 
   const handleRatioOptionChange = (parameter: IParameter | IParameter2, value: string) => {
@@ -112,12 +104,6 @@
     executeScript(editGlyph.value)
     emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
     emitter.emit('renderGlyph')
-    if (checkJoints.value) {
-      editGlyph.value._o.renderJoints(canvas.value)
-    }
-    if (checkRefLines.value) {
-      editGlyph.value._o.renderRefLines(canvas.value)
-    }
   }
 
   const onChange = (parameter, _radius: number, _degree: number, _params: Array<any>) => {
@@ -130,22 +116,10 @@
     executeScript(editGlyph.value)
     emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
     emitter.emit('renderGlyph')
-    if (checkJoints.value) {
-      editGlyph.value._o.renderJoints(canvas.value)
-    }
-    if (checkRefLines.value) {
-      editGlyph.value._o.renderRefLines(canvas.value)
-    }
   }
 
   watch([checkJoints, checkRefLines], () => {
     emitter.emit('renderGlyph')
-    if (checkJoints.value) {
-      editGlyph.value._o.renderJoints(canvas.value)
-    }
-    if (checkRefLines.value) {
-      editGlyph.value._o.renderRefLines(canvas.value)
-    }
   })
 
   watch(layoutType, () => {
@@ -243,8 +217,8 @@
   <div class="glyph-edit-panel">
     <div class="title">{{ t('panels.paramsPanel.layout.title') }}</div>
     <div class="layout-wrap">
-      <el-button class="add-layout-button" v-show="!editGlyph.layout && !onLayoutSelect" @click="onLayoutSelect = true">{{ t('panels.paramsPanel.layout.add') }}</el-button>
-      <el-button class="set-layout-button" v-show="!!editGlyph.layout && !onLayoutSelect" @click="onLayoutSelect = true">{{ t('panels.paramsPanel.layout.modify') }}</el-button>
+      <el-button class="add-layout-button" v-show="!editGlyph.layout && !onLayoutSelect" @pointerdown="onLayoutSelect = true">{{ t('panels.paramsPanel.layout.add') }}</el-button>
+      <el-button class="set-layout-button" v-show="!!editGlyph.layout && !onLayoutSelect" @pointerdown="onLayoutSelect = true">{{ t('panels.paramsPanel.layout.modify') }}</el-button>
       <el-select v-model="layoutType" v-show="onLayoutSelect" class="layout-type-select" :placeholder="tm('panels.paramsPanel.layout.title')">
         <el-option
           v-for="item in layoutTypeOptions"
@@ -302,19 +276,19 @@
             <div class="param-btn-group">
               <el-button
                 v-show="parameter.type === ParameterType.Constant"
-                @click="cancelGlobalParam(parameter)"
-              >取消全局变量</el-button>
+                @pointerdown="cancelGlobalParam(parameter)"
+              >{{ t('panels.paramsPanel.cancelGlobalParam') }}</el-button>
               <el-button
-                @click="setAsGlobalParam(parameter)"
-              >设为全局变量</el-button>
+                @pointerdown="setAsGlobalParam(parameter)"
+              >{{ t('panels.paramsPanel.setAsGlobalParam') }}</el-button>
               <el-button
-                @click="selectGlobalParam(parameter)"
-              >选择全局变量</el-button>
+                @pointerdown="selectGlobalParam(parameter)"
+              >{{ t('panels.paramsPanel.selectGlobalParam') }}</el-button>
 							<el-button
 								v-show="parameter.type === ParameterType.Constant"
 								type="primary"
-								@click="updateGlobalParam(parameter)"
-							>更新全局变量</el-button>
+								@pointerdown="updateGlobalParam(parameter)"
+							>{{ t('panels.paramsPanel.updateGlobalParam') }}</el-button>
             </div>
           </el-popover>
           <div
@@ -323,7 +297,7 @@
             :class="{
               ring: parameter.type === ParameterType.Constant && getConstant(parameter.value).type === ParameterType.RingController
             }"
-          >全局变量</div>
+          >{{ t('panels.paramsPanel.globalParam') }}</div>
           <div v-if="parameter.type === ParameterType.Number">
             <el-input-number
               :model-value="parameter.value"
@@ -342,14 +316,14 @@
               @input="(value) => handleChangeParameter(parameter, value)"
               v-model="parameter.value" v-show="parameter.type === ParameterType.Number"
             />
-            <div class="down-menu-icon-wrap" @click="collapsedMap[parameter.uuid] = !collapsedMap[parameter.uuid]">
+            <div class="down-menu-icon-wrap" @pointerdown="collapsedMap[parameter.uuid] = !collapsedMap[parameter.uuid]">
               <font-awesome-icon :icon="['fas', 'arrow-down-wide-short']" />
             </div>
             <div class="down-menu" v-show="collapsedMap[parameter.uuid]">
               <div class="ratio-item">
                 <font-awesome-icon class="ratio-icon" :class="{
                   selected: parameter.ratioed
-                }" @click="() => {
+                }" @pointerdown="() => {
                   parameter.ratioed = !parameter.ratioed
                   if (!parameter.ratioed && editGlyph.system_script && editGlyph.system_script[parameter.name]) {
                     delete editGlyph.system_script[parameter.name]
@@ -368,6 +342,19 @@
                 </el-select>
               </div>
             </div>
+          </div>
+          <div v-else-if="parameter.type === ParameterType.Enum">
+            <el-select
+              v-model="parameter.value" class="enum-param-select" placeholder="Select"
+              @change="(value) => handleChangeParameter(parameter, value)"
+            >
+              <el-option
+                v-for="option in parameter.options"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
+            </el-select>
           </div>
           <div v-else-if="parameter.type === ParameterType.RingController">
             <el-select v-model="controlType" class="control-type-select" :placeholder="tm('programming.controlType')">

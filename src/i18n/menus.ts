@@ -1,5 +1,5 @@
 const menus = {
-	cn: {
+	zh: {
 		app: '字玩',
     about: '关于',
 		file: {
@@ -50,6 +50,7 @@ const menus = {
 		templates: {
 			templates: '模板',
 			test1: '测试模板1',
+			test2: '测试模板2',
 		},
 		tools: {
 			remove_overlap: '去除重叠',

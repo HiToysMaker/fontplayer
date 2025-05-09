@@ -7,7 +7,9 @@
 
 在线体验：https://toysmaker.github.io/fontplayer_demo/
 
-桌面版下载：https://github.com/HiToysMaker/fontplayer/releases
+桌面版下载：
+gitee release: https://gitee.com/toysmaker/fontplayer/releases
+github release: https://github.com/HiToysMaker/fontplayer/releases
 
 ### 运行程序
 首先安装依赖：
@@ -39,3 +41,5 @@ npx tauri build
 
 3. 字玩中图像处理部分使用了opencv.js，源码放在lib文件夹下，未做修改，拷贝自opencv官网：https://docs.opencv.org/4.5.0/opencv.js
 注：opencv项目使用Apache-2.0 license协议，协议副本包含在lib文件夹中。感谢opencv的开源：https://github.com/opencv/opencv
+
+4. 思源黑体：字玩中默认黑体模板在结构上参考思源黑体。思源黑体开源地址：https://github.com/adobe-fonts/source-han-sans

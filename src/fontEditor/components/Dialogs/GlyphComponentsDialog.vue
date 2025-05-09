@@ -7,7 +7,7 @@
 	 */
 
   import { glyphComponentsDialogVisible, setGlyphComponentsDialogVisible, glyphComponentsDialogVisible2 } from '../../stores/dialogs'
-  import { addComponentForCurrentGlyph, addSelectionGlyphTemplate, editGlyph, executeScript, getGlyphByUUID, glyphs, ICustomGlyph, IGlyphComponent, selected_glyphs, multi_glyph_selection, stroke_glyphs, radical_glyphs, comp_glyphs } from '../../stores/glyph'
+  import { addComponentForCurrentGlyph, addSelectionGlyphTemplate, editGlyph, executeScript, getGlyphByUUID, glyphs, ICustomGlyph, IGlyphComponent, selected_glyphs, multi_glyph_selection, stroke_glyphs, radical_glyphs, comp_glyphs, getParentInfo } from '../../stores/glyph'
   import { addComponentForCurrentCharacterFile, editCharacterFile, selectedFile } from '../../stores/files'
   import { genUUID } from '../../../utils/string'
   import * as R from 'ramda'
@@ -25,7 +25,6 @@
 	import { emitter } from '../../Event/bus'
   import { renderPreview2 } from '../../canvas/canvas'
   import { loaded, loading, setTool, tool, total } from '../../stores/global'
-  import { linkComponentsForJoints } from '../../programming/Joint'
   const { tm, t } = useI18n()
 
 	const selectedTab = ref(Status.StrokeGlyphList)
@@ -247,7 +246,10 @@
 
   const addGlyph = (glyph: ICustomGlyph) => {
     const _glyph = R.clone(glyph)
-    _glyph.parent = editStatus.value === Status.Edit ? editCharacterFile.value : editGlyph.value
+    //_glyph.parent = editStatus.value === Status.Edit ? editCharacterFile.value : editGlyph.value
+    _glyph.parent_reference = getParentInfo(editStatus.value === Status.Edit ? editCharacterFile.value : editGlyph.value)
+    _glyph.script = null
+    _glyph.script_reference = _glyph.uuid
     const component: IGlyphComponent = {
       uuid: genUUID(),
       type: 'glyph',
@@ -263,8 +265,6 @@
     //component.value._o.getJoints().map((joint) => {
     //  joint.component = component
     //})
-
-    linkComponentsForJoints(component)
 
     if (editStatus.value === Status.Edit) {
       addComponentForCurrentCharacterFile(component)
@@ -294,28 +294,28 @@
           <div class="list-switch">
             <span
               class="stroke-glyph-list"
-              @click="selectedTab = Status.StrokeGlyphList"
+              @pointerdown="selectedTab = Status.StrokeGlyphList"
               :class="{
                 selected: selectedTab === Status.StrokeGlyphList
               }"
             >{{ t('programming.stroke') }}</span>
             <span
               class="radical-glyph-list"
-              @click="selectedTab = Status.RadicalGlyphList"
+              @pointerdown="selectedTab = Status.RadicalGlyphList"
               :class="{
                 selected: selectedTab === Status.RadicalGlyphList
               }"
             >{{ t('programming.radical') }}</span>
             <span
               class="comp-glyph-list"
-              @click="selectedTab = Status.CompGlyphList"
+              @pointerdown="selectedTab = Status.CompGlyphList"
               :class="{
                 selected: selectedTab === Status.CompGlyphList
               }"
             >{{ t('programming.comp') }}</span>
             <span
               class="glyph-list"
-              @click="selectedTab = Status.GlyphList"
+              @pointerdown="selectedTab = Status.GlyphList"
               :class="{
                 selected: selectedTab === Status.GlyphList
               }"
@@ -340,7 +340,7 @@
               class="glyph"
               v-for="glyph in glyphs"
               :key="glyph.uuid"
-              @click="addGlyph(glyph)"
+              @pointerdown="addGlyph(glyph)"
             >
               <span class="preview">
                 <div class="empty-line-1"></div>
@@ -361,12 +361,16 @@
       </div>
       <template #footer>
         <span class="dialog-footer">
-          <el-switch v-model="multi_glyph_selection" active-text="多选" inactive-text="单选" />
+          <el-switch
+            v-model="multi_glyph_selection"
+            :active-text="tm('dialogs.glyphComponentDialog.multiSelection')"
+            :inactive-text="tm('dialogs.glyphComponentDialog.singleSelection')"
+          />
           <div class="selected-glyphs-wrapper">
-            <el-button v-for="glyph in selected_glyphs" @click="cancelSelect(glyph.uuid)">{{ glyph.name }}</el-button>
+            <el-button v-for="glyph in selected_glyphs" @pointerdown="cancelSelect(glyph.uuid)">{{ glyph.name }}</el-button>
           </div>
-          <el-button :disabled="!glyphComponentsDialogVisible2" @click="handleCancel">{{ t('dialogs.glyphComponentDialog.cancel') }}</el-button>
-          <el-button :disabled="!glyphComponentsDialogVisible2" type="primary" @click="handleConfirm">{{ t('dialogs.glyphComponentDialog.confirm') }}</el-button>
+          <el-button :disabled="!glyphComponentsDialogVisible2" @pointerdown="handleCancel">{{ t('dialogs.glyphComponentDialog.cancel') }}</el-button>
+          <el-button :disabled="!glyphComponentsDialogVisible2" type="primary" @pointerdown="handleConfirm">{{ t('dialogs.glyphComponentDialog.confirm') }}</el-button>
         </span>
       </template>
     </el-dialog>

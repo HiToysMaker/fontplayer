@@ -456,7 +456,7 @@
             />
           </el-form-item>
           <div class="tip" v-if="step === 1">
-            {{ t('panels.picEditPanel.step1.tip') }}<el-button type="primary" text @click="useLocalBrush">{{ t('panels.picEditPanel.step1.localBrush') }}</el-button>
+            {{ t('panels.picEditPanel.step1.tip') }}<el-button type="primary" text @pointerdown="useLocalBrush">{{ t('panels.picEditPanel.step1.localBrush') }}</el-button>
           </div>
         </div>
         <div class="local-brush" v-if="!!enableLocalBrush.value && step === 1">
@@ -505,9 +505,9 @@
           </el-form-item>
         </div>
         <el-button-group class="step-button-group">
-          <el-button :disabled="step !== 1" @click="handleBitMap" size="small">{{ t('panels.picEditPanel.confirm') }}</el-button>
-          <el-button :disabled="step !== 1" @click="cancelBitMap" size="small">{{ t('panels.picEditPanel.cancel') }}</el-button>
-          <el-button type="primary" :disabled="step === 1" @click="toStep(1)" size="small">{{ t('panels.picEditPanel.edit') }}</el-button>
+          <el-button :disabled="step !== 1" @pointerdown="handleBitMap" size="small">{{ t('panels.picEditPanel.confirm') }}</el-button>
+          <el-button :disabled="step !== 1" @pointerdown="cancelBitMap" size="small">{{ t('panels.picEditPanel.cancel') }}</el-button>
+          <el-button type="primary" :disabled="step === 1" @pointerdown="toStep(1)" size="small">{{ t('panels.picEditPanel.edit') }}</el-button>
         </el-button-group>
       </el-form>
     </div>
@@ -528,9 +528,9 @@
           <el-input-number v-model="dropThreshold" :min="0" :max="100" :disabled="step!==3" @input="onDropThresholdChange"/>
         </el-form-item>
         <el-button-group class="step-button-group">
-          <el-button :disabled="step !== 3" @click="handleFitCurve" size="small">{{ t('panels.picEditPanel.confirm') }}</el-button>
-          <el-button :disabled="step !== 3" @click="cancelFitCurve" size="small">{{ t('panels.picEditPanel.cancel') }}</el-button>
-          <el-button type="primary" :disabled="step === 3" @click="toStep(3)" size="small">{{ t('panels.picEditPanel.edit') }}</el-button>
+          <el-button :disabled="step !== 3" @pointerdown="handleFitCurve" size="small">{{ t('panels.picEditPanel.confirm') }}</el-button>
+          <el-button :disabled="step !== 3" @pointerdown="cancelFitCurve" size="small">{{ t('panels.picEditPanel.cancel') }}</el-button>
+          <el-button type="primary" :disabled="step === 3" @pointerdown="toStep(3)" size="small">{{ t('panels.picEditPanel.edit') }}</el-button>
         </el-button-group>
       </el-form>
     </div>

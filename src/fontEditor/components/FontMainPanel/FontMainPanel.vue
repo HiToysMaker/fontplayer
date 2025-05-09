@@ -36,35 +36,35 @@
     <div class="list-switch" v-show="editStatus === Status.StrokeGlyphList || editStatus === Status.CompGlyphList || editStatus === Status.RadicalGlyphList || editStatus === Status.GlyphList || editStatus === Status.CharacterList">
       <span
         class="character-list"
-        @click="editStatus = Status.CharacterList"
+        @pointerdown="editStatus = Status.CharacterList"
         :class="{
           selected: editStatus === Status.CharacterList
         }"
       >{{ t('programming.character') }}</span>
       <span
         class="stroke-glyph-list"
-        @click="editStatus = Status.StrokeGlyphList"
+        @pointerdown="editStatus = Status.StrokeGlyphList"
         :class="{
           selected: editStatus === Status.StrokeGlyphList
         }"
       >{{ t('programming.stroke') }}</span>
       <span
         class="radical-glyph-list"
-        @click="editStatus = Status.RadicalGlyphList"
+        @pointerdown="editStatus = Status.RadicalGlyphList"
         :class="{
           selected: editStatus === Status.RadicalGlyphList
         }"
       >{{ t('programming.radical') }}</span>
       <span
         class="comp-glyph-list"
-        @click="editStatus = Status.CompGlyphList"
+        @pointerdown="editStatus = Status.CompGlyphList"
         :class="{
           selected: editStatus === Status.CompGlyphList
         }"
       >{{ t('programming.comp') }}</span>
       <span
         class="glyph-list"
-        @click="editStatus = Status.GlyphList"
+        @pointerdown="editStatus = Status.GlyphList"
         :class="{
           selected: editStatus === Status.GlyphList
         }"

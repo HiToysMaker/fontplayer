@@ -128,7 +128,7 @@
 
 <template>
   <div class="view-list-wrapper">
-    <div class="view-item-wrapper" @click="previewStatus = 0">
+    <div class="view-item-wrapper" @pointerdown="previewStatus = 0">
       <span class="view-thumbnail">
         <canvas class="view-canvas" ref="thumbnailCanvas"></canvas>
       </span>
@@ -137,7 +137,7 @@
         <span class="view-description">{{ t('panels.viewList.thumbnail.description') }}</span>
       </span>
     </div>
-    <div class="view-item-wrapper" @click="previewStatus = 1">
+    <div class="view-item-wrapper" @pointerdown="previewStatus = 1">
       <span class="view-thumbnail">
         <canvas class="view-canvas" ref="bitmapCanvas"></canvas>
       </span>
@@ -146,7 +146,7 @@
         <span class="view-description">{{ t('panels.viewList.bitmap.description') }}</span>
       </span>
     </div>
-    <div class="view-item-wrapper" @click="previewStatus = 2">
+    <div class="view-item-wrapper" @pointerdown="previewStatus = 2">
       <span class="view-thumbnail">
         <canvas
           class="view-canvas"
@@ -160,7 +160,7 @@
         <span class="view-description">{{ t('panels.viewList.contours.description') }}</span>
       </span>
     </div>
-    <div class="view-item-wrapper" @click="previewStatus = 3">
+    <div class="view-item-wrapper" @pointerdown="previewStatus = 3">
       <span class="view-thumbnail">
         <canvas
           class="view-canvas"
@@ -174,7 +174,7 @@
         <span class="view-description">{{ t('panels.viewList.curves.description') }}</span>
       </span>
     </div>
-    <div class="view-item-wrapper" @click="previewStatus = 4">
+    <div class="view-item-wrapper" @pointerdown="previewStatus = 4">
       <span class="view-thumbnail">
         <canvas
           class="view-canvas"

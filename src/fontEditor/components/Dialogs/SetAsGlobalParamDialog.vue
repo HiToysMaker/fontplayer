@@ -98,21 +98,21 @@
 <template>
   <el-dialog
     v-model="setAsGlobalParamDialogVisible"
-    title="设置为全局变量"
+    :title="tm('dialogs.setAsGlobalParamDialog.title')"
     width="320px"
   >
     <div class="form-wrapper">
       <el-form label-width="80px">
-        <el-form-item label="参数名称">
+        <el-form-item :label="tm('dialogs.setAsGlobalParamDialog.paramName')">
           <el-input v-model="name" />
         </el-form-item>
       </el-form>
     </div>
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="handleCancel">取消</el-button>
-        <el-button type="primary" @click="handleClick">
-          确定
+        <el-button @pointerdown="handleCancel">{{ t('dialogs.setAsGlobalParamDialog.cancel') }}</el-button>
+        <el-button type="primary" @pointerdown="handleClick">
+          {{ t('dialogs.setAsGlobalParamDialog.confirm') }}
         </el-button>
       </span>
     </template>

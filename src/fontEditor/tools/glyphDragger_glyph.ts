@@ -10,10 +10,8 @@ import { editGlyph, executeScript, getRatioLayout, getRatioLayout2, modifyCompon
 import { draggingJoint, putAtCoord, setEditing, movingJoint } from '../stores/glyphDragger_glyph'
 import { draggable, dragOption, checkJoints } from '../../fontEditor/stores/global'
 import { emitter } from '../Event/bus'
-import { renderLayoutEditor } from './glyphLayoutResizer_glyph'
-import { editing as editingLayout } from '../../fontEditor/stores/glyphLayoutResizer'
 import { selectedItemByUUID } from '../stores/files'
-import { linkComponentsForJoints } from '../programming/Joint'
+import { getJoints } from '../programming/Joint'
 
 const getBound = (joints) => {
 	let x_min = Infinity
@@ -21,7 +19,7 @@ const getBound = (joints) => {
 	let x_max = -Infinity
 	let y_max = -Infinity
 	joints.map(joint => {
-		const { x, y } = joint.getPlainCoords()
+		const { x, y } = joint
 		if (x < x_min) {
 			x_min = x
 		}
@@ -56,20 +54,12 @@ const addScript = () => {
 	if (dragOption.value === 'default' && !selectedSubComponent.value) {
 		if (editGlyph.value?.glyph_script && editGlyph.value?.glyph_script[comp.uuid]) {
 			delete editGlyph.value?.glyph_script[comp.uuid]
+			return
 		}
-		//if (draggingJoint.value) {
-		//	const { x, y } = putAtCoord.value
-		//	let script = `if (window.glyph.getComponent('${comp.name}')) { window.glyph.getComponent('${comp.name}').ox = ${x} - window.glyph.getGlyph('${comp.name}')?.getJoint('${draggingJoint.value.name}')?.x; }`
-		//	script += `if (window.glyph.getComponent('${comp.name}').) { window.glyph.getComponent('${comp.name}').oy = ${y} - window.glyph.getGlyph('${comp.name}')?.getJoint('${draggingJoint.value.name}')?.y; }`
-		//	editGlyph.value.glyph_script[comp.uuid] = script
-		//} else {
-		//	const { x, y } = putAtCoord.value
-		//	const script = `if (window.glyph.getComponent('${comp.name}')) { window.glyph.getComponent('${comp.name}').ox = ${x} - ${unitsPerEm / 2};window.glyph.getComponent('${comp.name}').oy = ${y} - ${unitsPerEm / 2} }`
-		//	editGlyph.value.glyph_script[comp.uuid] = script
-		//}
 	} else if (dragOption.value === 'default' && !!selectedSubComponent.value) {
 		if (SubComponentsRoot.value.value?.glyph_script && SubComponentsRoot.value.value?.glyph_script[comp.uuid]) {
 			delete SubComponentsRoot.value.value?.glyph_script[comp.uuid]
+			return
 		}
 	} else if (dragOption.value === 'layout' && editGlyph.value.layout && !selectedSubComponent.value) {
 		if (draggingJoint.value && putAtCoord.value) {
@@ -154,22 +144,37 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) 
 	let coords = []
 	const onMouseDown = (e: MouseEvent) => {
 		if (!draggable.value) return
-		const glyph = selectedSubComponent.value ? selectedSubComponent.value.value : selectedComponent_glyph?.value?.value
-		if (!glyph) return
-		// coords = []
-		// getLayoutCoords(editCharacterFile.value.info.layoutTree, coords)
-		const joints = glyph._o?.getJoints()
+		// joint数据格式：{x, y, name}
+		let joints = []
+		let glyph = null
+		if (selectedSubComponent.value) {
+			// 当前选中组件为子字形组件
+			joints = getJoints(selectedComponent_glyph?.value, selectedSubComponent.value.uuid)
+			glyph = selectedSubComponent.value.value
+		} else if (selectedComponent_glyph?.value) {
+			// 当前选中组件为根目录中组件
+			joints = getJoints(selectedComponent_glyph?.value, selectedComponent_glyph?.value.uuid)
+			glyph = selectedComponent_glyph?.value?.value
+		}
+		if (!glyph || !glyph._o) return
 		mouseDownX = getCoord(e.offsetX)
 		mouseDownY = getCoord(e.offsetY)
 		const d = 10
 		if (checkJoints.value && !draggingJoint.value) {
 			for (let i = 0; i < joints.length; i++) {
-				if (!joints[i].component || !joints[i].rootComponent || !joints[i].componentsTree) {
-					linkComponentsForJoints(selectedComponent_glyph?.value)
-				}
-				const { x, y } = joints[i].getCoords()
+				const { ox, oy } = getOrigin()
+				const { x, y } = joints[i]
 				if (distance(x, y, mouseDownX, mouseDownY) <= d) {
+					// 拖拽关键点
 					draggingJoint.value = joints[i]
+					// 如果设置了onSkeletonDragStart，则骨架可拖拽
+					if (glyph._o.onSkeletonDragStart) {
+						glyph._o.onSkeletonDragStart({
+							draggingJoint: draggingJoint.value,
+							deltaX: 0,
+							deltaY: 0,
+						})
+					}
 				}
 			}
 		}
@@ -190,6 +195,14 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) 
 		const d = 20
 		const dx = getCoord(e.offsetX) - lastX
 		const dy = getCoord(e.offsetY) - lastY
+		let glyph = null
+		if (selectedSubComponent.value) {
+			// 当前选中组件为子字形组件
+			glyph = selectedSubComponent.value.value
+		} else if (selectedComponent_glyph?.value) {
+			// 当前选中组件为根目录中组件
+			glyph = selectedComponent_glyph?.value?.value
+		}
 		mousemove = true
 		if (mousedown) {
 			// 没有拖拽joint节点
@@ -211,6 +224,14 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) 
 						oy: _oy + dy,
 					})
 				}
+			} else if (glyph._o?.onSkeletonDrag) {
+				// 如果设置了onSkeletonDrag，则骨架可拖拽，拖拽骨架则不再移动字形
+				glyph._o.onSkeletonDrag({
+					draggingJoint: draggingJoint.value,
+					deltaX: dx,
+					deltaY: dy,
+				})
+				emitter.emit('renderGlyph')
 			} else {
 				putAtCoord.value = {
 					x: ox + draggingJoint.value.x + dx,
@@ -231,17 +252,23 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) 
 				}
 			}
 		} else if (checkJoints.value) {
-			const glyph = selectedSubComponent.value ? selectedSubComponent.value.value : selectedComponent_glyph?.value?.value
-			const joints = glyph._o?.getJoints()
+			// joint数据格式：{x, y, name}
+			let joints = []
+			let glyph = null
+			if (selectedSubComponent.value) {
+				// 当前选中组件为子字形组件
+				joints = getJoints(selectedComponent_glyph?.value, selectedSubComponent.value.uuid)
+			} else if (selectedComponent_glyph?.value) {
+				// 当前选中组件为根目录中组件
+				joints = getJoints(selectedComponent_glyph?.value, selectedComponent_glyph?.value.uuid)
+			}
+			if (!glyph) return
 			const d = 10
 			let mark = false
 			const mouseMoveX = getCoord(e.offsetX)
 			const mouseMoveY = getCoord(e.offsetY)
 			for (let i = 0; i < joints.length; i++) {
-				if (!joints[i].component || !joints[i].rootComponent || !joints[i].componentsTree) {
-					linkComponentsForJoints(selectedComponent_glyph?.value)
-				}
-				const { x, y } = joints[i].getCoords()
+				const { x, y } = joints[i]
 				if (distance(x, y, mouseMoveX, mouseMoveY) <= d) {
 					movingJoint.value = joints[i]
 					mark = true
@@ -251,7 +278,24 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) 
 		}
 	}
 	const onMouseUp = (e: MouseEvent) => {
-		//canvas.removeEventListener('mousemove', onMouseMove)
+		let glyph = null
+		if (selectedSubComponent.value) {
+			// 当前选中组件为子字形组件
+			glyph = selectedSubComponent.value.value
+		} else if (selectedComponent_glyph?.value) {
+			// 当前选中组件为根目录中组件
+			glyph = selectedComponent_glyph?.value?.value
+		}
+		const dx = getCoord(e.offsetX) - lastX
+		const dy = getCoord(e.offsetY) - lastY
+		if (glyph._o?.onSkeletonDragEnd && mousedown) {
+			// 如果设置了onSkeletonDragEnd，则骨架可拖拽
+			glyph._o.onSkeletonDragEnd({
+				draggingJoint: draggingJoint.value,
+				deltaX: dx,
+				deltaY: dy,
+			})
+		}
 		setEditing(false)
 		if (mousemove && mousedown) {
 			// addScript(glyph, coords)
@@ -262,6 +306,8 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) 
 		mousemove = false
 		mouseDownX = -1
 		mouseDownY = -1
+		lastX = 0
+		lastY = 0
 		putAtCoord.value = null
 		draggingJoint.value = null
 		movingJoint.value = null
@@ -282,36 +328,56 @@ const renderGlyphSelector = (canvas: HTMLCanvasElement, _editGlyph: boolean = tr
 	const { ox, oy } = getOrigin()
 	if (!glyph) return
 	//executeScript(editGlyph.value)
-	const { x, y, w, h } = getBound(glyph._o?.getJoints())
-	const _x = mapCanvasX(x + ox)
-	const _y = mapCanvasY(y + oy)
+
+	let joints = []
+	if (selectedSubComponent.value) {
+		// 当前选中组件为子字形组件
+		joints = getJoints(selectedComponent_glyph?.value, selectedSubComponent.value.uuid)
+	} else if (selectedComponent_glyph?.value) {
+		// 当前选中组件为根目录中组件
+		joints = getJoints(selectedComponent_glyph?.value, selectedComponent_glyph?.value.uuid)
+	}
+	const getJoint = (name: string) => {
+		for (let i = 0; i < joints.length; i++) {
+			if (joints[i].name === name) {
+				return joints[i]
+			}
+		}
+		return {
+			x: 0,
+			y: 0,
+		}
+	}
+	const { x, y, w, h } = getBound(joints)
+	const _x = mapCanvasX(x)
+	const _y = mapCanvasY(y)
 	const _w = mapCanvasWidth(w)
 	const _h = mapCanvasHeight(h)
 	const d = 5
 	const ctx = canvas.getContext('2d')
 	ctx.strokeStyle = '#79bbff'
-	ctx.strokeRect(_x, _y, _w, _h)
-	ctx.strokeRect(_x - d, _y - d, d * 2, d * 2)
-	ctx.strokeRect(_x + _w - d, _y - d, d * 2, d * 2)
-	ctx.strokeRect(_x - d, _y + _h - d, d * 2, d * 2)
-	ctx.strokeRect(_x + _w - d, _y + _h - d, d * 2, d * 2)
+	// ctx.strokeRect(_x, _y, _w, _h)
+	// ctx.strokeRect(_x - d, _y - d, d * 2, d * 2)
+	// ctx.strokeRect(_x + _w - d, _y - d, d * 2, d * 2)
+	// ctx.strokeRect(_x - d, _y + _h - d, d * 2, d * 2)
+	// ctx.strokeRect(_x + _w - d, _y + _h - d, d * 2, d * 2)
 
 	// moving joint
 	if (movingJoint.value && checkJoints.value) {
 		const _d = 10
-		const { x, y } = movingJoint.value.getPlainCoords()
-		const _x = mapCanvasX(x + ox)
-		const _y = mapCanvasY(y + oy)
+		const { x, y } = getJoint(movingJoint.value.name)
+		const _x = mapCanvasX(x)
+		const _y = mapCanvasY(y)
 		ctx.fillStyle = 'red'
 		ctx.fillRect(_x - _d, _y - _d, 2 * _d, 2 * _d)
 	}
 
 	// dragging joint
 	if (draggingJoint.value && checkJoints.value) {
-		const { x, y } = draggingJoint.value.getPlainCoords()
+		const { x, y } = getJoint(draggingJoint.value.name)
 		const _d = 10
-		const _x = mapCanvasX(x + ox)
-		const _y = mapCanvasY(y + oy)
+		const _x = mapCanvasX(x)
+		const _y = mapCanvasY(y)
 		ctx.fillStyle = 'red'
 		ctx.fillRect(_x - _d, _y - _d, 2 * _d, 2 * _d)
 	}

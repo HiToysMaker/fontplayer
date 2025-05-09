@@ -21,16 +21,26 @@
   import { OpType, saveState, StoreType } from '../../stores/edit'
   import { nativeImportFile } from '../../menus/handlers'
   import { ElMessageBox } from 'element-plus'
+  import { useI18n } from 'vue-i18n'
+  const { tm, t, locale } = useI18n()
 
   // 切换工具
   // switch tool
   const switchTool = async (_tool: string) => {
     if (tool.value === 'grid' && _tool !== 'grid') {
-			ElMessageBox.alert(
-				'为方便用户进行组件编辑操作，离开布局编辑界面会恢复默认布局。如果您已经应用布局变换，预览及导出字体库会使用应用变换后的布局，但是在其他编辑操作时，界面仍使用默认布局。',
-				'提示：您已经离开布局编辑界面', {
-				confirmButtonText: '确定',
-			})
+      if (locale.value === 'zh') {
+        ElMessageBox.alert(
+          '为方便用户进行组件编辑操作，离开布局编辑界面会恢复默认布局。如果您已经应用布局变换，预览及导出字体库会使用应用变换后的布局，但是在其他编辑操作时，界面仍使用默认布局。',
+          '提示：您已经离开布局编辑界面', {
+          confirmButtonText: '确定',
+        })
+      } else if (locale.value === 'en') {
+        ElMessageBox.alert(
+          'For user convenience in component editing operations, the default layout will be restored when leaving the layout editing interface. If you have applied layout transformations, the transformed layout will be used for previewing and exporting the font library. However, the default layout will still be used for other editing operations.',
+          'Note: You have left the layout editing interface', {
+          confirmButtonText: 'Confirm',
+        })
+      }
 		}
     if (_tool !== 'picture') {
       saveState('选择工具', [StoreType.Tools], OpType.Undo)
@@ -283,7 +293,7 @@
           'tool-icon': true,
           'selected': tool === 'select',
         }"
-        @click="switchTool('select')"
+        @pointerdown="switchTool('select')"
       >
         <font-awesome-icon icon="fa-solid fa-arrow-pointer" />
       </el-icon>
@@ -292,7 +302,7 @@
           'tool-icon': true,
           'selected': tool === 'pen',
         }"
-        @click="switchTool('pen')"
+        @pointerdown="switchTool('pen')"
       >
         <font-awesome-icon icon="fa-solid fa-pen-nib" />
       </el-icon>
@@ -301,7 +311,7 @@
           'tool-icon': true,
           'selected': tool === 'ellipse',
         }"
-        @click="switchTool('ellipse')"
+        @pointerdown="switchTool('ellipse')"
       >
         <font-awesome-icon icon="fa-regular fa-circle" />
       </el-icon>
@@ -310,7 +320,7 @@
           'tool-icon': true,
           'selected': tool === 'rectangle',
         }"
-        @click="switchTool('rectangle')"
+        @pointerdown="switchTool('rectangle')"
       >
         <font-awesome-icon icon="fa-regular fa-square" />
       </el-icon>
@@ -319,7 +329,7 @@
           'tool-icon': true,
           'selected': tool === 'polygon',
         }"
-        @click="switchTool('polygon')"
+        @pointerdown="switchTool('polygon')"
       >
         <font-awesome-icon icon="fa-solid fa-draw-polygon" />
       </el-icon>
@@ -328,7 +338,7 @@
           'tool-icon': true,
           'selected': tool === 'picture',
         }"
-        @click="switchTool('picture')"
+        @pointerdown="switchTool('picture')"
         v-show="editStatus === Status.Edit"
       >
         <font-awesome-icon icon="fa-solid fa-image" />
@@ -338,14 +348,14 @@
           'tool-icon': true,
           'selected': tool === 'glyph',
         }"
-        @click="glyphComponentsDialogVisible2 = true"
+        @pointerdown="glyphComponentsDialogVisible2 = true"
         v-show="editStatus === Status.Edit || editStatus === Status.Glyph"
       >
         <font-awesome-icon :icon="['fas', 'font']" />
       </el-icon>
       <el-icon
         class="code-icon"
-        @click="showProgrammingWindow"
+        @pointerdown="showProgrammingWindow"
         v-show="editStatus === Status.Edit || editStatus === Status.Glyph"
       >
         <font-awesome-icon :icon="['fas', 'terminal']" />
@@ -355,7 +365,7 @@
           'tool-icon': true,
           'selected': tool === 'params',
         }"
-        @click="switchTool('params')"
+        @pointerdown="switchTool('params')"
         v-show="editStatus === Status.Glyph"
       >
         <font-awesome-icon :icon="['fas', 'sliders']" />
@@ -366,11 +376,21 @@
           'tool-icon': true,
           'selected': tool === 'grid',
         }"
-        @click="switchTool('grid')"
+        @pointerdown="switchTool('grid')"
       >
         <font-awesome-icon :icon="['fas', 'table-cells']" />
       </el-icon>
-      <div class="to-list" @click="toList">
+      <el-icon
+        v-show="editStatus === Status.Edit"
+        :class="{
+          'tool-icon': true,
+          'selected': tool === 'metrics',
+        }"
+        @pointerdown="switchTool('metrics')"
+      >
+        <font-awesome-icon :icon="['fas', 'text-width']" />
+      </el-icon>
+      <div class="to-list" @pointerdown="toList">
         <el-icon class="to-list-icon"><Grid /></el-icon>
         <span class="to-list-label">字符列表</span>
       </div>

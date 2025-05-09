@@ -6,7 +6,8 @@
    * dialog for font setting
    */
 
-  import { fontSettingsDialogVisible, setFontSettingsDialogVisible } from '../../stores/dialogs'
+  import { getEnName, name_data } from '../../stores/settings'
+  import { fontSettingsDialogVisible, setFontSettings2DialogVisible, setFontSettingsDialogVisible } from '../../stores/dialogs'
   import { selectedFile, updateFontSettings } from '../../stores/files'
   import { onMounted, onUnmounted, ref, watch, type Ref } from 'vue'
   import { useI18n } from 'vue-i18n'
@@ -18,10 +19,12 @@
   const descender: Ref<number> = ref(-200)
 
   onMounted(() => {
-    name.value = selectedFile.value.name
-    unitsPerEm.value = selectedFile.value.fontSettings.unitsPerEm
-    ascender.value = selectedFile.value.fontSettings.ascender
-    descender.value = selectedFile.value.fontSettings.descender
+    if (selectedFile.value) {
+      name.value = selectedFile.value.name
+      unitsPerEm.value = selectedFile.value.fontSettings.unitsPerEm
+      ascender.value = selectedFile.value.fontSettings.ascender
+      descender.value = selectedFile.value.fontSettings.descender
+    }
   })
 
   watch(selectedFile, () => {
@@ -35,6 +38,31 @@
   })
 
   const updateFont = () => {
+    // 如果字体名称改变，需要更新name表信息
+    let subFamily = '常规体'
+    let subFamilyEn = 'Regular'
+    if (name.value !== selectedFile.value.name) {
+      for(let i = 0; i < name_data.value.length; i++) {
+        const item = name_data.value[i]
+        if (item.nameID === 1 && item.langID === 0x804) {
+          item.value = name.value
+        } else if (item.nameID === 1 && item.langID === 0x409) {
+          item.value = getEnName(name.value)
+        } else if (item.nameID === 2 && item.langID === 0x804) {
+          subFamily = item.value
+        } else if (item.nameID === 2 && item.langID === 0x409) {
+          subFamilyEn = item.value
+        } else if (item.nameID === 4 && item.langID === 0x804) {
+          item.value = name.value + ' ' + subFamily
+        } else if (item.nameID === 4 && item.langID === 0x409) {
+          item.value = getEnName(name.value) + ' ' + subFamilyEn
+        } else if (item.nameID === 6 && item.langID === 0x804) {
+          item.value = (getEnName(name.value) + '-' + subFamilyEn).replace(/\s/g, '').slice(0, 63)
+        } else if (item.nameID === 6 && item.langID === 0x409) {
+          item.value =  (getEnName(name.value) + '-' + subFamilyEn).replace(/\s/g, '').slice(0, 63)
+        }
+      }
+    }
     updateFontSettings({
       name: name.value,
       unitsPerEm: unitsPerEm.value,
@@ -55,6 +83,11 @@
 	const onDescenderChange = () => {
 		ascender.value = (unitsPerEm.value + descender.value)
 	}
+
+  const moreSettings = () => {
+    setFontSettings2DialogVisible(true)
+    setFontSettingsDialogVisible(false)
+  }
 </script>
 
 <template>
@@ -97,10 +130,11 @@
     </el-form>
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="setFontSettingsDialogVisible(false)">{{ t('dialogs.fontSettingsDialog.cancel') }}</el-button>
+        <el-button @pointerdown="moreSettings">{{ t('dialogs.fontSettingsDialog.moreSettings') }}</el-button>
+        <el-button @pointerdown="setFontSettingsDialogVisible(false)">{{ t('dialogs.fontSettingsDialog.cancel') }}</el-button>
         <el-button
           type="primary"
-          @click="() => updateFont()"
+          @pointerdown="() => updateFont()"
         >
           {{ t('dialogs.fontSettingsDialog.confirm') }}
         </el-button>

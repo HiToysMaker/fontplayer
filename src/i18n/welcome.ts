@@ -1,5 +1,5 @@
 const welcome = {
-  cn: {
+  zh: {
 		new: {
 			name: '新建工程',
 			description: '新建字体（或web图标字体）工程',
@@ -19,6 +19,10 @@ const welcome = {
 		template: {
 			name: '导入模板',
 			description: '导入字玩自带的测试模板',
+		},
+		playground: {
+			title: '玩一玩字玩',
+			description: '通过参数化快速创建一个迷你字库',
 		},
 	},
 	en: {
@@ -41,6 +45,10 @@ const welcome = {
 		template: {
 			name: 'Import Template',
 			description: 'Import template that FontPlayer provides for testing',
+		},
+		playground: {
+			title: 'Playground',
+			description: 'Quickly create a mini font library through parameterization',
 		},
 	},
 }

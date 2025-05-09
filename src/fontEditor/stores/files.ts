@@ -4,7 +4,7 @@ import { ref, computed, type Ref, reactive } from 'vue'
 import localForage from 'localforage'
 import { getBound } from '../../utils/math'
 import type { IPoint } from './pen'
-import { ICustomGlyph, IGlyphComponent, constants, constantsMap } from './glyph'
+import { ICustomGlyph, IGlyphComponent, constants, constantsMap, executeScript } from './glyph'
 import { Character } from '../programming/Character'
 import { emitter } from '../Event/bus'
 import { CustomGlyph } from '../programming/CustomGlyph'
@@ -46,6 +46,7 @@ export interface IFontSettings {
 	unitsPerEm: number;
 	ascender: number;
 	descender: number;
+	tables?: any;
 }
 
 // 字符文件数据结构
@@ -82,8 +83,14 @@ export interface ICharacterFile {
 			size: number;
 			default?: boolean;
 		};
+		useSkeletonGrid?: boolean;
 		layout?: string;
 		layoutTree?: any;
+		metrics?: {
+			lsb?: number;
+			advanceWidth?: number;
+			useDefaultValues?: boolean;
+		};
 	};
 	_o?: Character;
 	objData?: any;
@@ -1223,6 +1230,20 @@ const executeCharacterScript = (character: ICharacterFile) => {
 	})
 }
 
+/**
+ * 遍历字符中包含的字形组件，并且运行脚本
+ */
+const executeCharactersGlyphsScript = (character: ICharacterFile | ICustomGlyph) => {
+	const components = character.components
+	for (let i = 0; i < components.length; i++) {
+		const comp = components[i]
+		if (comp.type === 'glyph') {
+			const glyph = comp.value
+			executeScript(glyph)
+		}
+	}
+}
+
 // 获取字符布局
 // get character ratio layout
 const getCharacterRatioLayout = (character, option) => {
@@ -1388,4 +1409,5 @@ export {
 	SubComponentsRoot,
 	selectedSubComponent,
 	modifySubComponent,
+	executeCharactersGlyphsScript,
 }

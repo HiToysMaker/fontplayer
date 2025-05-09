@@ -21,14 +21,13 @@ import { fitCurve, type IPoint } from '../features/fitCurve'
 import { getEllipsePoints, getRectanglePoints, transformPoints } from '../utils/math'
 import { genUUID } from '../utils/string'
 import { width } from '../fontEditor/stores/global'
-import { ICustomGlyph, IGlyphComponent, executeScript, modifyComponentForGlyph } from '../fontEditor/stores/glyph'
+import { ICustomGlyph, IGlyphComponent, executeScript, modifyComponentForGlyph, orderedListWithItemsForGlyph } from '../fontEditor/stores/glyph'
 import { EllipseComponent } from '../fontEditor/programming/EllipseComponent'
 import { RectangleComponent } from '../fontEditor/programming/RectangleComponent'
 import { PenComponent } from '../fontEditor/programming/PenComponent'
 import { PolygonComponent } from '../fontEditor/programming/PolygonComponent'
-import * as R from 'ramda'
-import { linkComponentsForJoints } from '../fontEditor/programming/Joint'
 import { computeCoords } from '../fontEditor/canvas/canvas'
+import { executeScript as executeScript_playground } from '../fontEditor/stores/playground'
 
 const contoursToComponents = (contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>, options: {
 	unitsPerEm: number,
@@ -218,6 +217,8 @@ const componentsToContours = (components: Array<_Component>, options: {
 	descender: number,
 	advanceWidth: number,
 	grid?: any,
+	useSkeletonGrid?: boolean,
+	playground?: boolean,
 }, offset: {
 	x: number,
 	y: number,
@@ -225,6 +226,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 	//-------
 	// forceUpdate = true
 	//-------
+	const useSkeletonGrid = (options && options.useSkeletonGrid) || false
 	let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = []
 	components.map((component) => {
 		if (!component.usedInCharacter) return
@@ -239,7 +241,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 					})
 					transformed_points = transformed_points.map((point) => {
 						const p = translate(point, offset)
-						if (options.grid) {
+						if (options.grid && !useSkeletonGrid) {
 							return computeCoords(options.grid, p)
 						} else {
 							return p
@@ -274,7 +276,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 					})
 					transformed_points = transformed_points.map((point) => {
 						const p = translate(point, offset)
-						if (options.grid) {
+						if (options.grid && !useSkeletonGrid) {
 							return computeCoords(options.grid, p)
 						} else {
 							return p
@@ -316,7 +318,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 					})
 					transformed_points = transformed_points.map((point) => {
 						const p = translate(point, offset)
-						if (options.grid) {
+						if (options.grid && !useSkeletonGrid) {
 							return computeCoords(options.grid, p)
 						} else {
 							return p
@@ -360,7 +362,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 					})
 					transformed_points = transformed_points.map((point) => {
 						const p = translate(point, offset)
-						if (options.grid) {
+						if (options.grid && !useSkeletonGrid) {
 							return computeCoords(options.grid, p)
 						} else {
 							return p
@@ -391,7 +393,13 @@ const componentsToContours = (components: Array<_Component>, options: {
 			}
 			case 'glyph-pen': {
 				if (!(component as PenComponent).contour || !(component as PenComponent).contour.length || forceUpdate) {
-					(component as PenComponent).updateData(isGlyph, offset, options.grid)
+					if (!options.grid || useSkeletonGrid) {
+						// 不使用布局调整或使用骨架布局调整的情况下，使用给定组件本身的数据，不进行布局调整。
+						// 注意如果使用骨架布局调整，给定的组件是根据调整后骨架计算出的组件，所以不用再次进行调整
+						(component as PenComponent).updateData(isGlyph, offset)
+					} else {
+						(component as PenComponent).updateData(isGlyph, offset, options.grid)
+					}
 				}
 				if (!preview) {
 					contours.push((component as PenComponent).contour)
@@ -402,7 +410,13 @@ const componentsToContours = (components: Array<_Component>, options: {
 			}
 			case 'glyph-polygon': {
 				if (!(component as PolygonComponent).contour || !(component as PolygonComponent).contour.length || forceUpdate) {
-					(component as PolygonComponent).updateData(isGlyph, offset, options.grid)
+					if (!options.grid || useSkeletonGrid) {
+						// 不使用布局调整或使用骨架布局调整的情况下，使用给定组件本身的数据，不进行布局调整。
+						// 注意如果使用骨架布局调整，给定的组件是根据调整后骨架计算出的组件，所以不用再次进行调整
+						(component as PolygonComponent).updateData(isGlyph, offset)
+					} else {
+						(component as PolygonComponent).updateData(isGlyph, offset, options.grid)
+					}
 				}
 				if (!preview) {
 					contours.push((component as PolygonComponent).contour)
@@ -413,7 +427,13 @@ const componentsToContours = (components: Array<_Component>, options: {
 			}
 			case 'glyph-rectangle': {
 				if (!(component as RectangleComponent).contour || !(component as RectangleComponent).contour.length || forceUpdate) {
-					(component as RectangleComponent).updateData(isGlyph, offset, options.grid)
+					if (!options.grid || useSkeletonGrid) {
+						// 不使用布局调整或使用骨架布局调整的情况下，使用给定组件本身的数据，不进行布局调整。
+						// 注意如果使用骨架布局调整，给定的组件是根据调整后骨架计算出的组件，所以不用再次进行调整
+						(component as RectangleComponent).updateData(isGlyph, offset)
+					} else {
+						(component as RectangleComponent).updateData(isGlyph, offset, options.grid)
+					}
 				}
 				if (!preview) {
 					contours.push((component as RectangleComponent).contour)
@@ -424,7 +444,13 @@ const componentsToContours = (components: Array<_Component>, options: {
 			}
 			case 'glyph-ellipse': {
 				if (!(component as EllipseComponent).contour || !(component as EllipseComponent).contour.length || forceUpdate) {
-					(component as EllipseComponent).updateData(isGlyph, offset, options.grid)
+					if (!options.grid || useSkeletonGrid) {
+						// 不使用布局调整或使用骨架布局调整的情况下，使用给定组件本身的数据，不进行布局调整。
+						// 注意如果使用骨架布局调整，给定的组件是根据调整后骨架计算出的组件，所以不用再次进行调整
+						(component as EllipseComponent).updateData(isGlyph, offset)
+					} else {
+						(component as EllipseComponent).updateData(isGlyph, offset, options.grid)
+					}
 				}
 				if (!preview) {
 					contours.push((component as EllipseComponent).contour)
@@ -437,14 +463,41 @@ const componentsToContours = (components: Array<_Component>, options: {
 				const { ox, oy } = component as IGlyphComponent
 				const glyph = (component as Component).value as unknown as ICustomGlyph
 				if (!glyph._o || forceUpdate) {
-					executeScript(glyph)
-					glyph._o.getJoints().map((joint) => {
-						joint.component = component as IGlyphComponent
-					})
+					if (options && options.playground) {
+						executeScript_playground(glyph)
+					} else {
+						executeScript(glyph)
+					}
+					// glyph._o.getJoints().map((joint) => {
+					// 	joint.component = component as IGlyphComponent
+					// })
 				}
 				// executeScript(glyph)
-				const contours1 = componentsToContours(glyph._o.components, options, { x: offset.x + ox, y: offset.y + oy }, isGlyph, preview, true)
-				contours = contours.concat(contours1)
+				if (useSkeletonGrid && options.grid && glyph._o?.getSkeleton) {
+					// 使用骨架布局调整的情况下，对于非字形实例本身组件，也就是非使用脚本提交的组件，正常计算
+					// 对于字形实例本身实用脚本创建的组件，先计算调整后骨架，再依据调整后的骨架计算最终组件
+					const _skeleton = glyph._o.getSkeleton()
+					const skeleton = {}
+					const keys = Object.keys(_skeleton)
+					for (let i = 0; i < keys.length; i++) {
+						const key = keys[i]
+						const _joint = _skeleton[key]
+						const joint = {
+							x: _joint.x + offset.x + ox,
+							y: _joint.y + offset.y + oy,
+						}
+						skeleton[key] = computeCoords(options.grid, joint)
+					}
+					const components1 = glyph._o.getComponentsBySkeleton(skeleton)
+					const components2 = orderedListWithItemsForGlyph(glyph)
+					const contours1 = componentsToContours(components1.concat(components2), options, { x: 0, y: 0 }, isGlyph, preview, true)
+					// const contours1 = componentsToContours(components1.concat(components2), options, { x: offset.x + ox, y: offset.y + oy }, isGlyph, preview, true)
+					contours = contours.concat(contours1)
+				} else {
+					// 不使用骨架布局调整
+					const contours1 = componentsToContours(glyph._o.components, options, { x: offset.x + ox, y: offset.y + oy }, isGlyph, preview, true)
+					contours = contours.concat(contours1)
+				}
 				break
 			}
 			default: {
@@ -525,7 +578,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 const componentsToContours2 = (components: Array<_Component>, offset: {
 	x: number,
 	y: number,
-} = { x: 0, y: 0 }, isGlyph: boolean = false) => {
+} = { x: 0, y: 0 }, isGlyph: boolean = false, contour_type: number = 0) => {
 	let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = []
 	components.map((component) => {
 		if (!component.usedInCharacter) return
@@ -602,12 +655,12 @@ const componentsToContours2 = (components: Array<_Component>, offset: {
 				const glyph = (component as Component).value as unknown as ICustomGlyph
 				if (!glyph._o) {
 					executeScript(glyph)
-					glyph._o.getJoints().map((joint) => {
-						joint.component = component as IGlyphComponent
-					})
+					// glyph._o.getJoints().map((joint) => {
+					// 	joint.component = component as IGlyphComponent
+					// })
 				}
 				// executeScript(glyph)
-				const contours1 = componentsToContours2(glyph._o.components, { x: ox, y: oy }, isGlyph)
+				const contours1 = componentsToContours2(glyph._o.components, { x: ox, y: oy }, isGlyph, contour_type)
 				contours = contours.concat(contours1)
 				break
 			}
@@ -619,35 +672,68 @@ const componentsToContours2 = (components: Array<_Component>, offset: {
 		}
 	})
 	if (offset.x || offset.y) {
-		const scale = 1
-		contours = R.clone(contours)
-		for (let i = 0; i < contours.length; i++) {
-			const contour = contours[i]
-			for (let j = 0; j < contour.length; j++) {
-				const path = contour[j]
-				if (path.type === PathType.LINE) {
-					path.start.x += offset.x * scale
-					path.start.y -= offset.y * scale
-					path.end.x += offset.x * scale
-					path.end.y -= offset.y * scale
-				} else if (path.type === PathType.QUADRATIC_BEZIER) {
-					path.start.x += offset.x * scale
-					path.start.y -= offset.y * scale
-					path.end.x += offset.x * scale
-					path.end.y -= offset.y * scale
-					path.control.x += offset.x * scale
-					path.control.y -= offset.y * scale
-				} else if (path.type === PathType.CUBIC_BEZIER) {
-					path.start.x += offset.x * scale
-					path.start.y -= offset.y * scale
-					path.end.x += offset.x * scale
-					path.end.y -= offset.y * scale
-					path.control1.x += offset.x * scale
-					path.control1.y -= offset.y * scale
-					path.control2.x += offset.x * scale
-					path.control2.y -= offset.y * scale
+		if (contour_type === 0) {
+			// 生成导出字体最终的轮廓（坐标起始点为字体baseline），y坐标越大，对应点的位置越高
+			const scale = 1
+			for (let i = 0; i < contours.length; i++) {
+				const contour = contours[i]
+				for (let j = 0; j < contour.length; j++) {
+					const path = contour[j]
+					if (path.type === PathType.LINE) {
+						path.start.x += offset.x * scale
+						path.start.y -= offset.y * scale
+						path.end.x += offset.x * scale
+						path.end.y -= offset.y * scale
+					} else if (path.type === PathType.QUADRATIC_BEZIER) {
+						path.start.x += offset.x * scale
+						path.start.y -= offset.y * scale
+						path.end.x += offset.x * scale
+						path.end.y -= offset.y * scale
+						path.control.x += offset.x * scale
+						path.control.y -= offset.y * scale
+					} else if (path.type === PathType.CUBIC_BEZIER) {
+						path.start.x += offset.x * scale
+						path.start.y -= offset.y * scale
+						path.end.x += offset.x * scale
+						path.end.y -= offset.y * scale
+						path.control1.x += offset.x * scale
+						path.control1.y -= offset.y * scale
+						path.control2.x += offset.x * scale
+						path.control2.y -= offset.y * scale
+					}
 				}
-		  }
+			}
+		} else if (contour_type === 1) {
+			// 生成程序中展示所用的轮廓，原点位于canvas左上角，y坐标越大，对应点的位置越往下
+			const scale = 1
+			for (let i = 0; i < contours.length; i++) {
+				const contour = contours[i]
+				for (let j = 0; j < contour.length; j++) {
+					const path = contour[j]
+					if (path.type === PathType.LINE) {
+						path.start.x += offset.x * scale
+						path.start.y += offset.y * scale
+						path.end.x += offset.x * scale
+						path.end.y += offset.y * scale
+					} else if (path.type === PathType.QUADRATIC_BEZIER) {
+						path.start.x += offset.x * scale
+						path.start.y += offset.y * scale
+						path.end.x += offset.x * scale
+						path.end.y += offset.y * scale
+						path.control.x += offset.x * scale
+						path.control.y -= offset.y * scale
+					} else if (path.type === PathType.CUBIC_BEZIER) {
+						path.start.x += offset.x * scale
+						path.start.y += offset.y * scale
+						path.end.x += offset.x * scale
+						path.end.y += offset.y * scale
+						path.control1.x += offset.x * scale
+						path.control1.y += offset.y * scale
+						path.control2.x += offset.x * scale
+						path.control2.y += offset.y * scale
+					}
+				}
+			}
 		}
 	}
 	return contours

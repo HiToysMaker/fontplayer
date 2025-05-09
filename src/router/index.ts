@@ -3,6 +3,7 @@ import Welcome from '../fontEditor/views/Welcome.vue'
 import Editor from '../fontEditor/views/Editor.vue'
 import CharacterProgrammingEditor from '../fontEditor/views/CharacterProgrammingEditor.vue'
 import GlyphProgrammingEditor from '../fontEditor/views/GlyphProgrammingEditor.vue'
+import Playground from '../fontEditor/views/Playground.vue'
 
 const router = createRouter({
   // history: createWebHistory(import.meta.env.BASE_URL),
@@ -28,6 +29,11 @@ const router = createRouter({
       name: 'glyph-programming-editor',
       component: GlyphProgrammingEditor,
     },
+    {
+      path: '/playground',
+      name: 'playground',
+      component: Playground,
+    }
   ]
 })
 

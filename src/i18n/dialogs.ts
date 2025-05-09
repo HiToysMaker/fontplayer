@@ -1,5 +1,5 @@
 const dialogs = {
-	cn: {
+	zh: {
 		tipsDialog: {
 			title: '提示',
 			confirm: '确认',
@@ -16,6 +16,7 @@ const dialogs = {
 			title: '导出字体库',
 			confirm: '确认',
 			cancel: '取消',
+			exportMsg: '请选择需要包含的项目：',
 		},
 		saveDialog: {
 			title: '保存工程',
@@ -72,18 +73,24 @@ const dialogs = {
 			title: '添加字形组件',
 			confirm: '确认',
 			cancel: '取消',
+			multiSelection: '多选',
+			singleSelection: '单选',
 		},
 		addFileDialog: {
 			title: '创建字体',
 			fontName: '字体名称',
 			cancel: '取消',
 			confirm: '确认创建',
+			useDefaultTemplate: '导入默认模板',
 		},
 		fontSettingsDialog: {
 			title: '字体设置',
 			fontName: '字体名称',
 			cancel: '取消',
 			confirm: '更改设置',
+			nameTableTip: 'name表定义了不同语言环境下，与字体相关的字符串信息。',
+			addItem: '添加',
+			moreSettings: '更多设置',
 		},
 		preferenceDialog: {
 			title: '偏好设置',
@@ -121,6 +128,18 @@ const dialogs = {
 			cancel: '取消',
 			confirm: '确定',
 		},
+		selectGlobalParamDialog: {
+			title: '选择全局变量',
+			cancel: '取消',
+			confirm: '确定',
+			globalParam: '全局变量',
+		},
+		setAsGlobalParamDialog: {
+			title: '设置为全局变量',
+			cancel: '取消',
+			confirm: '确定',
+			paramName: '参数名称',
+		},
 	},
 	en: {
 		tipsDialog: {
@@ -134,6 +153,7 @@ const dialogs = {
 			title: 'Export Project',
 			confirm: 'Confirm',
 			cancel: 'Cancel',
+			exportMsg: 'Please select items included in exported file:',
 		},
 		exportFontDialog: {
 			title: 'Export Font',
@@ -195,18 +215,24 @@ const dialogs = {
 			title: 'Add Glyph Component',
 			confirm: 'Confirm',
 			cancel: 'Cancel',
+			multiSelection: 'Multiple-Select',
+			singleSelection: 'Single-Select',
 		},
 		addFileDialog: {
 			title: 'New Font',
 			fontName: 'Font Name',
 			cancel: 'Cancel',
 			confirm: 'Confirm',
+			useDefaultTemplate: 'Import Default Template',
 		},
 		fontSettingsDialog: {
 			title: 'Font Settings',
 			fontName: 'Font Name',
 			cancel: 'Cancel',
 			confirm: 'Confirm',
+			nameTableTip: 'The name table defines font-related string information for different language environments.',
+			addItem: 'Add Item',
+			moreSettings: 'More Settings',
 		},
 		preferenceDialog: {
 			title: 'Preference',
@@ -243,6 +269,18 @@ const dialogs = {
 			title: 'Import Templates',
 			cancel: 'Cancel',
 			confirm: 'Confirm',
+		},
+		selectGlobalParamDialog: {
+			title: 'Select Global Parameter',
+			cancel: 'Cancel',
+			confirm: 'Confirm',
+			globalParam: 'Global Parameter',
+		},
+		setAsGlobalParamDialog: {
+			title: 'Set As Global Parameter',
+			cancel: 'Cancel',
+			confirm: 'Confirm',
+			paramName: 'Parameter Name',
 		},
 	}
 }

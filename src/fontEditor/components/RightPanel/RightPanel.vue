@@ -17,6 +17,7 @@
   import GlyphEditPanelGlyph from '../paramsEditPanels/GlyphEditPanel_Glyph.vue'
   import GlyphParamsPanel from '../paramsEditPanels/GlyphParamsPanel.vue'
   import LayoutEditPanel from '../paramsEditPanels/LayoutEditPanel.vue'
+  import MetricsEditPanel from '../paramsEditPanels/MetricsEditPanel.vue'
   import { selectedComponent, selectedComponentUUID,} from '../../stores/files'
   import { selectedComponent as selectedComponent_glyph, selectedComponentUUID as selectedComponentUUID_glyph,} from '../../stores/glyph'
   import { editStatus, Status } from '../../stores/font'
@@ -28,29 +29,32 @@
     <layout-edit-panel
       v-if="editStatus === Status.Edit && tool === 'grid'"
     ></layout-edit-panel>
+    <metrics-edit-panel
+      v-else-if="editStatus === Status.Edit && tool === 'metrics'"
+    ></metrics-edit-panel>
     <settings-panel
       v-else-if="!selectedComponentUUID && editStatus === Status.Edit"
     ></settings-panel>
     <pen-edit-panel
-      v-if="selectedComponentUUID && selectedComponent.type === 'pen'"
+      v-else-if="selectedComponentUUID && selectedComponent.type === 'pen'"
     ></pen-edit-panel>
     <ellipse-edit-panel
-      v-if="selectedComponentUUID && selectedComponent.type === 'ellipse'"
+      v-else-if="selectedComponentUUID && selectedComponent.type === 'ellipse'"
     ></ellipse-edit-panel>
     <rectangle-edit-panel
-      v-if="selectedComponentUUID && selectedComponent.type === 'rectangle'"
+      v-else-if="selectedComponentUUID && selectedComponent.type === 'rectangle'"
     ></rectangle-edit-panel>
     <polygon-edit-panel
-      v-if="selectedComponentUUID && selectedComponent.type === 'polygon'"
+      v-else-if="selectedComponentUUID && selectedComponent.type === 'polygon'"
     ></polygon-edit-panel>
     <picture-edit-panel
-      v-if="selectedComponentUUID && selectedComponent.type === 'picture'"
+      v-else-if="selectedComponentUUID && selectedComponent.type === 'picture'"
     ></picture-edit-panel>
     <glyph-edit-panel
-      v-if="tool !== 'grid' && editStatus === Status.Edit && selectedComponentUUID && selectedComponent.type === 'glyph'"
+      v-else-if="tool !== 'grid' && editStatus === Status.Edit && selectedComponentUUID && selectedComponent.type === 'glyph'"
     ></glyph-edit-panel>
     <font-pic-edit-panel
-      v-if="editStatus === Status.Pic"
+      v-else-if="editStatus === Status.Pic"
     ></font-pic-edit-panel>
   </div>
   <div class="right-panel" v-else>

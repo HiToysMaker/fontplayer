@@ -85,12 +85,13 @@ const fillBackground = (canvas: HTMLCanvasElement, background: IBackground, grid
 interface IOption {
   fill?: boolean;
   offset?: {
-    x: number,
-    y: number,
+    x: number;
+    y: number;
   };
-  scale?: number,
-  forceUpdate?: boolean,
-  grid?: any,
+  scale?: number;
+  forceUpdate?: boolean;
+  grid?: any;
+  useSkeletonGrid?: boolean;
 }
 
 /**
@@ -413,7 +414,8 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
   offset: { x: 0, y: 0 },
   scale: 1,
   forceUpdate: false,
-  grid: null
+  grid: null,
+  useSkeletonGrid: false,
 }) => {
   if (!options.grid) return
   const translate = (point) => {
@@ -424,6 +426,7 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
   }
   const grid = options.grid
   const scale = options.scale//canvas.width / (selectedFile.value.fontSettings.unitsPerEm as number)
+  const useSkeletonGrid = options.useSkeletonGrid
   const ctx: CanvasRenderingContext2D = canvas.getContext('2d') as CanvasRenderingContext2D
   //ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
   ctx.beginPath()
@@ -437,6 +440,7 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
 		// 渲染钢笔组件
 		// render pen component
     if (component.type === 'pen') {
+      if (useSkeletonGrid) return
       const { x, y, w, h, rotation, flipX, flipY } = component as IComponent
       const _x = mapCanvasX(x) * scale
       const _y = mapCanvasY(y) * scale
@@ -483,6 +487,7 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
 		// 渲染多边形组件
 		// render polygon component
     if (component.type === 'polygon') {
+      if (useSkeletonGrid) return
       const { x, y, w, h, rotation, flipX, flipY } = component as IComponent
       const _x = mapCanvasX(x) * scale
       const _y = mapCanvasY(y) * scale
@@ -526,6 +531,7 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
 		// 渲染椭圆组件
 		// render ellipse component
     if (component.type === 'ellipse') {
+      if (useSkeletonGrid) return
       const { x, y, w, h, rotation } = component as IComponent
       const radiusX = w / 2
       const radiusY = h / 2
@@ -567,6 +573,7 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
 		// 渲染长方形组件
 		// render rectangle component
     if (component.type === 'rectangle') {
+      if (useSkeletonGrid) return
       const { x, y, w, h, rotation } = component as IComponent
       const points = getRectanglePoints(
         w,
@@ -621,12 +628,12 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
         glyph.render_grid_forceUpdate(canvas, true, {
           x: options.offset.x + (component as IGlyphComponent).ox,
           y: options.offset.y + (component as IGlyphComponent).oy,
-        }, false, scale, grid)
+        }, false, scale, grid, useSkeletonGrid)
       } else {
         glyph.render_grid(canvas, true, {
           x: options.offset.x + (component as IGlyphComponent).ox,
           y: options.offset.y + (component as IGlyphComponent).oy,
-        }, false, scale, grid)
+        }, false, scale, grid, useSkeletonGrid)
       }
     }
   })
@@ -720,9 +727,6 @@ const renderPreview2 = (canvas: HTMLCanvasElement, contours: Array<Array<ILine |
         )
       }
     }
-    // ctx.closePath()
-    //ctx.fillStyle = '#000'
-    //ctx.fill()
   }
   ctx.closePath()
   ctx.fillStyle = '#000'

@@ -14,7 +14,7 @@
   import { ElMessage } from 'element-plus'
   import { onMounted, onUnmounted, ref, watch } from 'vue'
   import { useI18n } from 'vue-i18n'
-  const { tm, t } = useI18n()
+  const { tm, t, locale } = useI18n()
 
   const name = ref('')
 
@@ -24,7 +24,13 @@
 
   const handleClick = () => {
     if (!name.value) {
-      ElMessage('请输入字形名称。')
+      let msg = '请输入字形名称。'
+      if (locale.value === 'zh') {
+        msg = '请输入字形名称。'
+      } else if (locale.value === 'en') {
+        msg = 'Please input glyph\'s name.'
+      }
+      ElMessage(msg)
       return
     }
     const uuid = genUUID()
@@ -70,8 +76,8 @@
     </div>
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="handleCancel">{{ t('dialogs.addGlyphDialog.cancel') }}</el-button>
-        <el-button type="primary" @click="handleClick">
+        <el-button @pointerdown="handleCancel">{{ t('dialogs.addGlyphDialog.cancel') }}</el-button>
+        <el-button type="primary" @pointerdown="handleClick">
           {{ t('dialogs.addGlyphDialog.confirm') }}
         </el-button>
       </span>

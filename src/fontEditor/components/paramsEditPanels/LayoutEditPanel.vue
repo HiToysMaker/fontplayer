@@ -27,6 +27,7 @@
 	import { emitter } from '../../Event/bus'
 	import { ElMessage } from 'element-plus'
 	import { OpType, saveState, StoreType } from '../../stores/edit'
+	const { tm, t, locale } = useI18n()
 
 	interface LayoutNode {
 		id: string;
@@ -105,7 +106,7 @@
 		emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
 		ElMessage({
 			type: 'success',
-			message: '应用布局变换',
+			message: tm('panels.paramsPanel.applyGridTransform'),
 		})
 	}
 	const resetGrid = () => {
@@ -133,7 +134,7 @@
 		emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
 		ElMessage({
 			type: 'success',
-			message: '重置布局变换',
+			message: tm('panels.paramsPanel.resetGridTransform'),
 		})
 	}
 </script>
@@ -141,7 +142,7 @@
 <template>
   <div class="character-edit-panel">
 		<!-- <div class="layout-settings">
-			<el-button class="layout-btn" v-show="!onLayoutEdit" @click="onLayoutEdit = true">{{ !editCharacterFile.info.layout ? '设置字体结构' : '重置字体结构' }}</el-button>
+			<el-button class="layout-btn" v-show="!onLayoutEdit" @pointerdown="onLayoutEdit = true">{{ !editCharacterFile.info.layout ? '设置字体结构' : '重置字体结构' }}</el-button>
 			<el-select placeholder="Select" style="width: 100%" @change="onLayoutReset" v-show="onLayoutEdit">
 				<el-option
 					v-for="item in layoutOptions"
@@ -169,7 +170,7 @@
     					'margin-right': '10px',
 							'display': 'flex',
 						}">
-							<el-icon v-if="editingNode !== node.id" @click="(e) => {
+							<el-icon v-if="editingNode !== node.id" @pointerdown="(e) => {
 								e.stopPropagation()
 								editingNode = node.id
 							}"><Plus /></el-icon>
@@ -197,7 +198,7 @@
 				<el-form-item label="ID">
 					<el-input v-model="selectedNode.id" disabled>
 						<template #append>
-							<el-button :icon="DocumentCopy" @click="copyID"/>
+							<el-button :icon="DocumentCopy" @pointerdown="copyID"/>
 						</template>
 					</el-input>
 				</el-form-item>
@@ -234,12 +235,17 @@
 			</el-form>
 		</div> -->
 		<div class="grid-settings">
-			<el-button class="grid-confirm-btn" :disabled="!gridChanged" @click="confirmGridChange" type="primary">
-				应用布局变换
+			<el-button class="grid-confirm-btn" :disabled="!gridChanged" @pointerdown="confirmGridChange" type="primary">
+				{{ t('panels.paramsPanel.applyGridTransform') }}
 			</el-button>
-			<el-button class="grid-reset-btn" @click="resetGrid">
-				重置布局变换
+			<el-button class="grid-reset-btn" @pointerdown="resetGrid">
+				{{ t('panels.paramsPanel.resetGridTransform') }}
 			</el-button>
+			<el-form-item label-width="120px" label="使用骨架变换">
+				<el-switch
+					v-model="editCharacterFile.info.useSkeletonGrid"
+				/>
+      </el-form-item>
 		</div>
   </div>
 </template>

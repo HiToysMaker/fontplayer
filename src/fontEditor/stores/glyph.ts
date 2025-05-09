@@ -1,6 +1,6 @@
 import { Component, ICharacterFile, IComponent, addComponentForCurrentCharacterFile, editCharacterFile, selectedFile, selectedItemByUUID } from './files'
 import { ref, computed, type Ref } from 'vue'
-import { loading, setTool } from './global'
+import { loading, setTool, tool } from './global'
 import * as R from 'ramda'
 import { getBound } from '../../utils/math'
 import type { IPoint } from './pen'
@@ -9,7 +9,7 @@ import { genUUID } from '../../utils/string'
 import { ConstantsMap } from '../programming/ConstantsMap'
 import { FP } from '../programming/FPUtils'
 import { CustomGlyph } from '../programming/CustomGlyph'
-import { Joint, linkComponentsForJoints } from '../programming/Joint'
+import { Joint } from '../programming/Joint'
 import { ParametersMap } from '../programming/ParametersMap'
 import { instanceGlyph } from '../menus/handlers'
 import { emitter } from '../Event/bus'
@@ -50,6 +50,20 @@ export interface ICustomGlyph {
 	parent?: ICustomGlyph | ICharacterFile;
 	_o?: CustomGlyph;
 	objData?: any;
+	script_reference?: string;
+	parent_reference?: ParentInfo;
+}
+
+interface ParentInfo {
+	uuid: string;
+	type: string;
+}
+
+const getParentInfo = (parent) => {
+	return {
+		uuid: parent.uuid,
+		type: parent.type,
+	}
 }
 
 // 辅助线
@@ -59,6 +73,7 @@ export interface IRefLine {
 	name: string;
 	start: string;
 	end: string;
+	type?: string;
 }
 
 // 关键点
@@ -111,6 +126,7 @@ export interface IConstant {
 	max?: number;
 	ratio?: string;
 	ratioed?: boolean;
+	options?: Array<IEnumOption>;
 }
 
 // 参数类型
@@ -119,6 +135,8 @@ export enum ParameterType {
 	Number,
 	Constant,
 	RingController,
+	Enum,
+	PlaygroundConstant,
 }
 
 const parameterCompKey = ref(0)
@@ -143,6 +161,11 @@ export interface IParameter2 {
 	ratioed?: boolean;
 }
 
+export interface IEnumOption {
+	value: number,
+	label: string,
+}
+
 // 字形参数
 // glyph parameter
 export interface IParameter {
@@ -152,8 +175,9 @@ export interface IParameter {
 	value: number | string | IRingParameter;
 	ratio?: string;
 	ratioed?: boolean;
-	min: number;
-	max: number;
+	min?: number;
+	max?: number;
+	options?: Array<IEnumOption>;
 }
 
 const constants: Ref<Array<IConstant>> = ref([])
@@ -1061,10 +1085,47 @@ const addComponentForCurrentGlyph = (component: Component) => {
 	setSelectionForCurrentGlyph(component.uuid)
 }
 
+const scripts_map = ref({})
+
+// 缓存常用字形组件脚本
+const tempScript = (glyph) => {
+	if (glyph.type !== 'text' && glyph.type !== 'icon') {
+		// 不是字符或图标，是字形组件
+		if (glyph.script_reference) {
+			const origin_glyph = getGlyphByUUID(glyph.script_reference)
+			if (origin_glyph && origin_glyph.script) {
+				scripts_map.value[glyph.script_reference] = origin_glyph.script
+			}
+		}
+	}
+	for (let i = 0; i < glyph.components.length; i++) {
+		const component = glyph.components[i]
+		if (component.type === 'glyph') {
+			// 组件类型为glyph
+			tempScript(component.value)
+		}
+	}
+}
+
+const getScript = (glyph) => {
+	if (glyph.script) return glyph.script
+	else if (glyph.script_reference) {
+		if (scripts_map[glyph.script_reference]) return scripts_map[glyph.script_reference]
+		else {
+			const origin_glyph = getGlyphByUUID(glyph.script_reference)
+			if (origin_glyph.script) return origin_glyph.script
+		}
+	}
+	return null
+}
+
 // 执行字形脚本
 // execute glyph script
 const executeScript = (targetGlyph) => {
 	try {
+		// 字形实例缓存了数据，表示字形正在拖拽编辑中，则返回不执行脚本运行操作
+		if (targetGlyph._o && targetGlyph._o.tempData) return
+
 		const glyphInstance = new CustomGlyph(targetGlyph)
 		const _glyph = glyphInstance._glyph
 		for (let i = 0; i < targetGlyph.components.length; i++) {
@@ -1076,7 +1137,9 @@ const executeScript = (targetGlyph) => {
 		constantsMap.update(constants.value)
 		window.constantsMap = constantsMap
 		try {
-			const fn = new Function(`${targetGlyph.script}\nscript_${targetGlyph.uuid.replaceAll('-', '_')} (glyph, constantsMap, FP)`)
+			const script = getScript(targetGlyph)
+			//const fn = new Function(`${targetGlyph.script}\nscript_${targetGlyph.uuid.replaceAll('-', '_')} (glyph, constantsMap, FP)`)
+			const fn = new Function(`${script}\nscript_${targetGlyph.uuid.replaceAll('-', '_')} (glyph, constantsMap, FP)`)
 			fn()
 		} catch (e) {
 			console.error(e)
@@ -1120,6 +1183,9 @@ const executeScript = (targetGlyph) => {
 			}
 			window.comp_glyph = null
 		})
+
+		window.glyph = null
+		window.constantsMap = null
 	} catch (e) {
 		console.warn(e)
 	}
@@ -1301,7 +1367,10 @@ const multi_glyph_selection: Ref<Boolean> = ref(false)
 // add selected glyph
 const addSelectedGlyph = (glyph: ICustomGlyph) => {
 	const _glyph = R.clone(glyph)
-	_glyph.parent = editStatus.value === Status.Edit ? editCharacterFile.value : editGlyph.value
+	//_glyph.parent = editStatus.value === Status.Edit ? editCharacterFile.value : editGlyph.value
+	_glyph.parent_reference = getParentInfo(editStatus.value === Status.Edit ? editCharacterFile.value : editGlyph.value)
+	_glyph.script = null
+	_glyph.script_reference = _glyph.uuid
 	const component: IGlyphComponent = {
 		uuid: genUUID(),
 		type: 'glyph',
@@ -1314,11 +1383,13 @@ const addSelectedGlyph = (glyph: ICustomGlyph) => {
 		usedInCharacter: true,
 	}
 	executeScript(component.value)
-	linkComponentsForJoints(component)
 	if (editStatus.value === Status.Edit) {
 		addComponentForCurrentCharacterFile(component)
 	} else if (editStatus.value === Status.Glyph) {
 		addComponentForCurrentGlyph(component)
+	}
+	if (tool.value !== 'glyphDragger') {
+		setTool('glyphDragger')
 	}
 	glyphComponentsDialogVisible2.value = false
 }
@@ -1518,4 +1589,7 @@ export {
 	getGlyphByName,
 	clearSelectionGlyphRenderList,
 	addComponentsForGlyph,
+	getParentInfo,
+	scripts_map,
+	tempScript,
 }

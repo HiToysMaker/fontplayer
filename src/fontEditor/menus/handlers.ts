@@ -52,7 +52,7 @@ import type {
 import {
   componentsToContours,
   componentsToContours2,
-} from '@/features/font'
+} from '../../features/font'
 import { emitter } from '../Event/bus'
 import {
   IComponentValue,
@@ -76,9 +76,9 @@ import { getBound, transformPoints } from '../../utils/math'
 import { fitCurve } from '../../features/fitCurve'
 import type { IPoint as IPenPoint, IPoint } from '../stores/pen'
 import { render } from '../canvas/canvas'
-import { ICustomGlyph, IGlyphComponent, addComponentForCurrentGlyph, addGlyph, addGlyphTemplate, clearGlyphRenderList, comp_glyphs, constantGlyphMap, constants, constantsMap, editGlyph, executeScript, getGlyphByName, getGlyphByUUID, glyphs, orderedListWithItemsForCurrentGlyph, radical_glyphs, stroke_glyphs } from '../stores/glyph'
+import { ICustomGlyph, IGlyphComponent, IParameter, ParameterType, addComponentForCurrentGlyph, addGlyph, addGlyphTemplate, clearGlyphRenderList, comp_glyphs, constantGlyphMap, constants, constantsMap, editGlyph, executeScript, getGlyphByName, getGlyphByUUID, getParentInfo, glyphs, orderedListWithItemsForCurrentGlyph, radical_glyphs, stroke_glyphs } from '../stores/glyph'
 import { ParametersMap } from '../programming/ParametersMap'
-import { Joint, linkComponentsForJoints } from '../programming/Joint'
+import { Joint } from '../programming/Joint'
 import router from '../../router'
 import { nextTick } from 'vue'
 import { loading } from '../stores/global'
@@ -91,8 +91,17 @@ import { save, open } from '@tauri-apps/plugin-dialog'
 import { writeTextFile, writeFile, readFile, readTextFile } from '@tauri-apps/plugin-fs'
 import { ENV } from '../stores/system'
 import { OpType, saveState, StoreType, undo as _undo, redo as _redo } from '../stores/edit'
+import { getEnName, name_data } from '../stores/settings'
+import { strokes as hei_strokes } from '../templates/strokes_1'
+import { i18n } from '../../i18n'
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
-const plainGlyph = (glyph: ICustomGlyph) => {
+interface IPlainGlyphOptions {
+  clearScript: boolean;
+}
+
+const plainGlyph = (glyph: ICustomGlyph, options: IPlainGlyphOptions = { clearScript: false }) => {
+  const { clearScript } = options
   const data: ICustomGlyph = {
     uuid: glyph.uuid,
     type: glyph.type,
@@ -101,7 +110,9 @@ const plainGlyph = (glyph: ICustomGlyph) => {
       const _component = Object.assign({}, component)
       if (component.type === 'glyph') {
         //@ts-ignore
-        _component.value = plainGlyph(component.value)
+        //_component.value = plainGlyph(component.value)
+        // 对于被引用的字形组件，需要清除脚本以减少数据大小
+        _component.value = plainGlyph(component.value, { clearScript: true })
       }
       return _component
     }),
@@ -122,8 +133,14 @@ const plainGlyph = (glyph: ICustomGlyph) => {
     }),
     //@ts-ignore
     reflines: glyph.reflines ? R.clone(glyph.reflines) : [],
-    script: glyph.script,
+    script: clearScript ? null : glyph.script,
   }
+
+  if (clearScript) {
+    // 如果是被引用的字形组件，需要清除script以减少数据大小，但是需要包含脚本引用uuid
+    data.script_reference = glyph.uuid
+  }
+
   // if (glyph.parent) {
   // 	//@ts-ignore
   // 	data.parent = plainGlyph((glyph as ICustomGlyph).parent)
@@ -252,7 +269,9 @@ const plainCharacter = (character: ICharacterFile) => {
       const _component = Object.assign({}, component)
       if (component.type === 'glyph') {
         //@ts-ignore
-        _component.value = plainGlyph(component.value)
+        //_component.value = plainGlyph(component.value)
+        // 对于被引用的字形组件，需要清除脚本以减少数据大小
+        _component.value = plainGlyph(component.value, { clearScript: true })
       }
       return _component
     }),
@@ -284,7 +303,8 @@ const instanceGlyph = (plainGlyph) => {
     if (component.type === 'glyph') {
       //@ts-ignore
       component.value = instanceGlyph(component.value)
-      component.value.parent = plainGlyph
+      //component.value.parent = plainGlyph
+      component.value.parent_reference = getParentInfo(plainGlyph)
     }
     return component
   }) : []
@@ -304,10 +324,11 @@ const instanceCharacter = (plainCharacter) => {
     if (component.type === 'glyph') {
       //@ts-ignore
       component.value = instanceGlyph(component.value)
-      component.value.parent = plainCharacter
-      component.value._o.getJoints().map((joint) => {
-        joint.component = component
-      })
+      //component.value.parent = plainCharacter
+      component.value.parent_reference = getParentInfo(plainCharacter)
+      // component.value._o.getJoints().map((joint) => {
+      //   joint.component = component
+      // })
     }
     return component
   }) : []
@@ -966,11 +987,20 @@ const importGlyphs_tauri = async () => {
     emitter.emit('renderCompGlyphPreviewCanvas')
   }
   if (repeatMark) {
-    ElMessageBox.alert(
-      '导入字形时发现有与当前字形相同uuid的重复字形，自动忽略重复字形',
-      '提示', {
-      confirmButtonText: '确定',
-    })
+    const { locale } = i18n.global
+    if (locale === 'zh') {
+      ElMessageBox.alert(
+        '导入字形时发现有与当前字形相同uuid的重复字形，自动忽略重复字形。',
+        'Note', {
+        confirmButtonText: '确定',
+      })
+    } else if (locale === 'en') {
+      ElMessageBox.alert(
+        'Duplicate glyphs with the same UUID as existing ones were detected during import and have been automatically ignored.',
+        'Note', {
+        confirmButtonText: 'Confirm',
+      })
+    }
   }
 }
 
@@ -1022,11 +1052,20 @@ const importGlyphs = () => {
           emitter.emit('renderCompGlyphPreviewCanvas')
         }
         if (repeatMark) {
-          ElMessageBox.alert(
-            '导入字形时发现有与当前字形相同uuid的重复字形，自动忽略重复字形',
-            '提示', {
-            confirmButtonText: '确定',
-          })
+          const { locale } = i18n.global
+          if (locale === 'zh') {
+            ElMessageBox.alert(
+              '导入字形时发现有与当前字形相同uuid的重复字形，自动忽略重复字形。',
+              '提示', {
+              confirmButtonText: '确定',
+            })
+          } else if (locale === 'en') {
+            ElMessageBox.alert(
+              'Duplicate glyphs with the same UUID as existing entries were detected during import and have been automatically ignored.',
+              'Note', {
+              confirmButtonText: 'Confirm',
+            })
+          }
         }
       }
     }
@@ -1087,11 +1126,20 @@ const exportJSON = () => {
 
 const exportGlyphs = () => {
   if (editStatus.value === Status.CharacterList) {
-    ElMessageBox.alert(
-      '字符列表不能导出，只有在笔画、部首、字形、组件列表可以导出相应类型的字形',
-      '提示', {
-      confirmButtonText: '确定',
-    })
+    const { locale } = i18n.global
+    if (locale === 'zh') {
+      ElMessageBox.alert(
+        '字符列表不能导出，只有在笔画、部首、字形、组件列表可以导出相应类型的字形。',
+        '提示', {
+        confirmButtonText: '确定',
+      })
+    } else if (locale === 'en') {
+      ElMessageBox.alert(
+        'The character list cannot be exported. Only Stroke, Radical, Glyph, and Component lists support exporting their corresponding glyph types.',
+        'Note', {
+        confirmButtonText: 'Confirm',
+      })
+    }
     return
   }
   if (ENV.value === 'tauri') {
@@ -1226,6 +1274,7 @@ const createFont = (options?: CreateFontOptions) => {
     contours: [[]] as Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>,
     contourNum: 0,
     advanceWidth: Math.max(_width, _height),
+    leftSideBearing: 0,
   }]
 
   // {
@@ -1263,7 +1312,8 @@ const createFont = (options?: CreateFontOptions) => {
     fontCharacters.push({
       name: text,
       unicode: parseInt(unicode, 16),
-      advanceWidth: unitsPerEm,
+      advanceWidth: char.info?.metrics?.advanceWidth || unitsPerEm,
+      leftSideBearing: char.info?.metrics?.lsb || undefined,
       contours,
       contourNum: contours.length,
     })
@@ -1277,6 +1327,7 @@ const createFont = (options?: CreateFontOptions) => {
       name: ' ',
       unicode: parseInt('0x20', 16),
       advanceWidth: unitsPerEm,
+      leftSideBearing: 0,
       contours: [[]],
       contourNum: 0,
     })
@@ -1299,13 +1350,13 @@ const createFont = (options?: CreateFontOptions) => {
   fontCharacters.sort((a: any, b: any) => {
     return a.unicode - b.unicode
   })
-
   const font = create(fontCharacters, {
     familyName: selectedFile.value.name,
     styleName: 'Regular',
     unitsPerEm,
     ascender,
     descender,
+    tables: selectedFile.value.fontSettings.tables || null,
   })
   return font
 }
@@ -1773,11 +1824,20 @@ const _syncData = async () => {
   loaded.value = 0
   total.value = file ? file.characterList.length * 2 : 0 + (plainGlyphs.length + plainGlyphs_stroke.length + plainGlyphs_radical.length + plainGlyphs_comp.length) * 3
   if (total.value === 0) {
-    ElMessageBox.alert(
-      '暂时没有缓存',
-      '提示', {
-      confirmButtonText: '确定',
-    })
+    const { locale } = i18n.global
+    if (locale === 'zh') {
+      ElMessageBox.alert(
+        '暂时没有缓存',
+        '提示', {
+        confirmButtonText: '确定',
+      })
+    } else if (locale === 'en') {
+      ElMessageBox.alert(
+        'No cached data available',
+        'Note', {
+        confirmButtonText: 'Confirm',
+      })
+    }
   }
   total.value && (loading.value = true)
 
@@ -1867,6 +1927,149 @@ const _syncData = async () => {
   }
 }
 
+const importTemplate2 = async () => {
+  const base = ''
+  // const base = '/fontplayer_demo/'
+
+  for (let i = 0; i < hei_strokes.length; i++) {
+    const stroke = hei_strokes[i]
+    const { name, params, uuid } = stroke
+    const parameters: Array<IParameter> = []
+    for (let j = 0; j < params.length; j++) {
+      const param = params[j]
+      parameters.push({
+        uuid: genUUID(),
+        name: param.name,
+        type: ParameterType.Number,
+        value: param.default,
+        min: param.min || 0,
+        max: param.max || 1000,
+      })
+    }
+    // 添加Enum参数骨架参考位置
+    // 骨架参考位置用于当字重变化时，固定参考位置
+    // 如果不设置骨架参考位置，当字重变化时，很可能横竖交叠处会露出棱角，变得不规则
+    parameters.push({
+      uuid: genUUID(),
+      name: '参考位置',
+      type: ParameterType.Enum,
+      value: 0,
+      options: [
+        {
+          value: 0,
+          label: '默认',
+        },
+        {
+          value: 1,
+          label: '右侧（上侧）',
+        },
+        {
+          value: 2,
+          label: '左侧（下侧）',
+        }
+      ]
+    })
+    // 添加Enum参数起笔风格类型
+    parameters.push({
+      uuid: genUUID(),
+      name: '起笔风格',
+      type: ParameterType.Enum,
+      value: 2,
+      options: [
+        {
+          value: 0,
+          label: '无起笔样式',
+        },
+        {
+          value: 1,
+          label: '凸笔起笔',
+        },
+        {
+          value: 2,
+          label: '凸笔圆角起笔',
+        }
+      ]
+    })
+    // 添加起笔数值
+    parameters.push({
+      uuid: genUUID(),
+      name: '起笔数值',
+      type: ParameterType.Number,
+      value: 1,
+      min: 0,
+      max: 2,
+    })
+    // 添加Enum参数转角风格类型
+    parameters.push({
+      uuid: genUUID(),
+      name: '转角风格',
+      type: ParameterType.Enum,
+      value: 1,
+      options: [
+        {
+          value: 0,
+          label: '默认转角样式',
+        },
+        {
+          value: 1,
+          label: '转角圆滑凸起',
+        }
+      ]
+    })
+    // 添加转角数值
+    parameters.push({
+      uuid: genUUID(),
+      name: '转角数值',
+      type: ParameterType.Number,
+      value: 1,
+      min: 1,
+      max: 2,
+    })
+    // 添加字重变化
+    parameters.push({
+      uuid: genUUID(),
+      name: '字重变化',
+      type: ParameterType.Number,
+      value: 0,
+      min: 0,
+      max: 2,
+    })
+    // 添加弯曲程度
+    parameters.push({
+      uuid: genUUID(),
+      name: '弯曲程度',
+      type: ParameterType.Number,
+      value: 1,
+      min: 0,
+      max: 2,
+    })
+    let stroke_script_res = await fetch(base + `templates/templates2/${name}.js`)
+    let stroke_script = await stroke_script_res.text()
+
+    //const uuid = genUUID()
+    const glyph = {
+      uuid,
+      type: 'system',
+      name,
+      components: [],
+      groups: [],
+      orderedList: [],
+      selectedComponentsUUIDs: [],
+      view: {
+        zoom: 100,
+        translateX: 0,
+        translateY: 0,
+      },
+      parameters: new ParametersMap(parameters),
+      joints: [],
+      script: `function script_${uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t${stroke_script}\n}`,
+    }
+    addGlyph(glyph, Status.StrokeGlyphList)
+    addGlyphTemplate(glyph, Status.StrokeGlyphList)
+  }
+  emitter.emit('renderStrokeGlyphPreviewCanvas')
+}
+
 const importTemplate1 = async () => {
   if (files.value && files.value.length) {
     tips.value = '导入模板会覆盖当前工程，请关闭当前工程再导入。注意，关闭工程前请保存工程以避免数据丢失。'
@@ -1875,6 +2078,7 @@ const importTemplate1 = async () => {
     if (router.currentRoute.value.name === 'welcome') {
       router.push('/editor')
     }
+    const name = '朴韵简隶'
     const file: IFile = {
       uuid: genUUID(),
       width: 1000,
@@ -1889,6 +2093,98 @@ const importTemplate1 = async () => {
         descender: -200,
       }
     }
+    name_data.value = [
+      {
+        nameID: 1,
+        nameLabel: 'fontFamily',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x804,
+        value: name,
+        default: true,
+      },
+      {
+        nameID: 1,
+        nameLabel: 'fontFamily',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x409,
+        value: getEnName(name),
+        default: true,
+      },
+      {
+        nameID: 2,
+        nameLabel: 'fontSubfamily',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x804,
+        value: '常规体',
+        default: true,
+      },
+      {
+        nameID: 2,
+        nameLabel: 'fontSubfamily',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x409,
+        value: 'Regular',
+        default: true,
+      },
+      {
+        nameID: 4,
+        nameLabel: 'fullName',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x804,
+        value: name + ' ' + '常规体',
+        default: true,
+      },
+      {
+        nameID: 4,
+        nameLabel: 'fullName',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x409,
+        value: getEnName(name) + ' ' + 'Regular',
+        default: true,
+      },
+      {
+        nameID: 5,
+        nameLabel: 'version',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x804,
+        value: '版本 1.0',
+        default: true,
+      },
+      {
+        nameID: 5,
+        nameLabel: 'version',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x409,
+        value: 'Version 1.0',
+        default: true,
+      },
+      {
+        nameID: 6,
+        nameLabel: 'postScriptName',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x804,
+        value: (getEnName(name) + '-' + 'Regular').replace(/\s/g, '').slice(0, 63),
+        default: true,
+      },
+      {
+        nameID: 6,
+        nameLabel: 'postScriptName',
+        platformID: 3,
+        encodingID: 1,
+        langID: 0x409,
+        value: (getEnName(name) + '-' + 'Regular').replace(/\s/g, '').slice(0, 63),
+        default: true,
+      }
+    ]
     addFile(file)
     setSelectedFileUUID(file.uuid)
     setEditStatus(Status.CharacterList)
@@ -2057,6 +2353,7 @@ const generateCharFile = (data) => {
         size: selectedFile.value.width,
         default: true,
       },
+      useSkeletonGrid: false,
       layout: '',
       layoutTree: [],
     },
@@ -2098,11 +2395,6 @@ const generateComponent = (data) => {
     usedInCharacter: true,
   }
   executeScript(component.value)
-  //component.value._o.getJoints().map((joint) => {
-  //  joint.component = component
-  //})
-
-  linkComponentsForJoints(component)
   return component
 }
 
@@ -2163,15 +2455,35 @@ const computeOverlapRemovedContours = () => {
     } else {
       unitedPath = paths[0].unite(paths[1])
       for (let i = 2; i < paths.length; i++) {
-        unitedPath = unitedPath.unite(paths[i]) 
+        unitedPath = unitedPath.unite(paths[i])
       }
     }
+    
+    if (!unitedPath) return
 
     // 根据合并路径生成轮廓数据
     let overlap_removed_contours = []
-    for (let i = 0; i < unitedPath.children.length; i++) {
-      const paths = unitedPath.children[i]
-      if (!paths.curves.length) continue
+    if (unitedPath.children && unitedPath.children.length) {
+      for (let i = 0; i < unitedPath.children.length; i++) {
+        const paths = unitedPath.children[i]
+        if (!paths.curves.length) continue
+        const contour = []
+        for (let j = 0; j < paths.curves.length; j++) {
+          const curve = paths.curves[j]
+          const path = {
+            type: PathType.CUBIC_BEZIER,
+            start: { x: curve.points[0].x, y: curve.points[0].y },
+            control1: { x: curve.points[1].x, y: curve.points[1].y },
+            control2: { x: curve.points[2].x, y: curve.points[2].y },
+            end: { x: curve.points[3].x, y: curve.points[3].y },
+          }
+          contour.push(path)
+        }
+        overlap_removed_contours.push(contour)
+      }
+    } else if (unitedPath.curves) {
+      const paths = unitedPath
+      if (!paths.curves.length) return
       const contour = []
       for (let j = 0; j < paths.curves.length; j++) {
         const curve = paths.curves[j]
@@ -2202,11 +2514,11 @@ const removeOverlap = () => {
     descender,
   } = selectedFile.value.fontSettings
   let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours2(orderedListWithItemsForCharacterFile(char),
-    { x: 0, y: 0 }, false
+    { x: 0, y: 0 }, false, 1
   )
   if (editStatus.value == Status.Glyph) {
     contours = componentsToContours2(char._o.components,
-      { x: 0, y: 0 }, true
+      { x: 0, y: 0 }, true, 1
     )
   }
 
@@ -2252,10 +2564,53 @@ const removeOverlap = () => {
   }
 
   let components = []
-  for (let i = 0; i < unitedPath.children.length; i++) {
-    const paths = unitedPath.children[i]
+  if (unitedPath && unitedPath.children) {
+    for (let i = 0; i < unitedPath.children.length; i++) {
+      const paths = unitedPath.children[i]
+      let points = []
+      if (!paths.curves.length) continue
+      points.push({
+        uuid: genUUID(),
+        type: 'anchor',
+        x: paths.curves[0].points[0].x,
+        y: paths.curves[0].points[0].y,
+        origin: null,
+        isShow: true,
+      })
+      for (let j = 0; j < paths.curves.length; j++) {
+        const curve = paths.curves[j]
+        const control1 = {
+          uuid: genUUID(),
+          type: 'control',
+          x: curve.points[1].x,
+          y: curve.points[1].y,
+          origin: points[points.length - 1].uuid,
+          isShow: true,
+        }
+        const uuid = genUUID()
+        const control2 = {
+          uuid: genUUID(),
+          type: 'control',
+          x: curve.points[2].x,
+          y: curve.points[2].y,
+          origin: uuid,
+          isShow: true,
+        }
+        const end = {
+          uuid: uuid,
+          type: 'anchor',
+          x: curve.points[3].x,
+          y: curve.points[3].y,
+          origin: null,
+          isShow: true,
+        }
+        points.push(control1, control2, end)
+      }
+      components.push(genPenComponent(points, true))
+    }
+  } else if (unitedPath && unitedPath.curves) {
+    const paths = unitedPath
     let points = []
-    if (!paths.curves.length) continue
     points.push({
       uuid: genUUID(),
       type: 'anchor',
@@ -2294,6 +2649,8 @@ const removeOverlap = () => {
       points.push(control1, control2, end)
     }
     components.push(genPenComponent(points, true))
+  } else {
+    return
   }
   if (editStatus.value === Status.Edit) {
     editCharacterFile.value.script = `function script_${editCharacterFile.value.uuid.replaceAll('-', '_')} (character, constants, FP) {\n\t//Todo something\n}`,
@@ -2313,6 +2670,34 @@ const removeOverlap = () => {
       addComponentForCurrentGlyph(components[i])
     }
     emitter.emit('renderGlyph')
+  }
+}
+
+const openPlayground = () => {
+  //@ts-ignore
+  if (window.__TAURI_INTERNALS__) {
+    const windowOptions = {
+      url: `${location.origin}${location.pathname}#/playground`,
+      width: 1280,
+      height: 800,
+      x: (screen.width - 1280) / 2,
+      y: (screen.height - 800) / 2,
+      //devtools: true,
+    }
+    const webview = new WebviewWindow('glyph-script', windowOptions)
+    webview.once('tauri://created', async () => {
+      console.log('webview created')
+    })
+    webview.once('tauri://error', function (e) {
+      console.log('error creating webview', e)
+    })
+  } else {
+    const playground_window = window.open(
+      // `${location.origin}${base}/#/glyph-programming-editor`,
+      `${location.origin}${location.pathname}#/playground`,
+      'playground',
+      `popup,width=${1280},height=${800},left=${(screen.width - 1280) / 2}`,
+    )
   }
 }
 
@@ -2343,6 +2728,7 @@ const tauri_handlers: IHandlerMap = {
   'preference-settings': preferenceSettings,
   'language-settings': languageSettings,
   'template-1': importTemplate1,
+  'template-2': importTemplate2,
   'remove_overlap': removeOverlap,
 }
 
@@ -2375,6 +2761,7 @@ const web_handlers: IHandlerMap = {
   'preference-settings': preferenceSettings,
   'language-settings': languageSettings,
   'template-1': importTemplate1,
+  'template-2': importTemplate2,
   'remove_overlap': removeOverlap,
 }
 
@@ -2393,10 +2780,14 @@ export {
   plainGlyph,
   mapToObject,
   importTemplate1,
+  importTemplate2,
   importFont,
   exportFont,
   exportFont_tauri,
   computeOverlapRemovedContours,
   tauri_handlers,
   nativeImportFile,
+  instanceCharacter,
+  nativeSaveBinary,
+  openPlayground,
 }

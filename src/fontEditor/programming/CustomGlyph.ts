@@ -3,7 +3,7 @@ import { PenComponent } from './PenComponent'
 import { PolygonComponent } from './PolygonComponent'
 import { EllipseComponent } from './EllipseComponent'
 import { RectangleComponent } from './RectangleComponent'
-import { clearCanvas, fillBackground, renderCanvas, renderGridCanvas } from '../canvas/canvas'
+import { clearCanvas, computeCoords, fillBackground, renderCanvas, renderGridCanvas } from '../canvas/canvas'
 import { fontRenderStyle, background, grid } from '../stores/global'
 import { Joint } from './Joint'
 import { mapCanvasX, mapCanvasY } from '../../utils/canvas'
@@ -15,6 +15,12 @@ class CustomGlyph {
 	private _joints: Array<Joint> = []
 	private _reflines: Array<IRefLine> = []
 	public _components: Array<Component> = []
+	public onSkeletonDrag: Function = null
+	public onSkeletonDragEnd: Function = null
+	public onSkeletonDragStart: Function = null
+	public getSkeleton: Function = null
+	public getComponentsBySkeleton: Function = null
+	public tempData: any = null
 
 	constructor (glyph: ICustomGlyph) {
 		this._glyph = glyph
@@ -22,7 +28,12 @@ class CustomGlyph {
 	}
 
 	public getJoints () {
-		return this._glyph.joints ? this._glyph.joints.concat(this._joints) : [].concat(this._joints)
+		if (this._glyph.joints) {
+			return [...this._glyph.joints, ...this._joints]
+		} else {
+			return this._joints
+		}
+		//return this._glyph.joints ? this._glyph.joints.concat(this._joints) : [].concat(this._joints)
 	}
 
 	public getRefLines () {
@@ -35,6 +46,12 @@ class CustomGlyph {
 
 	public addComponent (component: Component) {
 		this._components.push(component)
+	}
+
+	public clear () {
+		this._joints = []
+		this._components = []
+		this._reflines = []
 	}
 
 	public render (canvas: HTMLCanvasElement, renderBackground: Boolean = true, offset: {
@@ -86,7 +103,7 @@ class CustomGlyph {
 	public render_grid (canvas: HTMLCanvasElement, renderBackground: Boolean = true, offset: {
 		x: number,
 		y: number,
-	} = { x: 0, y: 0 }, fill: boolean = false, scale: number = 1, grid: any) {
+	} = { x: 0, y: 0 }, fill: boolean = false, scale: number = 1, grid: any, useSkeletonGrid: boolean = false) {
 		const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 		renderGridCanvas(orderedListWithItemsForGlyph(this._glyph), canvas, {
 			offset,
@@ -94,14 +111,40 @@ class CustomGlyph {
 			fill: false,
 			forceUpdate: false,
 			grid,
+			useSkeletonGrid,
 		})
-		this._components.forEach((component) => {
-			component.render_grid(canvas, {
-				offset,
-				scale: scale,
-				grid,
+		if (!useSkeletonGrid) {
+			// 不使用骨架布局的情况下，默认用组件数据计算布局调整
+			this._components.forEach((component) => {
+				component.render_grid(canvas, {
+					offset,
+					scale: scale,
+					grid,
+				})
 			})
-		})
+		} else if (this.getSkeleton && this.getComponentsBySkeleton) {
+			// 使用骨架布局，首先对骨架计算布局调整，然后使用调整过的骨架渲染新的组件
+			const _skeleton = this.getSkeleton()
+			const skeleton = {}
+			const keys = Object.keys(_skeleton)
+			for (let i = 0; i < keys.length; i++) {
+				const key = keys[i]
+				const _joint = _skeleton[key]
+				const joint = {
+					x: _joint.x + offset.x,
+					y: _joint.y + offset.y,
+				}
+				skeleton[key] = computeCoords(grid, joint)
+			}
+			const components = this.getComponentsBySkeleton(skeleton)
+			for (let i = 0; i < components.length; i++) {
+				const component = components[i]
+				component.render(canvas, {
+					offset: { x: 0, y: 0 },
+					scale: 0.5,
+				})
+			}
+		}
 		if (fontRenderStyle.value === 'color' || fill) {
 			ctx.fillStyle = '#000'
 			ctx.fill()
@@ -111,7 +154,7 @@ class CustomGlyph {
 	public render_grid_forceUpdate (canvas: HTMLCanvasElement, renderBackground: Boolean = true, offset: {
 		x: number,
 		y: number,
-	} = { x: 0, y: 0 }, fill: boolean = false, scale: number = 1, grid: any) {
+	} = { x: 0, y: 0 }, fill: boolean = false, scale: number = 1, grid: any, useSkeletonGrid: boolean = false) {
 		const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 		renderCanvas(orderedListWithItemsForGlyph(this._glyph), canvas, {
 			offset,
@@ -119,9 +162,10 @@ class CustomGlyph {
 			fill: false,
 			forceUpdate: true,
 			grid,
+			useSkeletonGrid,
 		})
 		this._components.forEach((component) => {
-			component.render(canvas, {
+			component.render_grid(canvas, {
 				offset,
 				scale: scale,
 				grid,
@@ -163,7 +207,7 @@ class CustomGlyph {
 				const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 				const p1 = this.getJoint(refline.start).getCoords()
 				const p2 = this.getJoint(refline.end).getCoords()
-				ctx.strokeStyle = 'blue'
+				ctx.strokeStyle = refline.type === 'ref' ? 'red' : 'blue'
 				ctx.beginPath()
 				ctx.moveTo(mapCanvasX(p1.x), mapCanvasY(p1.y))
 				ctx.lineTo(mapCanvasX(p2.x), mapCanvasY(p2.y))
@@ -175,7 +219,7 @@ class CustomGlyph {
 					const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 					const p1 = this.getJoint(refline.start).getCoords()
 					const p2 = this.getJoint(refline.end).getCoords()
-					ctx.strokeStyle = 'blue'
+					ctx.strokeStyle = refline.type === 'ref' ? 'red' : 'blue'
 					ctx.beginPath()
 					ctx.moveTo(mapCanvasX(p1.x), mapCanvasY(p1.y))
 					ctx.lineTo(mapCanvasX(p2.x), mapCanvasY(p2.y))
@@ -191,6 +235,10 @@ class CustomGlyph {
 
 	public getParam (name: string) {
 		return this._glyph.parameters.get(name)
+	}
+
+	public getParamRange (name: string) {
+		return this._glyph.parameters.getRange(name)
 	}
 
 	public setParam (name: string, value: number) {

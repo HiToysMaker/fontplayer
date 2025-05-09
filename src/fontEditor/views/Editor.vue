@@ -25,6 +25,7 @@
   import addIconDialog from '../../fontEditor/components/Dialogs/AddIconDialog.vue'
   import glyphComponentsDialog from '../../fontEditor/components/Dialogs/GlyphComponentsDialog.vue'
   import fontSettingsDialog from '../../fontEditor/components/Dialogs/FontSettingsDialog.vue'
+  import fontSettings2Dialog from '../../fontEditor/components/Dialogs/fontSettings/FontSettingsDialog.vue'
   import languageSettingsDialog from '../../fontEditor/components/Dialogs/LanguageSettingsDialog.vue'
   import preferenceSettingsDialog from '../../fontEditor/components/Dialogs/PreferenceSettingsDialog.vue'
   import setAsGlobalParamDialog from '../../fontEditor/components/Dialogs/SetAsGlobalParamDialog.vue'
@@ -51,14 +52,22 @@
   } from '../stores/polygon'
   import { editing as ellipseEditing } from '../stores/ellipse'
   import { editing as rectangleEditing } from '../stores/rectangle'
-import { enableMultiSelect } from '../stores/files'
+  import { enableMultiSelect } from '../stores/files'
+  import { useI18n } from 'vue-i18n'
+  const { tm, t, locale } = useI18n()
 
   const svg = `
     <path class="path" d="" style="stroke-width: 4px; fill: rgba(0, 0, 0, 0)"/>
   `
 
   onBeforeRouteLeave((to, from, next) => {
-    const answer = window.confirm('你确定要离开吗？未保存的更改将丢失。');
+    let msg = '你确定要离开吗？未保存的更改将丢失。'
+    if (locale.value === 'zh') {
+      msg = '你确定要离开吗？未保存的更改将丢失。'
+    } else if (locale.value === 'en') {
+      msg = 'Exit without saving? Your changes will be lost.'
+    }
+    const answer = window.confirm(msg)
     if (answer) {
       next(); // 允许离开
     } else {
@@ -70,8 +79,14 @@ import { enableMultiSelect } from '../stores/files'
     if (ENV.value === 'web') {
       // 取消默认事件
       e.preventDefault(); // 这行代码在某些情况下是冗余的
+      let msg = '你确定要离开吗？未保存的更改将丢失。'
+      if (locale.value === 'zh') {
+        msg = '你确定要离开吗？未保存的更改将丢失。'
+      } else if (locale.value === 'en') {
+        msg = 'Exit without saving? Your changes will be lost.'
+      }
       // 设置 returnValue 属性，提示用户
-      e.returnValue = '你确定要离开吗？未保存的更改将丢失。'; // 现代浏览器会使用默认提示
+      e.returnValue = msg // 现代浏览器会使用默认提示
       return ''; // 在某些老旧浏览器中可能需要返回值
     }
   }
@@ -125,6 +140,7 @@ import { enableMultiSelect } from '../stores/files'
     <copy-character-dialog></copy-character-dialog>
     <glyph-components-dialog></glyph-components-dialog>
     <font-settings-dialog></font-settings-dialog>
+    <font-settings-2-dialog></font-settings-2-dialog>
     <preference-settings-dialog></preference-settings-dialog>
     <language-settings-dialog></language-settings-dialog>
     <save-dialog></save-dialog>
@@ -141,11 +157,11 @@ import { enableMultiSelect } from '../stores/files'
     >
       <div class="el-loading-spinner" v-show="loading && total === 0">
         <svg class="circular" viewBox="0 0 50 50"><circle class="path" cx="25" cy="25" r="20" fill="none"></circle></svg>
-        <div>加载中，请稍候……</div>
+        <div>{{ t('panels.paramsPanel.loadingMsg') }}</div>
       </div>
       <div v-show="loading && total != 0" class="loading-text">
         <el-progress :text-inside="true" :stroke-width="20" :percentage="Math.round(loaded / total * 100)" />
-        <div>{{ `加载中，请稍候……已加载${Math.round(loaded / total * 100)}%` }}</div>
+        <div>{{ t('panels.paramsPanel.loadedMsg', { percent: Math.round(loaded / total * 100)}) }}</div>
       </div>
       <div class="side-bar-wrap" :style="{
         flex: ENV === 'web' ? '0 0 36px': '0 0 36px',

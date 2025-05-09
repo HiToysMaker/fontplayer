@@ -212,6 +212,7 @@
     --el-button-disabled-text-color: var(--el-color-white);
     --el-button-disabled-bg-color: var(--primary-3);
     --el-button-disabled-border-color: var(--primary-3);
+    --el-button-active-text-color: var(--primary-4);
   }
 
   .el-button {
@@ -319,6 +320,10 @@
   display: none;
 }
 
+#playrgound-character-template {
+  display: none;
+}
+
 .left-panel-content {
   height: calc(100% - 50px);
 }
@@ -330,4 +335,11 @@
 div, span {
   user-select: none !important;
   -webkit-user-select: none !important;
+}
+
+label {
+  line-height: 18px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
 }

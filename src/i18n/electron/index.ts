@@ -6,15 +6,15 @@ import { welcome } from '../welcome'
 import { programming } from '../programming'
 
 i18next.init({
-	lng: 'cn',
+	lng: 'zh',
 	resources: {
-		cn: {
+		zh: {
 			translation: {
-				menus: menus.cn,
-				dialogs: dialogs.cn,
-				panels: panels.cn,
-				welcome: welcome.cn,
-				programming: programming.cn,
+				menus: menus.zh,
+				dialogs: dialogs.zh,
+				panels: panels.zh,
+				welcome: welcome.zh,
+				programming: programming.zh,
 			}
 		},
 		en: {

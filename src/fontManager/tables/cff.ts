@@ -34,7 +34,13 @@ interface IGlyphTable {
 	numberOfContours: number;
 	contours: Array<Array<ILine | ICubicBezierCurve | IQuadraticBezierCurve>>;
 	commands?: Array<any>;
-	advanceWidth: number;
+	advanceWidth?: number;
+	lsb?: number;
+	rsb?: number;
+	xMin?: number;
+	xMax?: number;
+	yMin?: number;
+	yMax?: number;
 }
 
 interface IHeader {
@@ -2101,39 +2107,41 @@ const createDict = (meta: Array<any>, attrs: Array<any>, strings: any) => {
 }
 
 const glyphToOps = (glyph: IGlyphTable) => {
-	const ops = [];
+	const { lsb, xMin } = glyph
+	const getXValue = (x) => x - xMin + lsb
+	const ops = []
 	ops.push({name: 'width', type: 'number', value: glyph.advanceWidth});
-	let x = 0;
-	let y = 0;
+	let x = 0
+	let y = 0
 	for (let i = 0; i < glyph.contours.length; i ++) {
 		if (!glyph.contours[i].length) continue
 		const startPath = glyph.contours[i][0]
-		const dx = Math.round(startPath.start.x - x)
+		const dx = Math.round(getXValue(startPath.start.x) - x)
 		const dy = Math.round(startPath.start.y - y)
 		ops.push({name: 'dx', type: 'number', value: dx})
 		ops.push({name: 'dy', type: 'number', value: dy})
 		ops.push({name: 'rmoveto', type: 'op', value: 21})
-		x = Math.round(startPath.start.x)
+		x = Math.round(getXValue(startPath.start.x))
 		y = Math.round(startPath.start.y)
 		for (let j = 0; j < glyph.contours[i].length; j++) {
 			const path = glyph.contours[i][j]
 			switch(path.type) {
 				case PathType.LINE: {
-					const dx = Math.round(path.end.x - x)
+					const dx = Math.round(getXValue(path.end.x) - x)
 					const dy = Math.round(path.end.y - y)
 					ops.push({name: 'dx', type: 'number', value: dx})
 					ops.push({name: 'dy', type: 'number', value: dy})
 					ops.push({name: 'rlineto', type: 'op', value: 5})
-					x = Math.round(path.end.x)
+					x = Math.round(getXValue(path.end.x))
 					y = Math.round(path.end.y)
 					break
 				}
 				case PathType.CUBIC_BEZIER: {
-					const dx1 = Math.round(path.control1.x - x)
+					const dx1 = Math.round(getXValue(path.control1.x) - x)
 					const dy1 = Math.round(path.control1.y - y)
-					const dx2 = Math.round(path.control2.x - path.control1.x)
+					const dx2 = Math.round(getXValue(path.control2.x) - getXValue(path.control1.x))
 					const dy2 = Math.round(path.control2.y - path.control1.y)
-					const dx = Math.round(path.end.x - path.control2.x)
+					const dx = Math.round(getXValue(path.end.x) - getXValue(path.control2.x))
 					const dy = Math.round(path.end.y - path.control2.y)
 					ops.push({name: 'dx1', type: 'number', value: dx1})
 					ops.push({name: 'dy1', type: 'number', value: dy1})
@@ -2142,7 +2150,7 @@ const glyphToOps = (glyph: IGlyphTable) => {
 					ops.push({name: 'dx', type: 'number', value: dx})
 					ops.push({name: 'dy', type: 'number', value: dy})
 					ops.push({name: 'rrcurveto', type: 'op', value: 8})
-					x = Math.round(path.end.x)
+					x = Math.round(getXValue(path.end.x))
 					y = Math.round(path.end.y)
 				}
 			}
@@ -2216,6 +2224,12 @@ const createTable = (characters: Array<ICharacter>, options: any) => {
 			numberOfContours: character.contourNum as number,
 			contours: character.contours,
 			advanceWidth: character.advanceWidth as number,
+			lsb: character.leftSideBearing as number,
+			rsb: character.rightSideBearing as number,
+			xMin: character.xMin as number,
+			xMax: character.xMax as number,
+			yMin: character.yMin as number,
+			yMax: character.yMax as number,
 		}
 	})
 	cffTable.stringIndex = {

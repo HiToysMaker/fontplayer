@@ -393,6 +393,7 @@ onmessage = (e) => {
 							size: width,
 							default: true,
 						},
+						useSkeletonGrid: false,
 						layout: '',
 						layoutTree: [],
 					},

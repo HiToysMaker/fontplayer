@@ -15,7 +15,7 @@ import type { ILocaTable } from './tables/loca'
 import type { ICffTable } from './tables/cff'
 import { create as createFontData, parse as parseFontData } from './tables/sfnt'
 import { createTable as createCmapTable } from './tables/cmap'
-import { createTable as createNameTable } from './tables/name'
+import { createTable as createNameTable, nameTableNames, createTable2 as createNameTable2 } from './tables/name'
 import { createTable as createCffTable } from './tables/cff'
 import { computeCheckSum, hasChineseChar, isChineseChar } from './utils'
 import JSZip from 'jszip'
@@ -86,6 +86,7 @@ interface IOption {
 	ascender: number;
 	descender: number;
 	createdTimestamp?: number;
+	tables?: any;
 }
 
 const average = (vs: Array<number>) => {
@@ -273,7 +274,7 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 		} else {
 			throw new Error('Unicode ranges bits > 123 are reserved for internal usage');
 		}
-		if (unicode === 0) continue
+		//if (unicode === 0) continue
 		const metrics = getMetrics(character)
 		xMins.push(metrics.xMin)
 		yMins.push(metrics.yMin)
@@ -282,6 +283,16 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 		leftSideBearings.push(metrics.leftSideBearing)
 		rightSideBearings.push(metrics.rightSideBearing)
 		advanceWidths.push(character.advanceWidth)
+		character.xMin = metrics.xMin
+		character.xMax = metrics.xMax
+		character.yMin = metrics.yMin
+		character.yMax = metrics.yMax
+		character.rightSideBearing = metrics.rightSideBearing
+		character.leftSideBearing = metrics.leftSideBearing
+		// leftSideBearings.push(500)
+		// rightSideBearings.push(0)
+		// advanceWidths.push(1000)
+
 	}
 
 	const globals = {
@@ -298,44 +309,66 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 		descender: options.descender,
 	}
 
+	const _headTable = options.tables ? options.tables.head : {}
+	const convertToFlags = (flags: Array<boolean>) => {
+		let _flags = 0
+		for (let i = 0; i < flags.length; i++) {
+			if (flags[i]) {
+				_flags += Math.pow(2, i)
+			}
+		}
+		return _flags
+	}
+	const convertToMacStyle = (macStyle: Array<number>) => {
+		let _macStyle = 0
+		for (let i = 0; i < macStyle.length; i++) {
+			if (macStyle[i]) {
+				_macStyle += Math.pow(2, i)
+			}
+		}
+		return _macStyle
+	}
+
 	// 定义head表
 	// define head table
 	const headTable = {
-		majorVersion: 0x0001,
-		minorVersion: 0x0000,
-		fontRevision: 0x00010000,
+		majorVersion: _headTable.majorVersion || 0x0001,
+		minorVersion: _headTable.minorVersion || 0x0000,
+		fontRevision: _headTable.fontRevision || 0x00010000,
 		checkSumAdjustment: 0,
 		magicNumber: 0x5F0F3CF5,
-		flags: 3,
+		flags: _headTable.flags ? convertToFlags(_headTable.flags) : 3,
 		unitsPerEm: options.unitsPerEm,
-		created: Math.floor(options.createdTimestamp || Date.now() / 1000) + 2082844800,
-		modified: Math.floor(Date.now() / 1000) + 2082844800,
+		created: _headTable.created?.timestamp || Math.floor(options.createdTimestamp || Date.now() / 1000) + 2082844800,
+		modified: _headTable.modified?.timestamp || Math.floor(Date.now() / 1000) + 2082844800,
 		xMin: 0,//globals.xMin,
 		yMin: -200,//globals.yMin,
 		xMax: 1000,//globals.xMax,
 		yMax: 800,//globals.yMax,
-		macStyle: 0,
-		lowestRecPPEM: 7,
-		fontDirectionHint: 2,
+		macStyle: _headTable.macStyle ? convertToMacStyle(_headTable.macStyle) : 0,
+		lowestRecPPEM: _headTable.lowestRecPPEM || 7,
+		fontDirectionHint: _headTable.fontDirectionHint || 2,
 		indexToLocFormat: 0,
 		glyphDataFormat: 0,
 	}
 
+	const _hheaTable = options.tables ? options.tables.hhea : {}
+
 	// 定义hhea表
 	// define hhea table
 	const hheaTable = {
-		majorVersion: 0x0001,
-		minorVersion: 0x0000,
+		majorVersion: _hheaTable.majorVersion || 0x0001,
+		minorVersion: _hheaTable.minorVersion || 0x0000,
 		ascender: options.ascender,
 		descender: options.descender,
-		lineGap: 0,
+		lineGap: _hheaTable.lineGap || 0,
 		advanceWidthMax: globals.advanceWidthMax,
 		minLeftSideBearing: globals.minLeftSideBearing,
 		minRightSideBearing: globals.minRightSideBearing,
 		xMaxExtent: globals.maxLeftSideBearing + (globals.xMax - globals.xMin),
-		caretSlopeRise: 1,
-		caretSlopeRun: 0,
-		caretOffset: 0,
+		caretSlopeRise: _hheaTable.caretSlopeRise || 1,
+		caretSlopeRun: _hheaTable.caretSlopeRun || 0,
+		caretOffset: _hheaTable.caretOffset || 0,
 		reserved0: 0,
 		reserved1: 0,
 		reserved2: 0,
@@ -351,39 +384,50 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 		numGlyphs: characters.length,
 	}
 
+	const _os2Table = options.tables ? options.tables.os2 : {}
+	const convertToFsSelection = (fsSelection: Array<boolean>) => {
+		let _fsSelection = 0
+		for (let i = 0; i < fsSelection.length; i++) {
+			if (fsSelection[i]) {
+				_fsSelection += Math.pow(2, i)
+			}
+		}
+		return _fsSelection
+	}
+
 	// 定义os2表
 	// define os2 table
 	const os2Table = {
 		version: 0x0005,
 		xAvgCharWidth: Math.round(globals.advanceWidthAvg),
-		usWeightClass: 400,
-		usWidthClass: 5,
-		fsType: 0,
-		ySubscriptXSize: 650,
-		ySubscriptYSize: 699,
-		ySubscriptXOffset: 0,
-		ySubscriptYOffset: 140,
-		ySuperscriptXSize: 650,
-		ySuperscriptYSize: 699,
-		ySuperscriptXOffset: 0,
-		ySuperscriptYOffset: 479,
-		yStrikeoutSize: 49,
-		yStrikeoutPosition: 258,
-		sFamilyClass: 0,
-		panose: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		usWeightClass: _os2Table.usWeightClass || 400,
+		usWidthClass: _os2Table.usWidthClass || 5,
+		fsType: _os2Table.fsType || 0,
+		ySubscriptXSize: _os2Table.ySubscriptXSize || 650,
+		ySubscriptYSize: _os2Table.ySubscriptYSize || 699,
+		ySubscriptXOffset: _os2Table.ySubscriptXOffset || 0,
+		ySubscriptYOffset: _os2Table.ySubscriptYOffset || 140,
+		ySuperscriptXSize: _os2Table.ySuperscriptXOffset || 650,
+		ySuperscriptYSize: _os2Table.ySuperscriptYOffset || 699,
+		ySuperscriptXOffset: _os2Table.ySuperscriptXOffse || 0,
+		ySuperscriptYOffset: _os2Table.ySuperscriptYOffset || 479,
+		yStrikeoutSize: _os2Table.yStrikeoutSize || 49,
+		yStrikeoutPosition: _os2Table.yStrikeoutPosition || 258,
+		sFamilyClass: _os2Table.sFamilyClass || 0,
+		panose: _os2Table.panose || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 		ulUnicodeRange1,
 		ulUnicodeRange2,
 		ulUnicodeRange3,
 		ulUnicodeRange4,
-		achVendID: 'UKWN',
-		fsSelection: 64,
+		achVendID: _os2Table.achVendID || 'UKWN',
+		fsSelection: _os2Table.fsSelection ? convertToFsSelection(_os2Table.fsSelection) : 64,
 		usFirstCharIndex: firstCharIndex,
 		usLastCharIndex: lastCharIndex,
 		sTypoAscender: globals.ascender,
 		sTypoDescender: globals.descender,
-		sTypoLineGap: 0,
-		usWinAscent: 800,//globals.yMax,
-		usWinDescent: 200,//Math.abs(globals.yMin),
+		sTypoLineGap: _hheaTable.lineGap || 0,
+		usWinAscent: options.ascender || 800,//globals.yMax,
+		usWinDescent: -options.descender || 200,//Math.abs(globals.yMin),
 		ulCodePageRange1: (1 << 0) | (1 << 18) | (1 << 20),//1,
 		ulCodePageRange2: 0,//0,
 		sxHeight: metricsForChar(font, 'xyvw', {yMax: Math.round(globals.ascender / 2)}).yMax,
@@ -391,8 +435,8 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 		usDefaultChar: hasChar(font, ' ') ? 32 : 0,
 		usBreakChar: hasChar(font, ' ') ? 32 : 0,
 		usMaxContext: 0,
-		usLowerOpticalPointSize: 8,
-		usUpperOpticalPointSize: 72,
+		usLowerOpticalPointSize: _os2Table.usLowerOpticalPointSize || 8,
+		usUpperOpticalPointSize: _os2Table.usUpperOpticalPointSize || 72,
 	}
 
 	// 定义hmtx表
@@ -457,20 +501,23 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 	// }
 
 	const languageTags: Array<any> = []
-	const nameTable = createNameTable(names, languageTags)
+	//const nameTable = createNameTable(names, languageTags)
+	const nameTable = options.tables ? createNameTable2(options.tables.name) : createNameTable(names, languageTags)
+
+	const _postTable = options.tables ? options.tables.post : {}
 
 	// 定义post表
 	// define post table
 	const postTable = {
 		version: 0x00030000,
-		italicAngle: 0,
-		underlinePosition: 0,
-		underlineThickness: 0,
-		isFixedPitch: 1,
-		minMemType42: 0,
-		maxMemType42: 0,
-		minMemType1: 0,
-		maxMemType1: 0,
+		italicAngle: _postTable.italicAngle || 0,
+		underlinePosition: _postTable.underlinePosition || 0,
+		underlineThickness: _postTable.underlineThickness || 0,
+		isFixedPitch: _postTable.isFixedPitch || 1,
+		minMemType42: _postTable.minMemType42 || 0,
+		maxMemType42: _postTable.maxMemType42 || 0,
+		minMemType1: _postTable.minMemType1 || 0,
+		maxMemType1: _postTable.maxMemType1 || 0,
 	}
 
 	// 定义cff表

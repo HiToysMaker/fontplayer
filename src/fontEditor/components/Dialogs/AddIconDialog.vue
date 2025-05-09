@@ -12,7 +12,7 @@
   import { ElMessage } from 'element-plus'
   import { ref } from 'vue'
   import { useI18n } from 'vue-i18n'
-  const { tm, t } = useI18n()
+  const { tm, t, locale } = useI18n()
 
   const text = ref('')
 
@@ -22,7 +22,13 @@
 
   const handleClick = () => {
     if (!text.value) {
-      ElMessage('请输入图标名称。')
+      let msg = '请输入图标名称。'
+      if (locale.value === 'zh') {
+        msg = '请输入图标名称。'
+      } else if (locale.value === 'en') {
+        msg = 'Please input icon\'s name.'
+      }
+      ElMessage(msg)
       return
     }
     const count = selectedFile.value.iconsCount
@@ -56,6 +62,7 @@
           size: selectedFile.value.width,
           default: true,
         },
+        useSkeletonGrid: false,
         layout: '',
         layoutTree: [],
       },
@@ -88,8 +95,8 @@
     </div>
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="handleCancel">{{ t('dialogs.addIconDialog.cancel') }}</el-button>
-        <el-button type="primary" @click="handleClick">
+        <el-button @pointerdown="handleCancel">{{ t('dialogs.addIconDialog.cancel') }}</el-button>
+        <el-button type="primary" @pointerdown="handleClick">
           {{ t('dialogs.addIconDialog.confirm') }}
         </el-button>
       </span>

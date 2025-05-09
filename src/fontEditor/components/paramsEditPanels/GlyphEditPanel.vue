@@ -21,7 +21,6 @@
     selectedSubComponent,
 		type IComponent,
   } from '../../stores/files'
-	import { linkComponentsForJoints } from '../../programming/Joint'
 	import { setSelectGlobalParamDialogVisible, setSetAsGlobalParamDialogVisible } from '../../stores/dialogs'
 	import { More } from '@element-plus/icons-vue'
 	import { OpType, saveState, StoreType } from '../../stores/edit'
@@ -159,12 +158,6 @@
     })
     emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
     emitter.emit('renderCharacter', true)
-		if (checkJoints.value) {
-      _selectedComponent.value.value._o.renderJoints(canvas.value)
-    }
-    if (checkRefLines.value) {
-			_selectedComponent.value.value._o.renderRefLines(canvas.value)
-    }
   }
 
 	const handleRatioOptionChange = (parameter: IParameter | IParameter2, value: string) => {
@@ -192,23 +185,10 @@
     executeCharacterScript(editCharacterFile.value)
     emitter.emit('renderPreviewCanvasByUUID', _selectedComponent.value.value.uuid)
     emitter.emit('renderCharacter')
-		if (checkJoints.value) {
-      _selectedComponent.value.value._o.renderJoints(canvas.value)
-    }
-    if (checkRefLines.value) {
-			_selectedComponent.value.value._o.renderRefLines(canvas.value)
-    }
   }
 
 	watch([checkJoints, checkRefLines], () => {
     emitter.emit('renderCharacter')
-		linkComponentsForJoints(selectedComponent.value)
-    if (checkJoints.value) {
-      _selectedComponent.value.value._o.renderJoints(canvas.value)
-    }
-    if (checkRefLines.value) {
-      _selectedComponent.value.value._o.renderRefLines(canvas.value)
-    }
   })
 
   watch(jointsCheckedMap, () => {
@@ -217,7 +197,7 @@
     } else if (editStatus.value === Status.Glyph) {
       emitter.emit('renderGlyph')
     }
-    _selectedComponent.value.value._o.renderJoints(canvas.value, {
+    _selectedComponent.value.value._o?.renderJoints(canvas.value, {
       type: 'selected',
       joints: Object.keys(jointsCheckedMap.value).filter((name) => !!jointsCheckedMap.value[name]),
     })
@@ -253,12 +233,6 @@
     executeCharacterScript(editCharacterFile.value)
     emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
     emitter.emit('renderCharacter', true)
-		if (checkJoints.value) {
-      _selectedComponent.value.value._o.renderJoints(canvas.value)
-    }
-    if (checkRefLines.value) {
-      _selectedComponent.value.value._o.renderRefLines(canvas.value)
-    }
   }
 
 	const onLayoutChange = () => {
@@ -354,7 +328,7 @@
 							<div class="ratio-item">
 								<font-awesome-icon class="ratio-icon" :class="{
 									selected: _selectedComponent.value.layout.ratioedMap && _selectedComponent.value.layout.ratioedMap[key].ratioed
-								}" @click="() => {
+								}" @pointerdown="() => {
 									if (!_selectedComponent.value.layout.ratioedMap) {
 										_selectedComponent.value.layout.ratioedMap = new Map()
 									}
@@ -379,28 +353,28 @@
 					</el-form>
 				</div>
 				<div class="interactive-settings">
-					<div class="title">交互设定</div>
+					<div class="title">{{ t('panels.paramsPanel.interactive') }}</div>
 					<el-form
 						class="name-form"
 						label-width="80px"
 					>
-						<el-form-item label="拖拽设定">
+						<el-form-item :label="tm('panels.paramsPanel.draggableOption')">
 							<el-checkbox
 								v-model="draggable"
 								class="draggable-check"
 							>
-								可拖拽
+								{{ t('panels.paramsPanel.draggable') }}
 							</el-checkbox>
 						</el-form-item>
-						<el-form-item label="吸附设定">
+						<el-form-item :label="tm('panels.paramsPanel.dragOption')">
 							<el-radio-group v-model="dragOption" class="radio-group">
-								<el-radio value="none" label="none">无</el-radio>
-								<el-radio value="default" label="default">默认标点</el-radio>
+								<el-radio value="none" label="none">{{ t('panels.paramsPanel.dragOptionNone') }}</el-radio>
+								<el-radio value="default" label="default">{{ t('panels.paramsPanel.dragOptionDefault') }}</el-radio>
 								<el-radio
 									value="layout"
 									label="layout"
 									:disabled="!SubComponentsRoot || (!!SubComponentsRoot && !SubComponentsRoot.value.layout)"
-								>布局标点</el-radio>
+								>{{ t('panels.paramsPanel.dragOptionLayout') }}</el-radio>
 							</el-radio-group>
 						</el-form-item>
 					</el-form>
@@ -457,19 +431,19 @@
 							<div class="param-btn-group">
 								<el-button
 									v-show="parameter.type === ParameterType.Constant"
-									@click="cancelGlobalParam(parameter)"
-								>取消全局变量</el-button>
+									@pointerdown="cancelGlobalParam(parameter)"
+								>{{ t('panels.paramsPanel.cancelGlobalParam') }}</el-button>
 								<el-button
-									@click="setAsGlobalParam(parameter)"
-								>设为全局变量</el-button>
+									@pointerdown="setAsGlobalParam(parameter)"
+								>{{ t('panels.paramsPanel.setAsGlobalParam') }}</el-button>
 								<el-button
-									@click="selectGlobalParam(parameter)"
-								>选择全局变量</el-button>
+									@pointerdown="selectGlobalParam(parameter)"
+								>{{ t('panels.paramsPanel.selectGlobalParam') }}</el-button>
 								<el-button
 									v-show="parameter.type === ParameterType.Constant"
 									type="primary"
-									@click="updateGlobalParam(parameter)"
-								>更新全局变量</el-button>
+									@pointerdown="updateGlobalParam(parameter)"
+								>{{ t('panels.paramsPanel.updateGlobalParam') }}</el-button>
 							</div>
 						</el-popover>
 						<div
@@ -478,7 +452,7 @@
 							:class="{
 								ring: parameter.type === ParameterType.Constant && getConstant(parameter.value).type === ParameterType.RingController
 							}"
-						>全局变量</div>
+						>{{ t('panels.paramsPanel.globalParam') }}</div>
 						<div v-if="parameter.type === ParameterType.Number">
 							<el-input-number
 								:model-value="parameter.value"
@@ -497,14 +471,14 @@
 								@input="(value) => handleChangeParameter(parameter, value)"
 								v-model="parameter.value" v-show="parameter.type === ParameterType.Number"
 							/>
-							<div class="down-menu-icon-wrap" @click="collapsedMap[parameter.uuid] = !collapsedMap[parameter.uuid]">
+							<div class="down-menu-icon-wrap" @pointerdown="collapsedMap[parameter.uuid] = !collapsedMap[parameter.uuid]">
 								<font-awesome-icon :icon="['fas', 'arrow-down-wide-short']" />
 							</div>
 							<div class="down-menu" v-show="collapsedMap[parameter.uuid]">
 								<div class="ratio-item">
 									<font-awesome-icon class="ratio-icon" :class="{
 										selected: parameter.ratioed
-									}" @click="() => {
+									}" @pointerdown="() => {
 										parameter.ratioed = !parameter.ratioed
 										if (!parameter.ratioed && _selectedComponent.value.system_script && _selectedComponent.value.system_script[parameter.name]) {
 											delete _selectedComponent.value.system_script[parameter.name]
@@ -523,6 +497,19 @@
 									</el-select>
 								</div>
 							</div>
+						</div>
+						<div v-else-if="parameter.type === ParameterType.Enum">
+							<el-select
+								v-model="parameter.value" class="enum-param-select" placeholder="Select"
+								@change="(value) => handleChangeParameter(parameter, value)"
+							>
+								<el-option
+									v-for="option in parameter.options"
+									:key="option.value"
+									:label="option.label"
+									:value="option.value"
+								/>
+							</el-select>
 						</div>
 						<div v-else-if="parameter.type === ParameterType.RingController">
 							<el-select v-model="controlType" class="control-type-select" :placeholder="tm('programming.controlType')">

@@ -53,6 +53,7 @@
             size: selectedFile.value.width,
             default: true,
           },
+          useSkeletonGrid: false,
           layout: character.layout,
           layoutTree: parseLayout(character.layout),
         },
@@ -78,7 +79,7 @@
             class="template"
             v-for="template in templates"
             :key="template.name"
-            @click="importTemplate(template)"
+            @pointerdown="importTemplate(template)"
           >
             <span class="info">
               <span class="name">{{ template.name }}</span>
@@ -89,7 +90,7 @@
     </div>
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="handleCancel">{{ t('dialogs.glyphComponentDialog.cancel') }}</el-button>
+        <el-button @pointerdown="handleCancel">{{ t('dialogs.glyphComponentDialog.cancel') }}</el-button>
       </span>
     </template>
   </el-dialog>

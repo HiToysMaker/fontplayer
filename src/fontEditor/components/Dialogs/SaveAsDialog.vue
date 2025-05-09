@@ -95,43 +95,43 @@
     width="320px"
   >
     <div class="form-wrapper">
-      <div class="text">请选择需要包含的项目：</div>
+      <div class="text">{{ t('dialogs.exportDialog.exportMsg') }}</div>
       <el-checkbox
         v-model="exportItems.characters"
         class="item-check"
         disabled
       >
-        字符
+        {{ t('programming.character') }}
       </el-checkbox>
       <el-checkbox
         v-model="exportItems.stroke_glyphs"
         class="item-check"
       >
-        笔画
+        {{ t('programming.stroke') }}
       </el-checkbox>
       <el-checkbox
         v-model="exportItems.radical_glyphs"
         class="item-check"
       >
-        部首
+        {{ t('programming.radical') }}
       </el-checkbox>
       <el-checkbox
         v-model="exportItems.comp_glyphs"
         class="item-check"
       >
-        字形
+        {{ t('programming.comp') }}
       </el-checkbox>
       <el-checkbox
         v-model="exportItems.glyphs"
         class="item-check"
       >
-        组件
+        {{ t('programming.glyph_comp') }}
       </el-checkbox>
     </div>
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="handleCancel">{{ t('dialogs.exportDialog.cancel') }}</el-button>
-        <el-button type="primary" @click="handleClick">
+        <el-button @pointerdown="handleCancel">{{ t('dialogs.exportDialog.cancel') }}</el-button>
+        <el-button type="primary" @pointerdown="handleClick">
           {{ t('dialogs.exportDialog.confirm') }}
         </el-button>
       </span>

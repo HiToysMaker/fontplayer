@@ -55,13 +55,13 @@
   import { initCoordsViewer } from '../../tools/coordsViewer'
   import { nextTick } from 'vue'
   import GridController from '../../components/Widgets/GridController.vue'
+  import MetricsController from '../../components/Widgets/MetricsController.vue'
   import { editing as editingLayout,  selectControl as selectLayoutControl } from '../../stores/glyphLayoutResizer'
   import { initLayoutResizer, renderLayoutEditor } from '../../tools/glyphLayoutResizer'
-  import * as R from 'ramda'
-  import { linkComponentsForJoints } from '../../programming/Joint'
   import { clearState, OpType, redo, saveState, StoreType, undo } from '../../stores/edit'
   import { gridSettings } from '../../stores/global'
-  import { ElMessageBox } from 'element-plus'
+  import { scripts_map, tempScript } from '../../stores/glyph'
+  import { renderJoints, renderRefLines } from '../../programming/Joint'
 
   const mounted: Ref<boolean> = ref(false)
   let closeTool: Function | null = null
@@ -73,6 +73,8 @@
   // onMounted initialization
   onMounted(async () => {
     document.addEventListener('keydown', onKeyDown)
+    // 缓存字符中所有组件用到的脚本，以便executeScript时快速查找
+    tempScript(editCharacterFile.value)
     executeCharacterScript(editCharacterFile.value)
     const _canvas = editCanvas.value as HTMLCanvasElement
     _canvas.style.width = `${width.value * editCharacterFile.value.view.zoom / 100}px`
@@ -122,6 +124,7 @@
   // onUnmounted关闭工具栏和布局编辑器
   // onUnmounted operation
   onUnmounted(() => {
+    scripts_map.value = {}
     emitter.off('renderCharacter')
     emitter.off('renderCharacter_forceUpdate')
     emitter.off('updateCharacterView')
@@ -378,28 +381,22 @@
   // 渲染辅助信息
   // render ref components
 	const renderRefComponents = () => {
-    if (checkJoints.value || checkRefLines.value) {
-      //selectedComponent.value.value._o.getJoints().map((joint) => {
-      //  joint.component = selectedComponent.value
-      //})
-      linkComponentsForJoints(selectedComponent?.value)
-    }
     if (checkJoints.value) {
       if (selectedSubComponent.value) {
-        selectedSubComponent.value.value._o.renderJoints(canvas.value)
+        renderJoints(selectedSubComponent.value, canvas.value)
       } else if (SubComponentsRoot.value) {
-        SubComponentsRoot.value.value._o.renderJoints(canvas.value)
-      } else {
-        selectedComponent.value.value._o.renderJoints(canvas.value)
+        renderJoints(SubComponentsRoot.value, canvas.value)
+      } else if (selectedComponent.value) {
+        renderJoints(selectedComponent.value, canvas.value)
       }
     }
     if (checkRefLines.value) {
       if (selectedSubComponent.value) {
-        selectedSubComponent.value.value._o.renderRefLines(canvas.value)
+        renderRefLines(selectedSubComponent.value, canvas.value)
       } else if (SubComponentsRoot.value) {
-        SubComponentsRoot.value.value._o.renderRefLines(canvas.value)
-      } else {
-        selectedComponent.value.value._o.renderRefLines(canvas.value)
+        renderRefLines(SubComponentsRoot.value, canvas.value)
+      } else if (selectedComponent.value) {
+        renderRefLines(selectedComponent.value, canvas.value)
       }
     }
     if (draggingJoint.value) {
@@ -411,15 +408,10 @@
 <template>
   <section class="edit-panel-wrapper">
     <main class="canvas-wrapper">
+      <div class="metrics" v-show="tool === 'metrics'">
+        <metrics-controller></metrics-controller>
+      </div>
       <div class="grid" v-show="tool === 'grid'">
-        <!-- <grid-controller
-          :size="editCharacterFile.info.gridSettings.size"
-          :dx="editCharacterFile.info.gridSettings.dx"
-          :dy="editCharacterFile.info.gridSettings.dy"
-          :centerSquareSize="editCharacterFile.info.gridSettings.centerSquareSize"
-          :layoutTree="editCharacterFile.info.layoutTree"
-          :onChange="onGridChange"
-        ></grid-controller> -->
         <grid-controller
           :size="gridSettings.size"
           :dx="gridSettings.dx"
@@ -492,7 +484,8 @@
     height: 100%;
     display: flex;
   }
-  .grid {
+  .grid, .metrics {
+    position: absolute;
     display: flex;
     height: 100%;
     width: 100%;

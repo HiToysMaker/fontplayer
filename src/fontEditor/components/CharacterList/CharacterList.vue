@@ -112,6 +112,7 @@
 			descender,
 			advanceWidth: unitsPerEm,
 			grid: defaultGrid ? null : characterFile.info.gridSettings,
+			useSkeletonGrid: characterFile.info?.useSkeletonGrid || false,
 		}, { x: 0, y: 0 }, false, true, true)
 		renderPreview2(canvas, contours)
 		// loading.value = false
@@ -187,7 +188,7 @@
 					class="character"
 					v-for="characterFile in selectedFile?.characterList"
 					:key="characterFile.uuid"
-					@click="editCharacter(characterFile.uuid)"
+					@pointerdown="editCharacter(characterFile.uuid)"
 				>
 					<span class="preview">
 						<div class="empty-line-1"></div>
@@ -203,11 +204,11 @@
 						<span class="text">{{ characterFile.character.text }}</span>
 						<span class="unicode" v-if="characterFile.type === 'text'">{{ `0x${characterFile.character.unicode.toString(16)}` }}</span>
 					</span>
-					<span class="delete-icon" @click="(e) => deleteCharacter(e, characterFile.uuid)">
+					<span class="delete-icon" @pointerdown="(e) => deleteCharacter(e, characterFile.uuid)">
 						<el-icon><Close /></el-icon>
 					</span>
 				</div>
-				<div class="default-character" @click="setAddTextDialogVisible(true)">
+				<div class="default-character" @pointerdown="setAddTextDialogVisible(true)">
 					<div class="add-text-btn-wrapper">
 						<el-icon><Plus /></el-icon>
 					</div>
