@@ -7,7 +7,9 @@
 
 在线体验：https://toysmaker.github.io/fontplayer_demo/
 
-桌面版下载：https://github.com/HiToysMaker/fontplayer/releases
+桌面版下载：
+gitee release: https://gitee.com/toysmaker/fontplayer/releases
+github release: https://github.com/HiToysMaker/fontplayer/releases
 
 ### 运行程序
 首先安装依赖：
