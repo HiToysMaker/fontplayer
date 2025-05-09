@@ -16,6 +16,7 @@ import { strokes as hei_strokes } from '../templates/strokes_1'
 import { ParametersMap } from "../programming/ParametersMap"
 import { IParameter } from "./glyph"
 import paper from 'paper'
+import { base } from "./global"
 
 // 参数类型
 // parameter type
@@ -148,8 +149,6 @@ const generateCharacterTemplate = (characterFile) => {
 }
 
 const initPlayground = async () => {
-  const base = ''
-  // const base = '/fontplayer_demo/'
   characters.value = []
   window.FP = FP
   const wrapper = document.getElementById('playground-characters-list')

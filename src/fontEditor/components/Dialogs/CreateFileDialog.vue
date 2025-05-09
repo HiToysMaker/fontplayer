@@ -160,7 +160,7 @@
 
   const importDefaultTemplate = async () => {
     await importTemplate2()
-    const res = await fetch(base + `templates/playground.json`)
+    const res = base ? await fetch(base + `/templates/playground.json`) : await fetch(`templates/playground.json`)
     const data = JSON.parse(await res.text())
     const file = data.file
     clearCharacterRenderList()

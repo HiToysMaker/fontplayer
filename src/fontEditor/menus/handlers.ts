@@ -34,7 +34,7 @@ import {
   orderedListWithItemsForCurrentCharacterFile,
   addCharacterForCurrentFile,
 } from '../stores/files'
-import { canvas, fontRenderStyle, loaded, tips, total } from '../stores/global'
+import { base, canvas, fontRenderStyle, loaded, tips, total } from '../stores/global'
 import { saveAs } from 'file-saver'
 import * as R from 'ramda'
 import { genUUID, toUnicode } from '../../utils/string'
@@ -1928,9 +1928,6 @@ const _syncData = async () => {
 }
 
 const importTemplate2 = async () => {
-  const base = ''
-  // const base = '/fontplayer_demo/'
-
   for (let i = 0; i < hei_strokes.length; i++) {
     const stroke = hei_strokes[i]
     const { name, params, uuid } = stroke
@@ -2043,7 +2040,7 @@ const importTemplate2 = async () => {
       min: 0,
       max: 2,
     })
-    let stroke_script_res = await fetch(base + `templates/templates2/${name}.js`)
+    let stroke_script_res = base ? await fetch(base + `/templates/templates2/${name}.js`) : await fetch(`templates/templates2/${name}.js`)
     let stroke_script = await stroke_script_res.text()
 
     //const uuid = genUUID()
@@ -2188,15 +2185,12 @@ const importTemplate1 = async () => {
     addFile(file)
     setSelectedFileUUID(file.uuid)
     setEditStatus(Status.CharacterList)
-    //const base = '/'
-    const base = ''
-    // const base = '/fontplayer_demo/'
     total.value = 0
     loading.value = true
-    let charRes = await fetch(base + 'templates/template1.json')
+    let charRes = base ? await fetch(base + '/templates/template1.json') : await fetch('templates/template1.json')
     let charData = await charRes.text()
     console.time('timer1')
-    let res = await fetch(base + 'glyphs/stroke_glyphs_data_v7_v4.json')
+    let res = base ? await fetch(base + '/glyphs/stroke_glyphs_data_v7_v4.json') : await fetch('glyphs/stroke_glyphs_data_v7_v4.json')
     let data = await res.text()
     if (data) {
       const obj = JSON.parse(data)
@@ -2212,7 +2206,7 @@ const importTemplate1 = async () => {
       })
     }
   
-    res = await fetch(base + 'glyphs/radical_glyphs_data_v7_v5.json')
+    res = base ? await fetch(base + '/glyphs/radical_glyphs_data_v7_v5.json') : await fetch('glyphs/radical_glyphs_data_v7_v5.json')
     data = await res.text()
     if (data) {
       const obj = JSON.parse(data)
@@ -2228,7 +2222,7 @@ const importTemplate1 = async () => {
       })
     }
 
-    res = await fetch(base + 'glyphs/comp_glyphs_data_v7_v4.json')
+    res = base ? await fetch(base + '/glyphs/comp_glyphs_data_v7_v4.json') : await fetch('glyphs/comp_glyphs_data_v7_v4.json')
     data = await res.text()
     if (data) {
       const obj = JSON.parse(data)
