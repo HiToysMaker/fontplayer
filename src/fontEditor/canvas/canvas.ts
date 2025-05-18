@@ -38,6 +38,7 @@ import type {
 	IQuadraticBezierCurve,
 } from '../../fontManager'
 import { editStatus, Status } from '../stores/font'
+import { editCharacterFileOnDragging } from '../stores/glyphDragger'
 
 /**
  * 清空画布
@@ -659,12 +660,22 @@ const render = (canvas: HTMLCanvasElement, renderBackground: Boolean = true, for
     ctx.fillRect(0, 0, canvas.width, canvas.height)
   }
   if (editStatus.value === Status.Edit) {
-    renderCanvas(orderedListWithItemsForCurrentCharacterFile.value, canvas as HTMLCanvasElement, {
-      forceUpdate,
-      fill: false,
-      offset: { x: 0, y: 0 },
-      scale: 1,
-    })
+    if (editCharacterFileOnDragging.value) {
+      // 当拖拽字形组件时，为提升性能使用临时变量
+      renderCanvas(orderedListWithItemsForCharacterFile(editCharacterFileOnDragging.value), canvas as HTMLCanvasElement, {
+        forceUpdate,
+        fill: false,
+        offset: { x: 0, y: 0 },
+        scale: 1,
+      })
+    } else {
+      renderCanvas(orderedListWithItemsForCurrentCharacterFile.value, canvas as HTMLCanvasElement, {
+        forceUpdate,
+        fill: false,
+        offset: { x: 0, y: 0 },
+        scale: 1,
+      })
+    }
   } else if (editStatus.value === Status.Glyph) {
     const glyph = editGlyph.value._o ? editGlyph.value._o : new CustomGlyph(editGlyph.value)
     renderGlyph(glyph, canvas, renderBackground, false, false)

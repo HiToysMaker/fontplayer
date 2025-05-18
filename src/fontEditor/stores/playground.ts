@@ -16,7 +16,7 @@ import { strokes as hei_strokes } from '../templates/strokes_1'
 import { ParametersMap } from "../programming/ParametersMap"
 import { IParameter } from "./glyph"
 import paper from 'paper'
-import { base } from "./global"
+import { base, total, loading as loadingGlobal } from "./global"
 
 // 参数类型
 // parameter type
@@ -149,6 +149,8 @@ const generateCharacterTemplate = (characterFile) => {
 }
 
 const initPlayground = async () => {
+  total.value = 0
+  loadingGlobal.value = true
   characters.value = []
   window.FP = FP
   const wrapper = document.getElementById('playground-characters-list')
@@ -346,6 +348,7 @@ const initPlayground = async () => {
   })
 
   editChar(characters.value[0].uuid)
+  loadingGlobal.value = false
 }
 
 const renderPreview = () => {

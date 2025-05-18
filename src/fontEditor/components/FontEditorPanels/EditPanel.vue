@@ -18,13 +18,16 @@
     selectedSubComponent,
     SubComponentsRoot,
     executeCharacterScript,
+    resetEditCharacterFile,
+    setEditCharacterFileByUUID,
+    updateCharacterListFromEditFile,
   } from '../../stores/files'
   import { onMounted, ref, type Ref, watch, onUnmounted } from 'vue'
   import {
     mapCanvasWidth,
     mapCanvasHeight,
   } from '../../../utils/canvas'
-  import { tool, grid, background, setCanvas, canvas, fontRenderStyle, width, height, setTool, checkJoints, checkRefLines, gridChanged } from '../../stores/global'
+  import { tool, grid, background, setCanvas, canvas, fontRenderStyle, width, height, setTool, checkJoints, checkRefLines, gridChanged, loading } from '../../stores/global'
   import { initPen, renderPenEditor } from '../../tools/pen'
   import { initSelect, renderSelectEditor } from '../../tools/select/select'
   import { initEllipse, renderEllipseEditor } from '../../tools/ellipse'
@@ -49,7 +52,7 @@
   } from '../../stores/polygon'
   import { radiusX, radiusY, ellipseX, ellipseY, editing as ellipseEditing } from '../../stores/ellipse'
   import { rectX, rectY, rectWidth, rectHeight, editing as rectangleEditing } from '../../stores/rectangle'
-  import { editing as glyphEditing, draggingJoint, putAtCoord, movingJoint } from '../../stores/glyphDragger'
+  import { editing as glyphEditing, draggingJoint, putAtCoord, movingJoint, editCharacterFileOnDragging, selectedSubComponentOnDradding, SubComponentsRootOnDradding, selectedComponentOnDragging } from '../../stores/glyphDragger'
   import { initTranslateMover } from '../../tools/translateMover'
   import { emitter } from '../../Event/bus'
   import { initCoordsViewer } from '../../tools/coordsViewer'
@@ -105,6 +108,7 @@
     if (selectedComponentUUID.value && selectedComponent.value.type === 'glyph') {
       setTool('glyphDragger')
     }
+    loading.value = false
   })
 
   const onKeyDown = (event) => {
@@ -137,6 +141,8 @@
       closeLayoutResizer()
     }
     setTool('')
+    updateCharacterListFromEditFile()
+    resetEditCharacterFile()
   })
 
   const onGridChange = (dx, dy, centerSquareSize) => {
@@ -242,7 +248,7 @@
     tool.value === 'select' && renderSelectEditor(canvas.value)
     tool.value === 'pen' && renderPenEditor(canvas.value)
 		renderRefComponents()
-    emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
+    emitter.emit('renderPreviewCanvasByUUIDOnEditing', editCharacterFile.value.uuid)
   }, {
     deep: true,
   })
@@ -273,7 +279,7 @@
 		renderRefComponents()
     tool.value === 'select' && renderSelectEditor(canvas.value)
     tool.value === 'pen' && renderPenEditor(canvas.value)
-    emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
+    emitter.emit('renderPreviewCanvasByUUIDOnEditing', editCharacterFile.value.uuid)
   })
 
   watch([
@@ -349,7 +355,7 @@
     tool.value === 'select' && renderSelectEditor(canvas.value)
     tool.value === 'pen' && renderPenEditor(canvas.value)
     renderRefComponents()
-    emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
+    emitter.emit('renderPreviewCanvasByUUIDOnEditing', editCharacterFile.value.uuid)
   })
 
   watch([
@@ -381,22 +387,44 @@
   // 渲染辅助信息
   // render ref components
 	const renderRefComponents = () => {
-    if (checkJoints.value) {
-      if (selectedSubComponent.value) {
-        renderJoints(selectedSubComponent.value, canvas.value)
-      } else if (SubComponentsRoot.value) {
-        renderJoints(SubComponentsRoot.value, canvas.value)
-      } else if (selectedComponent.value) {
-        renderJoints(selectedComponent.value, canvas.value)
+    if (editCharacterFileOnDragging.value) {
+      // 拖拽字形组件期间，使用临时变量
+      if (checkJoints.value) {
+        if (selectedSubComponentOnDradding.value) {
+          renderJoints(selectedSubComponentOnDradding.value, canvas.value)
+        } else if (SubComponentsRootOnDradding.value) {
+          renderJoints(SubComponentsRootOnDradding.value, canvas.value)
+        } else if (selectedComponentOnDragging.value) {
+          renderJoints(selectedComponentOnDragging.value, canvas.value)
+        }
       }
-    }
-    if (checkRefLines.value) {
-      if (selectedSubComponent.value) {
-        renderRefLines(selectedSubComponent.value, canvas.value)
-      } else if (SubComponentsRoot.value) {
-        renderRefLines(SubComponentsRoot.value, canvas.value)
-      } else if (selectedComponent.value) {
-        renderRefLines(selectedComponent.value, canvas.value)
+      if (checkRefLines.value) {
+        if (selectedSubComponentOnDradding.value) {
+          renderRefLines(selectedSubComponentOnDradding.value, canvas.value)
+        } else if (SubComponentsRootOnDradding.value) {
+          renderRefLines(SubComponentsRootOnDradding.value, canvas.value)
+        } else if (selectedComponentOnDragging.value) {
+          renderRefLines(selectedComponentOnDragging.value, canvas.value)
+        }
+      }
+    } else {
+      if (checkJoints.value) {
+        if (selectedSubComponent.value) {
+          renderJoints(selectedSubComponent.value, canvas.value)
+        } else if (SubComponentsRoot.value) {
+          renderJoints(SubComponentsRoot.value, canvas.value)
+        } else if (selectedComponent.value) {
+          renderJoints(selectedComponent.value, canvas.value)
+        }
+      }
+      if (checkRefLines.value) {
+        if (selectedSubComponent.value) {
+          renderRefLines(selectedSubComponent.value, canvas.value)
+        } else if (SubComponentsRoot.value) {
+          renderRefLines(SubComponentsRoot.value, canvas.value)
+        } else if (selectedComponent.value) {
+          renderRefLines(selectedComponent.value, canvas.value)
+        }
       }
     }
     if (draggingJoint.value) {

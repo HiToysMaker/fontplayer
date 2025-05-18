@@ -9,10 +9,11 @@ import {
 import { ICharacterFile, IComponentValue, editCharacterFile, executeCharacterScript, modifyComponentForCurrentCharacterFile, selectedComponent, selectedComponentUUID, selectedFile, selectedSubComponent, SubComponentsRoot, selectedItemByUUID, modifySubComponent } from '../../fontEditor/stores/files'
 import { executeScript, getRatioLayout2, selectedComponent as selectedComponent_glyph } from '../../fontEditor/stores/glyph'
 import { getRatioCoords } from '../../features/layout'
-import { draggingJoint, putAtCoord, setEditing, movingJoint } from '../stores/glyphDragger'
+import { draggingJoint, putAtCoord, setEditing, movingJoint, editCharacterFileOnDragging } from '../stores/glyphDragger'
 import { draggable, dragOption, checkJoints } from '../../fontEditor/stores/global'
 import { emitter } from '../Event/bus'
 import { getJoints } from '../programming/Joint'
+import * as R from 'ramda'
 
 const getBound = (joints) => {
 	let x_min = Infinity
@@ -211,6 +212,7 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = false)
 	let coords = []
 	const onMouseDown = (e: MouseEvent) => {
 		if (!draggable.value) return
+		editCharacterFileOnDragging.value = R.clone(editCharacterFile.value)
 		// joint数据格式：{x, y, name}
 		let joints = []
 		let glyph = null
@@ -281,11 +283,18 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = false)
 					y: oy + dy + unitsPerEm / 2,
 				}
 				if (!selectedSubComponent.value) {
-					addScript()
-					modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
-						ox: _ox + dx,
-						oy: _oy + dy,
-					})
+					//addScript()
+					// modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
+					// 	ox: _ox + dx,
+					// 	oy: _oy + dy,
+					// })
+					for (let i = 0; i < editCharacterFileOnDragging.value.components.length; i++) {
+						if (editCharacterFileOnDragging.value.components[i].uuid === selectedComponentUUID.value) {
+							editCharacterFileOnDragging.value.components[i].ox = _ox + dx
+							editCharacterFileOnDragging.value.components[i].oy = _oy + dy
+						}
+					}
+					emitter.emit('renderCharacter')
 				} else {
 					addScript()
 					modifySubComponent({
@@ -378,6 +387,8 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = false)
 		lastY = 0
 		putAtCoord.value = null
 		draggingJoint.value = null
+		editCharacterFile.value.components = editCharacterFileOnDragging.value.components
+		editCharacterFileOnDragging.value = null
 	}
 	canvas.addEventListener('mousedown', onMouseDown)
 	canvas.addEventListener('mousemove', onMouseMove)

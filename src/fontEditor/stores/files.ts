@@ -1,6 +1,6 @@
 import { gridSettings, loaded, loading, setTool, total } from './global'
 import * as R from 'ramda'
-import { ref, computed, type Ref, reactive } from 'vue'
+import { ref, computed, type Ref, reactive, nextTick } from 'vue'
 import localForage from 'localforage'
 import { getBound } from '../../utils/math'
 import type { IPoint } from './pen'
@@ -320,16 +320,43 @@ const usedComponents = computed(() => {
 
 // 当前编辑的字符文件
 // current edit character file
-const editCharacterFile = computed(() => {
-	if (!selectedFileUUID.value) return null
+// const editCharacterFile = computed(() => {
+// 	if (!selectedFileUUID.value) return null
+// 	const characters = selectedFile.value.characterList
+// 	for (let i = 0; i < characters.length; i++) {
+// 		if (editCharacterFileUUID.value === characters[i].uuid) {
+// 			return characters[i]
+// 		}
+// 	}
+// 	return null
+// })
+// 由于列表中有大量字符时，computed属性计算过慢，editCharacterFile改用手动赋值，不使用computed
+const editCharacterFile = ref(null)
+// 将列表中指定uuid的字符数据设置为editCharacterFile
+const setEditCharacterFileByUUID = (uuid: string) => {
+	let character = null
 	const characters = selectedFile.value.characterList
 	for (let i = 0; i < characters.length; i++) {
 		if (editCharacterFileUUID.value === characters[i].uuid) {
-			return characters[i]
+			character = characters[i]
+			break
 		}
 	}
-	return null
-})
+	editCharacterFile.value = character
+}
+const resetEditCharacterFile = () => {
+	editCharacterFile.value = null
+}
+const updateCharacterListFromEditFile = () => {
+	let character = null
+	const characters = selectedFile.value.characterList
+	for (let i = 0; i < characters.length; i++) {
+		if (editCharacterFileUUID.value === characters[i].uuid) {
+			characters[i] = editCharacterFile.value
+			break
+		}
+	}
+}
 
 // 当前选择的字体文件
 // selected font file
@@ -350,8 +377,9 @@ const characterList = computed(() => {
 // selected components
 const selectedComponents = computed(() => {
 	if (!selectedFileUUID.value) return null
-	const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	// const file = selectedItemByUUID(files.value, selectedFileUUID.value)
+	// const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	const components = characterFile?.selectedComponentsUUIDs.map((uuid: string) => {
 		// return selectedItemByUUID(characterFile.components, uuid)
 		return traverseComponents(characterFile.components, uuid)
@@ -380,8 +408,9 @@ const traverseComponents = (components, uuid) => {
 // sub components list
 const SubComponents = computed(() => {
 	if (!selectedFileUUID.value) return null
-	const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	// const file = selectedItemByUUID(files.value, selectedFileUUID.value)
+	// const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	if (!characterFile?.selectedComponentsTree || !characterFile?.selectedComponentsTree.length) return null
 	let rootComponent = null
 	for (let i = 0; i < characterFile?.selectedComponentsTree.length - 1; i++) {
@@ -405,8 +434,9 @@ const SubComponents = computed(() => {
 // root for sub components list
 const SubComponentsRoot = computed(() => {
 	if (!selectedFileUUID.value) return null
-	const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	// const file = selectedItemByUUID(files.value, selectedFileUUID.value)
+	// const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	if (!characterFile?.selectedComponentsTree || !characterFile?.selectedComponentsTree.length) return null
 	let rootComponent = null
 	for (let i = 0; i < characterFile?.selectedComponentsTree.length - 1; i++) {
@@ -427,8 +457,9 @@ const selectedSubComponent = computed(() => {
 	if (!selectedFileUUID.value) {
 		rs = null
 	} else {
-		const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-		const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+		// const file = selectedItemByUUID(files.value, selectedFileUUID.value)
+		// const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+		const characterFile = editCharacterFile.value
 		if (!characterFile?.selectedComponentsTree || !characterFile?.selectedComponentsTree.length) {
 			rs = null
 		} else {
@@ -464,8 +495,9 @@ const componentsForCurrentCharacterFile = computed(() => {
 // ordered component list (with component itself) for current character file
 const orderedListWithItemsForCurrentCharacterFile = computed(() => {
 	if (!selectedFileUUID.value || !editCharacterFileUUID.value) return []
-	const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	// const file = selectedItemByUUID(files.value, selectedFileUUID.value)
+	// const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	return characterFile.orderedList.map((item: {
 		type: string,
 		uuid: string,
@@ -793,7 +825,8 @@ const modifySubComponent = (options) => {
  */
 const modifyComponentForCurrentCharacterFile = (uuid: string, options: any) => {
 	const file = selectedFile.value
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	//const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	const components = R.clone(characterFile.components)
 	components.forEach((component: Component) => {
 		if (component.uuid === uuid) {
@@ -868,7 +901,7 @@ const modifyComponentForCurrentCharacterFile = (uuid: string, options: any) => {
 		}
 		characterFile.components = components
 	})
-	emitter.emit('renderPreviewCanvasByUUID', editCharacterFileUUID.value)
+	emitter.emit('renderPreviewCanvasByUUIDOnEditing', editCharacterFileUUID.value)
 }
 
 /**
@@ -1279,10 +1312,16 @@ const findLeafNodes = (tree) => {
 
 // 编辑字符，进入字符编辑器
 // go to character editor
-const editCharacter = (uuid: string) => {
-	setEditCharacterFileUUID(uuid)
-	setPrevStatus(editStatus.value)
-	setEditStatus(Status.Edit)
+const editCharacter = async (uuid: string) => {
+	loading.value = true
+	total.value = 0
+	await nextTick()
+	setTimeout(() => {
+		setEditCharacterFileUUID(uuid)
+		setEditCharacterFileByUUID(editCharacterFileUUID.value)
+		setPrevStatus(editStatus.value)
+		setEditStatus(Status.Edit)
+	}, 500)
 }
 
 // 删除字符
@@ -1410,4 +1449,8 @@ export {
 	selectedSubComponent,
 	modifySubComponent,
 	executeCharactersGlyphsScript,
+	setEditCharacterFileByUUID,
+	resetEditCharacterFile,
+	updateCharacterListFromEditFile,
+	traverseComponents,
 }

@@ -4,6 +4,9 @@ import GridController from '../components/Widgets/GridController_playground.vue'
 import { gridSettings, constants, updateCharactersAndPreview, initPlayground, renderPreview, exportFont } from '../stores/playground'
 import { IConstant } from '../stores/glyph'
 import { emitter } from '../Event/bus'
+import { loading, loaded, total } from '../../fontEditor/stores/global'
+import { useI18n } from 'vue-i18n'
+const { tm, t, locale } = useI18n()
 
 const test_chars = ref([])
 
@@ -54,11 +57,29 @@ const switchTurningStyle = () => {
   }
   constants.value[2].value = value
 }
+
+const svg = `
+  <path class="path" d="" style="stroke-width: 4px; fill: rgba(0, 0, 0, 0)"/>
+`
 </script>
 
 <template>
-  <div class="wrap">
+  <div class="wrap"
+    v-loading="loading"
+    :element-loading-text="``"
+    :element-loading-spinner="svg"
+    element-loading-svg-view-box="-10, -10, 50, 50"
+    element-loading-background="rgba(122, 122, 122, 0.8)"
+  >
     <div class="playground">
+      <div class="el-loading-spinner" v-show="loading && total === 0">
+        <svg class="circular" viewBox="0 0 50 50"><circle class="path" cx="25" cy="25" r="20" fill="none"></circle></svg>
+        <div>{{ t('panels.paramsPanel.loadingMsg') }}</div>
+      </div>
+      <div v-show="loading && total != 0" class="loading-text">
+        <el-progress :text-inside="true" :stroke-width="20" :percentage="Math.round(loaded / total * 100)" />
+        <div>{{ t('panels.paramsPanel.loadedMsg', { percent: Math.round(loaded / total * 100)}) }}</div>
+      </div>
       <div class="left">
         <div class="characters" id="playground-characters-list">
           <div class="character-preview" v-for="item in test_chars">
@@ -122,6 +143,24 @@ const switchTurningStyle = () => {
   justify-content: center;
   align-items: center;
   background-color: var(--dark-3);
+}
+.loading-text {
+  z-index: 9999999999;
+  position: fixed;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  color: #409EFF;
+}
+.el-progress {
+  width: 300px;
+}
+.el-loading-spinner {
+  z-index: 9999;
 }
 .playground {
   width: 1200px;

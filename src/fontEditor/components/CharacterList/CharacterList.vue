@@ -6,7 +6,7 @@
 	 * character list
 	 */
 
-	import { selectedFile, orderedListWithItemsForCharacterFile, clearCharacterRenderList, characterList, addCharacterTemplate, generateCharacterTemplate, executeCharacterScript } from '../../stores/files'
+	import { selectedFile, orderedListWithItemsForCharacterFile, clearCharacterRenderList, characterList, addCharacterTemplate, generateCharacterTemplate, executeCharacterScript, editCharacterFile } from '../../stores/files'
 	import { onMounted, nextTick, onUnmounted } from 'vue'
 	import type {
 		ILine,
@@ -50,6 +50,27 @@
 			// 获取字符预览canvas
 			const canvas: HTMLCanvasElement = document.getElementById(`preview-canvas-${characterFile.uuid}`) as HTMLCanvasElement
 			if (!canvas) return
+			if (!characterFile.orderedList || !characterFile.orderedList.length) {
+				// 遇到空字符，直接跳过
+				// 更新进度条
+				if (loading.value) {
+					loaded.value += 1
+					if (loaded.value >= total.value) {
+						loading.value = false
+					}
+				}
+				// i递增
+				i++
+				// 如果没有渲染完毕，调用requestAnimationFrame对下一个字符渲染进行回调
+				if (i < characters.length) {
+					if (i % 100 === 0) {
+						requestAnimationFrame(render)
+					} else {
+						render()
+					}
+				}
+				return
+			}
 			// 将字符数据处理成预览模式
 			const contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(orderedListWithItemsForCharacterFile(characterFile), {
 				unitsPerEm,
@@ -69,7 +90,11 @@
 			i++
 			// 如果没有渲染完毕，调用requestAnimationFrame对下一个字符渲染进行回调
 			if (i < characters.length) {
-				requestAnimationFrame(render)
+				if (i % 100 === 0) {
+					requestAnimationFrame(render)
+				} else {
+					render()
+				}
 			}
 		}
 		// 调用requestAnimationFrame渲染第一个字符
@@ -78,18 +103,23 @@
 
 	// 渲染指定uuid的字符预览
 	// render preview canvas by uuid
-	const renderPreviewCanvasByUUID = (uuid: string) => {
+	const renderPreviewCanvasByUUID = (uuid: string, editing: boolean = false) => {
 		let characterFile
 		const {
 			unitsPerEm,
 			descender,
 		} = selectedFile.value.fontSettings
 		const characters = selectedFile.value ? selectedFile.value.characterList : []
-		for (let i = 0; i < characters.length; i++) {
-			if (characters[i].uuid === uuid) {
-				characterFile = characters[i]
-				break
+		if (!editing) {
+			for (let i = 0; i < characters.length; i++) {
+				if (characters[i].uuid === uuid) {
+					characterFile = characters[i]
+					break
+				}
 			}
+		} else {
+			// 编辑时，使用editCharacterFile
+			characterFile = editCharacterFile.value
 		}
 		if (!characterFile) return
 		executeCharacterScript(characterFile)
@@ -136,6 +166,19 @@
 			}
 			const fn = () => {
 				renderPreviewCanvasByUUID(uuid)
+			}
+			const timer = setTimeout(fn, 1000)
+			timerMap.set(uuid, timer)
+		})
+
+		// 编辑字符时，监听渲染预览字符事件
+		// listen for render preview canvas by uuid on char editing
+		emitter.on('renderPreviewCanvasByUUIDOnEditing', async (uuid: string) => {
+			if (timerMap.get(uuid)) {
+				clearTimeout(timerMap.get(uuid))
+			}
+			const fn = () => {
+				renderPreviewCanvasByUUID(uuid, true)
 			}
 			const timer = setTimeout(fn, 1000)
 			timerMap.set(uuid, timer)

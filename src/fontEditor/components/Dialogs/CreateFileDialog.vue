@@ -159,7 +159,9 @@
       router.push('/editor')
     }
     setCreateFileDialogVisible(false)
-    await importDefaultTemplate()
+    if (useDefaultTemplate.value) {
+      await importDefaultTemplate()
+    }
   }
 
   const importDefaultTemplate = async () => {
