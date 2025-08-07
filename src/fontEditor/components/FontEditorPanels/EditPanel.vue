@@ -52,7 +52,7 @@
   } from '../../stores/polygon'
   import { radiusX, radiusY, ellipseX, ellipseY, editing as ellipseEditing } from '../../stores/ellipse'
   import { rectX, rectY, rectWidth, rectHeight, editing as rectangleEditing } from '../../stores/rectangle'
-  import { editing as glyphEditing, draggingJoint, putAtCoord, movingJoint, editCharacterFileOnDragging, selectedSubComponentOnDradding, SubComponentsRootOnDradding, selectedComponentOnDragging } from '../../stores/glyphDragger'
+  import { editing as glyphEditing, draggingJoint, putAtCoord, movingJoint, editCharacterFileOnDragging, selectedSubComponentOnDragging, SubComponentsRootOnDragging, selectedComponentOnDragging } from '../../stores/glyphDragger'
   import { initTranslateMover } from '../../tools/translateMover'
   import { emitter } from '../../Event/bus'
   import { initCoordsViewer } from '../../tools/coordsViewer'
@@ -390,19 +390,19 @@
     if (editCharacterFileOnDragging.value) {
       // 拖拽字形组件期间，使用临时变量
       if (checkJoints.value) {
-        if (selectedSubComponentOnDradding.value) {
-          renderJoints(selectedSubComponentOnDradding.value, canvas.value)
-        } else if (SubComponentsRootOnDradding.value) {
-          renderJoints(SubComponentsRootOnDradding.value, canvas.value)
+        if (selectedSubComponentOnDragging.value) {
+          renderJoints(selectedSubComponentOnDragging.value, canvas.value)
+        } else if (SubComponentsRootOnDragging.value) {
+          renderJoints(SubComponentsRootOnDragging.value, canvas.value)
         } else if (selectedComponentOnDragging.value) {
           renderJoints(selectedComponentOnDragging.value, canvas.value)
         }
       }
       if (checkRefLines.value) {
-        if (selectedSubComponentOnDradding.value) {
-          renderRefLines(selectedSubComponentOnDradding.value, canvas.value)
-        } else if (SubComponentsRootOnDradding.value) {
-          renderRefLines(SubComponentsRootOnDradding.value, canvas.value)
+        if (selectedSubComponentOnDragging.value) {
+          renderRefLines(selectedSubComponentOnDragging.value, canvas.value)
+        } else if (SubComponentsRootOnDragging.value) {
+          renderRefLines(SubComponentsRootOnDragging.value, canvas.value)
         } else if (selectedComponentOnDragging.value) {
           renderRefLines(selectedComponentOnDragging.value, canvas.value)
         }
@@ -413,7 +413,7 @@
           renderJoints(selectedSubComponent.value, canvas.value)
         } else if (SubComponentsRoot.value) {
           renderJoints(SubComponentsRoot.value, canvas.value)
-        } else if (selectedComponent.value) {
+        } else if (selectedComponent.value && selectedComponent.value !== 'multi') {
           renderJoints(selectedComponent.value, canvas.value)
         }
       }
@@ -422,7 +422,7 @@
           renderRefLines(selectedSubComponent.value, canvas.value)
         } else if (SubComponentsRoot.value) {
           renderRefLines(SubComponentsRoot.value, canvas.value)
-        } else if (selectedComponent.value) {
+        } else if (selectedComponent.value && selectedComponent.value !== 'multi') {
           renderRefLines(selectedComponent.value, canvas.value)
         }
       }

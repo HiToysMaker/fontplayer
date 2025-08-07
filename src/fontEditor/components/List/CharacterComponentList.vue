@@ -77,7 +77,11 @@
     if (selectedComponentsUUIDs.value.indexOf(uuid) !== -1) {
       hasSelected = true
     }
-    !hasSelected && setSelectionForCurrentCharacterFile(uuid)
+    if (selectedComponent.value === 'multi' && enableMultiSelect.value) {
+      setSelectionForCurrentCharacterFile(uuid)
+    } else {
+      !hasSelected && setSelectionForCurrentCharacterFile(uuid)
+    }
     const component = selectedItemByUUID(editCharacterFile.value.components, uuid)
     if (component.type === 'glyph' && component.value.components && component.value.components.length) {
       let hasGlyph = false

@@ -229,7 +229,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 	const useSkeletonGrid = (options && options.useSkeletonGrid) || false
 	let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = []
 	components.map((component) => {
-		if (!component.usedInCharacter) return
+		if (!component?.usedInCharacter) return
 		let { x, y, w, h, rotation, flipX, flipY } = component as IComponent
 		//x && (x += offset.x)
 		//y && (y += offset.y)

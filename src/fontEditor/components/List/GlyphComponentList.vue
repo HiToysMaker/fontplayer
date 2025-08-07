@@ -26,6 +26,7 @@
     clipBoard,
 		selectedItemByUUID,
     type IComponent,
+    setSelectionForCurrentCharacterFile,
   } from '../../stores/files'
   import { editPanelCompFilter } from '../../stores/font'
   import * as R from 'ramda'
@@ -78,7 +79,12 @@
     if (selectedComponentsUUIDs.value.indexOf(uuid) !== -1) {
       hasSelected = true
     }
-    !hasSelected && setSelectionForCurrentCharacterFile(uuid)
+    // if (selectedComponent.value === 'multi') {
+    //   setSelectionForCurrentGlyph(uuid)
+    // } else {
+    //   !hasSelected && setSelectionForCurrentGlyph(uuid)
+    // }
+    !hasSelected && setSelectionForCurrentGlyph(uuid)
     const component = selectedItemByUUID(editGlyph.value.components, uuid)
     if (component.type === 'glyph' && component.value.components && component.value.components.length) {
       let hasGlyph = false

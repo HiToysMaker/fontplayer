@@ -1,5 +1,5 @@
 import { computed, ref, type Ref } from 'vue'
-import { selectedItemByUUID, traverseComponents } from './files'
+import { editCharacterFile, selectedItemByUUID, traverseComponents } from './files'
 
 /**
  * 此store文件包含了字形拖拽时需要的一些信息
@@ -25,13 +25,13 @@ const editCharacterFileOnDragging = ref(null)
 
 // 子组件列表
 // sub components list
-const SubComponentsOnDradding = computed(() => {
+const SubComponentsOnDragging = computed(() => {
 	if (!editCharacterFileOnDragging.value) return null
 	const characterFile = editCharacterFileOnDragging.value
-	if (!characterFile?.selectedComponentsTree || !characterFile?.selectedComponentsTree.length) return null
+	if (!editCharacterFile.value?.selectedComponentsTree || !editCharacterFile?.selectedComponentsTree.length) return null
 	let rootComponent = null
-	for (let i = 0; i < characterFile?.selectedComponentsTree.length - 1; i++) {
-		const rootUUID = characterFile?.selectedComponentsTree[i]
+	for (let i = 0; i < editCharacterFile.value?.selectedComponentsTree.length - 1; i++) {
+		const rootUUID = editCharacterFile.value?.selectedComponentsTree[i]
 		if (!rootComponent) {
 			rootComponent = selectedItemByUUID(characterFile.components, rootUUID)
 		} else {
@@ -49,13 +49,13 @@ const SubComponentsOnDradding = computed(() => {
 
 // 子组件列表根组件
 // root for sub components list
-const SubComponentsRootOnDradding = computed(() => {
+const SubComponentsRootOnDragging = computed(() => {
 	if (!editCharacterFileOnDragging.value) return null
 	const characterFile = editCharacterFileOnDragging.value
-	if (!characterFile?.selectedComponentsTree || !characterFile?.selectedComponentsTree.length) return null
+	if (!editCharacterFile.value?.selectedComponentsTree || !editCharacterFile.value?.selectedComponentsTree.length) return null
 	let rootComponent = null
-	for (let i = 0; i < characterFile?.selectedComponentsTree.length - 1; i++) {
-		const rootUUID = characterFile?.selectedComponentsTree[i]
+	for (let i = 0; i < editCharacterFile.value?.selectedComponentsTree.length - 1; i++) {
+		const rootUUID = editCharacterFile.value?.selectedComponentsTree[i]
 		if (!rootComponent) {
 			rootComponent = selectedItemByUUID(characterFile.components, rootUUID)
 		} else {
@@ -67,25 +67,25 @@ const SubComponentsRootOnDradding = computed(() => {
 
 // 子组件列表中选中的组件
 // selected sub component
-const selectedSubComponentOnDradding = computed(() => {
+const selectedSubComponentOnDragging = computed(() => {
 	let rs = null
 	if (!editCharacterFileOnDragging.value) {
 		rs = null
 	} else {
 		const characterFile = editCharacterFileOnDragging.value
-		if (!characterFile?.selectedComponentsTree || !characterFile?.selectedComponentsTree.length) {
+		if (!editCharacterFile.value?.selectedComponentsTree || !editCharacterFile.value?.selectedComponentsTree.length) {
 			rs = null
 		} else {
 			let rootComponent = null
-			for (let i = 0; i < characterFile?.selectedComponentsTree.length - 1; i++) {
-				const rootUUID = characterFile?.selectedComponentsTree[i]
+			for (let i = 0; i < editCharacterFile.value?.selectedComponentsTree.length - 1; i++) {
+				const rootUUID = editCharacterFile.value?.selectedComponentsTree[i]
 				if (!rootComponent) {
 					rootComponent = selectedItemByUUID(characterFile.components, rootUUID)
 				} else {
 					rootComponent = selectedItemByUUID(rootComponent.value.components, rootUUID)
 				}
 			}
-			const componentUUID = characterFile?.selectedComponentsTree[characterFile?.selectedComponentsTree.length - 1]
+			const componentUUID = editCharacterFile.value?.selectedComponentsTree[editCharacterFile.value?.selectedComponentsTree.length - 1]
 			if (componentUUID !== 'null') {
 				const component = selectedItemByUUID(rootComponent.value.components, componentUUID)
 				rs = component
@@ -98,7 +98,7 @@ const selectedSubComponentOnDradding = computed(() => {
 const selectedComponentsOnDragging = computed(() => {
 	if (!editCharacterFileOnDragging.value) return null
 	const characterFile = editCharacterFileOnDragging.value
-	const components = characterFile?.selectedComponentsUUIDs.map((uuid: string) => {
+	const components = editCharacterFile.value?.selectedComponentsUUIDs.map((uuid: string) => {
 		// return selectedItemByUUID(characterFile.components, uuid)
 		return traverseComponents(characterFile.components, uuid)
 	})
@@ -123,9 +123,9 @@ export {
 	putAtCoord,
 	movingJoint,
 	editCharacterFileOnDragging,
-	selectedSubComponentOnDradding,
-	SubComponentsOnDradding,
-	SubComponentsRootOnDradding,
+	selectedSubComponentOnDragging,
+	SubComponentsOnDragging,
+	SubComponentsRootOnDragging,
 	selectedComponentsOnDragging,
 	selectedComponentOnDragging
 }

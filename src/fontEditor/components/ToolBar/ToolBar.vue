@@ -6,7 +6,7 @@
    * tool bar
    */
 
-  import { tool, setTool, base } from '../../stores/global'
+  import { tool, setTool, base, loading } from '../../stores/global'
   import { glyphComponentsDialogVisible2, setGlyphComponentsDialogVisible } from '../../stores/dialogs'
   import { genPictureComponent } from '../../tools/picture'
   import { addComponentForCurrentCharacterFile, editCharacterFile, executeCharacterScript, selectedFile } from '../../stores/files'
@@ -22,6 +22,7 @@
   import { nativeImportFile } from '../../menus/handlers'
   import { ElMessageBox } from 'element-plus'
   import { useI18n } from 'vue-i18n'
+  import { debounce } from '../../../utils/data'
   const { tm, t, locale } = useI18n()
 
   // 切换工具
@@ -95,11 +96,22 @@
     }
   }
 
-  // 跳转至字符列表
-  // go to character list
+  // // 跳转至字符列表
+  // // go to character list
+  // const toList = debounce(300, () => {
+  //   loading.value = true
+  //   setEditStatus(prevStatus.value)
+  // })
+
+  // // 跳转至字符列表
+  // // go to character list
+  // const toList = () => {
+  //   console.time('testtimer')
+  //   setEditStatus(prevStatus.value)
+  // }
+
   const toList = () => {
-    //setEditStatus(Status.CharacterList)
-    setEditStatus(prevStatus.value)
+    setEditStatus(Status.CharacterList)
   }
 
   let glyph_window = null

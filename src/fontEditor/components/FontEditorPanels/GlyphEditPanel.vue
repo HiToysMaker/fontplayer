@@ -34,7 +34,7 @@
   import { editing as editingLayout,  selectControl as selectLayoutControl } from '../../stores/glyphLayoutResizer_glyph'
   import { initLayoutResizer, renderLayoutEditor } from '../../tools/glyphLayoutResizer_glyph'
   import { initGlyphDragger, renderGlyphSelector } from '../../tools/glyphDragger_glyph'
-  import { editing as glyphEditing, draggingJoint, putAtCoord, movingJoint } from '../../stores/glyphDragger_glyph'
+  import { editing as glyphEditing, draggingJoint, putAtCoord, movingJoint, editGlyphOnDragging, selectedSubComponentOnDragging, SubComponentsRootOnDragging, selectedComponentOnDragging } from '../../stores/glyphDragger_glyph'
   import {
     selectControl,
     selectAnchor,
@@ -58,6 +58,7 @@
   import { initCoordsViewer } from '../../tools/coordsViewer'
   import { clearState, OpType, redo, saveState, StoreType, undo } from '../../stores/edit'
   import { renderJoints, renderRefLines } from '../../programming/Joint'
+import { e } from 'vitest/dist/index-6e18a03a.js'
 
   const mounted: Ref<boolean> = ref(false)
   let closeTool: Function | null = null
@@ -139,53 +140,46 @@
   // 渲染辅助信息
   // render ref components
   const renderRefComponents = () => {
-    if (editGlyph.value.layout && editingLayout.value) {
-      renderLayoutEditor(canvas.value)
+    if (editGlyphOnDragging.value) {
+      // 拖拽字形组件期间，使用临时变量
+      if (checkJoints.value) {
+        if (selectedSubComponentOnDragging.value) {
+          renderJoints(selectedSubComponentOnDragging.value, canvas.value)
+        } else if (SubComponentsRootOnDragging.value) {
+          renderJoints(SubComponentsRootOnDragging.value, canvas.value)
+        } else if (selectedComponentOnDragging.value) {
+          renderJoints(selectedComponentOnDragging.value, canvas.value)
+        }
+      }
+      if (checkRefLines.value) {
+        if (selectedSubComponentOnDragging.value) {
+          renderRefLines(selectedSubComponentOnDragging.value, canvas.value)
+        } else if (SubComponentsRootOnDragging.value) {
+          renderRefLines(SubComponentsRootOnDragging.value, canvas.value)
+        } else if (selectedComponentOnDragging.value) {
+          renderRefLines(selectedComponentOnDragging.value, canvas.value)
+        }
+      }
+    } else {
+      if (checkJoints.value) {
+        if (selectedSubComponent.value) {
+          renderJoints(selectedSubComponent.value, canvas.value)
+        } else if (SubComponentsRoot.value) {
+          renderJoints(SubComponentsRoot.value, canvas.value)
+        } else if (selectedComponent.value && selectedComponent.value !== 'multi') {
+          renderJoints(selectedComponent.value, canvas.value)
+        }
+      }
+      if (checkRefLines.value) {
+        if (selectedSubComponent.value) {
+          renderRefLines(selectedSubComponent.value, canvas.value)
+        } else if (SubComponentsRoot.value) {
+          renderRefLines(SubComponentsRoot.value, canvas.value)
+        } else if (selectedComponent.value && selectedComponent.value !== 'multi') {
+          renderRefLines(selectedComponent.value, canvas.value)
+        }
+      }
     }
-    if (checkJoints.value) {
-      if (editGlyph.value._o) {
-        // 如果当前编辑字形有自己字形本身的关键点，则渲染这些关键点
-        editGlyph.value._o.renderJoints(canvas.value)
-      }
-      if (selectedSubComponent.value) {
-        renderJoints(selectedSubComponent.value, canvas.value)
-      } else if (SubComponentsRoot.value) {
-        renderJoints(SubComponentsRoot.value, canvas.value)
-      } else if (selectedComponent.value) {
-        renderJoints(selectedComponent.value, canvas.value)
-      }
-    }
-    if (checkRefLines.value) {
-      if (editGlyph.value._o) {
-        // 如果当前编辑字形有自己字形本身的辅助线，则渲染这些辅助线
-        editGlyph.value._o.renderRefLines(canvas.value)
-      }
-      if (selectedSubComponent.value) {
-        renderRefLines(selectedSubComponent.value, canvas.value)
-      } else if (SubComponentsRoot.value) {
-        renderRefLines(SubComponentsRoot.value, canvas.value)
-      } else if (selectedComponent.value) {
-        renderRefLines(selectedComponent.value, canvas.value)
-      }
-    }
-    // if (checkJoints.value) {
-    //   if (selectedSubComponent.value) {
-    //     selectedSubComponent.value.value._o.renderJoints(canvas.value)
-    //   } else if (SubComponentsRoot.value) {
-    //     SubComponentsRoot.value.value._o.renderJoints(canvas.value)
-    //   } else {
-    //     selectedComponent.value.value._o.renderJoints(canvas.value)
-    //   }
-    // }
-    // if (checkRefLines.value) {
-    //   if (selectedSubComponent.value) {
-    //     selectedSubComponent.value.value._o.renderRefLines(canvas.value)
-    //   } else if (SubComponentsRoot.value) {
-    //     SubComponentsRoot.value.value._o.renderRefLines(canvas.value)
-    //   } else {
-    //     selectedComponent.value.value._o.renderRefLines(canvas.value)
-    //   }
-    // }
     if (draggingJoint.value) {
       renderGlyphSelector(canvas.value)
     }
@@ -223,26 +217,31 @@
     }
   }
 
-  watch([editingLayout, tool], () => {
-    if (closeLayoutResizer) {
-      closeLayoutResizer()
-      render()
+  // tool改变时，重新初始化工具栏，重新渲染
+  // watch for tool change
+  watch(tool, (newValue, oldValue) => {
+    if (!mounted) return
+    render()
+    switch (tool.value) {
+      case 'select':
+        if (selectedComponentUUID.value) {
+          renderSelectEditor(canvas.value)
+        }
+        break
+      case 'glyphDragger':
+        if (selectedComponentUUID.value) {
+          closeTool = initGlyphDragger(canvas.value)
+          renderGlyphSelector(canvas.value)
+        }
+        break
     }
-    if (editingLayout.value && tool.value === 'params') {
-      // 最顶层glyph编辑结构
-      closeLayoutResizer = initLayoutResizer(canvas.value)
-      renderLayoutEditor(canvas.value)
-    }
-    renderRefComponents()
-    // else if (editingLayout.value && selectedComponent.value) {
-    //   closeLayoutResizer = initLayoutResizer(canvas.value, selectedComponent.value.value, selectedComponent.value.ox, selectedComponent.value.oy)
-    //   renderLayoutEditor(canvas.value, selectedComponent.value.value, selectedComponent.value.ox, selectedComponent.value.oy)
-    // }
-  }, {
-    deep: true,
+		renderRefComponents()
+    initTool()
   })
 
-  watch(() => editGlyph.value.selectedComponentsTree, () => {
+  // editingLayout改变时重置LayoutResizer
+  // watch for editingLayout
+  watch([editingLayout, () => editGlyph.value.selectedComponentsTree], () => {
     if (selectedSubComponent.value && closeLayoutResizer) {
       closeLayoutResizer()
       editingLayout.value = false
@@ -251,71 +250,22 @@
       renderLayoutEditor(canvas.value)
     }
   }, {
-    deep: true,
+    deep: true
   })
 
-  watch([() => editGlyph.value.layout], () => {
-    render()
-    if (editingLayout.value && tool.value === 'params') {
-      renderLayoutEditor(canvas.value)
-    }
-    // else if (editingLayout.value && selectedComponent.value) {
-    //   renderLayoutEditor(canvas.value, selectedComponent.value.value, selectedComponent.value.ox, selectedComponent.value.oy)
-    // }
-    renderRefComponents()
-    emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
-  }, {
-    deep: true,
-  })
+
 
   watch([() => selectedComponent.value?.value?.layout, () => SubComponentsRoot.value?.value?.layout], () => {
     render()
     if (editingLayout.value && (selectedComponent.value || SubComponentsRoot.value)) {
       renderLayoutEditor(canvas.value)
     }
-    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+    tool.value === 'select' && renderSelectEditor(canvas.value)
     tool.value === 'pen' && renderPenEditor(canvas.value)
 		renderRefComponents()
-    emitter.emit('renderPreviewCanvasByUUID', editGlyph.value.uuid)
+    emitter.emit('renderGlyphPreviewCanvasByUUIDOnEditing', editGlyph.value.uuid)
   }, {
     deep: true,
-  })
-
-  watch([
-    glyphEditing,
-    draggingJoint,
-    movingJoint,
-    putAtCoord,
-  ], () => {
-    render()
-    renderRefComponents()
-    renderGlyphSelector(canvas.value)
-    if (!glyphEditing.value) return
-  })
-
-  watch(tool, (newValue, oldValue) => {
-    saveState('选择工具', [StoreType.Tools], OpType.Undo, {
-      tool: oldValue,
-      newRecord: true,
-    })
-    if (!mounted) return
-    render()
-    switch (tool.value) {
-      case 'select':
-        if (selectedComponentUUID.value) {
-          renderSelectEditor(canvas.value, 10, true)
-        }
-        break
-      case 'glyphDragger':
-        if (selectedComponentUUID.value) {
-          closeTool && closeTool()
-          closeTool = initGlyphDragger(canvas.value)
-          renderGlyphSelector(canvas.value)
-        }
-        break
-    }
-    renderRefComponents()
-    initTool()
   })
 
   watch([
@@ -324,27 +274,26 @@
     fontRenderStyle,
   ], () => {
     render()
-    renderRefComponents()
   })
 
+  // 字符改变时，重新渲染
+  // watch for editing character change
   watch([
-    orderedListWithItemsForCurrentGlyph,
-    componentsForCurrentGlyph,
+    editGlyph,
   ], () => {
     if (!editGlyph.value) return
     if (!mounted) return
-    const _canvas = canvas.value
-    _canvas.width = mapCanvasWidth(width)
-    _canvas.height = mapCanvasHeight(height)
+    const _canvas = canvas.value as HTMLCanvasElement
+    _canvas.width = mapCanvasWidth(1000)
+    _canvas.height = mapCanvasHeight(1000)
     _canvas.style.width = `${500 * editGlyph.value.view.zoom / 100}px`
     _canvas.style.height = `${500 * editGlyph.value.view.zoom / 100}px`
+    setCanvas(_canvas)
     render()
-    if (selectedComponentUUID.value) {
-      tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
-      tool.value === 'pen' && renderPenEditor(canvas.value)
-    }
-    renderRefComponents()
-		emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
+		renderRefComponents()
+    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
+    emitter.emit('renderGlyphPreviewCanvasByUUIDOnEditing', editGlyph.value.uuid)
   })
 
   watch([
@@ -352,7 +301,7 @@
     penEditing,
   ], () => {
     render()
-    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+    tool.value === 'select' && renderSelectEditor(canvas.value)
     tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!penEditing.value) return
     renderPenEditor(canvas.value)
@@ -363,7 +312,7 @@
     polygonEditing,
   ], () => {
     render()
-    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+    tool.value === 'select' && renderSelectEditor(canvas.value)
     tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!polygonEditing.value) return
     renderPolygonEditor(polygonPoints, canvas.value)
@@ -377,7 +326,7 @@
     ellipseEditing,
   ], () => {
     render()
-    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+    tool.value === 'select' && renderSelectEditor(canvas.value)
     tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!ellipseEditing.value) return
     renderEllipseEditor(canvas.value)
@@ -391,10 +340,22 @@
     rectangleEditing,
   ], () => {
     render()
-    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+    tool.value === 'select' && renderSelectEditor(canvas.value)
     tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!rectangleEditing.value) return
     renderRectangleEditor(canvas.value)
+  })
+
+  watch([
+    glyphEditing,
+    draggingJoint,
+    putAtCoord,
+		movingJoint,
+  ], () => {
+    render()
+		renderRefComponents()
+		renderGlyphSelector(canvas.value)
+    if (!glyphEditing.value) return
   })
 
   watch([
@@ -402,11 +363,13 @@
     componentsForCurrentGlyph,
     selectedComponent,
   ], () => {
+    editingLayout.value = false
     render()
-    renderRefComponents()
     if (!selectedComponentUUID.value) return
-    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+    tool.value === 'select' && renderSelectEditor(canvas.value)
     tool.value === 'pen' && renderPenEditor(canvas.value)
+    renderRefComponents()
+    emitter.emit('renderGlyphPreviewCanvasByUUIDOnEditing', editGlyph.value.uuid)
   })
 
   watch([
@@ -427,14 +390,18 @@
   ], () => {
     if (tool.value === 'select') {
       render()
-      renderSelectEditor(canvas.value, 10, true)
+      renderSelectEditor(canvas.value)
     }
   })
 
   const render = () => {
-    //_render(canvas.value as HTMLCanvasElement)
-    const glyph = editGlyph.value._o ? editGlyph.value._o : new CustomGlyph(editGlyph.value)
-    renderGlyph(glyph, canvas.value, true, false, false)
+    if (editGlyphOnDragging.value) {
+      const glyph = editGlyphOnDragging.value._o ? editGlyphOnDragging.value._o : new CustomGlyph(editGlyphOnDragging.value)
+      renderGlyph(glyph, canvas.value, true, false, false)
+    } else {
+      const glyph = editGlyph.value._o ? editGlyph.value._o : new CustomGlyph(editGlyph.value)
+      renderGlyph(glyph, canvas.value, true, false, false)
+    }
   }
 </script>
 

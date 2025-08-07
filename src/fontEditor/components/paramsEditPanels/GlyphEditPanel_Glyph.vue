@@ -155,7 +155,7 @@
     _selectedComponent.value.value._o.getJoints().map((joint) => {
       joint.component = _selectedComponent.value
     })
-    emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
+    emitter.emit('renderGlyphPreviewCanvasByUUIDOnEditing', editGlyph.value.uuid)
     emitter.emit('renderGlyph')
   }
 
@@ -182,7 +182,7 @@
     }
 		//executeScript(_selectedComponent.value.value)
     executeScript(editGlyph.value)
-    emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
+    emitter.emit('renderGlyphPreviewCanvasByUUIDOnEditing', editGlyph.value.uuid)
     emitter.emit('renderGlyph')
   }
 

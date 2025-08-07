@@ -342,17 +342,16 @@ const setEditCharacterFileByUUID = (uuid: string) => {
 			break
 		}
 	}
-	editCharacterFile.value = character
+	editCharacterFile.value = R.clone(character)
 }
 const resetEditCharacterFile = () => {
 	editCharacterFile.value = null
 }
 const updateCharacterListFromEditFile = () => {
-	let character = null
 	const characters = selectedFile.value.characterList
 	for (let i = 0; i < characters.length; i++) {
 		if (editCharacterFileUUID.value === characters[i].uuid) {
-			characters[i] = editCharacterFile.value
+			characters[i] = R.clone(editCharacterFile.value)
 			break
 		}
 	}
@@ -377,8 +376,6 @@ const characterList = computed(() => {
 // selected components
 const selectedComponents = computed(() => {
 	if (!selectedFileUUID.value) return null
-	// const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	// const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
 	const characterFile = editCharacterFile.value
 	const components = characterFile?.selectedComponentsUUIDs.map((uuid: string) => {
 		// return selectedItemByUUID(characterFile.components, uuid)
@@ -408,8 +405,6 @@ const traverseComponents = (components, uuid) => {
 // sub components list
 const SubComponents = computed(() => {
 	if (!selectedFileUUID.value) return null
-	// const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	// const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
 	const characterFile = editCharacterFile.value
 	if (!characterFile?.selectedComponentsTree || !characterFile?.selectedComponentsTree.length) return null
 	let rootComponent = null
@@ -434,8 +429,6 @@ const SubComponents = computed(() => {
 // root for sub components list
 const SubComponentsRoot = computed(() => {
 	if (!selectedFileUUID.value) return null
-	// const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	// const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
 	const characterFile = editCharacterFile.value
 	if (!characterFile?.selectedComponentsTree || !characterFile?.selectedComponentsTree.length) return null
 	let rootComponent = null
@@ -457,8 +450,6 @@ const selectedSubComponent = computed(() => {
 	if (!selectedFileUUID.value) {
 		rs = null
 	} else {
-		// const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-		// const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
 		const characterFile = editCharacterFile.value
 		if (!characterFile?.selectedComponentsTree || !characterFile?.selectedComponentsTree.length) {
 			rs = null
@@ -486,8 +477,7 @@ const selectedSubComponent = computed(() => {
 // components for current character file
 const componentsForCurrentCharacterFile = computed(() => {
 	if (!selectedFileUUID.value) return []
-	const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	return characterFile.components
 })
 
@@ -495,8 +485,6 @@ const componentsForCurrentCharacterFile = computed(() => {
 // ordered component list (with component itself) for current character file
 const orderedListWithItemsForCurrentCharacterFile = computed(() => {
 	if (!selectedFileUUID.value || !editCharacterFileUUID.value) return []
-	// const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	// const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
 	const characterFile = editCharacterFile.value
 	return characterFile.orderedList.map((item: {
 		type: string,
@@ -527,8 +515,7 @@ const orderedListWithItemsForCharacterFile = (characterFile: ICharacterFile) => 
 // ordered component list (with NO component itself) for current character file
 const orderedListForCurrentCharacterFile = computed(() => {
 	if (!selectedFileUUID.value) return []
-	const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	return characterFile.orderedList
 })
 
@@ -536,8 +523,7 @@ const orderedListForCurrentCharacterFile = computed(() => {
 // selected components' uuids
 const selectedComponentsUUIDs = computed(() => {
 	if (!selectedFileUUID.value) return ''
-	const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	return characterFile.selectedComponentsUUIDs
 })
 
@@ -689,8 +675,7 @@ const modifyCharacterFile = (uuid: string, options: any) => {
  * @param uuid uuid of component to be removed
  */
 const removeOrderedItemForCurrentCharacterFile = (uuid: string) => {
-	const file = selectedFile.value
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	const index = (() => {
 		for (let i = 0; i < characterFile.orderedList.length; i++) {
 			if (characterFile.orderedList[i].uuid === uuid)
@@ -712,8 +697,7 @@ const removeOrderedItemForCurrentCharacterFile = (uuid: string) => {
  * @param uuid uuid of component to be removed
  */
 const removeComponentForCurrentCharacterFile = (uuid: string) => {
-	const file = selectedFile.value
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	const index = (() => {
 		for (let i = 0; i < characterFile.components.length; i++) {
 			if (characterFile.components[i].uuid === uuid)
@@ -739,8 +723,7 @@ const removeComponentForCurrentCharacterFile = (uuid: string) => {
  * @param options 配置选项
  */
 const insertComponentForCurrentCharacterFile = (component: Component, options: { uuid: string, pos: string }) => {
-	const file = selectedFile.value
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	characterFile.components.push(component)
 	insertOrderedItemForCurrentCharacterFile({
 		type: 'component',
@@ -759,11 +742,15 @@ const insertComponentForCurrentCharacterFile = (component: Component, options: {
  * @param uuid uuid of component to be selected
  */
 const setSelectionForCurrentCharacterFile = (uuid: string) => {
-	const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	if (uuid) {
 		if (enableMultiSelect.value) {
-			characterFile.selectedComponentsUUIDs.push(uuid)
+			const index = characterFile.selectedComponentsUUIDs.indexOf(uuid)
+			if (index === -1) {
+				characterFile.selectedComponentsUUIDs.push(uuid)
+			} else {
+				characterFile.selectedComponentsUUIDs.splice(index, 1)
+			}
 		} else {
 			characterFile.selectedComponentsUUIDs = [uuid]
 		}
@@ -783,8 +770,7 @@ const setSelectionForCurrentCharacterFile = (uuid: string) => {
  * @param options options
  */
 const modifySubComponent = (options) => {
-	const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	if (!characterFile?.selectedComponentsTree || !characterFile?.selectedComponentsTree.length) {
 		return
 	} else {
@@ -824,8 +810,6 @@ const modifySubComponent = (options) => {
  * @param options options
  */
 const modifyComponentForCurrentCharacterFile = (uuid: string, options: any) => {
-	const file = selectedFile.value
-	//const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
 	const characterFile = editCharacterFile.value
 	const components = R.clone(characterFile.components)
 	components.forEach((component: Component) => {
@@ -1005,8 +989,7 @@ const modifyComponentForCharacterFile = (uuid: string, options: any, characterUU
  * @param group components group
  */
 const addGroupForCurrentCharacterFile = (group: { type: string, uuid: string }) => {
-	const file = selectedFile.value
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value	
 	characterFile.groups.push(group)
 }
 
@@ -1019,8 +1002,7 @@ const addGroupForCurrentCharacterFile = (group: { type: string, uuid: string }) 
  * @param item ordered item
  */
 const addOrderedItemForCurrentCharacterFile = (item: { type: string, uuid: string }) => {
-	const file = selectedFile.value
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	characterFile.orderedList.push(item)
 }
 
@@ -1054,8 +1036,7 @@ const insertOrderedItemForCurrentCharacterFile = (
 	item: { type: string, uuid: string },
 	options: { uuid: string, pos: string },
 ) => {
-	const file = selectedFile.value
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	const index = (() => {
 		for(let i = 0; i < characterFile.orderedList.length; i++) {
 			if (characterFile.orderedList[i].uuid === options.uuid) return i
@@ -1078,8 +1059,7 @@ const insertOrderedItemForCurrentCharacterFile = (
  * @param list ordered list
  */
 const setOrderedListForCurrentCharacterFile = (list: Array<{ type: string, uuid: string }>) => {
-	const file = selectedFile.value
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	characterFile.orderedList = list
 }
 
@@ -1164,8 +1144,7 @@ const removeCharacterForCurrentFile = (uuid: string) => {
  * @param component component to be added
  */
 const addComponentForCurrentCharacterFile = (component: Component) => {
-	const file = selectedFile.value
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	characterFile.components.push(component)
 	addOrderedItemForCurrentCharacterFile({
 		type: 'component',

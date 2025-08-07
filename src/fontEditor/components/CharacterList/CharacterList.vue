@@ -163,6 +163,7 @@
 		emitter.on('renderPreviewCanvasByUUID', async (uuid: string) => {
 			if (timerMap.get(uuid)) {
 				clearTimeout(timerMap.get(uuid))
+				timerMap.set(uuid, null)
 			}
 			const fn = () => {
 				renderPreviewCanvasByUUID(uuid)
@@ -176,11 +177,12 @@
 		emitter.on('renderPreviewCanvasByUUIDOnEditing', async (uuid: string) => {
 			if (timerMap.get(uuid)) {
 				clearTimeout(timerMap.get(uuid))
+				timerMap.set(uuid, null)
 			}
 			const fn = () => {
 				renderPreviewCanvasByUUID(uuid, true)
 			}
-			const timer = setTimeout(fn, 1000)
+			const timer = setTimeout(fn, 100)
 			timerMap.set(uuid, timer)
 		})
 

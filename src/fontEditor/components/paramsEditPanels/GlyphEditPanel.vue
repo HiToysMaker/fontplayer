@@ -156,7 +156,7 @@
     _selectedComponent.value.value._o.getJoints().map((joint) => {
       joint.component = _selectedComponent.value
     })
-    emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
+    emitter.emit('renderPreviewCanvasByUUIDOnEditing', editCharacterFile.value.uuid)
     emitter.emit('renderCharacter', true)
   }
 
@@ -183,7 +183,7 @@
     }
 		executeScript(_selectedComponent.value.value)
     executeCharacterScript(editCharacterFile.value)
-    emitter.emit('renderPreviewCanvasByUUID', _selectedComponent.value.value.uuid)
+    emitter.emit('renderPreviewCanvasByUUIDOnEditing', _selectedComponent.value.value.uuid)
     emitter.emit('renderCharacter')
   }
 

@@ -10,6 +10,7 @@ import {
   ICharacterFile,
   orderedListWithItemsForCharacterFile,
   selectedFile,
+  editCharacterFile,
 } from '../stores/files'
 import { type IBackground, type IGrid, BackgroundType, GridType, background, grid } from '../stores/global'
 import type { IPoint } from '../stores/pen'
@@ -76,6 +77,7 @@ const fillBackground = (canvas: HTMLCanvasElement, background: IBackground, grid
   if (background.type === BackgroundType.Transparent) {
     transparent(canvas)
   }
+
   if (grid.type === GridType.Mesh) {
     mesh(canvas, grid.precision)
   } else if (grid.type === GridType.LayoutGrid) {

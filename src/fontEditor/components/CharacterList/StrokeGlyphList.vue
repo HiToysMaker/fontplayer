@@ -7,7 +7,7 @@
 	 */
 
 	import { Status } from '../../stores/font'
-	import { executeScript, addGlyphTemplate, clearGlyphRenderList, stroke_glyphs } from '../../stores/glyph'
+	import { executeScript, addGlyphTemplate, clearGlyphRenderList, stroke_glyphs, editGlyph } from '../../stores/glyph'
 	import { glyphComponentsDialogVisible, setGlyphComponentsDialogVisible } from '../../stores/dialogs'
 	import { onMounted, nextTick, onUnmounted } from 'vue'
 	import type {
@@ -66,14 +66,20 @@
 
 	// 渲染指定uuid字形预览
 	// render glyph preview by uuid
-	const renderGlyphPreviewCanvasByUUID = (uuid: string) => {
+	const renderGlyphPreviewCanvasByUUID = (uuid: string, editing: boolean = false) => {
 		let glyph
-		for (let i = 0; i < stroke_glyphs.value.length; i++) {
-			glyph = stroke_glyphs.value[i]
-			if (glyph.uuid === uuid) {
-				break
+		if (!editing) {
+			for (let i = 0; i < stroke_glyphs.value.length; i++) {
+				glyph = stroke_glyphs.value[i]
+				if (glyph.uuid === uuid) {
+					break
+				}
 			}
+		} else {
+			// 编辑时，使用editGlyph
+			glyph = editGlyph.value
 		}
+		if (!glyph) return
 		executeScript(glyph)
 		glyph?.components?.map(component => {
 			if (component.type === 'glyph') {
@@ -111,6 +117,7 @@
 		emitter.on('renderStrokeGlyphPreviewCanvasByUUID', async (uuid: string) => {
 			if (timerMap.get(uuid)) {
 				clearTimeout(timerMap.get(uuid))
+				timerMap.set(uuid, null)
 			}
 			const timer = setTimeout(async () => {
 				await nextTick()
@@ -118,6 +125,21 @@
 			}, 1000)
 			timerMap.set(uuid, timer)
 		})
+
+		// 编辑字形时，监听渲染预览字形事件
+		// listen for render preview canvas by uuid on glyph editing
+		emitter.on('renderStrokeGlyphPreviewCanvasByUUIDOnEditing', async (uuid: string) => {
+			if (timerMap.get(uuid)) {
+				clearTimeout(timerMap.get(uuid))
+				timerMap.set(uuid, null)
+			}
+			const fn = () => {
+				renderGlyphPreviewCanvasByUUID(uuid, true)
+			}
+			const timer = setTimeout(fn, 100)
+			timerMap.set(uuid, timer)
+		})
+
 		!glyphComponentsDialogVisible.value && setGlyphComponentsDialogVisible(true)
 		//glyphComponentsDialogVisible2.value = true
 		await nextTick()

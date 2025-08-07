@@ -742,11 +742,6 @@ const saveFile = async () => {
 
 const clearCache = async () => {
   // 清空缓存
-  // const list: Array<string> = await localForage.getItem('fileList') as Array<string>
-  // list.map(async (uuid: string) => {
-  // 	await localForage.removeItem(uuid)
-  // })
-  // await localForage.removeItem('fileList')
   localForage.clear()
   ElNotification({
     title: '清空成功',
@@ -1405,7 +1400,7 @@ const paste = () => {
     component.uuid = genUUID()
     addComponentForCurrentCharacterFile(component)
   })
-  setClipBoard([])
+  // setClipBoard([])
 }
 
 const cut = () => {
@@ -1890,7 +1885,7 @@ const _syncData = async () => {
   }
 
   if (file_data) {
-    file.characterList.map((character) => {
+    file.characterList.map((character, index) => {
       addLoaded()
       return instanceCharacter(character)
     })

@@ -307,14 +307,14 @@ const updateGlyphByParams = (params, global_params) => {
   } else {
     // 默认骨架参考位置，即骨架参考位置为中间实际绘制的骨架位置
     heng_start = new FP.Joint(
-      'start',
+      'heng_start',
       {
         x: heng_start_ref.x,
         y: heng_start_ref.y,
       },
     )
     heng_end = new FP.Joint(
-      'end',
+      'heng_end',
       {
         x: heng_end_ref.x,
         y: heng_end_ref.y,

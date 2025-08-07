@@ -1,3 +1,5 @@
+import { curry, compose, tap } from 'ramda'
+
 const listToMap = (list: Array<Object>, key: string) => {
   const map: Object = {}
   list.map((item: Object) => {
@@ -7,6 +9,15 @@ const listToMap = (list: Array<Object>, key: string) => {
   return map
 }
 
+const debounce = curry((wait, fn) => {
+  let timeoutId
+  return (...args) => {
+    clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => fn(...args), wait)
+  };
+})
+
 export {
   listToMap,
+  debounce,
 }
