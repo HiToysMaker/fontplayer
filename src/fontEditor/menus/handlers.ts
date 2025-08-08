@@ -87,6 +87,7 @@ import { WorkerEventType } from '../worker'
 import { CustomGlyph } from '../programming/CustomGlyph'
 import paper from 'paper'
 import { genPenComponent } from '../tools/pen'
+import { removeOverlapWithWasm } from '../../utils/overlap-remover'
 import { save, open } from '@tauri-apps/plugin-dialog'
 import { writeTextFile, writeFile, readFile, readTextFile } from '@tauri-apps/plugin-fs'
 import { ENV } from '../stores/system'
@@ -503,7 +504,7 @@ const exportSVG_tauri = async () => {
 }
 
 const exportFont_tauri = async (options: CreateFontOptions) => {
-  const font = createFont(options)
+  const font = await createFont(options)
   const buffer = toArrayBuffer(font) as ArrayBuffer
   const filename = `${selectedFile.value.name}.otf`
   nativeSaveBinary(buffer, filename, ['otf'])
@@ -1260,7 +1261,7 @@ interface CreateFontOptions {
   remove_overlap?: boolean;
 }
 
-const createFont = (options?: CreateFontOptions) => {
+const createFont = async (options?: CreateFontOptions) => {
   const _width = selectedFile.value.width
   const _height = selectedFile.value.height
   const fontCharacters = [{
@@ -1284,6 +1285,7 @@ const createFont = (options?: CreateFontOptions) => {
   const { unitsPerEm, ascender, descender } = selectedFile.value.fontSettings
   for (let i = 0; i < selectedFile.value.characterList.length; i++) {
     loaded.value++
+    // console.log('loaded 2', loaded.value, total.value)
     if (loaded.value >= total.value) {
       loading.value = false
       loaded.value = 0
@@ -1304,6 +1306,7 @@ const createFont = (options?: CreateFontOptions) => {
       )
     }
     const { text, unicode } = char.character
+
     fontCharacters.push({
       name: text,
       unicode: parseInt(unicode, 16),
@@ -1312,6 +1315,7 @@ const createFont = (options?: CreateFontOptions) => {
       contours,
       contourNum: contours.length,
     })
+
     if (text === ' ') {
       containSpace = true
     }
@@ -1342,10 +1346,10 @@ const createFont = (options?: CreateFontOptions) => {
   // }
   // //-----
 
-  fontCharacters.sort((a: any, b: any) => {
-    return a.unicode - b.unicode
-  })
-  const font = create(fontCharacters, {
+  // fontCharacters.sort((a: any, b: any) => {
+  //   return a.unicode - b.unicode
+  // })
+  const font = await create(fontCharacters, {
     familyName: selectedFile.value.name,
     styleName: 'Regular',
     unitsPerEm,
@@ -1356,8 +1360,8 @@ const createFont = (options?: CreateFontOptions) => {
   return font
 }
 
-const exportFont = (options: CreateFontOptions) => {
-  const font = createFont(options)
+const exportFont = async (options: CreateFontOptions) => {
+  const font = await createFont(options)
   const dataView = new DataView(toArrayBuffer(font) as ArrayBuffer)
   const blob = new Blob([dataView], {type: 'font/opentype'})
   var zip = new JSZip()
@@ -2388,18 +2392,23 @@ const generateComponent = (data) => {
   return component
 }
 
-const computeOverlapRemovedContours = () => {
+const computeOverlapRemovedContours_backup = async () => {
   const {
     unitsPerEm,
     descender,
   } = selectedFile.value.fontSettings
-  for (let m = 0; m < selectedFile.value.characterList.length; m++) {
-    loaded.value++
-    if (loaded.value >= total.value) {
-      loading.value = false
-      loaded.value = 0
-      total.value = 0
+
+  let m = 0
+
+  const compute = async (): Promise<void> => {
+    console.log('compute', m)
+
+    // 检查是否完成所有字符处理
+    if (m >= selectedFile.value.characterList.length) {
+      console.log('compute completed')
+      return
     }
+
     let char = selectedFile.value.characterList[m]
     // 读取字符轮廓信息（已经将形状都转换成字体轮廓）
     let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(orderedListWithItemsForCharacterFile(char), {
@@ -2407,241 +2416,298 @@ const computeOverlapRemovedContours = () => {
       descender,
       advanceWidth: unitsPerEm,
     }, { x: 0, y: 0 }, false, false, false)
-  
-    // 将轮廓转换成Path
+    
+    // 使用优化后的路径创建函数
     let paths = []
     for (let i = 0; i < contours.length; i++) {
       const contour = contours[i]
-      let path = new paper.Path()
-      path.moveTo(new paper.Point(contour[0].start.x, contour[0].start.y))
-      for (let j = 0; j < contour.length; j++) {
-        const _path = contour[j]
-        if (_path.type === PathType.LINE) {
-          path.lineTo(new paper.Point((_path as unknown as ILine).end.x, (_path as unknown as ILine).end.y))
-        } else if (_path.type === PathType.CUBIC_BEZIER) {
-          path.cubicCurveTo(
-            new paper.Point(
-              (_path as unknown as ICubicBezierCurve).control1.x,
-              (_path as unknown as ICubicBezierCurve).control1.y,
-            ),
-            new paper.Point(
-              (_path as unknown as ICubicBezierCurve).control2.x,
-              (_path as unknown as ICubicBezierCurve).control2.y,
-            ),
-            new paper.Point(
-              (_path as unknown as ICubicBezierCurve).end.x,
-              (_path as unknown as ICubicBezierCurve).end.y,
-            )
-          )
-        }
+      if (contour.length === 0) continue
+      
+      const path = createOptimizedPath(contour)
+      
+      if (!path.closed) {
+        path.closePath()
       }
+      
       paths.push(path)
     }
 
-    // 合并路径，去除重叠
-    let unitedPath = null
-    if (paths.length < 2) {
-      unitedPath = paths[1]
-    } else {
-      unitedPath = paths[0].unite(paths[1])
-      for (let i = 2; i < paths.length; i++) {
-        unitedPath = unitedPath.unite(paths[i])
-      }
-    }
+    // 使用优化后的合并函数
+    let unitedPath = mergePathsWithPrecision(paths)
     
-    if (!unitedPath) return
+    if (!unitedPath) {
+      console.log('no unitedPath')
+      // 即使没有unitedPath，也要继续处理下一个字符
+      m++
+      loaded.value++
+      if (loaded.value >= total.value) {
+        loading.value = false
+        loaded.value = 0
+        total.value = 0
+        return
+      }
+      // 继续处理下一个字符
+      await new Promise(resolve => setTimeout(resolve, 0))
+      return compute()
+    }
 
     // 根据合并路径生成轮廓数据
     let overlap_removed_contours = []
-    if (unitedPath.children && unitedPath.children.length) {
-      for (let i = 0; i < unitedPath.children.length; i++) {
-        const paths = unitedPath.children[i]
-        if (!paths.curves.length) continue
-        const contour = []
-        for (let j = 0; j < paths.curves.length; j++) {
-          const curve = paths.curves[j]
-          const path = {
-            type: PathType.CUBIC_BEZIER,
-            start: { x: curve.points[0].x, y: curve.points[0].y },
-            control1: { x: curve.points[1].x, y: curve.points[1].y },
-            control2: { x: curve.points[2].x, y: curve.points[2].y },
-            end: { x: curve.points[3].x, y: curve.points[3].y },
+    
+    const extractContoursFromPath = (path: paper.Path) => {
+      const contours = []
+      
+      // 处理子路径
+      if (path.children && path.children.length > 0) {
+        for (let i = 0; i < path.children.length; i++) {
+          const child = path.children[i]
+          if (child instanceof paper.Path) {
+            const childContours = extractContoursFromPath(child)
+            contours.push(...childContours)
           }
-          contour.push(path)
         }
-        overlap_removed_contours.push(contour)
+        return contours
       }
-    } else if (unitedPath.curves) {
-      const paths = unitedPath
-      if (!paths.curves.length) return
-      const contour = []
-      for (let j = 0; j < paths.curves.length; j++) {
-        const curve = paths.curves[j]
-        const path = {
-          type: PathType.CUBIC_BEZIER,
-          start: { x: curve.points[0].x, y: curve.points[0].y },
-          control1: { x: curve.points[1].x, y: curve.points[1].y },
-          control2: { x: curve.points[2].x, y: curve.points[2].y },
-          end: { x: curve.points[3].x, y: curve.points[3].y },
+      
+      // 处理单个路径
+      if (path.curves && path.curves.length > 0) {
+        const contour = []
+        for (let j = 0; j < path.curves.length; j++) {
+          const curve = path.curves[j]
+          if (curve.points.length >= 4) {
+            const pathSegment = {
+              type: PathType.CUBIC_BEZIER,
+              start: { x: curve.points[0].x, y: curve.points[0].y },
+              control1: { x: curve.points[1].x, y: curve.points[1].y },
+              control2: { x: curve.points[2].x, y: curve.points[2].y },
+              end: { x: curve.points[3].x, y: curve.points[3].y },
+            }
+            contour.push(pathSegment)
+          }
         }
-        contour.push(path)
+        if (contour.length > 0) {
+          contours.push(contour)
+        }
       }
-      overlap_removed_contours.push(contour)
+      
+      return contours
     }
+    
+    overlap_removed_contours = extractContoursFromPath(unitedPath)
 
     char.overlap_removed_contours = overlap_removed_contours
+    
+    m++
+
+    loaded.value++
+    // console.log('loaded', loaded.value, total.value)
+    if (loaded.value >= total.value) {
+      loading.value = false
+      loaded.value = 0
+      total.value = 0
+      return
+    }
+
+    // 检查是否还有更多字符需要处理
+    if (m < selectedFile.value.characterList.length) {
+      if (m % 100 === 0) {
+        console.log('mod 100')
+        // 每100个字符后，给UI更多时间更新
+        await new Promise(resolve => setTimeout(resolve, 0))
+      }
+      // 继续处理下一个字符
+      return compute()
+    }
   }
+
+  console.log('compute start')
+  await compute()
 }
 
-const removeOverlap = () => {
-  let char = editCharacterFile.value
-  if (editStatus.value === Status.Glyph) {
-    char = editGlyph.value
-  }
-  // 读取字符轮廓信息（已经将形状都转换成字体轮廓）
+const computeOverlapRemovedContours = async () => {
   const {
     unitsPerEm,
     descender,
   } = selectedFile.value.fontSettings
+
+  let m = 0
+
+  const compute = async (): Promise<void> => {
+    console.log('compute', m)
+
+    // 检查是否完成所有字符处理
+    if (m >= selectedFile.value.characterList.length) {
+      console.log('compute completed')
+      return
+    }
+
+    let char = selectedFile.value.characterList[m]
+    // 读取字符轮廓信息（已经将形状都转换成字体轮廓）
+    let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(orderedListWithItemsForCharacterFile(char), {
+      unitsPerEm,
+      descender,
+      advanceWidth: unitsPerEm,
+    }, { x: 0, y: 0 }, false, false, false)
+
+    try {
+      // 使用WASM去除重叠
+      const overlap_removed_contours = await removeOverlapWithWasm(contours)
+      // console.log('remove overlap', loaded.value, total.value)
+      char.overlap_removed_contours = overlap_removed_contours
+    } catch (error) {
+      console.error('Error removing overlap with WASM:', error)
+    }
+    
+    m++
+
+    loaded.value++
+    // console.log('loaded', loaded.value, total.value)
+    if (loaded.value >= total.value) {
+      loading.value = false
+      loaded.value = 0
+      total.value = 0
+      return
+    }
+
+    // 检查是否还有更多字符需要处理
+    if (m < selectedFile.value.characterList.length) {
+      if (m % 100 === 0) {
+        console.log('mod 100')
+        // 每100个字符后，给UI更多时间更新
+        await new Promise(resolve => setTimeout(resolve, 0))
+      }
+      // 继续处理下一个字符
+      return compute()
+    }
+  }
+
+  console.log('compute start')
+  await compute()
+}
+
+// 优化后的removeOverlap函数
+const removeOverlap_backup = async () => {
+  let char = editCharacterFile.value
+  if (editStatus.value === Status.Glyph) {
+    char = editGlyph.value
+  }
+  
+  const {
+    unitsPerEm,
+    descender,
+  } = selectedFile.value.fontSettings
+  
   let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours2(orderedListWithItemsForCharacterFile(char),
     { x: 0, y: 0 }, false, 1
   )
+  
   if (editStatus.value == Status.Glyph) {
     contours = componentsToContours2(char._o.components,
       { x: 0, y: 0 }, true, 1
     )
   }
 
-  // 将轮廓转换成Path
+  // 使用优化后的路径创建函数
   let paths = []
   for (let i = 0; i < contours.length; i++) {
     const contour = contours[i]
-    let path = new paper.Path()
-    path.moveTo(new paper.Point(contour[0].start.x, contour[0].start.y))
-    for (let j = 0; j < contour.length; j++) {
-      const _path = contour[j]
-      if (_path.type === PathType.LINE) {
-        path.lineTo(new paper.Point((_path as unknown as ILine).end.x, (_path as unknown as ILine).end.y))
-      } else if (_path.type === PathType.CUBIC_BEZIER) {
-        path.cubicCurveTo(
-          new paper.Point(
-            (_path as unknown as ICubicBezierCurve).control1.x,
-            (_path as unknown as ICubicBezierCurve).control1.y,
-          ),
-          new paper.Point(
-            (_path as unknown as ICubicBezierCurve).control2.x,
-            (_path as unknown as ICubicBezierCurve).control2.y,
-          ),
-          new paper.Point(
-            (_path as unknown as ICubicBezierCurve).end.x,
-            (_path as unknown as ICubicBezierCurve).end.y,
-          )
-        )
-      }
+    if (contour.length === 0) continue
+    
+    const path = createOptimizedPath(contour)
+    
+    if (!path.closed) {
+      path.closePath()
     }
+    
     paths.push(path)
   }
 
-  // 合并路径，去除重叠
-  let unitedPath = null
-  if (paths.length < 2) {
-    unitedPath = paths[1]
-  } else {
-    unitedPath = paths[0].unite(paths[1])
-    for (let i = 2; i < paths.length; i++) {
-      unitedPath = unitedPath.unite(paths[i]) 
-    }
-  }
+  console.log('paths', paths)
+
+  // 使用优化后的合并函数
+  let unitedPath = mergePathsWithPrecision(paths)
+
+  console.log('unitedPath', unitedPath)
 
   let components = []
-  if (unitedPath && unitedPath.children) {
-    for (let i = 0; i < unitedPath.children.length; i++) {
-      const paths = unitedPath.children[i]
-      let points = []
-      if (!paths.curves.length) continue
-      points.push({
-        uuid: genUUID(),
-        type: 'anchor',
-        x: paths.curves[0].points[0].x,
-        y: paths.curves[0].points[0].y,
-        origin: null,
-        isShow: true,
-      })
-      for (let j = 0; j < paths.curves.length; j++) {
-        const curve = paths.curves[j]
-        const control1 = {
-          uuid: genUUID(),
-          type: 'control',
-          x: curve.points[1].x,
-          y: curve.points[1].y,
-          origin: points[points.length - 1].uuid,
-          isShow: true,
+  if (unitedPath) {
+    const extractComponentsFromPath = (path: paper.Path): any[] => {
+      const components = []
+      
+      // 处理子路径
+      if (path.children && path.children.length > 0) {
+        for (let i = 0; i < path.children.length; i++) {
+          const child = path.children[i]
+          if (child instanceof paper.Path) {
+            const childComponents = extractComponentsFromPath(child)
+            components.push(...childComponents)
+          }
         }
-        const uuid = genUUID()
-        const control2 = {
+        return components
+      }
+      
+      // 处理单个路径
+      if (path.curves && path.curves.length > 0) {
+        let points = []
+        
+        // 添加起始点
+        points.push({
           uuid: genUUID(),
-          type: 'control',
-          x: curve.points[2].x,
-          y: curve.points[2].y,
-          origin: uuid,
-          isShow: true,
-        }
-        const end = {
-          uuid: uuid,
           type: 'anchor',
-          x: curve.points[3].x,
-          y: curve.points[3].y,
+          x: path.curves[0].points[0].x,
+          y: path.curves[0].points[0].y,
           origin: null,
           isShow: true,
+        })
+        
+        // 处理所有曲线段
+        for (let j = 0; j < path.curves.length; j++) {
+          const curve = path.curves[j]
+          
+          if (curve.points.length >= 4) {
+            const control1 = {
+              uuid: genUUID(),
+              type: 'control',
+              x: curve.points[1].x,
+              y: curve.points[1].y,
+              origin: points[points.length - 1].uuid,
+              isShow: true,
+            }
+            const uuid = genUUID()
+            const control2 = {
+              uuid: genUUID(),
+              type: 'control',
+              x: curve.points[2].x,
+              y: curve.points[2].y,
+              origin: uuid,
+              isShow: true,
+            }
+            const end = {
+              uuid: uuid,
+              type: 'anchor',
+              x: curve.points[3].x,
+              y: curve.points[3].y,
+              origin: null,
+              isShow: true,
+            }
+            points.push(control1, control2, end)
+          }
         }
-        points.push(control1, control2, end)
+        
+        // 只有当有足够的点时才创建组件
+        if (points.length >= 3) {
+          components.push(genPenComponent(points, true))
+        }
       }
-      components.push(genPenComponent(points, true))
+
+      console.log('components', components)
+      
+      return components
     }
-  } else if (unitedPath && unitedPath.curves) {
-    const paths = unitedPath
-    let points = []
-    points.push({
-      uuid: genUUID(),
-      type: 'anchor',
-      x: paths.curves[0].points[0].x,
-      y: paths.curves[0].points[0].y,
-      origin: null,
-      isShow: true,
-    })
-    for (let j = 0; j < paths.curves.length; j++) {
-      const curve = paths.curves[j]
-      const control1 = {
-        uuid: genUUID(),
-        type: 'control',
-        x: curve.points[1].x,
-        y: curve.points[1].y,
-        origin: points[points.length - 1].uuid,
-        isShow: true,
-      }
-      const uuid = genUUID()
-      const control2 = {
-        uuid: genUUID(),
-        type: 'control',
-        x: curve.points[2].x,
-        y: curve.points[2].y,
-        origin: uuid,
-        isShow: true,
-      }
-      const end = {
-        uuid: uuid,
-        type: 'anchor',
-        x: curve.points[3].x,
-        y: curve.points[3].y,
-        origin: null,
-        isShow: true,
-      }
-      points.push(control1, control2, end)
-    }
-    components.push(genPenComponent(points, true))
-  } else {
-    return
+    
+    components = extractComponentsFromPath(unitedPath)
   }
+
   if (editStatus.value === Status.Edit) {
     editCharacterFile.value.script = `function script_${editCharacterFile.value.uuid.replaceAll('-', '_')} (character, constants, FP) {\n\t//Todo something\n}`,
     editCharacterFile.value.glyph_script = null
@@ -2660,6 +2726,136 @@ const removeOverlap = () => {
       addComponentForCurrentGlyph(components[i])
     }
     emitter.emit('renderGlyph')
+  }
+}
+
+const removeOverlap = async () => {
+  let char = editCharacterFile.value
+  if (editStatus.value === Status.Glyph) {
+    char = editGlyph.value
+  }
+  // 读取字符轮廓信息（已经将形状都转换成字体轮廓）
+  const {
+    unitsPerEm,
+    descender,
+  } = selectedFile.value.fontSettings
+  let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours2(orderedListWithItemsForCharacterFile(char),
+    { x: 0, y: 0 }, false, 1
+  )
+  if (editStatus.value == Status.Glyph) {
+    contours = componentsToContours2(char._o.components,
+      { x: 0, y: 0 }, true, 1
+    )
+  }
+
+  try {
+    // 使用WASM去除重叠
+    const overlap_removed_contours = await removeOverlapWithWasm(contours)
+    
+    // 将去除重叠后的轮廓转换为组件
+    let components = []
+    for (let i = 0; i < overlap_removed_contours.length; i++) {
+      const contour = overlap_removed_contours[i]
+      if (contour.length === 0) continue
+      
+      let points = []
+      points.push({
+        uuid: genUUID(),
+        type: 'anchor',
+        x: contour[0].start.x,
+        y: contour[0].start.y,
+        origin: null,
+        isShow: true,
+      })
+      
+      for (let j = 0; j < contour.length; j++) {
+        const segment = contour[j]
+        if ('control1' in segment && 'control2' in segment) {
+          // 三次贝塞尔曲线
+          const control1 = {
+            uuid: genUUID(),
+            type: 'control',
+            x: segment.control1.x,
+            y: segment.control1.y,
+            origin: points[points.length - 1].uuid,
+            isShow: true,
+          }
+          const uuid = genUUID()
+          const control2 = {
+            uuid: genUUID(),
+            type: 'control',
+            x: segment.control2.x,
+            y: segment.control2.y,
+            origin: uuid,
+            isShow: true,
+          }
+          const end = {
+            uuid: uuid,
+            type: 'anchor',
+            x: segment.end.x,
+            y: segment.end.y,
+            origin: null,
+            isShow: true,
+          }
+          points.push(control1, control2, end)
+        } else if ('control' in segment) {
+          // 二次贝塞尔曲线
+          const control = {
+            uuid: genUUID(),
+            type: 'control',
+            x: segment.control.x,
+            y: segment.control.y,
+            origin: points[points.length - 1].uuid,
+            isShow: true,
+          }
+          const uuid = genUUID()
+          const end = {
+            uuid: uuid,
+            type: 'anchor',
+            x: segment.end.x,
+            y: segment.end.y,
+            origin: null,
+            isShow: true,
+          }
+          points.push(control, end)
+        } else {
+          // 直线
+          const uuid = genUUID()
+          const end = {
+            uuid: uuid,
+            type: 'anchor',
+            x: segment.end.x,
+            y: segment.end.y,
+            origin: null,
+            isShow: true,
+          }
+          points.push(end)
+        }
+      }
+      components.push(genPenComponent(points, true))
+    }
+    
+    if (editStatus.value === Status.Edit) {
+      editCharacterFile.value.script = `function script_${editCharacterFile.value.uuid.replaceAll('-', '_')} (character, constants, FP) {\n\t//Todo something\n}`,
+      editCharacterFile.value.glyph_script = null
+      editCharacterFile.value.system_script = null
+      editCharacterFile.value.orderedList = []
+      editCharacterFile.value.components = []
+      for (let i = 0; i < components.length; i++) {
+        addComponentForCurrentCharacterFile(components[i])
+      }
+      emitter.emit('renderCharacter')
+    } else if (editStatus.value === Status.Glyph) {
+      editGlyph.value.script = `function script_${editGlyph.value.uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t//Todo something\n}`,
+      editGlyph.value.glyph_script = null
+      editGlyph.value.system_script = null
+      for (let i = 0; i < components.length; i++) {
+        addComponentForCurrentGlyph(components[i])
+      }
+      emitter.emit('renderGlyph')
+    }
+  } catch (error) {
+    console.error('Error removing overlap with WASM:', error)
   }
 }
 
@@ -2689,6 +2885,101 @@ const openPlayground = () => {
       `popup,width=${1280},height=${800},left=${(screen.width - 1280) / 2}`,
     )
   }
+}
+
+
+// 添加精度控制常量
+const OVERLAP_REMOVAL_CONFIG = {
+  // 路径精度设置
+  PATH_PRECISION: 1e-6,
+  // 容差值
+  TOLERANCE: 1e-8,
+  // 最大细分次数
+  MAX_SUBDIVISIONS: 10,
+  // 曲线细分阈值
+  CURVE_SUBDIVISION_THRESHOLD: 0.1,
+  // 合并容差
+  MERGE_TOLERANCE: 1e-6
+}
+
+// 优化后的路径创建函数
+const createOptimizedPath = (contour: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>): paper.Path => {
+  const path = new paper.Path()
+  
+  if (contour.length === 0) return path
+  
+  // 移动到起始点
+  const startPoint = new paper.Point(contour[0].start.x, contour[0].start.y)
+  path.moveTo(startPoint)
+  
+  for (let j = 0; j < contour.length; j++) {
+    const segment = contour[j]
+    
+    if (segment.type === PathType.LINE) {
+      const lineSegment = segment as unknown as ILine
+      const endPoint = new paper.Point(lineSegment.end.x, lineSegment.end.y)
+      path.lineTo(endPoint)
+    } else if (segment.type === PathType.CUBIC_BEZIER) {
+      const cubicSegment = segment as unknown as ICubicBezierCurve
+      const control1 = new paper.Point(cubicSegment.control1.x, cubicSegment.control1.y)
+      const control2 = new paper.Point(cubicSegment.control2.x, cubicSegment.control2.y)
+      const endPoint = new paper.Point(cubicSegment.end.x, cubicSegment.end.y)
+      path.cubicCurveTo(control1, control2, endPoint)
+    } else if (segment.type === PathType.QUADRATIC_BEZIER) {
+      const quadSegment = segment as unknown as IQuadraticBezierCurve
+      const control = new paper.Point(quadSegment.control.x, quadSegment.control.y)
+      const endPoint = new paper.Point(quadSegment.end.x, quadSegment.end.y)
+      
+      // 将二次贝塞尔转换为三次贝塞尔
+      const cubicControl1 = startPoint.multiply(1/3).add(control.multiply(2/3))
+      const cubicControl2 = endPoint.multiply(1/3).add(control.multiply(2/3))
+      path.cubicCurveTo(cubicControl1, cubicControl2, endPoint)
+    }
+    
+    // 更新起始点
+    startPoint.x = segment.end.x
+    startPoint.y = segment.end.y
+  }
+  
+  return path
+}
+
+// 检查贝塞尔曲线控制点是否有效
+const isValidBezierControlPoint = (
+  start: paper.Point, 
+  control1: paper.Point, 
+  control2: paper.Point, 
+  end: paper.Point
+): boolean => {
+  // 检查控制点是否在合理范围内
+  const minDistance = OVERLAP_REMOVAL_CONFIG.TOLERANCE
+  const maxDistance = start.getDistance(end) * 10 // 控制点不应超过起点终点距离的10倍
+  
+  const d1 = start.getDistance(control1)
+  const d2 = control1.getDistance(control2)
+  const d3 = control2.getDistance(end)
+  
+  return d1 > minDistance && d1 < maxDistance && 
+         d2 > minDistance && d2 < maxDistance && 
+         d3 > minDistance && d3 < maxDistance
+}
+
+// 优化路径合并函数
+const mergePathsWithPrecision = (paths: paper.Path[]): paper.Path | null => {
+  if (paths.length === 0) return null
+  if (paths.length === 1) return paths[0]
+  
+  // 设置paper.js的全局精度
+  paper.settings.precision = OVERLAP_REMOVAL_CONFIG.PATH_PRECISION
+  
+  let unitedPath = paths[0].clone()
+  
+  for (let i = 1; i < paths.length; i++) {
+    const currentPath = paths[i]
+    unitedPath = unitedPath.unite(currentPath) as paper.Path
+  }
+  
+  return unitedPath
 }
 
 const tauri_handlers: IHandlerMap = {

@@ -96,20 +96,6 @@
     }
   }
 
-  // // 跳转至字符列表
-  // // go to character list
-  // const toList = debounce(300, () => {
-  //   loading.value = true
-  //   setEditStatus(prevStatus.value)
-  // })
-
-  // // 跳转至字符列表
-  // // go to character list
-  // const toList = () => {
-  //   console.time('testtimer')
-  //   setEditStatus(prevStatus.value)
-  // }
-
   const toList = () => {
     setEditStatus(Status.CharacterList)
   }

@@ -157,7 +157,7 @@ const parse2 = (data: DataView, offset: number, length: number) => {
  * @param tables font tables
  * @returns font data
  */
-const create = (tables: any, mark: string = '') => {
+const create = async (tables: any, mark: string = '') => {
 	let checksum = 0
 	const _tables = []
 	const recordMap = {}
@@ -186,7 +186,12 @@ const create = (tables: any, mark: string = '') => {
 	}
 	for (let i = 0; i < keys.length; i++) {
 		const t = tables[keys[i]]
-		let tableData = tableTool[keys[i]].create(t)
+		let tableData = null
+		if (keys[i] === 'CFF ') {
+			tableData = await tableTool[keys[i]].create(t)
+		} else {
+			tableData = tableTool[keys[i]].create(t)
+		}
 
 		tablesDataMap[keys[i]] = tableData
 		let checkSum = computeCheckSum(tableData)
@@ -194,7 +199,12 @@ const create = (tables: any, mark: string = '') => {
 		if (keys[i] === 'head' && mark === 'final') {
 			const t2 = R.clone(t)
 			t2.checkSumAdjustment = 0x00000000
-			const tableData2 = tableTool[keys[i]].create(t2)
+			let tableData2 = null
+			if (keys[i] === 'CFF ') {
+				tableData2 = await tableTool[keys[i]].create(t)
+			} else {
+				tableData2 = tableTool[keys[i]].create(t)
+			}
 			checkSum = computeCheckSum(tableData2)
 			checkSum %= 0x100000000
 		}

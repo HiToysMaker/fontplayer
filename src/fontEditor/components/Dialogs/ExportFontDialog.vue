@@ -32,11 +32,13 @@
     }
     loaded.value = 0
     loading.value = true
-    if (options.value.remove_overlap) {
-      computeOverlapRemovedContours()
-    }
-    exportFont(options.value)
-    setExportFontDialogVisible(false)
+    setTimeout(async () => {
+      if (options.value.remove_overlap) {
+        await computeOverlapRemovedContours()
+      }
+      setTimeout(() => exportFont(options.value), 100)
+      setExportFontDialogVisible(false)
+    }, 100)
   }
 </script>
 

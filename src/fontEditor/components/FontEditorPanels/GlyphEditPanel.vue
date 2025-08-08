@@ -58,7 +58,6 @@
   import { initCoordsViewer } from '../../tools/coordsViewer'
   import { clearState, OpType, redo, saveState, StoreType, undo } from '../../stores/edit'
   import { renderJoints, renderRefLines } from '../../programming/Joint'
-import { e } from 'vitest/dist/index-6e18a03a.js'
 
   const mounted: Ref<boolean> = ref(false)
   let closeTool: Function | null = null

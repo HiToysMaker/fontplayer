@@ -28,7 +28,7 @@
     total.value = selectedFile.value.characterList.length * 4
     loaded.value = 0
     loading.value = true
-    computeOverlapRemovedContours()
+    await computeOverlapRemovedContours()
     await exportFont_tauri(options.value)
     setExportFontTauriDialogVisible(false)
   }

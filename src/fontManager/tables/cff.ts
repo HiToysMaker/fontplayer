@@ -1985,7 +1985,7 @@ const createIndex = (indexData: Array<any>) => {
 	}
 
 	const encodedOffsets: Array<number> = []
-	const offSize = 2//(1 + Math.floor(Math.log(offset) / Math.log(2)) / 8) | 0
+	const offSize = 4//2//(1 + Math.floor(Math.log(offset) / Math.log(2)) / 8) | 0
 	const offsetEncoder = [undefined, encoder.uint8, encoder.uint16, encoder.uint24, encoder.uint32][offSize]
 	for (let i = 0; i < offsets.length; i += 1) {
 		const encodedOffset = (offsetEncoder as Function)(offsets[i])
@@ -2249,8 +2249,9 @@ let cnt = 0
  * @param table ICffTable table
  * @returns raw data array, each entry is type of 8-bit number
  */
-const create = (_table: ICffTable) => {
-	const table = R.clone(_table)
+const create = async(_table: ICffTable) => {
+
+	const table = _table//R.clone(_table)
 	// 创建header数据
 	// create header data
 	const header = table.header
@@ -2290,17 +2291,59 @@ const create = (_table: ICffTable) => {
 	// 创建charstrings数据
 	// create charstrings data
 	const charStringsIndexRawData = []
-	for (let i = 0; i < glyphTables.length; i++) {
+
+	let m = 0
+
+	const computeGlyphOps = async (): Promise<void> => {
+		// 检查是否完成所有字符处理
+		if (m >= glyphTables.length) {
+			console.log('compute completed')
+			return
+		}
+
 		loaded.value++
+		console.log('loaded 3', loaded.value, total.value)
 		if (loaded.value >= total.value) {
 			loading.value = false
 			loaded.value = 0
 			total.value = 0
+			return
 		}
-		const glyph = glyphTables[i]
+		const glyph = glyphTables[m]
 		const ops = glyphToOps(glyph)
 		charStringsIndexRawData.push({type: 'CharString', value: ops})
+
+		m++
+		// 检查是否还有更多字符需要处理
+		if (m < glyphTables.length) {
+			if (m % 100 === 0) {
+				console.log('mod 100')
+				// 每100个字符后，给UI更多时间更新
+				await new Promise(resolve => setTimeout(resolve, 0))
+			}
+			// 继续处理下一个字符
+			return computeGlyphOps()
+		}
 	}
+
+	await computeGlyphOps()
+		
+	// for (let i = 0; i < glyphTables.length; i++) {
+	// 	loaded.value++
+	// 	//console.log('loaded 4', loaded.value, total.value)
+	// 	if (loaded.value >= total.value) {
+	// 		loading.value = false
+	// 		loaded.value = 0
+	// 		total.value = 0
+	// 	}
+	// 	const glyph = glyphTables[i]
+
+	// 	const ops = glyphToOps(glyph)
+	// 	if (i === 145) {
+	// 		console.log('cff glyph ops: ', i, ops)
+	// 	}
+	// 	charStringsIndexRawData.push({type: 'CharString', value: ops})
+	// }
 	const charStringsIndexData = createIndex(charStringsIndexRawData)
 
 	const _fd: any = {

@@ -132,7 +132,7 @@ const parseFont = (buffer: ArrayBuffer) => {
  * @param options font options
  * @returns font object
  */
-const createFont = (characters: Array<ICharacter>, options: IOption) => {
+const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 	let enName = ''
 	for(let i = 0; i < options.familyName.length; i++) {
 		const charcode = options.familyName[i].charCodeAt(0)
@@ -241,15 +241,24 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 	let ulUnicodeRange2 = 0
 	let ulUnicodeRange3 = 0
 	let ulUnicodeRange4 = 0
+	let m = 0
 
-	for (let i = 0; i < characters.length; i += 1) {
+	const compute = async (): Promise<void> => {
+		// 检查是否完成所有字符处理
+		if (m >= characters.length) {
+			console.log('compute completed')
+			return
+		}
+
 		loaded.value++
+		// console.log('loaded 3', loaded.value, total.value)
 		if (loaded.value >= total.value) {
 			loading.value = false
 			loaded.value = 0
 			total.value = 0
+			return
 		}
-		const character = characters[i]
+		const character = characters[m]
 		const unicode = character.unicode | 0
 
 		if ((firstCharIndex as number) > unicode || firstCharIndex === undefined) {
@@ -289,11 +298,21 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 		character.yMax = metrics.yMax
 		character.rightSideBearing = metrics.rightSideBearing
 		character.leftSideBearing = metrics.leftSideBearing
-		// leftSideBearings.push(500)
-		// rightSideBearings.push(0)
-		// advanceWidths.push(1000)
 
+		m++
+		// 检查是否还有更多字符需要处理
+		if (m < characters.length) {
+			if (m % 100 === 0) {
+			console.log('mod 100')
+			// 每100个字符后，给UI更多时间更新
+			await new Promise(resolve => setTimeout(resolve, 0))
+			}
+			// 继续处理下一个字符
+			return compute()
+		}
 	}
+
+	await compute()
 
 	const globals = {
 		xMin: Math.min.apply(null, xMins),
@@ -463,9 +482,9 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 	// define name table
 	const getEnglishName = (name: string) => {
 		const translations = fontNames[name as keyof typeof fontNames]
-    if (translations) {
-      return translations.en
-    }
+		if (translations) {
+			return translations.en
+		}
 	}
 	const englishFamilyName = getEnglishName('fontFamily')
 	const englishStyleName = getEnglishName('fontSubfamily')
@@ -545,7 +564,7 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 	}
 	headTable.checkSumAdjustment = 0x00000000
 
-	let _font = createFontData(tables, 'checksum')
+	let _font = await createFontData(tables, 'checksum')
 
 	const checkSum = _font.checksum
 	//const checkSum = computeCheckSum(_font.data)

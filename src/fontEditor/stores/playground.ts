@@ -427,10 +427,10 @@ const getScript = (glyph) => {
 	return null
 }
 
-const exportFont = () => {
+const exportFont = async () => {
   if (loading.value) return
   loading.value = true
-  computeOverlapRemovedContours()
+  await computeOverlapRemovedContours()
   const font = createFont()
   //@ts-ignore
   if (!!window.__TAURI_INTERNALS__) {
