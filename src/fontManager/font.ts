@@ -246,12 +246,10 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 	const compute = async (): Promise<void> => {
 		// 检查是否完成所有字符处理
 		if (m >= characters.length) {
-			console.log('compute completed')
 			return
 		}
 
 		loaded.value++
-		// console.log('loaded 3', loaded.value, total.value)
 		if (loaded.value >= total.value) {
 			loading.value = false
 			loaded.value = 0
@@ -303,7 +301,6 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		// 检查是否还有更多字符需要处理
 		if (m < characters.length) {
 			if (m % 100 === 0) {
-			console.log('mod 100')
 			// 每100个字符后，给UI更多时间更新
 			await new Promise(resolve => setTimeout(resolve, 0))
 			}
@@ -467,7 +464,7 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 	for (let i = 0; i < characters.length; i++) {
 		const character = characters[i]
 		const advanceWidth = character.advanceWidth || 0
-		const leftSideBearing = character.leftSideBearing || 0
+		const leftSideBearing = Math.round(character.leftSideBearing || 0)
 		hmtxTable.hMetrics.push({
 			advanceWidth,
 			lsb: leftSideBearing,

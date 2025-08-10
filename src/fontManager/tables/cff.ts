@@ -2250,7 +2250,6 @@ let cnt = 0
  * @returns raw data array, each entry is type of 8-bit number
  */
 const create = async(_table: ICffTable) => {
-
 	const table = _table//R.clone(_table)
 	// 创建header数据
 	// create header data
@@ -2292,59 +2291,76 @@ const create = async(_table: ICffTable) => {
 	// create charstrings data
 	const charStringsIndexRawData = []
 
-	let m = 0
+	// let m = 0
 
-	const computeGlyphOps = async (): Promise<void> => {
-		// 检查是否完成所有字符处理
-		if (m >= glyphTables.length) {
-			console.log('compute completed')
-			return
-		}
+	// const computeGlyphOps = async (): Promise<void> => {
+	// 	// 检查是否完成所有字符处理
+	// 	if (m >= glyphTables.length) {
+	// 		return
+	// 	}
 
-		loaded.value++
-		console.log('loaded 3', loaded.value, total.value)
-		if (loaded.value >= total.value) {
-			loading.value = false
-			loaded.value = 0
-			total.value = 0
-			return
-		}
-		const glyph = glyphTables[m]
-		const ops = glyphToOps(glyph)
-		charStringsIndexRawData.push({type: 'CharString', value: ops})
+	// 	loaded.value++
+	// 	if (loaded.value >= total.value) {
+	// 		loading.value = false
+	// 		loaded.value = 0
+	// 		total.value = 0
+	// 		return
+	// 	}
+	// 	const glyph = glyphTables[m]
+	// 	const ops = glyphToOps(glyph)
+	// 	charStringsIndexRawData.push({type: 'CharString', value: ops})
 
-		m++
-		// 检查是否还有更多字符需要处理
-		if (m < glyphTables.length) {
-			if (m % 100 === 0) {
-				console.log('mod 100')
-				// 每100个字符后，给UI更多时间更新
-				await new Promise(resolve => setTimeout(resolve, 0))
-			}
-			// 继续处理下一个字符
-			return computeGlyphOps()
-		}
-	}
+	// 	m++
+	// 	// 检查是否还有更多字符需要处理
+	// 	if (m < glyphTables.length) {
+	// 		if (m % 100 === 0) {
+	// 			// 每100个字符后，给UI更多时间更新
+	// 			await new Promise(resolve => setTimeout(resolve, 0))
+	// 		}
+	// 		// 继续处理下一个字符
+	// 		return computeGlyphOps()
+	// 	}
+	// }
 
-	await computeGlyphOps()
-		
+	// await computeGlyphOps()
+
+	// const charStringsIndexData = createIndex(charStringsIndexRawData)
+
+
 	// for (let i = 0; i < glyphTables.length; i++) {
 	// 	loaded.value++
-	// 	//console.log('loaded 4', loaded.value, total.value)
 	// 	if (loaded.value >= total.value) {
 	// 		loading.value = false
 	// 		loaded.value = 0
 	// 		total.value = 0
 	// 	}
 	// 	const glyph = glyphTables[i]
-
 	// 	const ops = glyphToOps(glyph)
-	// 	if (i === 145) {
-	// 		console.log('cff glyph ops: ', i, ops)
-	// 	}
 	// 	charStringsIndexRawData.push({type: 'CharString', value: ops})
 	// }
-	const charStringsIndexData = createIndex(charStringsIndexRawData)
+	// const charStringsIndexData = createIndex(charStringsIndexRawData)
+
+	// 替换掉递归方案，用显式批处理
+	const batchSize = 100;
+	const totalGlyphs = glyphTables.length;
+	for (let start = 0; start < totalGlyphs; start += batchSize) {
+		const end = Math.min(start + batchSize, totalGlyphs);
+		for (let i = start; i < end; i++) {
+			loaded.value++;
+			if (loaded.value >= total.value) {
+				// loading.value = false;
+				// loaded.value = 0;
+				// total.value = 0;
+			}
+			const glyph = glyphTables[i];
+			const ops = glyphToOps(glyph);
+			charStringsIndexRawData.push({ type: 'CharString', value: ops });
+		}
+		// 让出事件循环，更新进度条
+		await new Promise(resolve => setTimeout(resolve, 0));
+	}
+	// 全部 glyph 已收集，安全创建索引
+	const charStringsIndexData = createIndex(charStringsIndexRawData);
 
 	const _fd: any = {
 		private: [0, 0],

@@ -128,6 +128,7 @@ const setCanvas = (value: HTMLCanvasElement) => {
 const loading = ref(false)
 const loaded = ref(0)
 const total = ref(100)
+const loadingMsg = ref('')
 
 const gridChanged = ref(false)
 
@@ -138,6 +139,7 @@ export {
 	width,
 	height,
 	background,
+	loadingMsg,
 	setTool,
 	setWidth,
 	setHeight,

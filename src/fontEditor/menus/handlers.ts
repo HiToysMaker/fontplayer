@@ -34,7 +34,7 @@ import {
   orderedListWithItemsForCurrentCharacterFile,
   addCharacterForCurrentFile,
 } from '../stores/files'
-import { base, canvas, fontRenderStyle, loaded, tips, total } from '../stores/global'
+import { base, canvas, fontRenderStyle, loaded, loadingMsg, tips, total } from '../stores/global'
 import { saveAs } from 'file-saver'
 import * as R from 'ramda'
 import { genUUID, toUnicode } from '../../utils/string'
@@ -52,6 +52,7 @@ import type {
 import {
   componentsToContours,
   componentsToContours2,
+  formatPoints,
 } from '../../features/font'
 import { emitter } from '../Event/bus'
 import {
@@ -505,9 +506,14 @@ const exportSVG_tauri = async () => {
 
 const exportFont_tauri = async (options: CreateFontOptions) => {
   const font = await createFont(options)
+  loadingMsg.value = '已经处理完所有字符，正在生成字库文件，请稍候...'
   const buffer = toArrayBuffer(font) as ArrayBuffer
   const filename = `${selectedFile.value.name}.otf`
   nativeSaveBinary(buffer, filename, ['otf'])
+  loading.value = false
+  loaded.value = 0;
+	total.value = 0;
+  loadingMsg.value = ''
 }
 
 const showExportFontDialog_tauri = () => {
@@ -1285,7 +1291,6 @@ const createFont = async (options?: CreateFontOptions) => {
   const { unitsPerEm, ascender, descender } = selectedFile.value.fontSettings
   for (let i = 0; i < selectedFile.value.characterList.length; i++) {
     loaded.value++
-    // console.log('loaded 2', loaded.value, total.value)
     if (loaded.value >= total.value) {
       loading.value = false
       loaded.value = 0
@@ -1346,9 +1351,10 @@ const createFont = async (options?: CreateFontOptions) => {
   // }
   // //-----
 
-  // fontCharacters.sort((a: any, b: any) => {
-  //   return a.unicode - b.unicode
-  // })
+  fontCharacters.sort((a: any, b: any) => {
+    return a.unicode - b.unicode
+  })
+
   const font = await create(fontCharacters, {
     familyName: selectedFile.value.name,
     styleName: 'Regular',
@@ -1362,12 +1368,17 @@ const createFont = async (options?: CreateFontOptions) => {
 
 const exportFont = async (options: CreateFontOptions) => {
   const font = await createFont(options)
+  loadingMsg.value = '已经处理完所有字符，正在生成压缩包，请稍候...'
   const dataView = new DataView(toArrayBuffer(font) as ArrayBuffer)
   const blob = new Blob([dataView], {type: 'font/opentype'})
   var zip = new JSZip()
   zip.file(`${selectedFile.value.name}.otf`, blob)
   zip.generateAsync({type:"blob"}).then(function(content: any) {
     saveAs(content, `${selectedFile.value.name}.zip`)
+    loading.value = false
+    loaded.value = 0;
+		total.value = 0;
+    loadingMsg.value = ''
   })
 }
 
@@ -2392,7 +2403,7 @@ const generateComponent = (data) => {
   return component
 }
 
-const computeOverlapRemovedContours_backup = async () => {
+const computeOverlapRemovedContours = async () => {
   const {
     unitsPerEm,
     descender,
@@ -2401,11 +2412,9 @@ const computeOverlapRemovedContours_backup = async () => {
   let m = 0
 
   const compute = async (): Promise<void> => {
-    console.log('compute', m)
 
     // 检查是否完成所有字符处理
     if (m >= selectedFile.value.characterList.length) {
-      console.log('compute completed')
       return
     }
 
@@ -2436,7 +2445,6 @@ const computeOverlapRemovedContours_backup = async () => {
     let unitedPath = mergePathsWithPrecision(paths)
     
     if (!unitedPath) {
-      console.log('no unitedPath')
       // 即使没有unitedPath，也要继续处理下一个字符
       m++
       loaded.value++
@@ -2500,7 +2508,6 @@ const computeOverlapRemovedContours_backup = async () => {
     m++
 
     loaded.value++
-    // console.log('loaded', loaded.value, total.value)
     if (loaded.value >= total.value) {
       loading.value = false
       loaded.value = 0
@@ -2511,7 +2518,6 @@ const computeOverlapRemovedContours_backup = async () => {
     // 检查是否还有更多字符需要处理
     if (m < selectedFile.value.characterList.length) {
       if (m % 100 === 0) {
-        console.log('mod 100')
         // 每100个字符后，给UI更多时间更新
         await new Promise(resolve => setTimeout(resolve, 0))
       }
@@ -2519,12 +2525,10 @@ const computeOverlapRemovedContours_backup = async () => {
       return compute()
     }
   }
-
-  console.log('compute start')
   await compute()
 }
 
-const computeOverlapRemovedContours = async () => {
+const computeOverlapRemovedContours_wasm = async () => {
   const {
     unitsPerEm,
     descender,
@@ -2533,26 +2537,62 @@ const computeOverlapRemovedContours = async () => {
   let m = 0
 
   const compute = async (): Promise<void> => {
-    console.log('compute', m)
 
     // 检查是否完成所有字符处理
     if (m >= selectedFile.value.characterList.length) {
-      console.log('compute completed')
       return
     }
 
     let char = selectedFile.value.characterList[m]
     // 读取字符轮廓信息（已经将形状都转换成字体轮廓）
-    let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(orderedListWithItemsForCharacterFile(char), {
-      unitsPerEm,
-      descender,
-      advanceWidth: unitsPerEm,
-    }, { x: 0, y: 0 }, false, false, false)
+    let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours2(orderedListWithItemsForCharacterFile(char),
+      { x: 0, y: 0 }, false, 1
+    )
+    // let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(orderedListWithItemsForCharacterFile(char), {
+    //   unitsPerEm,
+    //   descender,
+    //   advanceWidth: unitsPerEm,
+    // }, { x: 0, y: 0 }, false, false, false)
 
     try {
       // 使用WASM去除重叠
       const overlap_removed_contours = await removeOverlapWithWasm(contours)
-      // console.log('remove overlap', loaded.value, total.value)
+      const options = {
+        unitsPerEm,
+        descender,
+        advanceWidth: unitsPerEm,
+      }
+      for (let i = 0; i < overlap_removed_contours.length; i++) {
+        const contour = overlap_removed_contours[i]
+        for (let j = 0; j < contour.length; j++) {
+          const path = contour[j]
+          if (path.type === PathType.LINE) {
+            const points =  formatPoints([path.start, path.end], options, 1)
+            path.start.x = points[0].x
+            path.start.y = points[0].y
+            path.end.x = points[1].x
+            path.end.y = points[1].y
+          } else if (path.type === PathType.QUADRATIC_BEZIER) {
+            const points =  formatPoints([path.start, path.end, path.control], options, 1)
+            path.start.x = points[0].x
+            path.start.y = points[0].y
+            path.end.x = points[1].x
+            path.end.y = points[1].y
+            path.control.x = points[2].x
+            path.control.y = points[2].y
+          } else if (path.type === PathType.CUBIC_BEZIER) {
+            const points =  formatPoints([path.start, path.end, path.control1, path.control2], options, 1)
+            path.start.x = points[0].x
+            path.start.y = points[0].y
+            path.end.x = points[1].x
+            path.end.y = points[1].y
+            path.control1.x = points[2].x
+            path.control1.y = points[2].y
+            path.control2.x = points[3].x
+            path.control2.y = points[3].y
+          }
+        }
+      }
       char.overlap_removed_contours = overlap_removed_contours
     } catch (error) {
       console.error('Error removing overlap with WASM:', error)
@@ -2561,7 +2601,6 @@ const computeOverlapRemovedContours = async () => {
     m++
 
     loaded.value++
-    // console.log('loaded', loaded.value, total.value)
     if (loaded.value >= total.value) {
       loading.value = false
       loaded.value = 0
@@ -2572,7 +2611,6 @@ const computeOverlapRemovedContours = async () => {
     // 检查是否还有更多字符需要处理
     if (m < selectedFile.value.characterList.length) {
       if (m % 100 === 0) {
-        console.log('mod 100')
         // 每100个字符后，给UI更多时间更新
         await new Promise(resolve => setTimeout(resolve, 0))
       }
@@ -2581,12 +2619,11 @@ const computeOverlapRemovedContours = async () => {
     }
   }
 
-  console.log('compute start')
   await compute()
 }
 
 // 优化后的removeOverlap函数
-const removeOverlap_backup = async () => {
+const removeOverlap = async () => {
   let char = editCharacterFile.value
   if (editStatus.value === Status.Glyph) {
     char = editGlyph.value
@@ -2622,12 +2659,8 @@ const removeOverlap_backup = async () => {
     paths.push(path)
   }
 
-  console.log('paths', paths)
-
   // 使用优化后的合并函数
   let unitedPath = mergePathsWithPrecision(paths)
-
-  console.log('unitedPath', unitedPath)
 
   let components = []
   if (unitedPath) {
@@ -2699,8 +2732,6 @@ const removeOverlap_backup = async () => {
           components.push(genPenComponent(points, true))
         }
       }
-
-      console.log('components', components)
       
       return components
     }
@@ -2729,7 +2760,7 @@ const removeOverlap_backup = async () => {
   }
 }
 
-const removeOverlap = async () => {
+const removeOverlap_wasm = async () => {
   let char = editCharacterFile.value
   if (editStatus.value === Status.Glyph) {
     char = editGlyph.value

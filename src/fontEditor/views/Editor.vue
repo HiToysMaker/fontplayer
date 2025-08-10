@@ -40,7 +40,7 @@
   import exportFontTauriDialog from '../components/Dialogs/ExportFontDialog_tauri.vue'
   import { editStatus, Status } from '../../fontEditor/stores/font'
   import { ENV } from '../../fontEditor/stores/system'
-  import { loading, loaded, total } from '../../fontEditor/stores/global'
+  import { loading, loaded, total, loadingMsg } from '../../fontEditor/stores/global'
   import { ref, onMounted, onUnmounted } from 'vue'
   import { onBeforeRouteLeave } from 'vue-router'
   import { initGlyphEnvironment } from '../stores/glyph'
@@ -157,11 +157,11 @@
     >
       <div class="el-loading-spinner" v-show="loading && total === 0">
         <svg class="circular" viewBox="0 0 50 50"><circle class="path" cx="25" cy="25" r="20" fill="none"></circle></svg>
-        <div>{{ t('panels.paramsPanel.loadingMsg') }}</div>
+        <div>{{loadingMsg || t('panels.paramsPanel.loadingMsg') }}</div>
       </div>
       <div v-show="loading && total != 0" class="loading-text">
         <el-progress :text-inside="true" :stroke-width="20" :percentage="Math.round(loaded / total * 100)" />
-        <div>{{ t('panels.paramsPanel.loadedMsg', { percent: Math.round(loaded / total * 100)}) }}</div>
+        <div>{{ loadingMsg? loadingMsg + `进度：${Math.round(loaded / total * 100)}%` : t('panels.paramsPanel.loadedMsg', { percent: Math.round(loaded / total * 100)}) }}</div>
       </div>
       <div class="side-bar-wrap" :style="{
         flex: ENV === 'web' ? '0 0 36px': '0 0 36px',

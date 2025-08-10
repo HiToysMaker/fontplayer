@@ -53,6 +53,11 @@ function convertWasmResultToContours(result: any): Array<Array<ILine | IQuadrati
     throw new Error(`WASM processing failed: ${result.error || 'Unknown error'}`);
   }
 
+  // 输出调试信息
+  if (result.debug) {
+    console.log('WASM Overlap Removal Debug Info:', result.debug);
+  }
+
   return result.contours.map((contour: IContourSegment[]) =>
     contour.map(segment => {
       if (segment.type === 'LINE') {
