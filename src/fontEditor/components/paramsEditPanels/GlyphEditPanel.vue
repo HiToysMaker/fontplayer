@@ -257,13 +257,13 @@
 
 	const setAsGlobalParam = (parameter: IParameter) => {
 		selectedParam.value = parameter
-		selectedParamType.value = 'glyph_components'
+		selectedParamType.value = 'character_components'
 		setSetAsGlobalParamDialogVisible(true)
 	}
 
 	const selectGlobalParam = (parameter: IParameter) => {
 		selectedParam.value = parameter
-		selectedParamType.value = 'glyph_components'
+		selectedParamType.value = 'character_components'
 		setSelectGlobalParamDialogVisible(true)
 	}
 

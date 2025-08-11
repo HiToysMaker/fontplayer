@@ -36,10 +36,13 @@
 					if (selectedComponent.value.value.parameters.parameters[i].uuid === selectedParam.value.uuid) {
 						selectedComponent.value.value.parameters.parameters[i].value = param.uuid
 						selectedComponent.value.value.parameters.parameters[i].type = ParameterType.Constant
-						if (selectedComponent.value.value.system_script[selectedComponent.value.value.parameters.parameters[i].name]) {
+						if (selectedComponent.value.value.system_script &&selectedComponent.value.value.system_script[selectedComponent.value.value.parameters.parameters[i].name]) {
 							delete selectedComponent.value.value.system_script[selectedComponent.value.value.parameters.parameters[i].name]
 						}
 						const type = getGlyphType(editGlyphUUID.value)
+						if (!constantGlyphMap.get(param.uuid)) {
+							constantGlyphMap.set(param.uuid, [])
+						}
 						const arr = constantGlyphMap.get(param.uuid)
 						arr.push({
 							constantType: ConstantType.Component,
@@ -55,8 +58,11 @@
 					if (selectedComponent_character.value.value.parameters.parameters[i].uuid === selectedParam.value.uuid) {
 						selectedComponent_character.value.value.parameters.parameters[i].value = param.uuid
 						selectedComponent_character.value.value.parameters.parameters[i].type = ParameterType.Constant
-						if (selectedComponent_character.value.value.system_script[selectedComponent_character.value.value.parameters.parameters[i].name]) {
+						if (selectedComponent_character.value.value.system_script && selectedComponent_character.value.value.system_script[selectedComponent_character.value.value.parameters.parameters[i].name]) {
 							delete selectedComponent_character.value.value.system_script[selectedComponent_character.value.value.parameters.parameters[i].name]
+						}
+						if (!constantGlyphMap.get(param.uuid)) {
+							constantGlyphMap.set(param.uuid, [])
 						}
 						const arr = constantGlyphMap.get(param.uuid)
 						arr.push({
@@ -73,10 +79,13 @@
 					if (editGlyph.value.parameters.parameters[i].uuid === selectedParam.value.uuid) {
 						editGlyph.value.parameters.parameters[i].value = param.uuid
 						editGlyph.value.parameters.parameters[i].type = ParameterType.Constant
-						if (editGlyph.value.value.system_script[editGlyph.value.value.parameters.parameters[i].name]) {
+						if (editGlyph.value.value.system_script && editGlyph.value.value.system_script[editGlyph.value.value.parameters.parameters[i].name]) {
 							delete editGlyph.value.value.system_script[editGlyph.value.value.parameters.parameters[i].name]
 						}
 						const type = getGlyphType(editGlyphUUID.value)
+						if (!constantGlyphMap.get(param.uuid)) {
+							constantGlyphMap.set(param.uuid, [])
+						}
 						const arr = constantGlyphMap.get(param.uuid)
 						arr.push({
 							constantType: ConstantType.Parameter,

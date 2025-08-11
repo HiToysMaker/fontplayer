@@ -86,6 +86,7 @@ import { loading } from '../stores/global'
 import { worker } from '../../main'
 import { WorkerEventType } from '../worker'
 import { CustomGlyph } from '../programming/CustomGlyph'
+import { Character } from '../programming/Character'
 import paper from 'paper'
 import { genPenComponent } from '../tools/pen'
 import { removeOverlapWithWasm } from '../../utils/overlap-remover'
@@ -110,6 +111,15 @@ const plainGlyph = (glyph: ICustomGlyph, options: IPlainGlyphOptions = { clearSc
     name: glyph.name,
     components: glyph.components.map((component) => {
       const _component = Object.assign({}, component)
+
+      // 清除轮廓和预览数据，减少数据大小
+      if ((_component.value as unknown as IPenComponent).contour) {
+        (_component.value as unknown as IPenComponent).contour = null
+      }
+      if ((_component.value as unknown as IPenComponent).preview) {
+        (_component.value as unknown as IPenComponent).preview = null
+      }
+
       if (component.type === 'glyph') {
         //@ts-ignore
         //_component.value = plainGlyph(component.value)
@@ -184,6 +194,16 @@ const plainGlyph = (glyph: ICustomGlyph, options: IPlainGlyphOptions = { clearSc
 
   if (glyph._o) {
     data.objData = glyph._o.getData()
+
+    // 清除轮廓和预览数据，减少数据大小
+    data.objData._components.map((_component) => {
+      if (_component.contour) {
+        _component.contour = null
+      }
+      if (_component.preview) {
+        _component.preview = null
+      }
+    })
   }
 
   ////---------
@@ -269,6 +289,15 @@ const plainCharacter = (character: ICharacterFile) => {
     character: R.clone(character.character),
     components: character.components.map((component) => {
       const _component = Object.assign({}, component)
+
+      // 清除轮廓和预览数据，减少数据大小
+      if ((_component.value as unknown as IPenComponent).contour) {
+        (_component.value as unknown as IPenComponent).contour = null
+      }
+      if ((_component.value as unknown as IPenComponent).preview) {
+        (_component.value as unknown as IPenComponent).preview = null
+      }
+
       if (component.type === 'glyph') {
         //@ts-ignore
         //_component.value = plainGlyph(component.value)
@@ -296,7 +325,7 @@ const plainCharacter = (character: ICharacterFile) => {
   return data
 }
 
-const instanceGlyph = (plainGlyph) => {
+const instanceGlyph = (plainGlyph, options) => {
   plainGlyph.parameters = new ParametersMap(plainGlyph.parameters)
   plainGlyph.joints = plainGlyph.joints.map((joint) => {
     return new Joint(joint.name, { x: joint.x, y: joint.y })
@@ -304,7 +333,7 @@ const instanceGlyph = (plainGlyph) => {
   plainGlyph.components = plainGlyph.components.length ? plainGlyph.components.map((component) => {
     if (component.type === 'glyph') {
       //@ts-ignore
-      component.value = instanceGlyph(component.value)
+      component.value = instanceGlyph(component.value, false)
       //component.value.parent = plainGlyph
       component.value.parent_reference = getParentInfo(plainGlyph)
     }
@@ -315,17 +344,27 @@ const instanceGlyph = (plainGlyph) => {
   if (plainGlyph.objData) {
     glyphInstance.setData(plainGlyph.objData)
   }
+
+  if (options && options?.updateContoursAndPreview) {
+    // 工程文件中通常不包含预览和轮廓数据缓存，这里补全预览和轮廓数据缓存
+    componentsToContours(orderedListWithItemsForCharacterFile(plainGlyph), {
+      unitsPerEm: options.unitsPerEm,
+      descender: options.descender,
+      advanceWidth: options.advanceWidth,
+    }, { x: 0, y: 0 }, false, false, false)
+  }
+
   return plainGlyph
 }
 
-const instanceCharacter = (plainCharacter) => {
+const instanceCharacter = (plainCharacter, options) => {
   if (!plainCharacter.script) {
     plainCharacter.script = `function script_${plainCharacter.uuid.replaceAll('-', '_')} (character, constants, FP) {\n\t//Todo something\n}`
   }
   plainCharacter.components = plainCharacter.components.length ? plainCharacter.components.map((component) => {
     if (component.type === 'glyph') {
       //@ts-ignore
-      component.value = instanceGlyph(component.value)
+      component.value = instanceGlyph(component.value, false)
       //component.value.parent = plainCharacter
       component.value.parent_reference = getParentInfo(plainCharacter)
       // component.value._o.getJoints().map((joint) => {
@@ -335,7 +374,17 @@ const instanceCharacter = (plainCharacter) => {
     return component
   }) : []
   //@ts-ignore
-  const glyphInstance = new CustomGlyph(plainCharacter)
+  const characterInstance = new Character(plainCharacter)
+
+  if (options && options?.updateContoursAndPreview) {
+    // 工程文件中通常不包含预览和轮廓数据缓存，这里补全预览和轮廓数据缓存
+    componentsToContours(orderedListWithItemsForCharacterFile(plainCharacter), {
+      unitsPerEm: options.unitsPerEm,
+      descender: options.descender,
+      advanceWidth: options.advanceWidth,
+    }, { x: 0, y: 0 }, false, false, false)
+  }
+
   return plainCharacter
 }
 
@@ -565,7 +614,12 @@ const __openFile = (data) => {
   loading.value = true
   {
     const plainGlyphs = data.glyphs
-    const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
+    const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
+      updateContoursAndPreview: true,
+      unitsPerEm: 1000,
+      descender: -200,
+      advanceWidth: 1000,
+    }))
     _glyphs.map((glyph) => {
       addGlyph(glyph, Status.GlyphList)
       addGlyphTemplate(glyph, Status.GlyphList)
@@ -574,7 +628,12 @@ const __openFile = (data) => {
   }
   {
     const plainGlyphs = data.stroke_glyphs
-    const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
+    const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
+      updateContoursAndPreview: true,
+      unitsPerEm: 1000,
+      descender: -200,
+      advanceWidth: 1000,
+    }))
     _glyphs.map((glyph) => {
       addGlyph(glyph, Status.StrokeGlyphList)
       addGlyphTemplate(glyph, Status.StrokeGlyphList)
@@ -583,7 +642,12 @@ const __openFile = (data) => {
   }
   {
     const plainGlyphs = data.radical_glyphs
-    const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
+    const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
+      updateContoursAndPreview: true,
+      unitsPerEm: 1000,
+      descender: -200,
+      advanceWidth: 1000,
+    }))
     _glyphs.map((glyph) => {
       addGlyph(glyph, Status.RadicalGlyphList)
       addGlyphTemplate(glyph, Status.RadicalGlyphList)
@@ -592,7 +656,12 @@ const __openFile = (data) => {
   }
   {
     const plainGlyphs = data.comp_glyphs
-    const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
+    const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
+      updateContoursAndPreview: true,
+      unitsPerEm: 1000,
+      descender: -200,
+      advanceWidth: 1000,
+    }))
     _glyphs.map((glyph) => {
       addGlyph(glyph, Status.CompGlyphList)
       addGlyphTemplate(glyph, Status.CompGlyphList)
@@ -616,7 +685,12 @@ const __openFile = (data) => {
   }
   file.characterList = file.characterList.map((character) => {
     addLoaded()
-    return instanceCharacter(character)
+    return instanceCharacter(character, {
+      updateContoursAndPreview: true,
+      unitsPerEm: file.fontSettings.unitsPerEm,
+      descender: file.fontSettings.descender,
+      advanceWidth: file.fontSettings.advanceWidth,
+    })
   })
   let success = true
   for (let j = 0; j < files.value.length; j++) {
@@ -970,7 +1044,12 @@ const importGlyphs_tauri = async () => {
       constantGlyphMap.set(keys[n], data.constantGlyphMap[keys[n]])
     }
   }
-  const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
+  const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
+    updateContoursAndPreview: true,
+    unitsPerEm: 1000,
+    descender: -200,
+    advanceWidth: 1000,
+  }))
   _glyphs.map((glyph) => {
     if (getGlyphByUUID(glyph.uuid)) {
       repeatMark = true
@@ -1035,7 +1114,12 @@ const importGlyphs = () => {
             constantGlyphMap.set(keys[n], data.constantGlyphMap[keys[n]])
           }
         }
-        const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
+        const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
+          updateContoursAndPreview: true,
+          unitsPerEm: 1000,
+          descender: -200,
+          advanceWidth: 1000,
+        }))
         _glyphs.map((glyph) => {
           if (getGlyphByUUID(glyph.uuid)) {
             repeatMark = true
@@ -1854,7 +1938,12 @@ const _syncData = async () => {
   if (glyphs_data) {
     glyphs.value = []
     const _glyphs = plainGlyphs.map((plainGlyph) => {
-      return instanceGlyph(plainGlyph)
+      return instanceGlyph(plainGlyph, {
+        updateContoursAndPreview: true,
+        unitsPerEm: 1000,
+        descender: -200,
+        advanceWidth: 1000,
+      })
     })
     _glyphs.map((glyph) => {
       addGlyph(glyph, Status.GlyphList)
@@ -1866,7 +1955,12 @@ const _syncData = async () => {
   if (stroke_glyphs_data) {
     stroke_glyphs.value = []
     const _glyphs = plainGlyphs_stroke.map((plainGlyph) => {
-      return instanceGlyph(plainGlyph)
+      return instanceGlyph(plainGlyph, {
+        updateContoursAndPreview: true,
+        unitsPerEm: 1000,
+        descender: -200,
+        advanceWidth: 1000,
+      })
     })
     _glyphs.map((glyph) => {
       addGlyph(glyph, Status.StrokeGlyphList)
@@ -1878,7 +1972,12 @@ const _syncData = async () => {
   if (radical_glyphs_data) {
     radical_glyphs.value = []
     const _glyphs = plainGlyphs_radical.map((plainGlyph) => {
-      return instanceGlyph(plainGlyph)
+      return instanceGlyph(plainGlyph, {
+        updateContoursAndPreview: true,
+        unitsPerEm: 1000,
+        descender: -200,
+        advanceWidth: 1000,
+      })
     })
     _glyphs.map((glyph) => {
       addGlyph(glyph, Status.RadicalGlyphList)
@@ -1890,7 +1989,12 @@ const _syncData = async () => {
   if (comp_glyphs_data) {
     comp_glyphs.value = []
     const _glyphs = plainGlyphs_comp.map((plainGlyph) => {
-      return instanceGlyph(plainGlyph)
+      return instanceGlyph(plainGlyph, {
+        updateContoursAndPreview: true,
+        unitsPerEm: 1000,
+        descender: -200,
+        advanceWidth: 1000,
+      })
     })
     _glyphs.map((glyph) => {
       addGlyph(glyph, Status.CompGlyphList)
@@ -1902,7 +2006,12 @@ const _syncData = async () => {
   if (file_data) {
     file.characterList.map((character, index) => {
       addLoaded()
-      return instanceCharacter(character)
+      return instanceCharacter(character, {
+        updateContoursAndPreview: true,
+        unitsPerEm: file.fontSettings.unitsPerEm,
+        descender: file.fontSettings.descender,
+        advanceWidth: file.fontSettings.advanceWidth,
+      })
     })
     let success = true
     for (let j = 0; j < files.value.length; j++) {
@@ -2211,7 +2320,12 @@ const importTemplate1 = async () => {
         }
       }
       let plainGlyphs = obj.glyphs
-      let _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
+      let _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
+        updateContoursAndPreview: true,
+        unitsPerEm: 1000,
+        descender: -200,
+        advanceWidth: 1000,
+      }))
       _glyphs.map((glyph) => {
         addGlyph(glyph, Status.StrokeGlyphList)
       })
@@ -2227,7 +2341,12 @@ const importTemplate1 = async () => {
         }
       }
       let plainGlyphs = obj.glyphs
-      let _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
+      let _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
+        updateContoursAndPreview: true,
+        unitsPerEm: 1000,
+        descender: -200,
+        advanceWidth: 1000,
+      }))
       _glyphs.map((glyph) => {
         addGlyph(glyph, Status.RadicalGlyphList)
       })
@@ -2243,7 +2362,12 @@ const importTemplate1 = async () => {
         }
       }
       let plainGlyphs = obj.glyphs
-      let _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
+      let _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
+        updateContoursAndPreview: true,
+        unitsPerEm: 1000,
+        descender: -200,
+        advanceWidth: 1000,
+      }))
       _glyphs.map((glyph) => {
         addGlyph(glyph, Status.CompGlyphList)
       })

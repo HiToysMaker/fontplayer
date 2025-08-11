@@ -8,7 +8,7 @@
 
 	import { emitter } from '../../Event/bus'
 	import { setSelectGlobalParamDialogVisible, selectGlobalParamDialogVisible } from '../../stores/dialogs'
-	import { editCharacterFileUUID, selectedComponent as selectedComponent_character } from '../../stores/files'
+	import { editCharacterFile, editCharacterFileUUID, executeCharacterScript, selectedComponent as selectedComponent_character } from '../../stores/files'
 	import { constantGlyphMap, ConstantGlyphPair, constants, constantsMap, ConstantType, convertGlyphType, editGlyph, editGlyphUUID, executeScript, getGlyphType, GlyphType, ParameterType, selectedComponent, selectedParam, selectedParamType } from '../../stores/glyph'
   import { Ref, ref } from 'vue'
   import { useI18n } from 'vue-i18n'
@@ -29,7 +29,7 @@
 						selectedComponent.value.value.parameters.parameters[i].type = ParameterType.Constant
 						selectedComponent.value.value.parameters.parameters[i].ratio = ''
 						selectedComponent.value.value.parameters.parameters[i].ratioed = false
-						if (selectedComponent.value.value.system_script[selectedComponent.value.value.parameters.parameters[i].name]) {
+						if (selectedComponent.value.value.system_script && selectedComponent.value.value.system_script[selectedComponent.value.value.parameters.parameters[i].name]) {
 							delete selectedComponent.value.value.system_script[selectedComponent.value.value.parameters.parameters[i].name]
 						}
 						const type = getGlyphType(editGlyphUUID.value)
@@ -56,7 +56,7 @@
 						selectedComponent_character.value.value.parameters.parameters[i].type = ParameterType.Constant
 						selectedComponent_character.value.value.parameters.parameters[i].ratio = ''
 						selectedComponent_character.value.value.parameters.parameters[i].ratioed = false
-						if (selectedComponent_character.value.value.system_script[selectedComponent_character.value.value.parameters.parameters[i].name]) {
+						if (selectedComponent_character.value.value.system_script && selectedComponent_character.value.value.system_script[selectedComponent_character.value.value.parameters.parameters[i].name]) {
 							delete selectedComponent_character.value.value.system_script[selectedComponent_character.value.value.parameters.parameters[i].name]
 						}
 						if (!constantGlyphMap.get(parameter.value)) {
@@ -70,9 +70,11 @@
 							parentUUID: editCharacterFileUUID.value,
 							glyphUUID: selectedComponent_character.value.uuid,
 						} as ConstantGlyphPair)
-						executeScript(editGlyph.value)
-						emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
-						emitter.emit('renderGlyph')
+						if (selectedComponent_character.value.value.type === 'glyph') {
+							executeScript(selectedComponent_character.value.value)
+						}
+						emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
+						emitter.emit('renderCharacter')
 					}
 				}
 			} else if (selectedParamType.value === 'glyph_params') {
@@ -82,7 +84,7 @@
 						editGlyph.value.parameters.parameters[i].type = ParameterType.Constant
 						editGlyph.value.parameters.parameters[i].ratio = ''
 						editGlyph.value.parameters.parameters[i].ratioed = false
-						if (editGlyph.value.value.system_script[editGlyph.value.value.parameters.parameters[i].name]) {
+						if (editGlyph.value.value.system_script && editGlyph.value.value.system_script[editGlyph.value.value.parameters.parameters[i].name]) {
 							delete editGlyph.value.value.system_script[editGlyph.value.value.parameters.parameters[i].name]
 						}
 						const type = getGlyphType(editGlyphUUID.value)

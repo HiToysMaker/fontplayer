@@ -100,8 +100,12 @@ class EllipseComponent {
 		this.radiusY = data.radiusY
 		this.type = data.type
 		this.usedInCharacter = data.usedInCharacter
-		this.contour = R.clone(data.contour)
-		this.preview = R.clone(data.preview)
+		if (data.contour) {
+			this.contour = R.clone(data.contour)
+		}
+		if (data.preview) {
+			this.preview = R.clone(data.preview)
+		}
 	}
 
 	public updateData = (isGlyph: boolean = true, offset: { x: number, y: number }, grid?: any) => {
