@@ -162,6 +162,7 @@ export enum Status {
 	RadicalGlyphList,
 	CompGlyphList,
 	StrokeGlyphList,
+  AdvancedEdit,
 }
 
 const prevStatus: Ref<Status> = ref(Status.CharacterList)

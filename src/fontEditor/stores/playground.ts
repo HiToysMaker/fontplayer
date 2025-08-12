@@ -431,7 +431,7 @@ const exportFont = async () => {
   if (loading.value) return
   loading.value = true
   await computeOverlapRemovedContours()
-  const font = createFont()
+  const font = await createFont()
   //@ts-ignore
   if (!!window.__TAURI_INTERNALS__) {
     const buffer = toArrayBuffer(font) as ArrayBuffer

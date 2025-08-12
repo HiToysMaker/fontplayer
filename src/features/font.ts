@@ -28,6 +28,7 @@ import { PenComponent } from '../fontEditor/programming/PenComponent'
 import { PolygonComponent } from '../fontEditor/programming/PolygonComponent'
 import { computeCoords } from '../fontEditor/canvas/canvas'
 import { executeScript as executeScript_playground } from '../fontEditor/stores/playground'
+import { executeScript as executeScript_advancedEdit } from '../fontEditor/stores/advancedEdit'
 
 const contoursToComponents = (contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>, options: {
 	unitsPerEm: number,
@@ -219,6 +220,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 	grid?: any,
 	useSkeletonGrid?: boolean,
 	playground?: boolean,
+	advancedEdit?: boolean,
 }, offset: {
 	x: number,
 	y: number,
@@ -465,6 +467,8 @@ const componentsToContours = (components: Array<_Component>, options: {
 				if (!glyph._o || forceUpdate) {
 					if (options && options.playground) {
 						executeScript_playground(glyph)
+					} else if (options && options.advancedEdit) {
+						executeScript_advancedEdit(glyph)
 					} else {
 						executeScript(glyph)
 					}

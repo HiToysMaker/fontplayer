@@ -137,6 +137,7 @@ export enum ParameterType {
 	RingController,
 	Enum,
 	PlaygroundConstant,
+	AdvancedEditConstant,
 }
 
 const parameterCompKey = ref(0)
@@ -180,7 +181,86 @@ export interface IParameter {
 	options?: Array<IEnumOption>;
 }
 
-const constants: Ref<Array<IConstant>> = ref([])
+// const constants: Ref<Array<IConstant>> = ref([])
+
+const constants: Ref<Array<IConstant>> = ref<Array<IConstant>>([
+  {
+    uuid: genUUID(),
+    name: '起笔风格',
+    type: ParameterType.Enum,
+    value: 2,
+    options: [
+      {
+        value: 0,
+        label: '无起笔样式',
+      },
+      {
+        value: 1,
+        label: '凸笔起笔',
+      },
+      {
+        value: 2,
+        label: '凸笔圆角起笔',
+      }
+    ]
+  },
+  {
+    uuid: genUUID(),
+    name: '起笔数值',
+    type: ParameterType.Number,
+    value: 1,
+    min: 0,
+    max: 2,
+  },
+  {
+    uuid: genUUID(),
+    name: '转角风格',
+    type: ParameterType.Enum,
+    value: 1,
+    options: [
+      {
+        value: 0,
+        label: '默认转角样式',
+      },
+      {
+        value: 1,
+        label: '转角圆滑凸起',
+      }
+    ]
+  },
+  {
+    uuid: genUUID(),
+    name: '转角数值',
+    type: ParameterType.Number,
+    value: 1,
+    min: 1,
+    max: 2,
+  },
+  {
+    uuid: genUUID(),
+    name: '字重变化',
+    type: ParameterType.Number,
+    value: 0,
+    min: 0,
+    max: 2,
+  },
+  {
+    uuid: genUUID(),
+    name: '弯曲程度',
+    type: ParameterType.Number,
+    value: 1,
+    min: 0,
+    max: 2,
+  },
+  {
+    uuid: genUUID(),
+    name: '字重',
+    type: ParameterType.Number,
+    value: 50,
+    min: 40,
+    max: 100,
+  },
+])
 //const constants: Ref<Array<IConstant>> = ref(Object.keys(globalConstants).map((key) => {
 //	return {
 //		uuid: genUUID(),
