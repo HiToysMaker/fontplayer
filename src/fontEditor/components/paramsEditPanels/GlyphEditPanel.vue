@@ -324,7 +324,7 @@
 							v-for="key in Object.keys(_selectedComponent.value.layout.params)"
 							:label="key"
 						>
-							<el-input-number v-model="_selectedComponent.value.layout.params[key]" @change="onLayoutChange"/>
+							            <el-input-number v-model="_selectedComponent.value.layout.params[key]" @change="onLayoutChange" :precision="2"/>
 							<div class="ratio-item">
 								<font-awesome-icon class="ratio-icon" :class="{
 									selected: _selectedComponent.value.layout.ratioedMap && _selectedComponent.value.layout.ratioedMap[key].ratioed
