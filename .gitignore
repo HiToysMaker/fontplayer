@@ -29,3 +29,5 @@ stats.html
 
 crates/*/pkg
 crates/*/target
+
+docs

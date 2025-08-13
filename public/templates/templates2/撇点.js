@@ -2,6 +2,7 @@ const ox = 500
 const oy = 500
 const x0 = 550
 const y0 = 200
+const BENDING_DEGREE = 0
 const global_params = {
   weights_variation_power: glyph.getParam('字重变化'),
   start_style_type: glyph.getParam('起笔风格'),
@@ -15,11 +16,11 @@ const params = {
   pie_horizonalSpan: glyph.getParam('撇-水平延伸'),
   pie_verticalSpan: glyph.getParam('撇-竖直延伸'),
   pie_bendCursor: glyph.getParam('撇-弯曲游标'),
-  pie_bendDegree: glyph.getParam('撇-弯曲度') + 30 * global_params.bending_degree,
+  pie_bendDegree: glyph.getParam('撇-弯曲度') + BENDING_DEGREE * global_params.bending_degree,
   dian_horizonalSpan: glyph.getParam('点-水平延伸'),
   dian_verticalSpan: glyph.getParam('点-竖直延伸'),
   dian_bendCursor: glyph.getParam('点-弯曲游标'),
-  dian_bendDegree: glyph.getParam('点-弯曲度') + 30 * global_params.bending_degree,
+  dian_bendDegree: glyph.getParam('点-弯曲度') + BENDING_DEGREE * global_params.bending_degree,
 }
 
 const refline = (p1, p2) => {
@@ -182,11 +183,11 @@ glyph.onSkeletonDragEnd = (data) => {
   glyph.setParam('撇-水平延伸', _params.pie_horizonalSpan)
   glyph.setParam('撇-竖直延伸', _params.pie_verticalSpan)
   glyph.setParam('撇-弯曲游标', _params.pie_bendCursor)
-  glyph.setParam('撇-弯曲度', _params.pie_bendDegree - 30 * global_params.bending_degree)
+  glyph.setParam('撇-弯曲度', _params.pie_bendDegree - BENDING_DEGREE * global_params.bending_degree)
   glyph.setParam('点-水平延伸', _params.dian_horizonalSpan)
   glyph.setParam('点-竖直延伸', _params.dian_verticalSpan)
   glyph.setParam('点-弯曲游标', _params.dian_bendCursor)
-  glyph.setParam('点-弯曲度', _params.dian_bendDegree - 30 * global_params.bending_degree)
+  glyph.setParam('点-弯曲度', _params.dian_bendDegree - BENDING_DEGREE * global_params.bending_degree)
   glyph.tempData = null
 }
 

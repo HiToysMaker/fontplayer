@@ -107,7 +107,7 @@ glyph.onSkeletonDragEnd = (data) => {
   glyph.setParam('水平延伸', _params.horizonalSpan)
   glyph.setParam('竖直延伸', _params.verticalSpan)
   glyph.setParam('弯曲游标', _params.bendCursor)
-  glyph.setParam('弯曲度', _params.bendDegree - 30 * global_params.bending_degree)
+  glyph.setParam('弯曲度', _params.bendDegree - 10 * global_params.bending_degree)
   glyph.tempData = null
 }
 
