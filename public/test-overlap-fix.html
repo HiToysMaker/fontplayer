@@ -86,7 +86,21 @@
 
     <script type="module">
         // 导入WASM模块
-        import { removeOverlapWithWasm } from './overlap_wasm.js';
+        import wasmModule from './overlap_wasm.js';
+        
+        // 初始化WASM模块
+        let remove_overlap;
+        
+        async function initWasm() {
+            try {
+                await wasmModule();
+                remove_overlap = wasmModule.remove_overlap;
+                console.log('WASM module initialized successfully');
+            } catch (error) {
+                console.error('Failed to initialize WASM module:', error);
+                throw error;
+            }
+        }
         
         // 测试数据：两个重叠的矩形
         const testContours = [
@@ -238,23 +252,29 @@
             resultDiv.className = 'test-result';
             
             try {
-                const result = await removeOverlapWithWasm(testContours);
+                // 确保WASM模块已初始化
+                if (!remove_overlap) {
+                    await initWasm();
+                }
+                
+                const result = await remove_overlap(JSON.stringify(testContours));
+                const parsedResult = JSON.parse(result);
                 
                 // 绘制原始轮廓
                 drawContours('canvas1', testContours, '原始轮廓');
                 
                 // 绘制结果
                 setTimeout(() => {
-                    drawContours('canvas1', result, '合并后结果');
+                    drawContours('canvas1', parsedResult, '合并后结果');
                 }, 1000);
                 
                 resultDiv.innerHTML = `
                     <p class="success">✅ 测试成功！</p>
                     <p>输入轮廓数: ${testContours.length}</p>
-                    <p>输出轮廓数: ${result.length}</p>
+                    <p>输出轮廓数: ${parsedResult.length}</p>
                     <details>
                         <summary>详细结果</summary>
-                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                        <pre>${JSON.stringify(parsedResult, null, 2)}</pre>
                     </details>
                 `;
                 resultDiv.className = 'test-result success';
@@ -273,23 +293,29 @@
             resultDiv.className = 'test-result';
             
             try {
-                const result = await removeOverlapWithWasm(testContoursWithHole);
+                // 确保WASM模块已初始化
+                if (!remove_overlap) {
+                    await initWasm();
+                }
+                
+                const result = await remove_overlap(JSON.stringify(testContoursWithHole));
+                const parsedResult = JSON.parse(result);
                 
                 // 绘制原始轮廓
                 drawContours('canvas2', testContoursWithHole, '原始轮廓（带孔洞）');
                 
                 // 绘制结果
                 setTimeout(() => {
-                    drawContours('canvas2', result, '处理后结果');
+                    drawContours('canvas2', parsedResult, '处理后结果');
                 }, 1000);
                 
                 resultDiv.innerHTML = `
                     <p class="success">✅ 测试成功！</p>
                     <p>输入轮廓数: ${testContoursWithHole.length}</p>
-                    <p>输出轮廓数: ${result.length}</p>
+                    <p>输出轮廓数: ${parsedResult.length}</p>
                     <details>
                         <summary>详细结果</summary>
-                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                        <pre>${JSON.stringify(parsedResult, null, 2)}</pre>
                     </details>
                 `;
                 resultDiv.className = 'test-result success';
@@ -326,23 +352,29 @@
                     ]
                 ];
                 
-                const result = await removeOverlapWithWasm(complexContours);
+                // 确保WASM模块已初始化
+                if (!remove_overlap) {
+                    await initWasm();
+                }
+                
+                const result = await remove_overlap(JSON.stringify(complexContours));
+                const parsedResult = JSON.parse(result);
                 
                 // 绘制原始轮廓
                 drawContours('canvas3', complexContours, '复杂形状');
                 
                 // 绘制结果
                 setTimeout(() => {
-                    drawContours('canvas3', result, '处理后结果');
+                    drawContours('canvas3', parsedResult, '处理后结果');
                 }, 1000);
                 
                 resultDiv.innerHTML = `
                     <p class="success">✅ 测试成功！</p>
                     <p>输入轮廓数: ${complexContours.length}</p>
-                    <p>输出轮廓数: ${result.length}</p>
+                    <p>输出轮廓数: ${parsedResult.length}</p>
                     <details>
                         <summary>详细结果</summary>
-                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                        <pre>${JSON.stringify(parsedResult, null, 2)}</pre>
                     </details>
                 `;
                 resultDiv.className = 'test-result success';
