@@ -167,6 +167,11 @@
           renderJoints(SubComponentsRoot.value, canvas.value)
         } else if (selectedComponent.value && selectedComponent.value !== 'multi') {
           renderJoints(selectedComponent.value, canvas.value)
+        } else if (editGlyph.value._o) {
+          // 纯粹用脚本绘制的字形，直接渲染关键点
+          editGlyph.value._o.renderJoints(canvas.value, {
+            type: 'all',
+          })
         }
       }
       if (checkRefLines.value) {
@@ -176,6 +181,11 @@
           renderRefLines(SubComponentsRoot.value, canvas.value)
         } else if (selectedComponent.value && selectedComponent.value !== 'multi') {
           renderRefLines(selectedComponent.value, canvas.value)
+        } else if (editGlyph.value._o) {
+          // 纯粹用脚本绘制的字形，直接渲染参考线
+          editGlyph.value._o.renderRefLines(canvas.value, {
+            type: 'all',
+          })
         }
       }
     }
