@@ -52,7 +52,7 @@
           <el-icon><Close /></el-icon>
         </span>
       </span>
-      <span class="advanced-edit-btn" @pointerdown="() => setEditStatus(Status.AdvancedEdit)">
+      <span class="advanced-edit-btn" v-show="files.value.length > 0" @pointerdown="() => setEditStatus(Status.AdvancedEdit)">
         <el-button type="primary" size="small">
           <el-icon><Tools /></el-icon>
           高级编辑

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { activePanel, PanelType } from '../../stores/advancedEdit'
+import { activePanel, PanelType, setActivePanel } from '../../stores/advancedEdit'
 import GlobalParamsPanel from './GlobalParamsPanel.vue'
 import ConditionFilterPanel from './ConditionFilterPanel.vue'
 import ScriptsPanel from './ScriptsPanel.vue'
@@ -15,15 +15,21 @@ const toList = () => {
   <div class="advanced-edit-panel">
     <header class="advanced-edit-panel-header">
       <div class="title">
-        <el-button :type="activePanel === PanelType.GlobalVariables ? 'primary' : 'default'">
+        <el-button
+          @pointerdown="() => setActivePanel(PanelType.GlobalVariables)"
+          :type="activePanel === PanelType.GlobalVariables ? 'primary' : 'default'">
           <el-icon><Tools /></el-icon>
           全局变量
         </el-button>
-        <el-button :type="activePanel === PanelType.ConditionFilter ? 'primary' : 'default'">
+        <el-button
+          @pointerdown="() => setActivePanel(PanelType.ConditionFilter)"
+          :type="activePanel === PanelType.ConditionFilter ? 'primary' : 'default'">
           <el-icon><Tools /></el-icon>
           条件筛选
         </el-button>
-        <el-button :type="activePanel === PanelType.Script ? 'primary' : 'default'">
+        <el-button
+          @pointerdown="() => setActivePanel(PanelType.Script)"
+          :type="activePanel === PanelType.Script ? 'primary' : 'default'">
           <el-icon><Tools /></el-icon>
           脚本
         </el-button>
@@ -49,6 +55,8 @@ const toList = () => {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background-color: white;
+    padding-left: 5px;
     .to-list {
       margin: 5px;
       margin-left: auto;
@@ -70,6 +78,7 @@ const toList = () => {
   .advanced-edit-panel-main {
     width: 100%;
     height: 100%;
+    background-color: white;
   }
 }
 </style>

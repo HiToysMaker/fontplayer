@@ -28,9 +28,10 @@ const handleUpdateAllCharacters = () => {
   updateCharactersList()
 }
 
-const handleChangeParameter = (parameter, value) => {
-  // console.log('parameter', parameter, value)
-  // updateCharactersAndPreview()
+const handleChangeParameter = (parameter, value, setValue = false) => {
+  if (setValue) {
+    parameter.value = value
+  }
 }
 
 watch(constants, () => {
@@ -96,21 +97,21 @@ watch(constants, () => {
                     :min="parameter.min"
                     :max="parameter.max"
                     :precision="parameter.max <= 10 ? 2 : 0"
-                    @change="(value) => handleChangeParameter(parameter, value)"
+                    @change="(value) => handleChangeParameter(parameter, value, true)"
                   />
                   <el-slider
                     :step="parameter.max <= 10 ? 0.01 : 1"
                     :min="parameter.min"
                     :max="parameter.max"
                     :precision="parameter.max <= 10 ? 2 : 0"
-                    @input="(value) => handleChangeParameter(parameter, value)"
+                    @input="(value) => handleChangeParameter(parameter, value, false)"
                     v-model="parameter.value" v-show="parameter.type === ParameterType.Number"
                   />
                 </div>
                 <div class="param-wrapper" v-else-if="parameter.type === ParameterType.Enum">
                   <el-select
                     v-model="parameter.value" class="enum-param-select" placeholder="Select"
-                    @change="(value) => handleChangeParameter(parameter, value)"
+                    @change="(value) => handleChangeParameter(parameter, value, false)"
                   >
                     <el-option
                       v-for="option in parameter.options"

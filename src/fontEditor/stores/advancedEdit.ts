@@ -23,6 +23,10 @@ export const PanelType = {
   Script: 'script',
 }
 
+export const setActivePanel = (panelType: typeof PanelType[keyof typeof PanelType]) => {
+  activePanel.value = panelType
+}
+
 const sampleCharacters = ref('白日依山尽黄河入海流欲穷千里目更上一层楼')
 const isEditingSample = ref(false)
 
