@@ -667,40 +667,40 @@ const __openFile = async (data) => {
           advanceWidth: file.fontSettings.advanceWidth,
         })
 
-        // 临时脚本，用于初始化字符中调用的字形组件参数
-        for (let i = 0; i < characterFile.components.length; i++) {
-          const comp = characterFile.components[i]
-          if (comp.type === 'glyph') {
-            // 组件类型是glyph
-            const glyph = comp.value
-            const params = glyph.parameters.parameters
-            for (let j = 0; j < params.length; j++) {
-              const param = params[j]
-              if (param.name === '起笔风格' && param.value !== 0) {
-                param.type = ParameterType.Constant
-                param.value = constants.value[0].uuid
-              } else if (param.name === '起笔数值') {
-                param.type = ParameterType.Constant
-                param.value = constants.value[1].uuid
-              } else if (param.name === '转角风格') {
-                param.type = ParameterType.Constant
-                param.value = constants.value[2].uuid
-              } else if (param.name === '转角数值') {
-                param.type = ParameterType.Constant
-                param.value = constants.value[3].uuid
-              } else if (param.name === '字重变化') {
-                param.type = ParameterType.Constant
-                param.value = constants.value[4].uuid
-              } else if (param.name === '弯曲程度') {
-                param.type = ParameterType.Constant
-                param.value = constants.value[5].uuid
-              } else if (param.name === '字重') {
-                param.type = ParameterType.Constant
-                param.value = constants.value[6].uuid
-              }
-            }
-          }
-        }
+        // // 临时脚本，用于初始化字符中调用的字形组件参数
+        // for (let i = 0; i < characterFile.components.length; i++) {
+        //   const comp = characterFile.components[i]
+        //   if (comp.type === 'glyph') {
+        //     // 组件类型是glyph
+        //     const glyph = comp.value
+        //     const params = glyph.parameters.parameters
+        //     for (let j = 0; j < params.length; j++) {
+        //       const param = params[j]
+        //       if (param.name === '起笔风格' && param.value !== 0) {
+        //         param.type = ParameterType.Constant
+        //         param.value = constants.value[0].uuid
+        //       } else if (param.name === '起笔数值') {
+        //         param.type = ParameterType.Constant
+        //         param.value = constants.value[1].uuid
+        //       } else if (param.name === '转角风格') {
+        //         param.type = ParameterType.Constant
+        //         param.value = constants.value[2].uuid
+        //       } else if (param.name === '转角数值') {
+        //         param.type = ParameterType.Constant
+        //         param.value = constants.value[3].uuid
+        //       } else if (param.name === '字重变化') {
+        //         param.type = ParameterType.Constant
+        //         param.value = constants.value[4].uuid
+        //       } else if (param.name === '弯曲程度') {
+        //         param.type = ParameterType.Constant
+        //         param.value = constants.value[5].uuid
+        //       } else if (param.name === '字重') {
+        //         param.type = ParameterType.Constant
+        //         param.value = constants.value[6].uuid
+        //       }
+        //     }
+        //   }
+        // }
         
         file.characterList[index] = characterFile
         index++
