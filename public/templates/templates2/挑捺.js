@@ -288,8 +288,8 @@ const getComponents = (skeleton) => {
     na_end,
   } = skeleton
 
-  // out指左侧（外侧）轮廓线
-  // in指右侧（内侧）轮廓线
+  // in指左侧（外侧）轮廓线
+  // out指右侧（内侧）轮廓线
   const { out_tiao_start, out_tiao_end, in_tiao_start, in_tiao_end } = FP.getLineContours('tiao', { tiao_start, tiao_end }, weight, {
     unticlockwise: true,
   })
@@ -311,26 +311,26 @@ const getComponents = (skeleton) => {
   pen.beginPath()
 
   // 绘制左侧（外侧）轮廓
-  pen.moveTo(out_tiao_start.x, out_tiao_start.y)
-  pen.lineTo(out_corner_tiao_na.x, out_corner_tiao_na.y)
-  for (let i = 0; i < out_na_curves_final.length; i++) {
-    const curve = out_na_curves_final[i]
+  pen.moveTo(in_tiao_start.x, in_tiao_start.y)
+  pen.lineTo(in_corner_tiao_na.x, in_corner_tiao_na.y)
+  for (let i = 0; i < in_na_curves.length; i++) {
+    const curve = in_na_curves[i]
     pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
   }
 
   // 绘制轮廓连接线
-  pen.lineTo(in_na_curves[in_na_curves.length - 1].end.x, in_na_curves[in_na_curves.length - 1].end.y)
+  pen.lineTo(out_na_curves_final[out_na_curves_final.length - 1].end.x, out_na_curves_final[out_na_curves_final.length - 1].end.y)
 
   // 绘制横的右侧（内侧）轮廓
-  for (let i = in_na_curves.length - 1; i >= 0; i--) {
-    const curve = in_na_curves[i]
+  for (let i = out_na_curves_final.length - 1; i >= 0; i--) {
+    const curve = out_na_curves_final[i]
     pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
   }
-  pen.lineTo(in_corner_tiao_na.x, in_corner_tiao_na.y)
-  pen.lineTo(in_tiao_start.x, in_tiao_start.y)
+  pen.lineTo(out_corner_tiao_na.x, out_corner_tiao_na.y)
+  pen.lineTo(out_tiao_start.x, out_tiao_start.y)
 
   // 绘制轮廓连接线
-  pen.lineTo(out_tiao_start.x, out_tiao_start.y)
+  pen.lineTo(in_tiao_start.x, in_tiao_start.y)
 
   pen.closePath()
   return [ pen ]
