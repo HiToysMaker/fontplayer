@@ -49,28 +49,29 @@ const updateSampleCharactersList = () => {
               param.type = ParameterType.AdvancedEditConstant
             }
 
-            if (param.name === '起笔风格' && param.value !== 0) {
-              param.type = ParameterType.AdvancedEditConstant
-              param.value = constants.value[0].uuid
-            } else if (param.name === '起笔数值') {
-              param.type = ParameterType.AdvancedEditConstant
-              param.value = constants.value[1].uuid
-            } else if (param.name === '转角风格') {
-              param.type = ParameterType.AdvancedEditConstant
-              param.value = constants.value[2].uuid
-            } else if (param.name === '转角数值') {
-              param.type = ParameterType.AdvancedEditConstant
-              param.value = constants.value[3].uuid
-            } else if (param.name === '字重变化') {
-              param.type = ParameterType.AdvancedEditConstant
-              param.value = constants.value[4].uuid
-            } else if (param.name === '弯曲程度') {
-              param.type = ParameterType.AdvancedEditConstant
-              param.value = constants.value[5].uuid
-            } else if (param.name === '字重') {
-              param.type = ParameterType.AdvancedEditConstant
-              param.value = constants.value[6].uuid
-            }
+            // 临时脚本
+            // if (param.name === '起笔风格' && param.value !== 0) {
+            //   param.type = ParameterType.AdvancedEditConstant
+            //   param.value = constants.value[0].uuid
+            // } else if (param.name === '起笔数值') {
+            //   param.type = ParameterType.AdvancedEditConstant
+            //   param.value = constants.value[1].uuid
+            // } else if (param.name === '转角风格') {
+            //   param.type = ParameterType.AdvancedEditConstant
+            //   param.value = constants.value[2].uuid
+            // } else if (param.name === '转角数值') {
+            //   param.type = ParameterType.AdvancedEditConstant
+            //   param.value = constants.value[3].uuid
+            // } else if (param.name === '字重变化') {
+            //   param.type = ParameterType.AdvancedEditConstant
+            //   param.value = constants.value[4].uuid
+            // } else if (param.name === '弯曲程度') {
+            //   param.type = ParameterType.AdvancedEditConstant
+            //   param.value = constants.value[5].uuid
+            // } else if (param.name === '字重') {
+            //   param.type = ParameterType.AdvancedEditConstant
+            //   param.value = constants.value[6].uuid
+            // }
 
           }
         }

@@ -201,6 +201,12 @@ watch(constants, () => {
     justify-content: center;
     align-items: flex-end;
     flex-direction: column;
+    .parameters-wrap {
+      width: 100%;
+    }
+    .el-scrollbar {
+      width: 100%;
+    }
     .title {
       background-color: var(--primary-0);
       color: var(--light-0);
@@ -228,6 +234,7 @@ watch(constants, () => {
       }
     }
     .title {
+      width: 100%;
       height: 36px;
       line-height: 36px;
       padding: 0 10px;
