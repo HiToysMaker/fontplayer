@@ -595,7 +595,7 @@ const openFile_tauri = async () => {
     const { data: rawdata } = await nativeImportTextFile(['json'])
     if (!rawdata) return
     const data = JSON.parse(rawdata)
-    __openFile(data)
+    await __openFile(data)
   }
 }
 
@@ -608,68 +608,124 @@ const addLoaded = () => {
   }
 }
 
-const __openFile = (data) => {
+const __openFile = async (data) => {
   total.value = data.file.characterList.length * 2 + (data.glyphs.length + data.stroke_glyphs.length + data.radical_glyphs.length + data.comp_glyphs.length) * 3
   loaded.value = 0
   loading.value = true
-  {
-    const plainGlyphs = data.glyphs
-    const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
-      updateContoursAndPreview: true,
-      unitsPerEm: 1000,
-      descender: -200,
-      advanceWidth: 1000,
-    }))
-    _glyphs.map((glyph) => {
-      addGlyph(glyph, Status.GlyphList)
-      addGlyphTemplate(glyph, Status.GlyphList)
-      addLoaded()
-    })
-  }
-  {
-    const plainGlyphs = data.stroke_glyphs
-    const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
-      updateContoursAndPreview: true,
-      unitsPerEm: 1000,
-      descender: -200,
-      advanceWidth: 1000,
-    }))
-    _glyphs.map((glyph) => {
-      addGlyph(glyph, Status.StrokeGlyphList)
-      addGlyphTemplate(glyph, Status.StrokeGlyphList)
-      addLoaded()
-    })
-  }
-  {
-    const plainGlyphs = data.radical_glyphs
-    const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
-      updateContoursAndPreview: true,
-      unitsPerEm: 1000,
-      descender: -200,
-      advanceWidth: 1000,
-    }))
-    _glyphs.map((glyph) => {
-      addGlyph(glyph, Status.RadicalGlyphList)
-      addGlyphTemplate(glyph, Status.RadicalGlyphList)
-      addLoaded()
-    })
-  }
-  {
-    const plainGlyphs = data.comp_glyphs
-    const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
-      updateContoursAndPreview: true,
-      unitsPerEm: 1000,
-      descender: -200,
-      advanceWidth: 1000,
-    }))
-    _glyphs.map((glyph) => {
-      addGlyph(glyph, Status.CompGlyphList)
-      addGlyphTemplate(glyph, Status.CompGlyphList)
-      addLoaded()
+
+  // 处理字形数据的异步函数
+  const processGlyphs = async (plainGlyphs, status) => {
+    return new Promise<void>((resolve) => {
+      const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
+        updateContoursAndPreview: true,
+        unitsPerEm: 1000,
+        descender: -200,
+        advanceWidth: 1000,
+      }))
+      
+      let index = 0
+      const processNext = () => {
+        if (index >= _glyphs.length) {
+          resolve()
+          return
+        }
+        
+        const glyph = _glyphs[index]
+        addGlyph(glyph, status)
+        addGlyphTemplate(glyph, status)
+        addLoaded()
+        index++
+        
+        // 每处理10个项目后让出控制权，让UI更新
+        if (index % 10 === 0) {
+          requestAnimationFrame(processNext)
+        } else {
+          processNext()
+        }
+      }
+      
+      processNext()
     })
   }
 
+  // 处理字符列表的异步函数
+  const processCharacters = async (file) => {
+    return new Promise<void>((resolve) => {
+      let index = 0
+      const processNext = () => {
+        if (index >= file.characterList.length) {
+          resolve()
+          return
+        }
+        
+        const character = file.characterList[index]
+        addLoaded()
+        const characterFile = instanceCharacter(character, {
+          updateContoursAndPreview: true,
+          unitsPerEm: file.fontSettings.unitsPerEm,
+          descender: file.fontSettings.descender,
+          advanceWidth: file.fontSettings.advanceWidth,
+        })
+
+        // 临时脚本，用于初始化字符中调用的字形组件参数
+        for (let i = 0; i < characterFile.components.length; i++) {
+          const comp = characterFile.components[i]
+          if (comp.type === 'glyph') {
+            // 组件类型是glyph
+            const glyph = comp.value
+            const params = glyph.parameters.parameters
+            for (let j = 0; j < params.length; j++) {
+              const param = params[j]
+              if (param.name === '起笔风格' && param.value !== 0) {
+                param.type = ParameterType.Constant
+                param.value = constants.value[0].uuid
+              } else if (param.name === '起笔数值') {
+                param.type = ParameterType.Constant
+                param.value = constants.value[1].uuid
+              } else if (param.name === '转角风格') {
+                param.type = ParameterType.Constant
+                param.value = constants.value[2].uuid
+              } else if (param.name === '转角数值') {
+                param.type = ParameterType.Constant
+                param.value = constants.value[3].uuid
+              } else if (param.name === '字重变化') {
+                param.type = ParameterType.Constant
+                param.value = constants.value[4].uuid
+              } else if (param.name === '弯曲程度') {
+                param.type = ParameterType.Constant
+                param.value = constants.value[5].uuid
+              } else if (param.name === '字重') {
+                param.type = ParameterType.Constant
+                param.value = constants.value[6].uuid
+              }
+            }
+          }
+        }
+        
+        file.characterList[index] = characterFile
+        index++
+        
+        // 每处理5个字符后让出控制权，让UI更新
+        if (index % 5 === 0) {
+          requestAnimationFrame(processNext)
+        } else {
+          processNext()
+        }
+      }
+      
+      processNext()
+    })
+  }
+
+  // 异步处理所有字形数据
+  await processGlyphs(data.glyphs, Status.GlyphList)
+  await processGlyphs(data.stroke_glyphs, Status.StrokeGlyphList)
+  await processGlyphs(data.radical_glyphs, Status.RadicalGlyphList)
+  await processGlyphs(data.comp_glyphs, Status.CompGlyphList)
+
   const file = data.file
+  
+  // 处理常量数据
   if (data.constants) {
     for (let n = 0; n < data.constants.length; n++) {
       if (!constantsMap.getByUUID(data.constants[n].uuid)) {
@@ -683,52 +739,10 @@ const __openFile = (data) => {
       constantGlyphMap.set(keys[n], data.constantGlyphMap[keys[n]])
     }
   }
-  file.characterList = file.characterList.map((character) => {
-    addLoaded()
-    const characterFile = instanceCharacter(character, {
-      updateContoursAndPreview: true,
-      unitsPerEm: file.fontSettings.unitsPerEm,
-      descender: file.fontSettings.descender,
-      advanceWidth: file.fontSettings.advanceWidth,
-    })
 
-    // 临时脚本，用于初始化字符中调用的字形组件参数
-    for (let i = 0; i < characterFile.components.length; i++) {
-      const comp = characterFile.components[i]
-      if (comp.type === 'glyph') {
-        // 组件类型是glyph
-        const glyph = comp.value
-        const params = glyph.parameters.parameters
-        for (let j = 0; j < params.length; j++) {
-          const param = params[j]
-          if (param.name === '起笔风格' && param.value !== 0) {
-            param.type = ParameterType.Constant
-            param.value = constants.value[0].uuid
-          } else if (param.name === '起笔数值') {
-            param.type = ParameterType.Constant
-            param.value = constants.value[1].uuid
-          } else if (param.name === '转角风格') {
-            param.type = ParameterType.Constant
-            param.value = constants.value[2].uuid
-          } else if (param.name === '转角数值') {
-            param.type = ParameterType.Constant
-            param.value = constants.value[3].uuid
-          } else if (param.name === '字重变化') {
-            param.type = ParameterType.Constant
-            param.value = constants.value[4].uuid
-          } else if (param.name === '弯曲程度') {
-            param.type = ParameterType.Constant
-            param.value = constants.value[5].uuid
-          } else if (param.name === '字重') {
-            param.type = ParameterType.Constant
-            param.value = constants.value[6].uuid
-          }
-        }
-      }
-    }
+  // 异步处理字符列表
+  await processCharacters(file)
 
-    return characterFile
-  })
   let success = true
   for (let j = 0; j < files.value.length; j++) {
     if (files.value[j].uuid === file.uuid) {
@@ -789,9 +803,9 @@ const _openFile = async () => {
     for (let i = 0; i < readfiles.length; i++) {
       const reader = new FileReader()
       reader.readAsText(readfiles[i])
-      reader.onload = () => {
+      reader.onload = async () => {
         const data = JSON.parse(reader.result as string)
-        __openFile(data)
+        await __openFile(data)
       }
     }
     document.body.removeChild(input)
@@ -1907,6 +1921,7 @@ const _syncData = async () => {
   clearGlyphRenderList(Status.StrokeGlyphList)
   clearGlyphRenderList(Status.RadicalGlyphList)
   clearGlyphRenderList(Status.CompGlyphList)
+  
   const constants_data = JSON.parse(await localForage.getItem('constants'))
   if (constants_data) {
     for (let n = 0; n < constants_data.length; n++) {
@@ -1922,6 +1937,7 @@ const _syncData = async () => {
       constantGlyphMap.set(keys[n], constantGlyphMap_data[keys[n]])
     }
   }
+  
   const glyphs_data = await localForage.getItem('glyphs')
   let plainGlyphs: Array<ICustomGlyph> = []
   if (glyphs_data) {
@@ -1969,87 +1985,117 @@ const _syncData = async () => {
         confirmButtonText: 'Confirm',
       })
     }
+    return
   }
-  total.value && (loading.value = true)
+  
+  loading.value = true
 
+  // 处理字形数据的异步函数
+  const processGlyphs = async (plainGlyphs, status) => {
+    return new Promise<void>((resolve) => {
+      if (plainGlyphs.length === 0) {
+        resolve()
+        return
+      }
+      
+      const _glyphs = plainGlyphs.map((plainGlyph) => {
+        return instanceGlyph(plainGlyph, {
+          updateContoursAndPreview: true,
+          unitsPerEm: 1000,
+          descender: -200,
+          advanceWidth: 1000,
+        })
+      })
+      
+      let index = 0
+      const processNext = () => {
+        if (index >= _glyphs.length) {
+          resolve()
+          return
+        }
+        
+        const glyph = _glyphs[index]
+        addGlyph(glyph, status)
+        addGlyphTemplate(glyph, status)
+        addLoaded()
+        index++
+        
+        // 每处理10个项目后让出控制权，让UI更新
+        if (index % 10 === 0) {
+          requestAnimationFrame(processNext)
+        } else {
+          processNext()
+        }
+      }
+      
+      processNext()
+    })
+  }
+
+  // 处理字符列表的异步函数
+  const processCharacters = async (file) => {
+    return new Promise<void>((resolve) => {
+      if (!file || !file.characterList || file.characterList.length === 0) {
+        resolve()
+        return
+      }
+      
+      let index = 0
+      const processNext = () => {
+        if (index >= file.characterList.length) {
+          resolve()
+          return
+        }
+        
+        const character = file.characterList[index]
+        addLoaded()
+        const characterFile = instanceCharacter(character, {
+          updateContoursAndPreview: true,
+          unitsPerEm: file.fontSettings.unitsPerEm,
+          descender: file.fontSettings.descender,
+          advanceWidth: file.fontSettings.advanceWidth,
+        })
+        
+        file.characterList[index] = characterFile
+        index++
+        
+        // 每处理5个字符后让出控制权，让UI更新
+        if (index % 5 === 0) {
+          requestAnimationFrame(processNext)
+        } else {
+          processNext()
+        }
+      }
+      
+      processNext()
+    })
+  }
+
+  // 异步处理所有字形数据
   if (glyphs_data) {
     glyphs.value = []
-    const _glyphs = plainGlyphs.map((plainGlyph) => {
-      return instanceGlyph(plainGlyph, {
-        updateContoursAndPreview: true,
-        unitsPerEm: 1000,
-        descender: -200,
-        advanceWidth: 1000,
-      })
-    })
-    _glyphs.map((glyph) => {
-      addGlyph(glyph, Status.GlyphList)
-      addGlyphTemplate(glyph, Status.GlyphList)
-      addLoaded()
-    })
+    await processGlyphs(plainGlyphs, Status.GlyphList)
   }
 
   if (stroke_glyphs_data) {
     stroke_glyphs.value = []
-    const _glyphs = plainGlyphs_stroke.map((plainGlyph) => {
-      return instanceGlyph(plainGlyph, {
-        updateContoursAndPreview: true,
-        unitsPerEm: 1000,
-        descender: -200,
-        advanceWidth: 1000,
-      })
-    })
-    _glyphs.map((glyph) => {
-      addGlyph(glyph, Status.StrokeGlyphList)
-      addGlyphTemplate(glyph, Status.StrokeGlyphList)
-      addLoaded()
-    })
+    await processGlyphs(plainGlyphs_stroke, Status.StrokeGlyphList)
   }
 
   if (radical_glyphs_data) {
     radical_glyphs.value = []
-    const _glyphs = plainGlyphs_radical.map((plainGlyph) => {
-      return instanceGlyph(plainGlyph, {
-        updateContoursAndPreview: true,
-        unitsPerEm: 1000,
-        descender: -200,
-        advanceWidth: 1000,
-      })
-    })
-    _glyphs.map((glyph) => {
-      addGlyph(glyph, Status.RadicalGlyphList)
-      addGlyphTemplate(glyph, Status.RadicalGlyphList)
-      addLoaded()
-    })
+    await processGlyphs(plainGlyphs_radical, Status.RadicalGlyphList)
   }
 
   if (comp_glyphs_data) {
     comp_glyphs.value = []
-    const _glyphs = plainGlyphs_comp.map((plainGlyph) => {
-      return instanceGlyph(plainGlyph, {
-        updateContoursAndPreview: true,
-        unitsPerEm: 1000,
-        descender: -200,
-        advanceWidth: 1000,
-      })
-    })
-    _glyphs.map((glyph) => {
-      addGlyph(glyph, Status.CompGlyphList)
-      addGlyphTemplate(glyph, Status.CompGlyphList)
-      addLoaded()
-    })
+    await processGlyphs(plainGlyphs_comp, Status.CompGlyphList)
   }
 
+  // 异步处理字符列表
   if (file_data) {
-    file.characterList.map((character, index) => {
-      addLoaded()
-      return instanceCharacter(character, {
-        updateContoursAndPreview: true,
-        unitsPerEm: file.fontSettings.unitsPerEm,
-        descender: file.fontSettings.descender,
-        advanceWidth: file.fontSettings.advanceWidth,
-      })
-    })
+    await processCharacters(file)
+    
     let success = true
     for (let j = 0; j < files.value.length; j++) {
       if (files.value[j].uuid === file.uuid) {
