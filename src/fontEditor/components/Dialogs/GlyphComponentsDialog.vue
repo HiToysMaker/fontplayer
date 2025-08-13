@@ -285,12 +285,10 @@
   }
 
 	const cancelSelect = (uuid) => {
-		selected_glyphs.value.map((glyph, index) => {
-			if (glyph.uuid === uuid) {
-				selected_glyphs.value.splice(index, 1)
-				return
-			}
-		})
+		const index = selected_glyphs.value.findIndex(glyph => glyph.uuid === uuid)
+		if (index !== -1) {
+			selected_glyphs.value.splice(index, 1)
+		}
 	}
 	
 	const handleConfirm = () => {
