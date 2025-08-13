@@ -214,11 +214,12 @@
     // 粘贴
     const components = clipBoard.value
     for (let i = components.length - 1; i >= 0; i--) {
-      const component = components[i]
+      // 使用 R.clone 进行深拷贝，避免循环引用问题
+      const component = R.clone(components[i])
       component.uuid = genUUID()
       insertComponentForCurrentGlyph(component, { uuid, pos: 'next' })
     }
-    setClipBoard([])
+    // 不清空剪贴板，允许重复粘贴
     onPopover.value = false
     popoverVisibleMap[uuid] = false
   }

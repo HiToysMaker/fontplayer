@@ -1642,8 +1642,10 @@ const paste = () => {
   // 粘贴
   const components = clipBoard.value
   components.map((component) => {
-    component.uuid = genUUID()
-    addComponentForCurrentCharacterFile(component)
+    // 深拷贝组件，避免修改剪贴板中的原始数据
+    const clonedComponent = R.clone(component)
+    clonedComponent.uuid = genUUID()
+    addComponentForCurrentCharacterFile(clonedComponent)
   })
   // setClipBoard([])
 }

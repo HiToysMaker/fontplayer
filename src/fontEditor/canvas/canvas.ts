@@ -122,7 +122,7 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
   components.map((component, index) => {
 		// 如果组件不可见则跳过
 		// skip if in-visible
-    if (!component.visible) {
+    if (!component || component.visible === null || component.visible === undefined || !component.visible) {
       return
     }
 
@@ -436,7 +436,7 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
   components.map((component, index) => {
 		// 如果组件不可见则跳过
 		// skip if in-visible
-    if (!component.visible) {
+    if (!component || component.visible === null || component.visible === undefined || !component.visible) {
       return
     }
 
