@@ -31,7 +31,11 @@
   const handleClick = async () => {
     loaded.value = 0
     loading.value = true
-    total.value = selectedFile.value.characterList.length + glyphs.value.length + stroke_glyphs.value.length + radical_glyphs.value.length + comp_glyphs.value.length
+    total.value = selectedFile.value.characterList.length + 
+      (exportItems.value.glyphs ? glyphs.value.length : 0) + 
+      (exportItems.value.stroke_glyphs ? stroke_glyphs.value.length : 0) + 
+      (exportItems.value.radical_glyphs ? radical_glyphs.value.length : 0) + 
+      (exportItems.value.comp_glyphs ? comp_glyphs.value.length : 0)
     const file = await plainFile(selectedFile.value as unknown as IFile)
     let _glyphs: any = []
     let _stroke_glyphs : any = []
