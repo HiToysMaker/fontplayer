@@ -12,7 +12,7 @@ import {
   selectedFile,
   editCharacterFile,
 } from '../stores/files'
-import { type IBackground, type IGrid, BackgroundType, GridType, background, grid } from '../stores/global'
+import { type IBackground, type IGrid, BackgroundType, GridType, background, grid, getStrokeWidth } from '../stores/global'
 import type { IPoint } from '../stores/pen'
 import {
   mapCanvasCoords,
@@ -141,6 +141,7 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
         closePath,
       } = component.value as unknown as IPenComponent
       ctx.strokeStyle = strokeColor || '#000'
+      ctx.lineWidth = getStrokeWidth()
       ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
       if (fillColor === 'none') {
         ctx.fillStyle = 'rgba(0, 0, 0, 0)'
@@ -187,6 +188,7 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
         closePath,
       } = component.value as unknown as IPolygonComponent
       ctx.strokeStyle = strokeColor || '#000'
+      ctx.lineWidth = getStrokeWidth()
       ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
       let _points = transformPoints(points, {
         x, y, w, h, rotation: 0, flipX, flipY,
@@ -232,6 +234,7 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       const ellipseX = _x
       const ellipseY = _y
       ctx.strokeStyle = strokeColor || '#000'
+      ctx.lineWidth = getStrokeWidth()
       ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
       ctx.translate(mapCanvasX(options.offset.x), mapCanvasY(options.offset.y))
       ctx.translate(_x + _w / 2, _y + _h / 2)
@@ -264,6 +267,7 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       const rectX = _x
       const rectY = _y
       ctx.strokeStyle = strokeColor || '#000'
+      ctx.lineWidth = getStrokeWidth()
       ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
       ctx.translate(mapCanvasX(options.offset.x), mapCanvasY(options.offset.y))
       ctx.translate(_x + _w / 2, _y + _h / 2)
@@ -456,6 +460,7 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
         closePath,
       } = component.value as unknown as IPenComponent
       ctx.strokeStyle = strokeColor || '#000'
+      ctx.lineWidth = getStrokeWidth()
       ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
       if (fillColor === 'none') {
         ctx.fillStyle = 'rgba(0, 0, 0, 0)'
@@ -503,6 +508,7 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
         closePath,
       } = component.value as unknown as IPolygonComponent
       ctx.strokeStyle = strokeColor || '#000'
+      ctx.lineWidth = getStrokeWidth()
       ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
       let _points = transformPoints(points, {
         x, y, w, h, rotation, flipX, flipY,
@@ -562,6 +568,8 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
         fillColor,
         closePath,
       } = component.value as unknown as IEllipseComponent
+      ctx.strokeStyle = strokeColor || '#000'
+      ctx.lineWidth = getStrokeWidth()
       ctx.beginPath()
 			ctx.moveTo(_points[0].x, _points[0].y)
       for (let i = 1; i < _points.length; i ++) {
@@ -601,6 +609,7 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
         closePath,
       } = component.value as unknown as IRectangleComponent
       ctx.strokeStyle = strokeColor || '#000'
+      ctx.lineWidth = getStrokeWidth()
       ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
       ctx.translate(mapCanvasX(options.offset.x) * scale, mapCanvasY(options.offset.y) * scale)
       ctx.beginPath()

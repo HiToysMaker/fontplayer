@@ -44,6 +44,7 @@ import {
 } from '../../stores/glyph'
 import { Status, editStatus } from '../../stores/font'
 import { genEllipseContour, formatPoints, genPolygonContour, genRectangleContour, genPenContour } from '../../../features/font'
+import { getStrokeWidth } from '../../stores/global'
 
 // 选择组件时，初始化方法
 // initializier for component selection
@@ -365,6 +366,7 @@ const renderSelectEditor = (canvas: HTMLCanvasElement, d: number = 10, glyph: bo
 	const _h = mapCanvasHeight(h)
 	const ctx: CanvasRenderingContext2D = canvas?.getContext('2d') as CanvasRenderingContext2D
 	ctx.strokeStyle = '#79bbff'
+	ctx.lineWidth = getStrokeWidth()
 	ctx.translate(_x + _w / 2, _y + _h / 2)
 	ctx.rotate(rotation * Math.PI / 180)
 	ctx.translate(-(_x + _w / 2), -(_y + _h / 2))

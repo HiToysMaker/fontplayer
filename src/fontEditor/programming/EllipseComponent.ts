@@ -4,6 +4,7 @@ import { selectedFile } from '../stores/files';
 import { formatPoints, genEllipseContour, translate } from '../../features/font';
 import * as R from 'ramda';
 import { computeCoords } from '../canvas/canvas';
+import { getStrokeWidth } from '../stores/global';
 
 interface IOption {
 	offset?: {
@@ -39,6 +40,7 @@ class EllipseComponent {
 		const scale = options.scale
 		const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 		ctx.strokeStyle = '#000'
+		ctx.lineWidth = getStrokeWidth()
 		ctx.translate(mapCanvasX(options.offset.x) * scale, mapCanvasY(options.offset.y) * scale)
 		ctx.beginPath()
 		ctx.ellipse(mapCanvasX(this.centerX) * scale, mapCanvasY(this.centerY) * scale, mapCanvasX(this.radiusX) * scale, mapCanvasY(this.radiusY) * scale, 0, 0, Math.PI * 2)
@@ -68,6 +70,7 @@ class EllipseComponent {
 		const scale = options.scale
 		const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 		ctx.strokeStyle = '#000'
+		ctx.lineWidth = getStrokeWidth()
 		ctx.beginPath()
 		const start = computeCoords(options.grid, translate({ x: points[0].x, y: points[0].y }))
 		ctx.moveTo(mapCanvasX(start.x) * scale, mapCanvasY(start.y) * scale)

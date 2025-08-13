@@ -3,6 +3,7 @@ import {
   mapCanvasHeight,
 } from '../../utils/canvas'
 import { selectedFile } from '../stores/files'
+import { getStrokeWidth } from '../stores/global'
 
 /**
  * 绘制网格背景
@@ -57,6 +58,7 @@ const mesh = (
   for (let i = 0; i <= gaps; i++) {
     const x = left + mapCanvasWidth(fontWidth) / gaps * i
     ctx.strokeStyle = bold.indexOf(i) !== -1 ? '#811616' : '#cda2a2'
+    ctx.lineWidth = getStrokeWidth()
     ctx.beginPath()
     ctx.moveTo(x, top)
     ctx.lineTo(x, bottom)
@@ -66,6 +68,7 @@ const mesh = (
   for (let i = 0; i <= gaps; i++) {
     const y = top + mapCanvasHeight(fontHeight) / gaps * i
     ctx.strokeStyle = bold.indexOf(i) !== -1 ? '#811616' : '#cda2a2'
+    ctx.lineWidth = getStrokeWidth()
     ctx.beginPath()
     ctx.moveTo(left, y)
     ctx.lineTo(right, y)

@@ -1,6 +1,7 @@
 import { mapCanvasX, mapCanvasY } from '../../utils/canvas'
 import { IGlyphComponent, IJoint, executeScript } from '../stores/glyph'
 import { genUUID } from '../../utils/string'
+import { getStrokeWidth } from '../stores/global'
 
 interface IPoint {
 	x: number;
@@ -84,6 +85,7 @@ const renderRefLine = (canvas, refline) => {
 	const p1 = refline.start
 	const p2 = refline.end
 	ctx.strokeStyle = refline.type === 'ref' ? 'red' : 'blue'
+	ctx.lineWidth = getStrokeWidth()
 	ctx.beginPath()
 	ctx.moveTo(mapCanvasX(p1.x), mapCanvasY(p1.y))
 	ctx.lineTo(mapCanvasX(p2.x), mapCanvasY(p2.y))

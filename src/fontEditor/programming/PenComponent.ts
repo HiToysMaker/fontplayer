@@ -5,6 +5,7 @@ import { formatPoints, genPenContour, translate } from '../../features/font'
 import { selectedFile } from '../stores/files'
 import * as R from 'ramda'
 import { computeCoords } from '../canvas/canvas'
+import { getStrokeWidth } from '../stores/global'
 
 interface IOption {
 	offset?: {
@@ -141,6 +142,7 @@ class PenComponent {
 		if (this.points.length >= 4) {
 			const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 			ctx.strokeStyle = '#000'
+			ctx.lineWidth = getStrokeWidth()
 			ctx.translate(mapCanvasX(options.offset.x) * scale, mapCanvasY(options.offset.y) * scale)
 			ctx.beginPath()
 			ctx.moveTo(mapCanvasX(this.points[0].x) * scale, mapCanvasY(this.points[0].y) * scale)
@@ -172,6 +174,7 @@ class PenComponent {
 		if (this.points.length >= 4) {
 			const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 			ctx.strokeStyle = '#000'
+			ctx.lineWidth = getStrokeWidth()
 			ctx.beginPath()
 			const start = computeCoords(options.grid, translate(this.points[0]))
 			ctx.moveTo(mapCanvasX(start.x) * scale, mapCanvasY(start.y) * scale)
