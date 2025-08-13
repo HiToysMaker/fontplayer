@@ -11,7 +11,7 @@
   import { ref } from 'vue'
   import saveAs from 'file-saver'
   import { IFile, selectedFile } from '../../stores/files'
-  import { mapToObject, plainFile, plainGlyph } from '../../menus/handlers'
+  import { mapToObject, plainFile, plainGlyph, addLoaded } from '../../menus/handlers'
   import { ICustomGlyph, comp_glyphs, constantGlyphMap, constants, glyphs, radical_glyphs, stroke_glyphs } from '../../stores/glyph'
   import { total, loaded, loading } from '../../stores/global'
   const { tm, t } = useI18n()
@@ -28,34 +28,43 @@
     setExportDialogVisible(false)
   }
 
-  const handleClick = () => {
-    total.value = 0
+  const handleClick = async () => {
     loaded.value = 0
     loading.value = true
-    const file = plainFile(selectedFile.value as unknown as IFile)
+    total.value = selectedFile.value.characterList.length + glyphs.value.length + stroke_glyphs.value.length + radical_glyphs.value.length + comp_glyphs.value.length
+    const file = await plainFile(selectedFile.value as unknown as IFile)
     let _glyphs: any = []
     let _stroke_glyphs : any = []
     let _radical_glyphs : any = []
     let _comp_glyphs : any = []
+    // 分批处理 glyphs
+    const processGlyphs = async (glyphs: any[], target: any[]) => {
+      const batchSize = 100
+      for (let i = 0; i < glyphs.length; i += batchSize) {
+        const batch = glyphs.slice(i, i + batchSize)
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => {
+            batch.forEach((glyph: ICustomGlyph) => {
+              addLoaded()
+              target.push(plainGlyph(glyph))
+            })
+            resolve()
+          })
+        })
+      }
+    }
+
     if (exportItems.value.glyphs) {
-      _glyphs = glyphs.value.map((glyph: ICustomGlyph) => {
-        return plainGlyph(glyph)
-      })
+      await processGlyphs(glyphs.value, _glyphs)
     }
     if (exportItems.value.stroke_glyphs) {
-      _stroke_glyphs = stroke_glyphs.value.map((glyph: ICustomGlyph) => {
-        return plainGlyph(glyph)
-      })
+      await processGlyphs(stroke_glyphs.value, _stroke_glyphs)
     }
     if (exportItems.value.radical_glyphs) {
-      _radical_glyphs = radical_glyphs.value.map((glyph: ICustomGlyph) => {
-        return plainGlyph(glyph)
-      })
+      await processGlyphs(radical_glyphs.value, _radical_glyphs)
     }
     if (exportItems.value.comp_glyphs) {
-      _comp_glyphs = comp_glyphs.value.map((glyph: ICustomGlyph) => {
-        return plainGlyph(glyph)
-      })
+      await processGlyphs(comp_glyphs.value, _comp_glyphs)
     }
     const content = JSON.stringify({
       file,

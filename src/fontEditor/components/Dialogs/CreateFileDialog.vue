@@ -147,7 +147,7 @@
     setEditStatus(Status.CharacterList)
     loading.value = true
     loaded.value = 0
-    total.value = hei_strokes.length + 20
+    total.value = useDefaultTemplate.value ? hei_strokes.length + 20 : 0
     //loading.value = true
     //setTimeout(() => {
     //  //loading.value = true
@@ -161,6 +161,8 @@
     setCreateFileDialogVisible(false)
     if (useDefaultTemplate.value) {
       await importDefaultTemplate()
+    } else {
+      loading.value = false
     }
   }
 

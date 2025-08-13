@@ -269,10 +269,32 @@ const mapToObject = (map) => {
 //	return data
 //}
 
-const plainFile = (file: IFile) => {
+const plainFile = async (file: IFile) => {
+  const characterList: any[] = []
+  
+  // 分批处理 characterList
+  const processCharacters = async (characters: any[]) => {
+    const batchSize = 100
+    for (let i = 0; i < characters.length; i += batchSize) {
+      const batch = characters.slice(i, i + batchSize)
+      
+      // 使用 Promise 和 requestAnimationFrame 处理每一批
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          batch.forEach((character) => {
+            characterList.push(plainCharacter(character))
+          })
+          resolve()
+        })
+      })
+    }
+  }
+  
+  await processCharacters(file.characterList)
+  
   return {
     uuid: file.uuid,
-    characterList: file.characterList.map((character) => plainCharacter(character)),
+    characterList,
     name: file.name,
     width: file.width,
     height: file.height,
@@ -283,6 +305,7 @@ const plainFile = (file: IFile) => {
 }
 
 const plainCharacter = (character: ICharacterFile) => {
+  addLoaded()
   const data = {
     uuid: character.uuid,
     type: character.type,
@@ -388,8 +411,8 @@ const instanceCharacter = (plainCharacter, options?) => {
   return plainCharacter
 }
 
-const getProjectData = () => {
-  const file = plainFile(selectedFile.value)
+const getProjectData = async () => {
+  const file = await plainFile(selectedFile.value)
   const _glyphs = glyphs.value.map((glyph: ICustomGlyph) => {
     return plainGlyph(glyph)
   })
@@ -503,7 +526,11 @@ const exportGlyphs_tauri = async () => {
         })
         await nativeSaveText(data, temp_glyphs_name, ['json'])
       } else {
-        requestAnimationFrame(() => addGlyph(i + 1))
+        if (i % 100 === 0) {
+          requestAnimationFrame(() => addGlyph(i + 1))
+        } else {
+          addGlyph(i + 1)
+        }
       }
     }
   }, 50)
@@ -637,7 +664,7 @@ const __openFile = async (data) => {
         index++
         
         // 每处理10个项目后让出控制权，让UI更新
-        if (index % 10 === 0) {
+        if (index % 100 === 0) {
           requestAnimationFrame(processNext)
         } else {
           processNext()
@@ -706,7 +733,7 @@ const __openFile = async (data) => {
         index++
         
         // 每处理5个字符后让出控制权，让UI更新
-        if (index % 5 === 0) {
+        if (index % 100 === 0) {
           requestAnimationFrame(processNext)
         } else {
           processNext()
@@ -830,7 +857,7 @@ const saveFile = async () => {
   const constantGlyphMap_data = JSON.stringify(mapToObject(constantGlyphMap))
   await localForage.setItem('constantGlyphMap', constantGlyphMap_data)
 
-  const file = plainFile(selectedFile.value)
+  const file = await plainFile(selectedFile.value)
   const file_data = JSON.stringify(file)
   await localForage.setItem('file', file_data)
   
@@ -1082,6 +1109,12 @@ const importGlyphs_tauri = async () => {
   if (!rawdata) return
   const data = JSON.parse(rawdata)
   const plainGlyphs = data.glyphs
+  
+  // 设置进度条
+  loading.value = true
+  loaded.value = 0
+  total.value = plainGlyphs.length
+  
   if (data.constants) {
     for (let n = 0; n < data.constants.length; n++) {
       if (!constantsMap.getByUUID(data.constants[n].uuid)) {
@@ -1095,13 +1128,34 @@ const importGlyphs_tauri = async () => {
       constantGlyphMap.set(keys[n], data.constantGlyphMap[keys[n]])
     }
   }
-  const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
-    updateContoursAndPreview: true,
-    unitsPerEm: 1000,
-    descender: -200,
-    advanceWidth: 1000,
-  }))
-  _glyphs.map((glyph) => {
+  
+  // 分批处理 instanceGlyph
+  const _glyphs: any[] = []
+  const processGlyphs = async (glyphs: any[]) => {
+    const batchSize = 100
+    for (let i = 0; i < glyphs.length; i += batchSize) {
+      const batch = glyphs.slice(i, i + batchSize)
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          batch.forEach((plainGlyph) => {
+            const glyph = instanceGlyph(plainGlyph, {
+              updateContoursAndPreview: true,
+              unitsPerEm: 1000,
+              descender: -200,
+              advanceWidth: 1000,
+            })
+            _glyphs.push(glyph)
+            loaded.value++
+          })
+          resolve()
+        })
+      })
+    }
+  }
+  
+  await processGlyphs(plainGlyphs)
+  
+  _glyphs.forEach((glyph) => {
     if (getGlyphByUUID(glyph.uuid)) {
       repeatMark = true
     } else {
@@ -1134,6 +1188,11 @@ const importGlyphs_tauri = async () => {
       })
     }
   }
+  
+  // 结束进度条
+  loading.value = false
+  loaded.value = 0
+  total.value = 0
 }
 
 const importGlyphs = () => {
@@ -1148,10 +1207,16 @@ const importGlyphs = () => {
     for (let i = 0; i < readfiles.length; i++) {
       const reader = new FileReader()
       reader.readAsText(readfiles[i])
-      reader.onload = () => {
+      reader.onload = async () => {
         // clearGlyphRenderList(editStatus.value)
         const data = JSON.parse(reader.result as string)
         const plainGlyphs = data.glyphs
+        
+        // 设置进度条
+        loading.value = true
+        loaded.value = 0
+        total.value = plainGlyphs.length
+        
         if (data.constants) {
           for (let n = 0; n < data.constants.length; n++) {
             if (!constantsMap.getByUUID(data.constants[n].uuid)) {
@@ -1165,13 +1230,34 @@ const importGlyphs = () => {
             constantGlyphMap.set(keys[n], data.constantGlyphMap[keys[n]])
           }
         }
-        const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
-          updateContoursAndPreview: true,
-          unitsPerEm: 1000,
-          descender: -200,
-          advanceWidth: 1000,
-        }))
-        _glyphs.map((glyph) => {
+        
+        // 分批处理 instanceGlyph
+        const _glyphs: any[] = []
+        const processGlyphs = async (glyphs: any[]) => {
+          const batchSize = 100
+          for (let i = 0; i < glyphs.length; i += batchSize) {
+            const batch = glyphs.slice(i, i + batchSize)
+            await new Promise<void>((resolve) => {
+              requestAnimationFrame(() => {
+                batch.forEach((plainGlyph) => {
+                  const glyph = instanceGlyph(plainGlyph, {
+                    updateContoursAndPreview: true,
+                    unitsPerEm: 1000,
+                    descender: -200,
+                    advanceWidth: 1000,
+                  })
+                  _glyphs.push(glyph)
+                  loaded.value++
+                })
+                resolve()
+              })
+            })
+          }
+        }
+        
+        await processGlyphs(plainGlyphs)
+        
+        _glyphs.forEach((glyph) => {
           if (getGlyphByUUID(glyph.uuid)) {
             repeatMark = true
           } else {
@@ -1204,6 +1290,11 @@ const importGlyphs = () => {
             })
           }
         }
+        
+        // 结束进度条
+        loading.value = false
+        loaded.value = 0
+        total.value = 0
       }
     }
     document.body.removeChild(input)
@@ -1320,7 +1411,11 @@ const exportGlyphs = () => {
           const blob = new Blob([data], {type: "text/plain;charset=utf-8"})
           saveAs(blob, temp_glyphs_name)
         } else {
-          requestAnimationFrame(() => addGlyph(i + 1))
+          if (i % 100 === 0) {
+            requestAnimationFrame(() => addGlyph(i + 1))
+          } else {
+            addGlyph(i + 1)
+          }
         }
       }
     }, 50)
@@ -2021,7 +2116,7 @@ const _syncData = async () => {
         index++
         
         // 每处理10个项目后让出控制权，让UI更新
-        if (index % 10 === 0) {
+        if (index % 100 === 0) {
           requestAnimationFrame(processNext)
         } else {
           processNext()
@@ -2060,7 +2155,7 @@ const _syncData = async () => {
         index++
         
         // 每处理5个字符后让出控制权，让UI更新
-        if (index % 5 === 0) {
+        if (index % 100 === 0) {
           requestAnimationFrame(processNext)
         } else {
           processNext()
@@ -3308,5 +3403,5 @@ export {
   nativeImportFile,
   instanceCharacter,
   nativeSaveBinary,
-  openPlayground,
+  openPlayground, addLoaded,
 }
