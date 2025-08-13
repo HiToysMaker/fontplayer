@@ -213,12 +213,23 @@
   const paste = (uuid: string) => {
     // 粘贴
     const components = clipBoard.value
+    let lastComponent: any = null
+    
     for (let i = components.length - 1; i >= 0; i--) {
       // 使用 R.clone 进行深拷贝，避免循环引用问题
       const component = R.clone(components[i])
       component.uuid = genUUID()
       insertComponentForCurrentGlyph(component, { uuid, pos: 'next' })
+      lastComponent = component
     }
+    
+    // 设置正确的工具，确保可以拖拽编辑
+    if (lastComponent && lastComponent.type === 'glyph') {
+      setTool('glyphDragger')
+    } else {
+      setTool('select')
+    }
+    
     // 不清空剪贴板，允许重复粘贴
     onPopover.value = false
     popoverVisibleMap[uuid] = false

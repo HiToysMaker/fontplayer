@@ -34,7 +34,7 @@ import {
   orderedListWithItemsForCurrentCharacterFile,
   addCharacterForCurrentFile,
 } from '../stores/files'
-import { base, canvas, fontRenderStyle, loaded, loadingMsg, tips, total } from '../stores/global'
+import { base, canvas, fontRenderStyle, loaded, loadingMsg, tips, total, setTool } from '../stores/global'
 import { saveAs } from 'file-saver'
 import * as R from 'ramda'
 import { genUUID, toUnicode } from '../../utils/string'
@@ -1641,12 +1641,23 @@ const copy = () => {
 const paste = () => {
   // 粘贴
   const components = clipBoard.value
+  let lastComponent: any = null
+  
   components.map((component) => {
     // 深拷贝组件，避免修改剪贴板中的原始数据
     const clonedComponent = R.clone(component)
     clonedComponent.uuid = genUUID()
     addComponentForCurrentCharacterFile(clonedComponent)
+    lastComponent = clonedComponent
   })
+  
+  // 设置正确的工具，确保可以拖拽编辑
+  if (lastComponent && lastComponent.type === 'glyph') {
+    setTool('glyphDragger')
+  } else {
+    setTool('select')
+  }
+  
   // setClipBoard([])
 }
 
