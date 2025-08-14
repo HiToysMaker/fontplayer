@@ -34,7 +34,7 @@ import {
   orderedListWithItemsForCurrentCharacterFile,
   addCharacterForCurrentFile,
 } from '../stores/files'
-import { base, canvas, fontRenderStyle, loaded, loadingMsg, tips, total, setTool } from '../stores/global'
+import { base, canvas, fontRenderStyle, loaded, loadingMsg, tips, total, setTool, ASCIICharSet } from '../stores/global'
 import { saveAs } from 'file-saver'
 import * as R from 'ramda'
 import { genUUID, toUnicode } from '../../utils/string'
@@ -1019,6 +1019,23 @@ const importFont = () => {
     const fileName = fullFileName.substring(0, fullFileName.lastIndexOf('.')); // 去掉后缀
     const buffer = _file.arrayBuffer()
     const font = parse(await buffer)
+    console.log('font', font)
+    debugger
+
+    const _characters = []
+
+    for (let i  = 0; i < font.characters.length; i++) {
+      const character = R.clone(font.characters[i])
+      if (ASCIICharSet.includes(String.fromCharCode(character.unicode))) {
+        console.log('ascii', i, character.name, character.unicode, character)
+        _characters.push(character)
+      }
+    }
+    font.characters = _characters
+
+    console.log('ascii font.characters', font.characters)
+
+
     //updateFontSettings({
     //	unitsPerEm: font.settings.unitsPerEm as number,
     //	ascender: font.settings.ascender as number,
@@ -1058,40 +1075,6 @@ const importFont = () => {
       emitter.emit('renderPreviewCanvas', true)
     }
     worker.postMessage([WorkerEventType.ParseFont, font, selectedFile.value.width])
-    //worker.postMessage([0, 1])
-    // for (let j = 0; j < font.characters.length; j++) {
-    // 	const character: ICharacter = font.characters[j]
-    // 	//if (!character.unicode || character.name === '.notdef') continue
-    // 	if (!character.unicode && !character.name) continue
-    // 	const characterComponent = {
-    // 		uuid: genUUID(),
-    // 		text: character.unicode ? String.fromCharCode(character.unicode) : character.name,
-    // 		unicode: character.unicode ? character.unicode.toString(16) : '',
-    // 	}
-    // 	const characterFile = {
-    // 		uuid: genUUID(),
-    // 		type: 'text',
-    // 		character: characterComponent,
-    // 		components: [],
-    // 		groups: [],
-    // 		orderedList: [],
-    // 		selectedComponentsUUIDs: [],
-    // 		view: {
-    // 			zoom: 100,
-    // 			translateX: 0,
-    // 			translateY: 0,
-    // 		}
-    // 	}
-    // 	const components = contoursToComponents(character.contours, {
-    // 		unitsPerEm,
-    // 		descender,
-    // 		advanceWidth: character.advanceWidth as number,
-    // 	})
-    // 	addCharacterForCurrentFile(characterFile)
-    // 	addComponentsForCharacterFile(characterFile.uuid, components)
-    // }
-    //loading.value = false
-    //emitter.emit('renderPreviewCanvas', true)
     document.body.removeChild(input)
   })
   document.body.appendChild(input)

@@ -356,9 +356,7 @@ const parseIndex = (data: DataView, offset: number, parser?: Function) => {
 					break
 				}
 				case 3: {
-					offsetArray.push(decode.decoder['uint32']())
-					configRawData.push(data.getUint8(offset2))
-					offset2++
+					offsetArray.push(decode.decoder['uint24']())
 					configRawData.push(data.getUint8(offset2))
 					offset2++
 					configRawData.push(data.getUint8(offset2))
@@ -368,15 +366,7 @@ const parseIndex = (data: DataView, offset: number, parser?: Function) => {
 					break
 				}
 				case 4: {
-					offsetArray.push(decode.decoder['bigInt']())
-					configRawData.push(data.getUint8(offset2))
-					offset2++
-					configRawData.push(data.getUint8(offset2))
-					offset2++
-					configRawData.push(data.getUint8(offset2))
-					offset2++
-					configRawData.push(data.getUint8(offset2))
-					offset2++
+					offsetArray.push(decode.decoder['uint32']())
 					configRawData.push(data.getUint8(offset2))
 					offset2++
 					configRawData.push(data.getUint8(offset2))
@@ -397,8 +387,10 @@ const parseIndex = (data: DataView, offset: number, parser?: Function) => {
 				let tmp = 0
 				if (typeof j !== 'bigint')
 					tmp = data.getUint8(_offset - 1 + j)
-				else
+				else {
+					debugger
 					tmp = data.getUint8(Number(BigInt(_offset - 1) + j))
+				}
 				_data.push(tmp)
 			}
 			rawDataArray.push(_data)
@@ -422,6 +414,16 @@ const parseIndex = (data: DataView, offset: number, parser?: Function) => {
 }
 
 const parseType2CharString= (charString: any, index: number, topDict: any, font: IFont) => {
+	// 验证输入参数
+	if (!charString || !Array.isArray(charString) || charString.length === 0) {
+		console.warn(`CFF parseType2CharString: Invalid charString for glyph ${index}:`, charString)
+		return {
+			contours: [],
+			commands: [],
+			advanceWidth: 0
+		}
+	}
+	
 	const contours: Array<Array<ILine | ICubicBezierCurve>> = []
 	let contour: Array<ILine | ICubicBezierCurve> = []
 	const commands: Array<{ command: string, data: Array<number>, mask?: Array<number> }> = []
@@ -455,9 +457,15 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 	}
 
 	const parse = (charString: any) => {
+		if (!charString) return
 		let i = 0
 		while(i < charString.length) {
 			const v = charString[i]
+			if (typeof v !== 'number' || v < 0 || v > 255) {
+				console.warn(`CFF parseType2CharString: Invalid byte value at index ${i}: ${v}`)
+				i++
+				continue
+			}
 			i++
 			switch(v) {
 				case 1: {
@@ -1944,13 +1952,38 @@ const parse = (data: DataView, offset: number, font: IFont) => {
 	}
 	const _charsets = parseCharsets(data, offset + topDict.charset, font, _stringIndex.data)
 	const _charStringsIndex = parseIndex(data, offset + topDict.charStrings)
+	
+	console.log('CFF parse: charStringsIndex count:', _charStringsIndex.data.index.count)
+	console.log('CFF parse: charStringsIndex data length:', _charStringsIndex.data.data.length)
+	console.log('CFF parse: font.settings.numGlyphs:', font.settings.numGlyphs)
 
 	// 解析每个glyph字形
 	// parse each glyph
 	const glyphTables = [] 
-	for (let i = 0; i < (font.settings.numGlyphs as number); i ++) {
-		const charString = _charStringsIndex.data.data[i]
-		glyphTables.push(parseType2CharString(charString, i, topDict, font))
+	const numGlyphs = font.settings.numGlyphs as number
+	const charStringsData = _charStringsIndex.data.data
+	
+	for (let i = 0; i < numGlyphs; i ++) {
+		let charString
+		if (i < charStringsData.length) {
+			charString = charStringsData[i]
+		} else {
+			console.warn(`CFF parse: Missing charString for glyph ${i}, creating empty glyph`)
+			charString = []
+		}
+		
+		try {
+			const glyph = parseType2CharString(charString, i, topDict, font)
+			glyphTables.push(glyph)
+		} catch (error) {
+			console.warn(`CFF parse: Error parsing glyph ${i}:`, error)
+			// 创建一个空的glyph作为fallback
+			glyphTables.push({
+				contours: [],
+				commands: [],
+				advanceWidth: 0
+			})
+		}
 	}
 
 	return {

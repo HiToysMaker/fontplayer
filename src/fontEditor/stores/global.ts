@@ -100,6 +100,8 @@ const templates = [
 	}
 ]
 
+export const ASCIICharSet = '1234567890-=！@#￥%……&*()~:"{}[]|\?/<>,.;\'+abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
 // 线条宽度相关常量
 const strokeWidthRatio = 2.0 // 显示系数
 const strokeWidth = 2.0 // 基础线条宽度

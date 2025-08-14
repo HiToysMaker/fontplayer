@@ -83,6 +83,14 @@ const decoder = {
 		offset += 2
 		return value
 	},
+	uint24: () => {
+		const byte1 = data.getUint8(offset)
+		const byte2 = data.getUint8(offset + 1)
+		const byte3 = data.getUint8(offset + 2)
+		const value = (byte1 << 16) | (byte2 << 8) | byte3
+		offset += 3
+		return value
+	},
 	uint32: () => {
 		const value = data.getUint32(offset)
 		offset += 4
