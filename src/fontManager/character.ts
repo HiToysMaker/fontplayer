@@ -167,10 +167,33 @@ const parseTablesToCharacters = (tables: Array<ITable>) => {
 		})
 	} else if (tables.filter((table: ITable) => table.name === 'CFF ')[0]) {
 		const cffTable = tables.filter((table: ITable) => table.name === 'CFF ')[0].table as unknown as ICffTable
+		
+		// 调试字符映射
+		console.log('CFF Debug: cmapTable.glyphIndexMap:', cmapTable.glyphIndexMap)
+		console.log('CFF Debug: cffTable.charsets.data:', cffTable.charsets?.data)
+		
 		Object.keys(cmapTable.glyphIndexMap).forEach((code) => {
 			//const unicode = Number(code).toString(16)
 			const index = cmapTable.glyphIndexMap[code]
 			const glyphTable = (cffTable.glyphTables as Array<IGlyphTable>)[index]
+			
+			// 调试特定字符
+			if (Number(code) === 51 || Number(code) === 52) {
+				console.log(`CFF Debug: Character ${code} (${String.fromCharCode(Number(code))}) mapped to index ${index}`)
+				console.log(`CFF Debug: Glyph table for index ${index}:`, glyphTable)
+				console.log(`CFF Debug: Total glyph tables available:`, (cffTable.glyphTables as Array<IGlyphTable>).length)
+				console.log(`CFF Debug: Glyph table at index ${index}:`, (cffTable.glyphTables as Array<IGlyphTable>)[index])
+			}
+			
+			// 检查glyphTable是否存在
+			if (!glyphTable) {
+				// 减少警告信息的频率，只在每1000个字符时输出一次
+				if (Number(code) % 1000 === 0) {
+					console.warn(`CFF Debug: Missing glyph table for character ${code} at index ${index}`)
+				}
+				return
+			}
+			
 			characters.push({
 				unicode: Number(code),
 				contours: glyphTable.contours,

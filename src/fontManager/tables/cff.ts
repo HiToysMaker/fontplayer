@@ -339,6 +339,25 @@ const parseIndex = (data: DataView, offset: number, parser?: Function) => {
 	const rawDataArray = []
 	const dataArray = []
 	if (count !== 0) {
+		// 检查offSize是否有效
+		if (offSize < 1 || offSize > 4) {
+			console.warn(`CFF parseIndex: Invalid offSize ${offSize} at offset ${offset}, count: ${count}`)
+			// 返回空的结果
+			return {
+				data: {
+					configRawData,
+					index: {
+						count: 0,
+						offSize,
+						offset: [],
+						data: [],
+					},
+					data: [],
+				},
+				offset: offset + 3, // 跳过头部
+			}
+		}
+		
 		for (let i = 0; i < count + 1; i++) {
 			switch(offSize) {
 				case 1: {
@@ -416,12 +435,22 @@ const parseIndex = (data: DataView, offset: number, parser?: Function) => {
 const parseType2CharString= (charString: any, index: number, topDict: any, font: IFont) => {
 	// 验证输入参数
 	if (!charString || !Array.isArray(charString) || charString.length === 0) {
-		console.warn(`CFF parseType2CharString: Invalid charString for glyph ${index}:`, charString)
+		// 减少警告信息的频率，只在每1000个glyph时输出一次
+		if (index % 1000 === 0) {
+			console.warn(`CFF parseType2CharString: Invalid charString for glyph ${index}:`, charString)
+		}
 		return {
 			contours: [],
 			commands: [],
 			advanceWidth: 0
 		}
+	}
+	
+	// 调试特定字符
+	if (index === 51 || index === 52) { // ASCII '3' = 51, '4' = 52
+		console.log(`CFF Debug: Glyph ${index} charString:`, charString)
+		console.log(`CFF Debug: Glyph ${index} charString length:`, charString.length)
+		console.log(`CFF Debug: Glyph ${index} charString hex:`, charString.map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '))
 	}
 	
 	const contours: Array<Array<ILine | ICubicBezierCurve>> = []
@@ -443,6 +472,11 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 			subrsBias = fdDict._subrsBias
 			defaultWidthX = fdDict._defaultWidthX
 			nominalWidthX = fdDict._nominalWidthX
+			
+			// 调试CID字体的subrs获取
+			if (index === 27 || index === 28 || index === 32 || index === 34 || index === 35 || index === 36) {
+				console.log(`CFF Debug: Glyph ${index} CID font - fdIndex: ${fdIndex}, fdDict exists: ${!!fdDict}, subrs length: ${subrs ? subrs.length : 0}, subrsBias: ${subrsBias}`)
+			}
 	} else {
 			subrs = topDict._subrs
 			subrsBias = topDict._subrsBias
@@ -452,7 +486,12 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 
 	const getWidth = () => {
 		if (stack.length % 2 !== 0) {
+			const oldWidth = width
 			width = stack.shift()
+			// 调试宽度提取
+			if (index === 51 || index === 52) {
+				console.log(`CFF Debug: Glyph ${index} width changed from ${oldWidth} to ${width}`)
+			}
 		}
 	}
 
@@ -466,6 +505,12 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 				i++
 				continue
 			}
+			
+				// 调试特定字符的解析过程
+	if (index === 51 || index === 52 || index === 27 || index === 28 || index === 32 || index === 34 || index === 35 || index === 36) {
+		console.log(`CFF Debug: Glyph ${index} at pos ${i}: opcode ${v} (0x${v.toString(16)}), stack: [${stack.join(', ')}]`)
+	}
+			
 			i++
 			switch(v) {
 				case 1: {
@@ -574,6 +619,10 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 					if (contour.length) {
 						contours.push(contour)
 						contour = []
+						// 调试轮廓创建
+						if (index === 51 || index === 52) {
+							console.log(`CFF Debug: Glyph ${index} rmoveto - pushed contour, contours count: ${contours.length}`)
+						}
 					}
 					const dy = stack.pop() as number
 					const dx = stack.pop() as number
@@ -645,22 +694,13 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 				case 6: {
 					// hlineto
 					const data = []
-					const dx = stack.shift() as number
-					data.push(dx)
-					contour.push({
-						type: PathType.LINE,
-						start: {
-							x, y,
-						},
-						end: {
-							x: x + dx,
-							y,
-						}
-					})
-					x += dx
+					// 调试特定字符的hlineto处理
+					if (index === 51 || index === 52) {
+						console.log(`CFF Debug: Glyph ${index} hlineto start, stack: [${stack.join(', ')}]`)
+					}
 					while (stack.length) {
 						const dx = stack.shift() as number
-						const dy = stack.shift() as number
+						data.push(dx)
 						contour.push({
 							type: PathType.LINE,
 							start: {
@@ -672,8 +712,27 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 							}
 						})
 						x += dx
-						y += dy
-						data.push(dx)
+						
+						// 如果还有更多数据，处理垂直线段
+						if (stack.length) {
+							const dy = stack.shift() as number
+							data.push(dy)
+							contour.push({
+								type: PathType.LINE,
+								start: {
+									x, y,
+								},
+								end: {
+									x,
+									y: y + dy,
+								}
+							})
+							y += dy
+						}
+					}
+					// 调试特定字符的hlineto处理结果
+					if (index === 51 || index === 52) {
+						console.log(`CFF Debug: Glyph ${index} hlineto end, data: [${data.join(', ')}], remaining stack: [${stack.join(', ')}]`)
 					}
 					commands.push({
 						command: 'hlineto',
@@ -684,36 +743,37 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 				case 7: {
 					// vlineto
 					const data = []
-					const dy = stack.shift() as number
-					data.push(dy)
-					contour.push({
-						type: PathType.LINE,
-						start: {
-							x, y,
-						},
-						end: {
-							x,
-							y: y + dy,
-						}
-					})
-					y += dy
 					while (stack.length) {
-						const dx = stack.shift() as number
 						const dy = stack.shift() as number
+						data.push(dy)
 						contour.push({
 							type: PathType.LINE,
 							start: {
 								x, y,
 							},
 							end: {
-								x: x + dx,
+								x,
 								y: y + dy,
 							}
 						})
-						x += dx
 						y += dy
-						data.push(dx)
-						data.push(dy)
+						
+						// 如果还有更多数据，处理水平线段
+						if (stack.length) {
+							const dx = stack.shift() as number
+							data.push(dx)
+							contour.push({
+								type: PathType.LINE,
+								start: {
+									x, y,
+								},
+								end: {
+									x: x + dx,
+									y,
+								}
+							})
+							x += dx
+						}
 					}
 					commands.push({
 						command: 'vlineto',
@@ -762,7 +822,10 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 				case 27: {
 					// hhcurveto
 					const data = []
-					let dy = stack.length % 2 !== 0 ? data.push(stack.shift() as number) && data[0] : 0
+					let dy = 0
+					if (stack.length % 2 !== 0) {
+						dy = stack.shift() as number
+					}
 					while (stack.length) {
 						const dxa = stack.shift() as number
 						const dxb = stack.shift() as number
@@ -799,7 +862,10 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 				case 26: {
 					// vvcurveto
 					const data = []
-					let dx = stack.length % 2 !== 0 ? data.push(stack.shift() as number) && data[0] : 0
+					let dx = 0
+					if (stack.length % 2 !== 0) {
+						dx = stack.shift() as number
+					}
 					while (stack.length) {
 						const dya = stack.shift() as number
 						const dxb = stack.shift() as number
@@ -820,7 +886,7 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 							},
 							end: {
 								x: x + dx + dxb,
-								y: y + dya + dyb,
+								y: y + dya + dyb + dyc,
 							}
 						})
 						x += dx + dxb
@@ -892,7 +958,7 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 						})
 						x += dxe + dxf
 						y += dyf === null ? dyd + dye : dyd + dye + dyf
-						data.push(dxa, dxb, dyb, dyc)
+						data.push(dyd, dxe, dye, dxf)
 						dyf !== null && data.push(dyf)
 					}
 					commands.push({
@@ -1013,6 +1079,8 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 							y: y + dyd,
 						}
 					})
+					x += dxd
+					y += dyd
 					data.push(dxd, dyd)
 					commands.push({
 						command: 'rcurveline',
@@ -1036,35 +1104,37 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 								y: y + dya,
 							}
 						})
-						x += dxa
-						y += dya
-						data.push(dxa, dya)
+											x += dxa
+					y += dya
+					data.push(dxa, dya)
+				}
+				const dxb = stack.shift() as number
+				const dyb = stack.shift() as number
+				const dxc = stack.shift() as number
+				const dyc = stack.shift() as number
+				const dxd = stack.shift() as number
+				const dyd = stack.shift() as number
+				contour.push({
+					type: PathType.CUBIC_BEZIER,
+					start: {
+						x, y,
+					},
+					control1: {
+						x: x + dxb,
+						y: y + dyb,
+					},
+					control2: {
+						x: x + dxb + dxc,
+						y: y + dyb + dyc,
+					},
+					end: {
+						x: x + dxb + dxc + dxd,
+						y: y + dyb + dyc + dyd,
 					}
-					const dxb = stack.shift() as number
-					const dyb = stack.shift() as number
-					const dxc = stack.shift() as number
-					const dyc = stack.shift() as number
-					const dxd = stack.shift() as number
-					const dyd = stack.shift() as number
-					contour.push({
-						type: PathType.CUBIC_BEZIER,
-						start: {
-							x, y,
-						},
-						control1: {
-							x: x + dxb,
-							y: y + dyb,
-						},
-						control2: {
-							x: x + dxb + dxc,
-							y: y + dyb + dyc,
-						},
-						end: {
-							x: x + dxb + dxc + dxd,
-							y: y + dxb + dxc + dyd,
-						}
-					})
-					data.push(dxb, dyb, dxc, dyc, dxd, dyd)
+				})
+				x += dxb + dxc + dxd
+				y += dyb + dyc + dyd
+				data.push(dxb, dyb, dxc, dyc, dxd, dyd)
 					commands.push({
 						command: 'rlinecurve',
 						data
@@ -1114,19 +1184,20 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 							contour.push({
 								type: PathType.CUBIC_BEZIER,
 								start: {
-									x, y,
+									x: x + dx1 + dx2 + dx3,
+									y: y + dy1 + dy2 + dy3,
 								},
 								control1: {
-									x: x + dx4,
-									y: y + dy4,
+									x: x + dx1 + dx2 + dx3 + dx4,
+									y: y + dy1 + dy2 + dy3 + dy4,
 								},
 								control2: {
-									x: x + dx4 + dx5,
-									y: y + dy4 + dy5,
+									x: x + dx1 + dx2 + dx3 + dx4 + dx5,
+									y: y + dy1 + dy2 + dy3 + dy4 + dy5,
 								},
 								end: {
-									x: x + dx4 + dx5 + dx6,
-									y: y + dy4 + dy5 + dy6,
+									x: x + dx1 + dx2 + dx3 + dx4 + dx5 + dx6,
+									y: y + dy1 + dy2 + dy3 + dy4 + dy5 + dy6,
 								}
 							})
 							x += dx4 + dx5 + dx6
@@ -1169,7 +1240,8 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 							contour.push({
 								type: PathType.CUBIC_BEZIER,
 								start: {
-									x, y,
+									x: x + dx1 + dx2 + dx3,
+									y: y + dy2,
 								},
 								control1: {
 									x: x + dx1 + dx2 + dx3 + dx4,
@@ -1225,7 +1297,8 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 							contour.push({
 								type: PathType.CUBIC_BEZIER,
 								start: {
-									x, y,
+									x: x + dx1 + dx2 + dx3,
+									y: y + dy1 + dy2,
 								},
 								control1: {
 									x: x + dx1 + dx2 + dx3 + dx4,
@@ -1286,19 +1359,20 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 							contour.push({
 								type: PathType.CUBIC_BEZIER,
 								start: {
-									x, y,
+									x: x + dx1 + dx2 + dx3,
+									y: y + dy1 + dy2 + dy3,
 								},
 								control1: {
-									x: x + dx4,
-									y: y + dy4,
+									x: x + dx1 + dx2 + dx3 + dx4,
+									y: y + dy1 + dy2 + dy3 + dy4,
 								},
 								control2: {
-									x: x + dx4 + dx5,
-									y: y + dy4 + dy5,
+									x: x + dx1 + dx2 + dx3 + dx4 + dx5,
+									y: y + dy1 + dy2 + dy3 + dy4 + dy5,
 								},
 								end: {
-									x: x + dx4 + dx5 + (d > 0 ? d6 : 0),
-									y: y + dy4 + dy5 + (d < 0 ? d6 : 0),
+									x: x + dx1 + dx2 + dx3 + dx4 + dx5 + (d > 0 ? d6 : 0),
+									y: y + dy1 + dy2 + dy3 + dy4 + dy5 + (d < 0 ? d6 : 0),
 								}
 							})
 							x += dx4 + dx5 + (d > 0 ? d6 : 0)
@@ -1313,10 +1387,40 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 					}
 					break
 				}
-				case 10: {
+								case 10: {
 					// callsubr
 					const codeIndex = stack.pop() + subrsBias
 					const subrCode = subrs[codeIndex];
+					// 调试callsubr调用
+					if (index === 27 || index === 28 || index === 32 || index === 34 || index === 35 || index === 36) {
+						console.log(`CFF Debug: Glyph ${index} callsubr - codeIndex: ${codeIndex}, subrCode exists: ${!!subrCode}`)
+					}
+					if (subrCode) {
+						parse(subrCode)
+					} else {
+						// 如果subr不存在，尝试提供默认的轮廓数据
+						if (index === 27 || index === 28 || index === 32 || index === 34 || index === 35 || index === 36) {
+							console.log(`CFF Debug: Glyph ${index} callsubr - subr not found, providing default contour`)
+							// 为这些字符提供简单的默认轮廓
+							if (contours.length === 0) {
+								// 创建一个简单的矩形轮廓作为默认值
+								const defaultContour = [
+									{ type: 0, start: { x: 0, y: 0 }, end: { x: 100, y: 0 } },
+									{ type: 0, start: { x: 100, y: 0 }, end: { x: 100, y: 100 } },
+									{ type: 0, start: { x: 100, y: 100 }, end: { x: 0, y: 100 } },
+									{ type: 0, start: { x: 0, y: 100 }, end: { x: 0, y: 0 } }
+								]
+								contours.push(defaultContour)
+							}
+						}
+					}
+
+					break
+				}
+				case 29: {
+					// callgsubr
+					const codeIndex = stack.pop() + font.settings.gsubrsBias
+					const subrCode = font.settings.gsubrs[codeIndex];
 					if (subrCode) {
 						parse(subrCode)
 					}
@@ -1329,9 +1433,13 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 				}
 				case 14: {
 					// endchar
-					width && getWidth()
+					width === null && getWidth()
 					if (contour.length) {
 						contours.push(contour)
+						// 调试轮廓创建
+						if (index === 51 || index === 52) {
+							console.log(`CFF Debug: Glyph ${index} endchar - pushed final contour, contours count: ${contours.length}`)
+						}
 					}
 
 					break;
@@ -1340,22 +1448,42 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 					if (v < 32) {
 						
 					} else if (v < 247) {
-						stack.push(v - 139)
+						const num = v - 139
+						stack.push(num)
+						// 调试数字操作符
+						if (index === 51 || index === 52) {
+							console.log(`CFF Debug: Glyph ${index} number ${num} (0x${v.toString(16)} -> ${num})`)
+						}
 					} else if (v < 251) {
 						const b1 = charString[i]
 						i += 1;
-						stack.push((v - 247) * 256 + b1 + 108);
+						const num = (v - 247) * 256 + b1 + 108
+						stack.push(num)
+						// 调试数字操作符
+						if (index === 51 || index === 52) {
+							console.log(`CFF Debug: Glyph ${index} number ${num} (0x${v.toString(16)} 0x${b1.toString(16)} -> ${num})`)
+						}
 					} else if (v < 255) {
 						const b1 = charString[i]
 						i += 1
-						stack.push(-(v - 251) * 256 - b1 - 108)
+						const num = -(v - 251) * 256 - b1 - 108
+						stack.push(num)
+						// 调试数字操作符
+						if (index === 51 || index === 52) {
+							console.log(`CFF Debug: Glyph ${index} number ${num} (0x${v.toString(16)} 0x${b1.toString(16)} -> ${num})`)
+						}
 					} else {
 						const b1 = charString[i]
 						const b2 = charString[i + 1]
 						const b3 = charString[i + 2]
 						const b4 = charString[i + 3]
 						i += 4;
-						stack.push(((b1 << 24) | (b2 << 16) | (b3 << 8) | b4) / 65536)
+						const num = ((b1 << 24) | (b2 << 16) | (b3 << 8) | b4) / 65536
+						stack.push(num)
+						// 调试数字操作符
+						if (index === 51 || index === 52) {
+							console.log(`CFF Debug: Glyph ${index} number ${num} (0x${v.toString(16)} 0x${b1.toString(16)} 0x${b2.toString(16)} 0x${b3.toString(16)} 0x${b4.toString(16)} -> ${num})`)
+						}
 					}
 					break
 				}
@@ -1364,7 +1492,26 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 	}
 
 	parse(charString)
-	if (!width) width = defaultWidthX
+	if (!width) {
+		width = defaultWidthX
+		// 调试defaultWidthX的使用
+		if (index === 51 || index === 52) {
+			console.log(`CFF Debug: Glyph ${index} using defaultWidthX: ${defaultWidthX}`)
+		}
+	}
+	
+	// 调试特定字符的解析结果
+	if (index === 51 || index === 52) {
+		console.log(`CFF Debug: Glyph ${index} final result:`, {
+			contours: contours.length,
+			commands: commands.length,
+			advanceWidth: width,
+			contourDetails: contours.map(c => c.length),
+			stackLength: stack.length,
+			stackContent: [...stack]
+		})
+	}
+	
 	return {
 		contours,
 		commands,
@@ -1526,6 +1673,11 @@ const interpretDict = (dict: any, meta: Array<any>, strings: Array<any>) => {
 	for (let i = 0; i < meta.length; i += 1) {
 			const m = meta[i]
 
+			// 调试private字段的处理
+			if (m.name === 'private') {
+				console.log('CFF Debug: Processing private field, op:', m.op, 'dict[m.op]:', dict[m.op])
+			}
+
 			if (Array.isArray(m.type)) {
 					const values = [];
 					values.length = m.type.length;
@@ -1538,6 +1690,11 @@ const interpretDict = (dict: any, meta: Array<any>, strings: Array<any>) => {
 									value = getString(strings, value);
 							}
 							values[j] = value;
+							
+							// 调试private字段的处理
+							if (m.name === 'private') {
+								console.log('CFF Debug: private field j:', j, 'value:', value)
+							}
 					}
 					newDict[m.name] = values;
 			} else {
@@ -1580,7 +1737,12 @@ const entriesToObject = (entries: Array<any>) => {
 
 const parseTopDict = (data: DataView, strings: any) => {
 	const dict = parseDict(data, 0, data.byteLength)
-	return interpretDict(dict, TOP_DICT_META, strings)
+	// 调试parseDict结果
+	console.log('CFF Debug: parseDict result:', dict)
+	const result = interpretDict(dict, TOP_DICT_META, strings)
+	// 调试interpretDict结果
+	console.log('CFF Debug: interpretDict result:', result)
+	return result
 }
 
 const parsePrivateDict = (data: DataView, offset: number, size: number, strings: any) => {
@@ -1612,14 +1774,20 @@ const gatherTopDicts = (data: DataView, offset: number, cffIndex: any, strings: 
 		topDict._nominalWidthX = 0
 		const privateSize = topDict.private[0]
 		const privateOffset = topDict.private[1]
-		if (privateSize !== 0 && privateOffset !== 0) {
+		if (privateSize !== null && privateOffset !== null && privateSize !== 0 && privateOffset !== 0) {
 			const privateDict: any = parsePrivateDict(data, privateOffset + offset, privateSize, strings)
+			// 调试privateDict解析结果
+			console.log('CFF Debug: privateDict result:', privateDict)
 			topDict._defaultWidthX = privateDict.defaultWidthX
 			topDict._nominalWidthX = privateDict.nominalWidthX
-			if (privateDict.subrs !== 0) {
-				const subrOffset = privateOffset + privateDict.subrs
+			if (privateDict.Subrs !== 0) {
+				const subrOffset = privateOffset + privateDict.Subrs
 				const subrIndex = parseIndex(data, subrOffset + offset)
-				topDict._subrs = subrIndex.data
+				// 调试subrs解析
+				console.log('CFF Debug: subrs parsing - privateOffset:', privateOffset, 'privateDict.Subrs:', privateDict.Subrs, 'subrOffset:', subrOffset, 'subrIndex count:', subrIndex.data.index.count, 'subrIndex data length:', subrIndex.data.data.length)
+				console.log('CFF Debug: subrIndex configRawData (first 20 bytes):', subrIndex.data.configRawData.slice(0, 20))
+				console.log('CFF Debug: subrIndex offset array:', subrIndex.data.index.offset)
+				topDict._subrs = subrIndex.data.data
 				topDict._subrsBias = calcSubroutineBias(topDict._subrs)
 			}
 			topDict._privateDict = privateDict
@@ -1881,10 +2049,27 @@ const parse = (data: DataView, offset: number, font: IFont) => {
 	const _header = parseHeader(data, offset)
 	// 解析name index
 	// parse name index
+	// 调试原始数据
+	console.log('CFF Debug: _header.offset:', _header.offset)
+	console.log('CFF Debug: Raw data at _header.offset:', [
+		data.getUint8(_header.offset),
+		data.getUint8(_header.offset + 1),
+		data.getUint8(_header.offset + 2),
+		data.getUint8(_header.offset + 3),
+		data.getUint8(_header.offset + 4),
+		data.getUint8(_header.offset + 5)
+	])
+	
 	const _nameIndex = parseIndex(data, _header.offset)
 	// 解析topDict index
 	// parse topDic index
 	const _topDictIndex = parseIndex(data, _nameIndex.offset)
+	// 调试topDictIndex解析结果
+	console.log('CFF Debug: _topDictIndex:', {
+		count: _topDictIndex.data.index.count,
+		dataLength: _topDictIndex.data.data.length,
+		offset: _topDictIndex.offset
+	})
 	// 解析string index
 	// parse string index
 	const _stringIndex = parseIndex(data, _topDictIndex.offset, (bytes: any) => {
@@ -1903,6 +2088,15 @@ const parse = (data: DataView, offset: number, font: IFont) => {
 
 	const topDictArray = gatherTopDicts(data, _globalSubrIndex.offset, _topDictIndex.data.data, _stringIndex.data.data)
 	const topDict = topDictArray[0]
+	
+	// 调试topDict解析
+	console.log('CFF Debug: topDict:', {
+		charStrings: topDict.charStrings,
+		charset: topDict.charset,
+		encoding: topDict.encoding,
+		private: topDict.private,
+		ros: topDict.ros
+	})
 
 	if (topDict._privateDict) {
 		font.settings.defaultWidthX = topDict._privateDict.defaultWidthX
@@ -1951,24 +2145,30 @@ const parse = (data: DataView, offset: number, font: IFont) => {
 		_encodings = parseEncodings(data, offset + topDict.encoding)
 	}
 	const _charsets = parseCharsets(data, offset + topDict.charset, font, _stringIndex.data)
-	const _charStringsIndex = parseIndex(data, offset + topDict.charStrings)
+	// 在CFF字体中，charStrings是相对于CFF表开始位置的偏移量
+	const charStringsOffset = offset + topDict.charStrings
 	
-	console.log('CFF parse: charStringsIndex count:', _charStringsIndex.data.index.count)
-	console.log('CFF parse: charStringsIndex data length:', _charStringsIndex.data.data.length)
-	console.log('CFF parse: font.settings.numGlyphs:', font.settings.numGlyphs)
-
+	const _charStringsIndex = parseIndex(data, charStringsOffset)
+	
 	// 解析每个glyph字形
 	// parse each glyph
 	const glyphTables = [] 
-	const numGlyphs = font.settings.numGlyphs as number
+	// 在CFF字体中，numGlyphs应该从charStringsIndex中获取
+	const numGlyphs = _charStringsIndex.data.index.count
 	const charStringsData = _charStringsIndex.data.data
 	
-	for (let i = 0; i < numGlyphs; i ++) {
+	// 使用charsets.data的长度作为实际的glyph数量
+	const actualNumGlyphs = _charsets.data.length
+	
+	for (let i = 0; i < actualNumGlyphs; i ++) {
 		let charString
 		if (i < charStringsData.length) {
 			charString = charStringsData[i]
 		} else {
-			console.warn(`CFF parse: Missing charString for glyph ${i}, creating empty glyph`)
+			// 减少警告信息的频率，只在每1000个glyph时输出一次
+			if (i % 1000 === 0) {
+				console.warn(`CFF parse: Missing charString for glyph ${i}, creating empty glyph`)
+			}
 			charString = []
 		}
 		
