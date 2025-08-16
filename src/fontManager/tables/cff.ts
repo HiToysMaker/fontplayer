@@ -407,7 +407,6 @@ const parseIndex = (data: DataView, offset: number, parser?: Function) => {
 				if (typeof j !== 'bigint')
 					tmp = data.getUint8(_offset - 1 + j)
 				else {
-					debugger
 					tmp = data.getUint8(Number(BigInt(_offset - 1) + j))
 				}
 				_data.push(tmp)
@@ -1541,7 +1540,12 @@ const parseDict = (data: DataView, offset: number = 0, size: number) => {
 	// start a new decoder
 	decode.start(data, offset)
 
-	while (decode.getOffset() < size) {
+	let start = decode.getOffset()
+
+	while ((decode.getOffset() - start) < size) {
+		if (decode.getOffset() >= data.byteLength) {
+			break
+		}
 		let op = decode.decoder['uint8']()
 
 		// The first byte for each dict item distinguishes between operator (key) and operand (value).
