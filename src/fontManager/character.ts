@@ -143,6 +143,8 @@ const getMetrics = (character: ICharacter) => {
  * @returns characters
  */
 const parseTablesToCharacters = (tables: Array<ITable>) => {
+	console.log(`CFF Debug: parseTablesToCharacters called with ${tables.length} tables`);
+	
 	const characters: Array<ICharacter> = []
 	const cmapTable = tables.filter((table: ITable) => table.name === 'cmap')[0].table as unknown as ICmapTable
 	const htmxTable = tables.filter((table: ITable) => table.name === 'hmtx')[0].table as unknown as IHmtxTable
@@ -168,21 +170,61 @@ const parseTablesToCharacters = (tables: Array<ITable>) => {
 	} else if (tables.filter((table: ITable) => table.name === 'CFF ')[0]) {
 		const cffTable = tables.filter((table: ITable) => table.name === 'CFF ')[0].table as unknown as ICffTable
 		
-		// 调试字符映射
-		console.log('CFF Debug: cmapTable.glyphIndexMap:', cmapTable.glyphIndexMap)
-		console.log('CFF Debug: cffTable.charsets.data:', cffTable.charsets?.data)
+
 		
 		Object.keys(cmapTable.glyphIndexMap).forEach((code) => {
 			//const unicode = Number(code).toString(16)
 			const index = cmapTable.glyphIndexMap[code]
 			const glyphTable = (cffTable.glyphTables as Array<IGlyphTable>)[index]
 			
-			// 调试特定字符
-			if (Number(code) === 51 || Number(code) === 52) {
-				console.log(`CFF Debug: Character ${code} (${String.fromCharCode(Number(code))}) mapped to index ${index}`)
-				console.log(`CFF Debug: Glyph table for index ${index}:`, glyphTable)
-				console.log(`CFF Debug: Total glyph tables available:`, (cffTable.glyphTables as Array<IGlyphTable>).length)
-				console.log(`CFF Debug: Glyph table at index ${index}:`, (cffTable.glyphTables as Array<IGlyphTable>)[index])
+			// 调试O字符
+			if (Number(code) === 79) { // O
+				console.log(`CFF Debug: Character ${code} (O) mapped to index ${index}, advanceWidth: ${glyphTable?.advanceWidth}`);
+			}
+			
+			// 调试Q字符
+			if (Number(code) === 81) { // Q
+				console.log(`CFF Debug: Character ${code} (Q) mapped to index ${index}, advanceWidth: ${glyphTable?.advanceWidth}`);
+			}
+			
+			// 调试A字符
+			if (Number(code) === 65) { // A
+				console.log(`CFF Debug: Character ${code} (A) mapped to index ${index}, advanceWidth: ${glyphTable?.advanceWidth}`);
+				console.log(`CFF Debug: Character ${code} (A) contours: ${glyphTable?.contours?.length || 0} contours`);
+				if (glyphTable?.contours?.length > 0) {
+					console.log(`CFF Debug: Character ${code} (A) first contour: ${glyphTable.contours[0].length} segments`);
+					
+					// 检查第一个线段的属性
+					const firstSegment = glyphTable.contours[0][0];
+					console.log(`CFF Debug: Character ${code} (A) first segment:`, {
+						hasStart: !!firstSegment?.start,
+						hasEnd: !!firstSegment?.end,
+						start: firstSegment?.start,
+						end: firstSegment?.end,
+						type: firstSegment?.type
+					});
+					
+					// 计算边界框
+					let xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
+					glyphTable.contours.forEach((contour, i) => {
+						contour.forEach(seg => {
+							xMin = Math.min(xMin, seg.start.x, seg.end.x);
+							xMax = Math.max(xMax, seg.start.x, seg.end.x);
+							yMin = Math.min(yMin, seg.start.y, seg.end.y);
+							yMax = Math.max(yMax, seg.start.y, seg.end.y);
+						});
+					});
+					console.log(`CFF Debug: Character ${code} (A) bounds:`, {
+						xMin, xMax, yMin, yMax,
+						width: xMax - xMin,
+						height: yMax - yMin,
+						center: { x: (xMin + xMax) / 2, y: (yMin + yMax) / 2 }
+					});
+				}
+			}
+			
+			if (Number(code) === 82) { // R
+				console.log(`CFF Debug: Character ${code} (R) mapped to index ${index}, advanceWidth: ${glyphTable?.advanceWidth}`);
 			}
 			
 			// 检查glyphTable是否存在
