@@ -1019,8 +1019,6 @@ const importFont = () => {
     const fileName = fullFileName.substring(0, fullFileName.lastIndexOf('.')); // 去掉后缀
     const buffer = _file.arrayBuffer()
     const font = parse(await buffer)
-    console.log('font', font)
-    debugger
 
     const _characters = []
 
