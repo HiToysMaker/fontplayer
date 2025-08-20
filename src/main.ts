@@ -44,7 +44,6 @@ import {
 
 import { initWorker } from './fontEditor/worker'
 import { initializeWasm } from './utils/init-wasm'
-import { testWasmLoading } from './utils/test-wasm-loading'
 
 import localForage from 'localforage'
 
@@ -127,18 +126,6 @@ const worker = initWorker()
 
 // 初始化WASM模块
 initializeWasm().then(async success => {
-  if (success) {
-    console.log('✅ WASM module ready for use')
-    // 测试WASM功能
-    const testResult = await testWasmLoading()
-    if (testResult) {
-      console.log('✅ WASM functionality test passed')
-    } else {
-      console.log('⚠️ WASM functionality test failed, will use fallback')
-    }
-  } else {
-    console.log('⚠️ Using fallback implementation')
-  }
 }).catch(error => {
   console.error('❌ Failed to initialize WASM:', error)
 })

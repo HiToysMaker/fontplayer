@@ -1365,6 +1365,26 @@ const addCharacterTemplate = (el) => {
 	}
 }
 
+// 批量添加字符模板 - 性能优化版本
+// batch add character templates for better performance
+const batchAddCharacterTemplates = (elements: (HTMLElement | Node)[]) => {
+	const wrapper = document.getElementById('character-render-list')
+	const defaultEl = wrapper.querySelector('.default-character')
+	
+	if (!defaultEl) return
+	
+	// 使用DocumentFragment来批量操作DOM
+	const fragment = document.createDocumentFragment()
+	
+	// 将所有元素添加到fragment中
+	elements.forEach(el => {
+		fragment.appendChild(el)
+	})
+	
+	// 一次性插入所有元素
+	wrapper.insertBefore(fragment, defaultEl)
+}
+
 // 清空字符列表
 // clear character rander list
 const clearCharacterRenderList = () => {
@@ -1375,7 +1395,107 @@ const clearCharacterRenderList = () => {
 	wrapper.appendChild(defaultEl)
 }
 
+// 虚拟滚动字符模板管理器
+// virtual scrolling character template manager
+class VirtualCharacterList {
+	private container: HTMLElement
+	private items: any[] = []
+	private itemHeight: number = 60 // 每个字符项的高度
+	private visibleCount: number = 20 // 可见字符数量
+	private scrollTop: number = 0
+	private startIndex: number = 0
+	private endIndex: number = 0
+	
+	constructor(containerId: string) {
+		this.container = document.getElementById(containerId)!
+		this.setupContainer()
+	}
+	
+	private setupContainer() {
+		// 设置容器样式
+		this.container.style.position = 'relative'
+		this.container.style.overflow = 'auto'
+		this.container.style.height = '100%'
+		
+		// 添加滚动监听
+		this.container.addEventListener('scroll', this.handleScroll.bind(this))
+	}
+	
+	setItems(items: any[]) {
+		this.items = items
+		this.updateScrollHeight()
+		this.renderVisibleItems()
+	}
+	
+	private updateScrollHeight() {
+		// 设置总高度以支持滚动
+		const totalHeight = this.items.length * this.itemHeight
+		this.container.style.height = `${totalHeight}px`
+	}
+	
+	private handleScroll() {
+		this.scrollTop = this.container.scrollTop
+		this.renderVisibleItems()
+	}
+	
+	private renderVisibleItems() {
+		// 计算可见范围
+		this.startIndex = Math.floor(this.scrollTop / this.itemHeight)
+		this.endIndex = Math.min(
+			this.startIndex + this.visibleCount,
+			this.items.length
+		)
+		
+		// 清空容器
+		this.container.innerHTML = ''
+		
+		// 添加顶部占位符
+		const topSpacer = document.createElement('div')
+		topSpacer.style.height = `${this.startIndex * this.itemHeight}px`
+		this.container.appendChild(topSpacer)
+		
+		// 渲染可见项
+		for (let i = this.startIndex; i < this.endIndex; i++) {
+			const item = this.items[i]
+			const element = generateCharacterTemplate(item) as HTMLElement
+			element.style.position = 'absolute'
+			element.style.top = `${i * this.itemHeight}px`
+			this.container.appendChild(element)
+		}
+		
+		// 添加底部占位符
+		const bottomSpacer = document.createElement('div')
+		bottomSpacer.style.height = `${(this.items.length - this.endIndex) * this.itemHeight}px`
+		this.container.appendChild(bottomSpacer)
+	}
+}
+
+// 创建虚拟滚动实例
+let virtualList: VirtualCharacterList | null = null
+
+// 初始化虚拟滚动
+const initVirtualCharacterList = () => {
+	if (!virtualList) {
+		virtualList = new VirtualCharacterList('character-render-list')
+	}
+}
+
+// 使用虚拟滚动添加字符
+const addCharactersWithVirtualScroll = (characterList: any[]) => {
+	if (!virtualList) {
+		initVirtualCharacterList()
+	}
+	virtualList!.setItems(characterList)
+}
+
+const visibleStartIndex = ref(0)
+const visibleEndIndex = ref(200) // 只渲染50个可见字符
+	const itemHeight = 122 // 每个字符项的实际高度：112px(内容) + 10px(gap间距)
+
 export {
+	visibleStartIndex,
+	visibleEndIndex,
+	itemHeight,
 	files,
 	editCharacterFileUUID,
 	selectedFileUUID,
@@ -1421,6 +1541,7 @@ export {
 	generateCharacterTemplate,
 	deleteCharacterTemplate,
 	addCharacterTemplate,
+	batchAddCharacterTemplates,
 	clearCharacterRenderList,
 	modifyComponentForCharacterFile,
 	SubComponents,
@@ -1432,4 +1553,5 @@ export {
 	resetEditCharacterFile,
 	updateCharacterListFromEditFile,
 	traverseComponents,
+	addCharactersWithVirtualScroll,
 }

@@ -9,7 +9,7 @@
 	import CreateFileDialog from '../../fontEditor/components/Dialogs/CreateFileDialog.vue'
 	import languageSettingsDialog from '../../fontEditor/components/Dialogs/LanguageSettingsDialog.vue'
 	import { createFile, openFile, syncData, importTemplate1, importFont, openPlayground } from '../../fontEditor/menus/handlers'
-	import { loading, loaded, total } from '../../fontEditor/stores/global'
+	import { loading, loaded, total, loadingMsg } from '../../fontEditor/stores/global'
 	import { initGlyphEnvironment } from '../../fontEditor/stores/glyph'
 	import { onMounted } from 'vue'
 	import { DocumentAdd, FolderOpened, Files, Switch } from '@element-plus/icons-vue'
@@ -30,13 +30,19 @@
 	<div
 		class="welcome"
 		v-loading="loading"
-		:element-loading-text="`加载中，请稍候……`"
+		:element-loading-text="``"
+		:element-loading-spinner="svg"
+		element-loading-svg-view-box="-10, -10, 50, 50"
 		element-loading-background="rgba(122, 122, 122, 0.8)"
 	>
-		<!--<div v-show="loading" class="loading-text">
-			<el-progress :text-inside="true" :stroke-width="20" :percentage="Math.round(loaded / total * 100)" />
-			<div>{{ `加载中，请稍候……已加载${Math.round(loaded / total * 100)}%` }}</div>
-		</div>-->
+      <div class="el-loading-spinner" v-show="loading && total === 0">
+        <svg class="circular" viewBox="0 0 50 50"><circle class="path" cx="25" cy="25" r="20" fill="none"></circle></svg>
+        <div>{{loadingMsg || t('panels.paramsPanel.loadingMsg') }}</div>
+      </div>
+      <div v-show="loading && total != 0" class="loading-text">
+        <el-progress :text-inside="true" :stroke-width="20" :percentage="Math.round(loaded / total * 100)" />
+        <div>{{ loadingMsg? loadingMsg + `进度：${Math.round(loaded / total * 100)}%` : t('panels.paramsPanel.loadedMsg', { percent: Math.round(loaded / total * 100)}) }}</div>
+      </div>
 		<div class="main-panel">
 			<div class="items-wrapper">
 				<div class="item new-project-item" @pointerdown="createFile">

@@ -6,8 +6,8 @@
 	 * character list
 	 */
 
-	import { selectedFile, orderedListWithItemsForCharacterFile, clearCharacterRenderList, characterList, addCharacterTemplate, generateCharacterTemplate, executeCharacterScript, editCharacterFile } from '../../stores/files'
-	import { onMounted, nextTick, onUnmounted } from 'vue'
+	import { visibleStartIndex, visibleEndIndex, itemHeight, selectedFile, orderedListWithItemsForCharacterFile, clearCharacterRenderList, characterList, addCharacterTemplate, generateCharacterTemplate, executeCharacterScript, editCharacterFile } from '../../stores/files'
+	import { onMounted, nextTick, onUnmounted, ref } from 'vue'
 	import type {
 		ILine,
 		ICubicBezierCurve,
@@ -20,85 +20,355 @@
 	import { renderPreview2 } from '../../canvas/canvas'
 	import { executeScript } from '../../stores/glyph'
 	import { loaded, loading, total } from '../../stores/global'
-	import { Close, Plus } from '@element-plus/icons-vue'
+	import { addLoaded } from '@/fontEditor/menus/handlers'
 
 	const timerMap = new Map()
-
-	// 渲染每个字符预览canvas
-	// render preview canvas for each character
-	const renderPreviewCanvas = () => {
-		const characters = selectedFile.value ? selectedFile.value.characterList : []
-		if (!selectedFile.value) return
-		const {
-			unitsPerEm,
-			descender,
-		} = selectedFile.value.fontSettings
-		if (!characters.length) return
-		//loading.value = true
-
-		let i = 0
-
-		const render = () => {
-			// i 超过 length，渲染完毕
-			if (i >= characters.length) return
-			// 渲染第i个字符
-			const characterFile = characters[i]
-			if (!characterFile._o) {
-				// 执行字符脚本
-				executeCharacterScript(characterFile)
+	
+	// 虚拟滚动相关状态
+	const containerRef = ref<HTMLElement>()
+	
+	// 渲染缓存
+	const renderCache = new Map<string, boolean>()
+	const renderQueue: string[] = []
+	let isRendering = false
+	
+	// 内存管理
+	const maxCacheSize = 1000 // 最大缓存1000个字符
+	const canvasPool = new Map<string, HTMLCanvasElement>()
+	
+	// 清理过期的缓存
+	const cleanupCache = () => {
+		if (renderCache.size > maxCacheSize) {
+			const keys = Array.from(renderCache.keys())
+			const keysToDelete = keys.slice(0, keys.length - maxCacheSize)
+			keysToDelete.forEach(key => renderCache.delete(key))
+		}
+	}
+	
+	// 获取或创建canvas
+	const getCanvas = (uuid: string): HTMLCanvasElement | null => {
+		// 先从池中获取
+		if (canvasPool.has(uuid)) {
+			return canvasPool.get(uuid)!
+		}
+		
+		// 从DOM中获取
+		const canvas = document.getElementById(`preview-canvas-${uuid}`) as HTMLCanvasElement
+		if (canvas) {
+			canvasPool.set(uuid, canvas)
+		}
+		
+		return canvas
+	}
+	
+	// 清理canvas池
+	const cleanupCanvasPool = () => {
+		// 只保留可见区域的canvas
+		const visibleUUIDs = new Set<string>()
+		const characters = selectedFile.value?.characterList || []
+		
+		for (let i = visibleStartIndex.value; i < Math.min(visibleEndIndex.value, characters.length); i++) {
+			visibleUUIDs.add(characters[i].uuid)
+		}
+		
+		// 删除不可见的canvas引用
+		for (const [uuid, canvas] of canvasPool.entries()) {
+			if (!visibleUUIDs.has(uuid)) {
+				canvasPool.delete(uuid)
 			}
-			// 获取字符预览canvas
-			const canvas: HTMLCanvasElement = document.getElementById(`preview-canvas-${characterFile.uuid}`) as HTMLCanvasElement
-			if (!canvas) return
-			if (!characterFile.orderedList || !characterFile.orderedList.length) {
-				// 遇到空字符，直接跳过
-				// 更新进度条
+		}
+	}
+	
+	// 优化的渲染函数 - 只渲染可见区域的字符
+	const renderVisibleCharacters = () => {
+		const characters = selectedFile.value ? selectedFile.value.characterList : []
+		if (!characters.length) {
+			return
+		}
+
+		// 使用requestIdleCallback在空闲时间执行
+		if ('requestIdleCallback' in window) {
+			requestIdleCallback(() => {
+				processVisibleCharacters(characters)
+			}, { timeout: 1000 })
+		} else {
+			// 降级到setTimeout
+			setTimeout(() => {
+				processVisibleCharacters(characters)
+			}, 0)
+		}
+	}
+	
+	// 处理可见字符
+	const processVisibleCharacters = (characters: any[]) => {
+		const { unitsPerEm, descender } = selectedFile.value.fontSettings
+		
+		// 如果正在滚动，延迟渲染
+		if (isScrolling) {
+			setTimeout(() => {
+				processVisibleCharacters(characters)
+			}, 100)
+			return
+		}
+
+		// 只渲染可见区域的字符
+		for (let i = visibleStartIndex.value; i < Math.min(visibleEndIndex.value, characters.length); i++) {
+			addLoaded()
+			const characterFile = characters[i]
+			const cacheKey = `${characterFile.uuid}_${characterFile._o ? 'rendered' : 'pending'}`
+			
+			// 检查是否已经渲染过
+			if (renderCache.has(cacheKey)) {
+				continue
+			}
+			
+			// 添加到渲染队列
+			if (!renderQueue.includes(characterFile.uuid)) {
+				renderQueue.push(characterFile.uuid)
+			}
+		}
+		
+		// 开始渲染队列
+		if (!isRendering && renderQueue.length > 0) {
+			processRenderQueue()
+		}
+	}
+	
+	// 处理渲染队列
+	const processRenderQueue = async () => {
+		if (isRendering || renderQueue.length === 0) {
+			return
+		}
+		
+		isRendering = true
+		const characters = selectedFile.value ? selectedFile.value.characterList : []
+		const { unitsPerEm, descender } = selectedFile.value.fontSettings
+		
+		let processedCount = 0
+		while (renderQueue.length > 0) {
+			const uuid = renderQueue.shift()!
+			const characterFile = characters.find(c => c.uuid === uuid)
+			
+			if (!characterFile) {
+				continue
+			}
+			
+			// 使用canvas池获取canvas
+			const canvas = getCanvas(uuid)
+			if (!canvas) {
+				continue
+			}
+			
+			// 检查canvas状态
+			
+			
+			try {
+				// 执行字符脚本
+				if (!characterFile._o) {
+					executeCharacterScript(characterFile)
+				}
+				
+				// 检查是否有内容需要渲染
+				if (!characterFile.orderedList || !characterFile.orderedList.length) {
+					renderCache.set(`${uuid}_pending`, true)
+					continue
+				}
+				
+				// 渲染字符
+				const contours = componentsToContours(orderedListWithItemsForCharacterFile(characterFile), {
+					unitsPerEm,
+					descender,
+					advanceWidth: unitsPerEm,
+				}, { x: 0, y: 0 }, false, true)
+
+				renderPreview2(canvas, contours)
+				renderCache.set(`${uuid}_rendered`, true)
+				processedCount++
+				
+				// 检查渲染后的canvas内容
+				const ctx = canvas.getContext('2d')
+				if (ctx) {
+					const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+					const hasContent = imageData.data.some(pixel => pixel !== 0) // 检查是否有非透明像素
+				}
+				
+				// 更新进度
 				if (loading.value) {
 					loaded.value += 1
 					if (loaded.value >= total.value) {
 						loading.value = false
 					}
 				}
-				// i递增
-				i++
-				// 如果没有渲染完毕，调用requestAnimationFrame对下一个字符渲染进行回调
-				if (i < characters.length) {
-					if (i % 100 === 0) {
-						requestAnimationFrame(render)
-					} else {
-						render()
-					}
-				}
-				return
+				
+			} catch (error) {
+				console.error(`Error rendering character ${uuid}:`, error)
 			}
-			// 将字符数据处理成预览模式
-			const contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(orderedListWithItemsForCharacterFile(characterFile), {
-				unitsPerEm,
-				descender,
-				advanceWidth: unitsPerEm,
-			}, { x: 0, y: 0 }, false, true)
-			// 渲染字符
-			renderPreview2(canvas, contours)
-			// 更新进度条
-			if (loading.value) {
-				loaded.value += 1
-				if (loaded.value >= total.value) {
-					loading.value = false
-				}
-			}
-			// i递增
-			i++
-			// 如果没有渲染完毕，调用requestAnimationFrame对下一个字符渲染进行回调
-			if (i < characters.length) {
-				if (i % 100 === 0) {
-					requestAnimationFrame(render)
-				} else {
-					render()
-				}
+			
+			// 每渲染10个字符就让出主线程
+			if (renderQueue.length % 10 === 0) {
+				await new Promise(resolve => requestAnimationFrame(resolve))
 			}
 		}
-		// 调用requestAnimationFrame渲染第一个字符
-		requestAnimationFrame(render)
+		
+		// 清理缓存和池
+		cleanupCache()
+		cleanupCanvasPool()
+
+		isRendering = false
+	}
+	
+	// 防抖的滚动处理
+	let scrollTimeout: number | null = null
+	let lastScrollTop = 0
+	let isScrolling = false
+	let scrollEndTimeout: number | null = null
+	
+	// 监听滚动事件，更新可见区域
+	const handleScroll = () => {
+		// 标记正在滚动
+		isScrolling = true
+		
+		// 清除滚动结束定时器
+		if (scrollEndTimeout) {
+			clearTimeout(scrollEndTimeout)
+		}
+		
+		// 防抖处理，避免频繁触发
+		if (scrollTimeout) {
+			clearTimeout(scrollTimeout)
+		}
+		
+		scrollTimeout = window.setTimeout(() => {
+			// 获取正确的滚动容器和位置
+			const scrollContainer = containerRef.value?.closest('.el-scrollbar')?.querySelector('.el-scrollbar__wrap')
+			if (!scrollContainer) return
+			
+			const scrollTop = scrollContainer.scrollTop
+			const containerHeight = scrollContainer.clientHeight
+			
+			// 只有当滚动距离足够大时才更新
+			if (Math.abs(scrollTop - lastScrollTop) < itemHeight / 2) return
+			
+			// 计算Grid布局的可见区域
+			// 获取容器的实际宽度来计算每行的字符数
+			const containerWidth = scrollContainer.clientWidth
+			const itemWidth = 86 // grid-template-columns: repeat(auto-fill,86px)
+			const itemsPerRow = Math.floor(containerWidth / itemWidth)
+			
+			if (itemsPerRow <= 0) return
+			
+			// 计算当前在第几行
+			const currentRow = Math.floor(scrollTop / itemHeight)
+			const visibleRows = Math.ceil(containerHeight / itemHeight)
+			
+			// 计算可见区域的字符索引
+			const newStartIndex = Math.max(0, currentRow * itemsPerRow - itemsPerRow) // 提前一行开始渲染
+			const newEndIndex = Math.min(
+				(currentRow + visibleRows + 2) * itemsPerRow, // 额外渲染2行作为缓冲
+				selectedFile.value?.characterList?.length || 0
+			)
+			
+			// 如果可见区域发生变化，更新索引
+			if (newStartIndex !== visibleStartIndex.value || newEndIndex !== visibleEndIndex.value) {
+				visibleStartIndex.value = newStartIndex
+				visibleEndIndex.value = newEndIndex
+			}
+			
+			lastScrollTop = scrollTop
+		}, 100) // 100ms防抖
+		
+		// 设置滚动结束检测
+		scrollEndTimeout = window.setTimeout(() => {
+			isScrolling = false
+			// 滚动结束后开始渲染
+			renderVisibleCharacters()
+			
+			// 强制刷新一次，确保所有可见字符都被渲染
+			setTimeout(() => {
+				forceRefreshVisibleCharacters()
+			}, 100)
+		}, 300) // 300ms后认为滚动结束
+	}
+	
+	// 清理渲染缓存
+	const clearRenderCache = () => {
+		renderCache.clear()
+		renderQueue.length = 0
+		isRendering = false
+		canvasPool.clear()
+	}
+
+	// 优化的渲染函数 - 替换原来的renderPreviewCanvas
+	const renderPreviewCanvas = () => {
+		clearRenderCache()
+		renderVisibleCharacters()
+	}
+	
+	// 调试函数：检查当前渲染状态
+	const debugRenderState = () => {
+		console.log('=== 渲染状态调试 ===')
+		console.log(`可见区域: ${visibleStartIndex.value} - ${visibleEndIndex.value}`)
+		console.log(`正在滚动: ${isScrolling}`)
+		console.log(`正在渲染: ${isRendering}`)
+		console.log(`渲染队列长度: ${renderQueue.length}`)
+		console.log(`缓存大小: ${renderCache.size}`)
+		console.log(`Canvas池大小: ${canvasPool.size}`)
+		
+		const characters = selectedFile.value?.characterList || []
+		console.log(`总字符数: ${characters.length}`)
+		
+		// 检查可见区域的字符
+		for (let i = visibleStartIndex.value; i < Math.min(visibleEndIndex.value, characters.length); i++) {
+			const char = characters[i]
+			const cacheKey = `${char.uuid}_${char._o ? 'rendered' : 'pending'}`
+			console.log(`字符 ${i}: ${char.uuid}, 已缓存: ${renderCache.has(cacheKey)}`)
+		}
+		console.log('====================')
+	}
+	
+	// 强制刷新可见字符
+	const forceRefreshVisibleCharacters = () => {
+		const characters = selectedFile.value?.characterList || []
+		if (!characters.length) return
+		
+		// 清除可见区域的缓存，强制重新渲染
+		for (let i = visibleStartIndex.value; i < Math.min(visibleEndIndex.value, characters.length); i++) {
+			const characterFile = characters[i]
+			const cacheKey = `${characterFile.uuid}_rendered`
+			renderCache.delete(cacheKey)
+			
+			// 添加到渲染队列
+			if (!renderQueue.includes(characterFile.uuid)) {
+				renderQueue.push(characterFile.uuid)
+			}
+		}
+		
+		// 开始渲染
+		if (!isRendering && renderQueue.length > 0) {
+			processRenderQueue()
+		}
+	}
+	
+	// 暴露调试函数到全局
+	if (typeof window !== 'undefined') {
+		(window as any).debugRenderState = debugRenderState
+		;(window as any).forceRefreshVisibleCharacters = forceRefreshVisibleCharacters
+		;(window as any).checkVisibleCharacters = () => {
+			const characters = selectedFile.value?.characterList || []
+			
+			// 检查实际的DOM元素高度
+			const wrapper = document.getElementById('character-render-list')
+			if (wrapper) {
+				const firstChar = wrapper.querySelector('.character')
+				if (firstChar) {
+					const rect = firstChar.getBoundingClientRect()
+				}
+			}
+			
+			for (let i = visibleStartIndex.value; i < Math.min(visibleEndIndex.value, characters.length); i++) {
+				const char = characters[i]
+			}
+		}
 	}
 
 	// 渲染指定uuid的字符预览
@@ -151,6 +421,22 @@
 	// 挂载组件时，渲染预览画布
 	// renderPreviewCanvas on mounted
 	onMounted(async () => {
+		// 设置滚动监听 - 针对el-scrollbar
+		await nextTick()
+		containerRef.value = document.getElementById('character-render-list')
+		
+		// 对于el-scrollbar，需要监听其内部的滚动容器
+		if (containerRef.value) {
+			// 查找el-scrollbar内部的滚动容器
+			const scrollContainer = containerRef.value.closest('.el-scrollbar')?.querySelector('.el-scrollbar__wrap')
+			if (scrollContainer) {
+				scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
+			} else {
+				// 如果找不到，回退到原来的方式
+				containerRef.value.addEventListener('scroll', handleScroll, { passive: true })
+			}
+		}
+		
 		// 监听renderPreviewCanvas事件，需要调用nextTick保证预览canvas节点已经在dom中
 		// listen renderPreviewCanvas event, need to call nextTick to ensure that preview canvas is already added into dom
 		emitter.on('renderPreviewCanvas', async () => {
@@ -213,6 +499,28 @@
 	})
 
 	onUnmounted(() => {
+		// 清理滚动监听
+		if (containerRef.value) {
+			const scrollContainer = containerRef.value.closest('.el-scrollbar')?.querySelector('.el-scrollbar__wrap')
+			if (scrollContainer) {
+				scrollContainer.removeEventListener('scroll', handleScroll)
+			} else {
+				containerRef.value.removeEventListener('scroll', handleScroll)
+			}
+		}
+		
+		// 清理所有定时器
+		if (scrollTimeout) {
+			clearTimeout(scrollTimeout)
+		}
+		if (scrollEndTimeout) {
+			clearTimeout(scrollEndTimeout)
+		}
+		
+		// 清理渲染缓存和队列
+		clearRenderCache()
+		
+		// 清理事件监听
 		emitter.off('updateCharacterInfoPreviewCanvasByUUID')
 		emitter.off('renderPreviewCanvasByUUID')
 		emitter.off('renderPreviewCanvas')

@@ -30,14 +30,16 @@ import {
   characterList,
   generateCharacterTemplate,
   addCharacterTemplate,
+  batchAddCharacterTemplates,
   orderedListWithItemsForCharacterFile,
   orderedListWithItemsForCurrentCharacterFile,
   addCharacterForCurrentFile,
+  visibleEndIndex,
 } from '../stores/files'
-import { base, canvas, fontRenderStyle, loaded, loadingMsg, tips, total, setTool, ASCIICharSet } from '../stores/global'
+import { base, canvas, fontRenderStyle, loaded, loadingMsg, tips, total, setTool, ASCIICharSet, width } from '../stores/global'
 import { saveAs } from 'file-saver'
 import * as R from 'ramda'
-import { genUUID, toUnicode } from '../../utils/string'
+import { genUUID, toUnicode, resetLightIdCounter, genLightId } from '../../utils/string'
 import localForage from 'localforage'
 import { ElMessageBox, ElNotification } from 'element-plus'
 import { h } from 'vue'
@@ -53,6 +55,7 @@ import {
   componentsToContours,
   componentsToContours2,
   formatPoints,
+  contoursToComponents,
 } from '../../features/font'
 import { emitter } from '../Event/bus'
 import {
@@ -636,7 +639,7 @@ const addLoaded = () => {
 }
 
 const __openFile = async (data) => {
-  total.value = data.file.characterList.length * 2 + (data.glyphs.length + data.stroke_glyphs.length + data.radical_glyphs.length + data.comp_glyphs.length) * 3
+  total.value = data.file.characterList.length * 1 + visibleEndIndex.value + (data.glyphs.length + data.stroke_glyphs.length + data.radical_glyphs.length + data.comp_glyphs.length) * 3
   loaded.value = 0
   loading.value = true
 
@@ -1020,18 +1023,35 @@ const importFont = () => {
     const buffer = _file.arrayBuffer()
     const font = parse(await buffer)
 
-    const _characters = []
+    loaded.value = 0
+    total.value = font.characters.length * 2 + visibleEndIndex.value
+    loading.value = true
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        resolve()
+      })
+    })
 
-    for (let i  = 0; i < font.characters.length; i++) {
-      const character = R.clone(font.characters[i])
-      if (ASCIICharSet.includes(String.fromCharCode(character.unicode))) {
-        console.log('ascii', i, character.name, character.unicode, character)
-        _characters.push(character)
-      }
-    }
-    font.characters = _characters
+    // const _characters = []
 
-    console.log('ascii font.characters', font.characters)
+    // for (let i  = 0; i < font.characters.length; i++) {
+    //   addLoaded()
+    //   if (i % 100 === 0) {
+    //     await new Promise<void>((resolve) => {
+    //       requestAnimationFrame(() => {
+    //         resolve()
+    //       })
+    //     })
+    //   }
+    //   const character = R.clone(font.characters[i])
+    //   if (ASCIICharSet.includes(String.fromCharCode(character.unicode))) {
+    //     console.log('ascii', i, character.name, character.unicode, character)
+    //     _characters.push(character)
+    //   }
+    // }
+    // font.characters = _characters
+
+    // console.log('ascii font.characters', font.characters)
 
 
     //updateFontSettings({
@@ -1059,25 +1079,120 @@ const importFont = () => {
     if (router.currentRoute.value.name === 'welcome') {
       router.push('/editor')
     }
-    loaded.value = 0
-    total.value = 0
-    loading.value = true
-    worker.onmessage = (e) => {
-      const list = e.data
-      selectedFile.value.characterList = list
-      clearCharacterRenderList()
-      characterList.value.map((characterFile) => {
-        addCharacterTemplate(generateCharacterTemplate(characterFile))
-      })
-      loading.value = false
-      emitter.emit('renderPreviewCanvas', true)
+    // worker.onmessage = (e) => {
+    //   const list = e.data
+    //   selectedFile.value.characterList = list
+    //   clearCharacterRenderList()
+    //   characterList.value.map((characterFile) => {
+    //     addCharacterTemplate(generateCharacterTemplate(characterFile))
+    //   })
+    //   loading.value = false
+    //   emitter.emit('renderPreviewCanvas', true)
+    // }
+    // worker.postMessage([WorkerEventType.ParseFont, font, selectedFile.value.width])
+
+    const list = await parseFont(font)
+    selectedFile.value.characterList = list
+    clearCharacterRenderList()
+    
+    // 批量添加字符模板 - 性能优化
+    const batchSize = 500 // 每批处理500个字符
+    const templates: Node[] = []
+    
+    for (let i = 0; i < list.length; i++) {
+      templates.push(generateCharacterTemplate(list[i]))
+      addLoaded()
+      
+      // 每batchSize个字符批量添加一次
+      if (templates.length >= batchSize || i === list.length - 1) {
+        batchAddCharacterTemplates(templates)
+        templates.length = 0 // 清空数组
+        
+        // 给浏览器一些时间处理
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => {
+            resolve()
+          })
+        })
+      }
     }
-    worker.postMessage([WorkerEventType.ParseFont, font, selectedFile.value.width])
+    emitter.emit('renderPreviewCanvas', true)
     document.body.removeChild(input)
   })
   document.body.appendChild(input)
   input.click()
   //loading.value = true
+}
+
+const parseFont = async (font) => {
+  // 重置轻量级ID计数器，避免ID冲突
+  resetLightIdCounter()
+  
+  const unitsPerEm = font.settings.unitsPerEm
+  const descender = font.settings.descender
+  const width = selectedFile.value.width
+  const list = []
+
+  for (let j = 0; j < font.characters.length; j++) {
+    addLoaded()
+    const character = font.characters[j]
+    //if (!character.unicode || character.name === '.notdef') continue
+    if (!character.unicode && !character.name) continue
+    const characterComponent = {
+      uuid: genLightId(), // 使用轻量级ID
+      text: character.unicode ? String.fromCharCode(character.unicode) : character.name,
+      unicode: character.unicode ? character.unicode.toString(16) : '',
+    }
+    const uuid = genLightId() // 使用轻量级ID
+    const characterFile = {
+      uuid,
+      type: 'text',
+      character: characterComponent,
+      components: [],
+      groups: [],
+      orderedList: [],
+      selectedComponentsUUIDs: [],
+      view: {
+        zoom: 100,
+        translateX: 0,
+        translateY: 0,
+      },
+      info: {
+        gridSettings: {
+          dx: 0,
+          dy: 0,
+          centerSquareSize: width / 3,
+          size: width,
+          default: true,
+        },
+        useSkeletonGrid: false,
+        layout: '',
+        layoutTree: [],
+      },
+      script: `function script_${uuid.replaceAll('-', '_')} (character, constants, FP) {\n\t//Todo something\n}`,
+    }
+    const components = contoursToComponents(character.contours, {
+      unitsPerEm,
+      descender,
+      advanceWidth: character.advanceWidth,
+    })
+    components.forEach((component) => {
+      characterFile.components.push(component)
+      characterFile.orderedList.push({
+        type: 'component',
+        uuid: component.uuid,
+      })
+    })
+    list.push(characterFile)
+    if (j % 100 === 0) {
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          resolve()
+        })
+      })
+    }
+  }
+  return list
 }
 
 const importTemplates = () => {
@@ -2058,7 +2173,7 @@ const _syncData = async () => {
   }
 
   loaded.value = 0
-  total.value = file ? file.characterList.length * 2 : 0 + (plainGlyphs.length + plainGlyphs_stroke.length + plainGlyphs_radical.length + plainGlyphs_comp.length) * 3
+  total.value = file ? file.characterList.length * 1 + visibleEndIndex.value : 0 + (plainGlyphs.length + plainGlyphs_stroke.length + plainGlyphs_radical.length + plainGlyphs_comp.length) * 3
   if (total.value === 0) {
     const { locale } = i18n.global
     if (locale === 'zh') {
