@@ -381,6 +381,19 @@
     emitter.emit('renderGlyphPreviewCanvasByUUIDOnEditing', editGlyph.value.uuid)
   })
 
+  // 监听组件顺序变化，确保拖拽排序后界面能正确刷新
+  watch([
+    orderedListWithItemsForCurrentGlyph,
+  ], () => {
+    render()
+    renderRefComponents()
+    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
+    emitter.emit('renderGlyphPreviewCanvasByUUIDOnEditing', editGlyph.value.uuid)
+  }, {
+    deep: true,
+  })
+
   watch([
     onPenEditMode,
   ], () => {

@@ -12,6 +12,7 @@
     selectedComponent,
     selectedComponentUUID,
     componentsForCurrentCharacterFile,
+    orderedListWithItemsForCurrentCharacterFile,
     editCharacterFile,
     editCharacterFileUUID,
     modifyCharacterFile,
@@ -356,6 +357,19 @@
     tool.value === 'pen' && renderPenEditor(canvas.value)
     renderRefComponents()
     emitter.emit('renderPreviewCanvasByUUIDOnEditing', editCharacterFile.value.uuid)
+  })
+
+  // 监听组件顺序变化，确保拖拽排序后界面能正确刷新
+  watch([
+    orderedListWithItemsForCurrentCharacterFile,
+  ], () => {
+    render()
+    renderRefComponents()
+    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'pen' && renderPenEditor(canvas.value)
+    emitter.emit('renderPreviewCanvasByUUIDOnEditing', editCharacterFile.value.uuid)
+  }, {
+    deep: true,
   })
 
   watch([

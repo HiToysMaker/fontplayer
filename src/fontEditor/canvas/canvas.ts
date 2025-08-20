@@ -118,12 +118,124 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
   const scale = options.scale//canvas.width / (selectedFile.value.fontSettings.unitsPerEm as number)
   const ctx: CanvasRenderingContext2D = canvas.getContext('2d') as CanvasRenderingContext2D
   //ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-  ctx.beginPath()
-  components.map((component, index) => {
+  
+  let currentPathStarted = false
+  
+  // 按组件列表顺序渲染所有组件
+  components.forEach((component, index) => {
 		// 如果组件不可见则跳过
 		// skip if in-visible
     if (!component || component.visible === null || component.visible === undefined || !component.visible) {
       return
+    }
+
+    // 渲染图片组件 - 直接绘制，不参与路径构建
+    if (component.type === 'picture') {
+      // 如果有未完成的路径，先绘制它
+      if (currentPathStarted) {
+        ctx.closePath()
+        if (fontRenderStyle.value === 'color' || options.fill) {
+          ctx.fillStyle = '#000'
+          ctx.fill("nonzero")
+        }
+        ctx.stroke()
+        currentPathStarted = false
+      }
+      
+      const { x, y, w, h, rotation } = component as IComponent
+      const _x = mapCanvasX(x) * scale
+      const _y = mapCanvasY(y) * scale
+      const _w = mapCanvasWidth(w) * scale
+      const _h = mapCanvasHeight(h) * scale
+      const {
+        img,
+        pixelMode,
+        pixels,
+      } = component.value as unknown as IPictureComponent
+      if (!pixelMode) {
+        if (component.opacity) {
+          ctx.globalAlpha = component.opacity
+        }
+        ctx.translate(mapCanvasX(options.offset.x), mapCanvasY(options.offset.y))
+        ctx.translate(_x + _w / 2, _y + _h / 2)
+        ctx.rotate(rotation * Math.PI / 180)
+        ctx.translate(-(_x + _w / 2), -(_y + _h / 2))
+        ctx.drawImage(img, _x, _y, _w, _h)
+        ctx.setTransform(1, 0, 0, 1, 0, 0)
+        if (component.opacity) {
+          ctx.globalAlpha = 1.0
+        }
+      } else {
+        if (component.opacity) {
+          ctx.globalAlpha = component.opacity
+        }
+        ctx.translate(mapCanvasX(options.offset.x), mapCanvasY(options.offset.y))
+        ctx.translate(_x + _w / 2, _y + _h / 2)
+        ctx.rotate(rotation * Math.PI / 180)
+        ctx.translate(-(_x + _w / 2), -(_y + _h / 2))
+        for (let i = 0; i < _w; i++) {
+          for (let j = 0; j < _h; j++) {
+            const originWidth = img.width
+            const originHeight = img.height
+            const col = Math.floor(i * originWidth / _w) 
+            const row = Math.floor(j * originHeight / _h)
+            const index = (row * originWidth + col) * 4
+            ctx.fillStyle = `rgba(${pixels[index]}, ${pixels[index + 1]}, ${pixels[index + 2]}, ${pixels[index + 3]})`
+            ctx.fillRect(i, j, 1, 1)
+          }
+        }
+        if (component.opacity) {
+          ctx.globalAlpha = 1.0
+        }
+        ctx.setTransform(1, 0, 0, 1, 0, 0)
+      }
+      return
+    }
+
+    // 渲染字形组件 - 直接渲染，不参与路径构建
+    if (component.type === 'glyph') {
+      // 如果有未完成的路径，先绘制它
+      if (currentPathStarted) {
+        ctx.closePath()
+        if (fontRenderStyle.value === 'color' || options.fill) {
+          ctx.fillStyle = '#000'
+          ctx.fill("nonzero")
+        }
+        ctx.stroke()
+        currentPathStarted = false
+      }
+      
+      if (
+        !(component.value as unknown as ICustomGlyph)._o ||
+        !(component.value as unknown as ICustomGlyph)._o.components ||
+        !(component.value as unknown as ICustomGlyph)._o.components.length ||
+        options.forceUpdate
+      ) {
+        executeScript(component.value as unknown as ICustomGlyph)
+      }
+			//executeScript(component.value as unknown as ICustomGlyph)
+			const glyph = (component.value as unknown as ICustomGlyph)._o ? (component.value as unknown as ICustomGlyph)._o : new CustomGlyph((component.value as unknown as ICustomGlyph))
+      if (options.forceUpdate) {
+        glyph.render_forceUpdate(canvas, true, {
+          x: options.offset.x + (component as IGlyphComponent).ox,
+          y: options.offset.y + (component as IGlyphComponent).oy,
+        }, false, scale)
+      } else {
+        glyph.render(canvas, true, {
+          x: options.offset.x + (component as IGlyphComponent).ox,
+          y: options.offset.y + (component as IGlyphComponent).oy,
+        }, false, scale)
+      }
+      return
+    }
+
+    // 对于路径组件，需要检查是否需要开始新的路径
+    if (component.type === 'pen' || component.type === 'polygon' || component.type === 'ellipse' || component.type === 'rectangle') {
+      // 如果还没有开始路径，开始新路径
+      if (!currentPathStarted) {
+        ctx.beginPath()
+        currentPathStarted = true
+      }
     }
 
 		// 渲染钢笔组件
@@ -282,95 +394,17 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       // ctx.closePath()
       ctx.setTransform(1, 0, 0, 1, 0, 0)
     }
-
-		// 渲染图片组件
-		// render picture component
-    if (component.type === 'picture') {
-      const { x, y, w, h, rotation } = component as IComponent
-      const _x = mapCanvasX(x) * scale
-      const _y = mapCanvasY(y) * scale
-      const _w = mapCanvasWidth(w) * scale
-      const _h = mapCanvasHeight(h) * scale
-      const {
-        img,
-        pixelMode,
-        pixels,
-      } = component.value as unknown as IPictureComponent
-      if (!pixelMode) {
-        if (component.opacity) {
-          ctx.globalAlpha = component.opacity
-        }
-        ctx.translate(mapCanvasX(options.offset.x), mapCanvasY(options.offset.y))
-        ctx.translate(_x + _w / 2, _y + _h / 2)
-        ctx.rotate(rotation * Math.PI / 180)
-        ctx.translate(-(_x + _w / 2), -(_y + _h / 2))
-        ctx.drawImage(img, _x, _y, _w, _h)
-        ctx.setTransform(1, 0, 0, 1, 0, 0)
-        if (component.opacity) {
-          ctx.globalAlpha = 1.0
-        }
-      } else {
-        if (component.opacity) {
-          ctx.globalAlpha = component.opacity
-        }
-        ctx.translate(mapCanvasX(options.offset.x), mapCanvasY(options.offset.y))
-        ctx.translate(_x + _w / 2, _y + _h / 2)
-        ctx.rotate(rotation * Math.PI / 180)
-        ctx.translate(-(_x + _w / 2), -(_y + _h / 2))
-        for (let i = 0; i < _w; i++) {
-          for (let j = 0; j < _h; j++) {
-            const originWidth = img.width
-            const originHeight = img.height
-            const col = Math.floor(i * originWidth / _w) 
-            const row = Math.floor(j * originHeight / _h)
-            const index = (row * originWidth + col) * 4
-            ctx.fillStyle = `rgba(${pixels[index]}, ${pixels[index + 1]}, ${pixels[index + 2]}, ${pixels[index + 3]})`
-            ctx.fillRect(i, j, 1, 1)
-          }
-        }
-        if (component.opacity) {
-          ctx.globalAlpha = 1.0
-        }
-        ctx.setTransform(1, 0, 0, 1, 0, 0)
-      }
-    }
-
-    // 渲染字形组件
-		// render glyph component
-    if (component.type === 'glyph') {
-      if (
-        !(component.value as unknown as ICustomGlyph)._o ||
-        !(component.value as unknown as ICustomGlyph)._o.components ||
-        !(component.value as unknown as ICustomGlyph)._o.components.length ||
-        options.forceUpdate
-      ) {
-        executeScript(component.value as unknown as ICustomGlyph)
-      }
-			//executeScript(component.value as unknown as ICustomGlyph)
-			const glyph = (component.value as unknown as ICustomGlyph)._o ? (component.value as unknown as ICustomGlyph)._o : new CustomGlyph((component.value as unknown as ICustomGlyph))
-      if (options.forceUpdate) {
-        glyph.render_forceUpdate(canvas, true, {
-          x: options.offset.x + (component as IGlyphComponent).ox,
-          y: options.offset.y + (component as IGlyphComponent).oy,
-        }, false, scale)
-      } else {
-        glyph.render(canvas, true, {
-          x: options.offset.x + (component as IGlyphComponent).ox,
-          y: options.offset.y + (component as IGlyphComponent).oy,
-        }, false, scale)
-      }
-    }
   })
-  ctx.closePath()
-
-	// 填充颜色
-	// fill color
-  if (fontRenderStyle.value === 'color' || options.fill) {
-    ctx.fillStyle = '#000'
-    //ctx.fill('evenodd')
-    ctx.fill("nonzero")
+  
+  // 绘制最后的路径
+  if (currentPathStarted) {
+    ctx.closePath()
+    if (fontRenderStyle.value === 'color' || options.fill) {
+      ctx.fillStyle = '#000'
+      ctx.fill("nonzero")
+    }
+    ctx.stroke()
   }
-  ctx.stroke()
 }
 
 const computeCoords = (grid, point) => {
@@ -520,133 +554,13 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
           y: y * scale,
         })
       })
-      // ctx.translate(mapCanvasX(options.offset.x), mapCanvasY(options.offset.y))
-      // ctx.translate(_x + _w / 2, _y + _h / 2)
-      // ctx.rotate(rotation * Math.PI / 180)
-      // ctx.translate(-(_x + _w / 2), -(_y + _h / 2))
-      ctx.beginPath()
-			ctx.moveTo(_points[0].x, _points[0].y)
+      ctx.moveTo(_points[0].x, _points[0].y)
       for (let i = 1; i < _points.length; i ++) {
         ctx.lineTo(_points[i].x, _points[i].y)
       }
-      // if (closePath && fillColor) {
-      //   ctx.fill()
-      // }
       ctx.stroke()
       ctx.closePath()
       ctx.setTransform(1, 0, 0, 1, 0, 0)
-    }
-
-		// 渲染椭圆组件
-		// render ellipse component
-    if (component.type === 'ellipse') {
-      if (useSkeletonGrid) return
-      const { x, y, w, h, rotation } = component as IComponent
-      const radiusX = w / 2
-      const radiusY = h / 2
-      const ellipseX = x
-      const ellipseY = y
-      let points = getEllipsePoints(
-        radiusX,
-        radiusY,
-        1000,
-        ellipseX + radiusX,
-        ellipseY + radiusY,
-      )
-      let _points = transformPoints(points, {
-        x, y, w, h, rotation, flipX: false, flipY: false,
-      })
-      _points = _points.map((point: IPoint) => {
-        const { x, y } = computeCoords(grid, translate(point))
-        return mapCanvasCoords({
-          x: x * scale,
-          y: y * scale,
-        })
-      })
-      const {
-        strokeColor,
-        fillColor,
-        closePath,
-      } = component.value as unknown as IEllipseComponent
-      ctx.strokeStyle = strokeColor || '#000'
-      ctx.lineWidth = getStrokeWidth()
-      ctx.beginPath()
-			ctx.moveTo(_points[0].x, _points[0].y)
-      for (let i = 1; i < _points.length; i ++) {
-        ctx.lineTo(_points[i].x, _points[i].y)
-      }
-      ctx.lineTo(_points[0].x, _points[0].y)
-      ctx.stroke()
-      ctx.closePath()
-      ctx.setTransform(1, 0, 0, 1, 0, 0)
-    }
-
-		// 渲染长方形组件
-		// render rectangle component
-    if (component.type === 'rectangle') {
-      if (useSkeletonGrid) return
-      const { x, y, w, h, rotation } = component as IComponent
-      const points = getRectanglePoints(
-        w,
-        h,
-        x,
-        y,
-      )
-      let _points = transformPoints(points, {
-        x, y, w, h, rotation, flipX: false, flipY: false,
-      })
-      _points = _points.map((point: IPoint) => {
-        const { x, y } = computeCoords(grid, translate(point))
-        return mapCanvasCoords({
-          x: x * scale,
-          y: y * scale,
-        })
-      })
-      const scale = options.scale
-      const {
-        strokeColor,
-        fillColor,
-        closePath,
-      } = component.value as unknown as IRectangleComponent
-      ctx.strokeStyle = strokeColor || '#000'
-      ctx.lineWidth = getStrokeWidth()
-      ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
-      ctx.translate(mapCanvasX(options.offset.x) * scale, mapCanvasY(options.offset.y) * scale)
-      ctx.beginPath()
-			ctx.moveTo(_points[0].x, _points[0].y)
-      for (let i = 1; i < _points.length; i ++) {
-        ctx.lineTo(_points[i].x, _points[i].y)
-      }
-      ctx.lineTo(_points[0].x, _points[0].y)
-      ctx.stroke()
-      ctx.closePath()
-      ctx.setTransform(1, 0, 0, 1, 0, 0)
-    }
-
-    // 渲染字形组件
-		// render glyph component
-    if (component.type === 'glyph') {
-      if (
-        !(component.value as unknown as ICustomGlyph)._o ||
-        !(component.value as unknown as ICustomGlyph)._o.components ||
-        !(component.value as unknown as ICustomGlyph)._o.components.length ||
-        options.forceUpdate
-      ) {
-        executeScript(component.value as unknown as ICustomGlyph)
-      }
-			//executeScript(component.value as unknown as ICustomGlyph)
-			const glyph = (component.value as unknown as ICustomGlyph)._o ? (component.value as unknown as ICustomGlyph)._o : new CustomGlyph((component.value as unknown as ICustomGlyph))
-      if (options.forceUpdate) {
-        glyph.render_grid_forceUpdate(canvas, true, {
-          x: options.offset.x + (component as IGlyphComponent).ox,
-          y: options.offset.y + (component as IGlyphComponent).oy,
-        }, false, scale, grid, useSkeletonGrid)
-      } else {
-        glyph.render_grid(canvas, true, {
-          x: options.offset.x + (component as IGlyphComponent).ox,
-          y: options.offset.y + (component as IGlyphComponent).oy,
-        }, false, scale, grid, useSkeletonGrid)
-      }
     }
   })
   ctx.closePath()
