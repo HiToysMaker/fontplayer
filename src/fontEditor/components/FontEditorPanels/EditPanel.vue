@@ -85,6 +85,8 @@
     _canvas.style.height = `${height.value * editCharacterFile.value.view.zoom / 100}px`
     grid.precision = selectedFile.value.width / width.value * 10
 		setCanvas(_canvas)
+    checkJoints.value = true
+    checkRefLines.value = true
     mounted.value = true
     initTool()
     await nextTick()

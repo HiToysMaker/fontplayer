@@ -81,6 +81,8 @@
     _canvas.style.height = `${500 * editGlyph.value.view.zoom / 100}px`
     grid.precision = 20
 		setCanvas(_canvas)
+    checkJoints.value = true
+    checkRefLines.value = true
     mounted.value = true
     initTool()
     render()
