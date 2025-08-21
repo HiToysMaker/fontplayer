@@ -645,6 +645,11 @@ const __openFile = async (data) => {
 
   // 处理字形数据的异步函数
   const processGlyphs = async (plainGlyphs, status) => {
+    plainGlyphs.map(async (plainGlyph) => {
+      const script_res = await fetch(`/public/templates/templates2/${plainGlyph.name}.js`)
+      const script_text = await script_res.text()
+      plainGlyph.script = `function script_${plainGlyph.uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t${script_text}\n}`
+    })
     return new Promise<void>((resolve) => {
       const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
         updateContoursAndPreview: true,
@@ -2835,6 +2840,56 @@ const generateComponent = (data) => {
   return component
 }
 
+// 检测字符是否已经不需要去除重叠
+const isAlreadyOptimized = (contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>): boolean => {
+  if (contours.length <= 1) {
+    return true // 单个轮廓不需要去除重叠
+  }
+  
+  // 简化检测逻辑：只检查是否有明显的镂空结构
+  // 对于走之旁这种有重叠的字符，不应该被误判为已经优化过
+  
+  // 检查轮廓之间是否有重叠
+  let hasOverlap = false
+  for (let i = 0; i < contours.length; i++) {
+    for (let j = i + 1; j < contours.length; j++) {
+      const contour1 = contours[i]
+      const contour2 = contours[j]
+      
+      // 计算两个轮廓的包围盒
+      let minX1 = Infinity, minY1 = Infinity, maxX1 = -Infinity, maxY1 = -Infinity
+      let minX2 = Infinity, minY2 = Infinity, maxX2 = -Infinity, maxY2 = -Infinity
+      
+      for (let k = 0; k < contour1.length; k++) {
+        const segment = contour1[k]
+        minX1 = Math.min(minX1, segment.start.x, segment.end.x)
+        minY1 = Math.min(minY1, segment.start.y, segment.end.y)
+        maxX1 = Math.max(maxX1, segment.start.x, segment.end.x)
+        maxY1 = Math.max(maxY1, segment.start.y, segment.end.y)
+      }
+      
+      for (let k = 0; k < contour2.length; k++) {
+        const segment = contour2[k]
+        minX2 = Math.min(minX2, segment.start.x, segment.end.x)
+        minY2 = Math.min(minY2, segment.start.y, segment.end.y)
+        maxX2 = Math.max(maxX2, segment.start.x, segment.end.x)
+        maxY2 = Math.max(maxY2, segment.start.y, segment.end.y)
+      }
+      
+      // 检查包围盒是否重叠
+      if (maxX1 >= minX2 && maxX2 >= minX1 && maxY1 >= minY2 && maxY2 >= minY1) {
+        hasOverlap = true
+        break
+      }
+    }
+    if (hasOverlap) break
+  }
+  
+  // 如果有重叠，说明需要去除重叠，不应该跳过
+  // 只有在没有重叠的情况下才认为已经优化过
+  return !hasOverlap
+}
+
 const computeOverlapRemovedContours = async () => {
   const {
     unitsPerEm,
@@ -2857,6 +2912,23 @@ const computeOverlapRemovedContours = async () => {
       descender,
       advanceWidth: unitsPerEm,
     }, { x: 0, y: 0 }, false, false, false)
+
+    // 检查是否已经优化过
+    if (isAlreadyOptimized(contours)) {
+      // 即使跳过处理，也要保存原始轮廓到overlap_removed_contours
+      char.overlap_removed_contours = contours
+      m++
+      loaded.value++
+      if (loaded.value >= total.value) {
+        loading.value = false
+        loaded.value = 0
+        total.value = 0
+        return
+      }
+      // 继续处理下一个字符
+      await new Promise(resolve => setTimeout(resolve, 0))
+      return compute()
+    }
     
     // 使用优化后的路径创建函数
     let paths = []
@@ -2873,8 +2945,75 @@ const computeOverlapRemovedContours = async () => {
       paths.push(path)
     }
 
-    // 使用优化后的合并函数
-    let unitedPath = mergePathsWithPrecision(paths)
+    // 智能去除重叠：对于已经有镂空结构的字符，使用exclude方法避免破坏镂空
+    let unitedPath = null
+
+    // 检查是否有镂空结构
+    let hasHoles = false
+    let hasOuterContours = false
+
+    for (let i = 0; i < paths.length; i++) {
+      const path = paths[i]
+      if (!path.area) continue
+      
+      const area = path.area
+      if (Math.abs(area) > 1e-6) {
+        if (area > 0) {
+          hasOuterContours = true
+        } else {
+          hasHoles = true
+        }
+      }
+    }
+
+    // 如果有镂空结构，使用exclude方法避免破坏镂空
+    if (hasHoles && hasOuterContours) {
+      // 分离外轮廓和内轮廓（镂空）
+      const outerPaths: paper.Path[] = []
+      const innerPaths: paper.Path[] = []
+      
+      for (let i = 0; i < paths.length; i++) {
+        const path = paths[i]
+        if (!path.area) continue
+        
+        if (path.area > 0) {
+          outerPaths.push(path)
+        } else {
+          innerPaths.push(path)
+        }
+      }
+      
+      // 确保有外轮廓
+      if (outerPaths.length === 0) {
+        unitedPath = mergePathsWithPrecision(paths)
+      } else {
+        // 先合并外轮廓
+        unitedPath = outerPaths[0].clone()
+        for (let i = 1; i < outerPaths.length; i++) {
+          const result = unitedPath.unite(outerPaths[i]) as paper.Path
+          if (result && result.area && Math.abs(result.area) > 1e-6) {
+            unitedPath = result
+          }
+        }
+        
+        // 然后用内轮廓（镂空）排除
+        for (let i = 0; i < innerPaths.length; i++) {
+          const result = unitedPath.exclude(innerPaths[i]) as paper.Path
+          if (result && result.area && Math.abs(result.area) > 1e-6) {
+            unitedPath = result
+          } else {
+          }
+        }
+        
+        // 验证最终结果
+        if (!unitedPath || !unitedPath.area || Math.abs(unitedPath.area) < 1e-6) {
+          unitedPath = mergePathsWithPrecision(paths)
+        }
+      }
+    } else {
+      // 没有镂空结构，使用普通的unite方法
+      unitedPath = mergePathsWithPrecision(paths)
+    }
     
     if (!unitedPath) {
       // 即使没有unitedPath，也要继续处理下一个字符
@@ -2986,6 +3125,23 @@ const computeOverlapRemovedContours_wasm = async () => {
     //   advanceWidth: unitsPerEm,
     // }, { x: 0, y: 0 }, false, false, false)
 
+    // 检查是否已经优化过
+    if (isAlreadyOptimized(contours)) {
+      // 即使跳过处理，也要保存原始轮廓到overlap_removed_contours
+      char.overlap_removed_contours = contours
+      m++
+      loaded.value++
+      if (loaded.value >= total.value) {
+        loading.value = false
+        loaded.value = 0
+        total.value = 0
+        return
+      }
+      // 继续处理下一个字符
+      await new Promise(resolve => setTimeout(resolve, 0))
+      return compute()
+    }
+
     try {
       // 使用WASM去除重叠
       const overlap_removed_contours = await removeOverlapWithWasm(contours)
@@ -3069,11 +3225,21 @@ const removeOverlap = async () => {
   let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours2(orderedListWithItemsForCharacterFile(char),
     { x: 0, y: 0 }, false, 1
   )
+
+  
+  // let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(orderedListWithItemsForCharacterFile(char),
+  //   { unitsPerEm, descender, advanceWidth: unitsPerEm }, { x: 0, y: 0 }, false, false, false
+  // )
   
   if (editStatus.value == Status.Glyph) {
     contours = componentsToContours2(char._o.components,
       { x: 0, y: 0 }, true, 1
     )
+  }
+
+  // 检查是否已经优化过
+  if (isAlreadyOptimized(contours)) {
+    return
   }
 
   // 使用优化后的路径创建函数
@@ -3091,8 +3257,75 @@ const removeOverlap = async () => {
     paths.push(path)
   }
 
-  // 使用优化后的合并函数
-  let unitedPath = mergePathsWithPrecision(paths)
+  // 智能去除重叠：对于已经有镂空结构的字符，使用exclude方法避免破坏镂空
+  let unitedPath = null
+
+  // 检查是否有镂空结构
+  let hasHoles = false
+  let hasOuterContours = false
+
+  for (let i = 0; i < paths.length; i++) {
+    const path = paths[i]
+    if (!path.area) continue
+    
+    const area = path.area
+    if (Math.abs(area) > 1e-6) {
+      if (area > 0) {
+        hasOuterContours = true
+      } else {
+        hasHoles = true
+      }
+    }
+  }
+
+  // 如果有镂空结构，使用exclude方法避免破坏镂空
+  if (hasHoles && hasOuterContours) {
+    // 分离外轮廓和内轮廓（镂空）
+    const outerPaths: paper.Path[] = []
+    const innerPaths: paper.Path[] = []
+    
+    for (let i = 0; i < paths.length; i++) {
+      const path = paths[i]
+      if (!path.area) continue
+      
+      if (path.area > 0) {
+        outerPaths.push(path)
+      } else {
+        innerPaths.push(path)
+      }
+    }
+    
+    // 确保有外轮廓
+    if (outerPaths.length === 0) {
+      unitedPath = mergePathsWithPrecision(paths)
+    } else {
+      // 先合并外轮廓
+      unitedPath = outerPaths[0].clone()
+      for (let i = 1; i < outerPaths.length; i++) {
+        const result = unitedPath.unite(outerPaths[i]) as paper.Path
+        if (result && result.area && Math.abs(result.area) > 1e-6) {
+          unitedPath = result
+        }
+      }
+      
+      // 然后用内轮廓（镂空）排除
+      for (let i = 0; i < innerPaths.length; i++) {
+        const result = unitedPath.exclude(innerPaths[i]) as paper.Path
+        if (result && result.area && Math.abs(result.area) > 1e-6) {
+          unitedPath = result
+        } else {
+        }
+      }
+      
+      // 验证最终结果
+      if (!unitedPath || !unitedPath.area || Math.abs(unitedPath.area) < 1e-6) {
+        unitedPath = mergePathsWithPrecision(paths)
+      }
+    }
+  } else {
+    // 没有镂空结构，使用普通的unite方法
+    unitedPath = mergePathsWithPrecision(paths)
+  }
 
   let components = []
   if (unitedPath) {
@@ -3209,6 +3442,11 @@ const removeOverlap_wasm = async () => {
     contours = componentsToContours2(char._o.components,
       { x: 0, y: 0 }, true, 1
     )
+  }
+
+  // 检查是否已经优化过
+  if (isAlreadyOptimized(contours)) {
+    return
   }
 
   try {

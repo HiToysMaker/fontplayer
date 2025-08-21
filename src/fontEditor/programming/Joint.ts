@@ -96,7 +96,7 @@ const renderJoints = (rootComponent, canvas) => {
 	const traverse = (_component, _ox, _oy) => {
 		const ox = _component.ox + _ox
 		const oy = _component.oy + _oy
-		_component.value._o.getJoints().map((joint) => {
+		_component.value._o?.getJoints().map((joint) => {
 			const { x, y } = joint.getCoords()
 			renderJoint(canvas, {
 				x: x + ox,
@@ -116,7 +116,7 @@ const renderRefLines = (rootComponent, canvas) => {
 	const traverse = (_component, _ox, _oy) => {
 		const ox = _component.ox + _ox
 		const oy = _component.oy + _oy
-		_component.value._o.getRefLines().map((_refline) => {
+		_component.value._o?.getRefLines().map((_refline) => {
 			const start = _component.value._o.getJoint(_refline.start)
 			const end = _component.value._o.getJoint(_refline.end)
 			const refline = {
@@ -148,7 +148,7 @@ const getJoints = (rootComponent, subComponentUUID) => {
 		const oy = _component.oy + _oy
 		if (subComponentUUID === _component.uuid) {
 			// 获取该节点Joints数组
-			joints = _component.value._o.getJoints().map((joint) => {
+			joints = _component.value._o?.getJoints().map((joint) => {
 				const { x, y } = joint.getCoords()
 				return {
 					name: joint.name,
