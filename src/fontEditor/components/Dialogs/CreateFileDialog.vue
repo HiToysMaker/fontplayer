@@ -7,7 +7,7 @@
    */
 
   import { createFileDialogVisible, setCreateFileDialogVisible } from '../../stores/dialogs'
-  import { addCharacterForCurrentFile, addCharacterTemplate, addFile, clearCharacterRenderList, generateCharacterTemplate, setSelectedFileUUID, type IFile } from '../../stores/files'
+  import { addCharacterForCurrentFile, addCharacterTemplate, addFile, clearCharacterRenderList, generateCharacterTemplate, setSelectedFileUUID, selectedFile, type IFile } from '../../stores/files'
   import { setEditStatus, Status } from '../../stores/font'
   import { genUUID } from '../../../utils/string'
   import { ref, type Ref } from 'vue'
@@ -28,7 +28,15 @@
 
   const createFont = async () => {
     //total.value = (glyphs.value.length + stroke_glyphs.value.length + radical_glyphs.value.length + comp_glyphs.value.length) * 2
+    //total.value = 0
+    //loading.value = true
     //loaded.value = 0
+    //setTimeout(() => {
+    //  //loading.value = true
+    //  if (router.currentRoute.value.name === 'welcome') {
+    //    router.push('/editor')
+    //  }
+    //}, 100)
     name_data.value = [
       {
         nameID: 1,
@@ -45,7 +53,7 @@
         platformID: 3,
         encodingID: 1,
         langID: 0x409,
-        value: getEnName(name.value),
+        value: name.value,
         default: true,
       },
       {
@@ -72,7 +80,7 @@
         platformID: 3,
         encodingID: 1,
         langID: 0x804,
-        value: name.value + ' ' + '常规体',
+        value: name.value + ' 常规体',
         default: true,
       },
       {
@@ -81,7 +89,7 @@
         platformID: 3,
         encodingID: 1,
         langID: 0x409,
-        value: getEnName(name.value) + ' ' + 'Regular',
+        value: name.value + ' Regular',
         default: true,
       },
       {
@@ -142,6 +150,47 @@
         }
       }
     }
+    
+    // 添加默认的.notdef字符，放在首位
+    const notdefUUID = genUUID()
+    const notdefCharacter = {
+      uuid: notdefUUID,
+      type: 'text',
+      character: {
+        uuid: genUUID(),
+        text: '.notdef',
+        unicode: '0',
+        components: [],
+      },
+      components: [],
+      groups: [],
+      orderedList: [],
+      selectedComponentsUUIDs: [],
+      view: {
+        zoom: 100,
+        translateX: 0,
+        translateY: 0,
+      },
+      info: {
+        gridSettings: {
+          dx: 0,
+          dy: 0,
+          centerSquareSize: unitsPerEm.value / 3,
+          size: unitsPerEm.value,
+          default: true,
+        },
+        useSkeletonGrid: false,
+        layout: '',
+        layoutTree: [],
+        metrics: {
+          advanceWidth: Math.max(unitsPerEm.value, unitsPerEm.value),
+          lsb: 0,
+        },
+      },
+      script: `function script_${notdefUUID.replaceAll('-', '_')} (character, constants, FP) {\n\t//Todo something\n}`,
+    }
+    file.characterList.push(notdefCharacter)
+    
     addFile(file)
     setSelectedFileUUID(file.uuid)
     setEditStatus(Status.CharacterList)
@@ -172,13 +221,28 @@
     const data = JSON.parse(await res.text())
     const file = data.file
     clearCharacterRenderList()
+    
+    // 保存当前的.notdef字符（如果存在）
+    const notdefCharacter = selectedFile.value.characterList.find(char => char.character.text === '.notdef')
+    
+    // 清空字符列表并重新添加模板字符
+    selectedFile.value.characterList = []
+    
+    // 如果有.notdef字符，先添加到首位
+    if (notdefCharacter) {
+      selectedFile.value.characterList.push(notdefCharacter)
+      addCharacterTemplate(generateCharacterTemplate(notdefCharacter))
+    }
+    
+    // 添加模板中的字符
     for (let i = 0; i < file.characterList.length; i++) {
       loaded.value += 1
-      const character= file.characterList[i]
+      const character = file.characterList[i]
       const characterFile = instanceCharacter(character)
       addCharacterForCurrentFile(characterFile)
       addCharacterTemplate(generateCharacterTemplate(characterFile))
     }
+    
     emitter.emit('renderPreviewCanvas')
     loading.value = false
   }

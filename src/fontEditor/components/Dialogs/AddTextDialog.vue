@@ -41,7 +41,17 @@
       ElMessage(msg)
       return
     }
-    text.value.split('').map((character: string) => {
+    // 过滤掉.notdef字符
+    const characters = text.value.split('').filter((character: string) => character !== '.notdef')
+    
+    if (characters.length !== text.value.split('').length) {
+      ElMessage({
+        message: '不能创建.notdef字符，该字符已自动添加',
+        type: 'warning'
+      })
+    }
+    
+    characters.map((character: string) => {
       const characterComponent = {
         uuid: genUUID(),
         text: character,

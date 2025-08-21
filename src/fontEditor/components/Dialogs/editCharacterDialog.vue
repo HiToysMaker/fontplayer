@@ -42,6 +42,16 @@
       ElMessage(msg)
       return
     }
+    
+    // 检查是否试图将字符重命名为.notdef
+    if (text.value === '.notdef') {
+      ElMessage({
+        message: '不能将字符重命名为.notdef',
+        type: 'warning'
+      })
+      return
+    }
+    
 		const characterComponent = {
 			uuid: genUUID(),
 			text: text.value,

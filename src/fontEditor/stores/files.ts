@@ -1,4 +1,5 @@
 import { gridSettings, loaded, loading, setTool, total } from './global'
+import { ElMessage } from 'element-plus'
 import * as R from 'ramda'
 import { ref, computed, type Ref, reactive, nextTick } from 'vue'
 import localForage from 'localforage'
@@ -1307,6 +1308,17 @@ const editCharacter = async (uuid: string) => {
 // delete character
 const deleteCharacter = (e: MouseEvent, uuid: string) => {
 	e.stopPropagation()
+	
+	// 检查是否为.notdef字符，如果是则不允许删除
+	const character = selectedFile.value.characterList.find(char => char.uuid === uuid)
+	if (character && character.character.text === '.notdef') {
+		ElMessage({
+			message: '.notdef字符不能被删除',
+			type: 'warning'
+		})
+		return
+	}
+	
 	removeCharacterForCurrentFile(uuid)
 	deleteCharacterTemplate(uuid)
 }
@@ -1315,6 +1327,17 @@ const deleteCharacter = (e: MouseEvent, uuid: string) => {
 // rename character
 const renameCharacter = (e: MouseEvent, uuid: string) => {
 	e.stopPropagation()
+	
+	// 检查是否为.notdef字符，如果是则不允许编辑名称
+	const character = selectedFile.value.characterList.find(char => char.uuid === uuid)
+	if (character && character.character.text === '.notdef') {
+		ElMessage({
+			message: '.notdef字符的名称不能被编辑',
+			type: 'warning'
+		})
+		return
+	}
+	
 	editedCharacterUUID.value = uuid
 	setEditCharacterDialogVisible(true)
 }
