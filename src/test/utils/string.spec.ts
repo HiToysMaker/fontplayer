@@ -3,6 +3,6 @@ import { toUnicode } from '@/utils/string'
 
 describe('string util methods', () => {
   it('convert char to unicode correctly', () => {
-		expect(toUnicode('a')).toBe('61')
+		expect(toUnicode('a')).toBe('0061')
 	})
 })

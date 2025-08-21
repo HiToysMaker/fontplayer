@@ -1098,7 +1098,7 @@ const importFont = () => {
     // 批量添加字符模板 - 性能优化
     const batchSize = 500 // 每批处理500个字符
     const templates: Node[] = []
-    
+
     for (let i = 0; i < list.length; i++) {
       templates.push(generateCharacterTemplate(list[i]))
       addLoaded()
@@ -1141,7 +1141,7 @@ const parseFont = async (font) => {
     const characterComponent = {
       uuid: genLightId(), // 使用轻量级ID
       text: character.unicode ? String.fromCharCode(character.unicode) : character.name,
-      unicode: character.unicode ? character.unicode.toString(16) : '',
+      unicode: character.unicode ? character.unicode.toString(16).padStart(4, '0') : '',
     }
     const uuid = genLightId() // 使用轻量级ID
     const characterFile = {
@@ -1612,7 +1612,7 @@ const createFont = async (options?: CreateFontOptions) => {
   if (notdefCharacter) {
     // 使用现有的.notdef字符
     let contours = [[]]
-    if (options && options.remove_overlap && notdefCharacter.overlap_removed_contours) {
+    if (options && options.remove_overlap && notdefCharacter.overlap_removed_contours?.length) {
       contours = notdefCharacter.overlap_removed_contours
     } else {
       contours = componentsToContours(
@@ -1669,7 +1669,10 @@ const createFont = async (options?: CreateFontOptions) => {
     }
     
     let contours = [[]]
-    if (options && options.remove_overlap && char.overlap_removed_contours) {
+    if (char.character.text === '4') {
+      debugger
+    }
+    if (options && options.remove_overlap && char.overlap_removed_contours?.length) {
       contours = char.overlap_removed_contours
     } else {
       contours = componentsToContours(
@@ -1696,6 +1699,9 @@ const createFont = async (options?: CreateFontOptions) => {
       containSpace = true
     }
   }
+
+  console.log('fontCharacters', fontCharacters)
+  debugger
 
   if (!containSpace) {
     fontCharacters.push({

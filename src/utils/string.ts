@@ -48,7 +48,7 @@ const genUUID = () => {
 }
 
 const toUnicode = (character: string) => {
-  return character.charCodeAt(0).toString(16)
+  return character.charCodeAt(0).toString(16).padStart(4, '0')
 }
 
 const toIconUnicode = (count: number) => {
