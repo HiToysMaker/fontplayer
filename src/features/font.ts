@@ -228,6 +228,9 @@ const componentsToContours = (components: Array<_Component>, options: {
 	//-------
 	// forceUpdate = true
 	//-------
+	if (options && !options.advanceWidth) {
+		options.advanceWidth = options.unitsPerEm
+	}
 	const useSkeletonGrid = (options && options.useSkeletonGrid) || false
 	let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = []
 	components.map((component) => {

@@ -1032,33 +1032,6 @@ const importFont = () => {
       })
     })
 
-    // const _characters = []
-
-    // for (let i  = 0; i < font.characters.length; i++) {
-    //   addLoaded()
-    //   if (i % 100 === 0) {
-    //     await new Promise<void>((resolve) => {
-    //       requestAnimationFrame(() => {
-    //         resolve()
-    //       })
-    //     })
-    //   }
-    //   const character = R.clone(font.characters[i])
-    //   if (ASCIICharSet.includes(String.fromCharCode(character.unicode))) {
-    //     console.log('ascii', i, character.name, character.unicode, character)
-    //     _characters.push(character)
-    //   }
-    // }
-    // font.characters = _characters
-
-    // console.log('ascii font.characters', font.characters)
-
-
-    //updateFontSettings({
-    //	unitsPerEm: font.settings.unitsPerEm as number,
-    //	ascender: font.settings.ascender as number,
-    //	descender: font.settings.descender as number,
-    //})
     const file: IFile = {
       uuid: genUUID(),
       width: font.settings.unitsPerEm as number,
@@ -1699,9 +1672,6 @@ const createFont = async (options?: CreateFontOptions) => {
       containSpace = true
     }
   }
-
-  console.log('fontCharacters', fontCharacters)
-  debugger
 
   if (!containSpace) {
     fontCharacters.push({
