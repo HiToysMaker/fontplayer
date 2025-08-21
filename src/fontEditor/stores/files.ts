@@ -1512,12 +1512,14 @@ const addCharactersWithVirtualScroll = (characterList: any[]) => {
 }
 
 const visibleStartIndex = ref(0)
-const visibleEndIndex = ref(200) // 只渲染50个可见字符
+const visibleEndIndex = ref(500) // 增加默认渲染字符数量
+const visibleCount = ref(500) // 增加默认渲染字符数量
 	const itemHeight = 122 // 每个字符项的实际高度：112px(内容) + 10px(gap间距)
 
 export {
 	visibleStartIndex,
 	visibleEndIndex,
+	visibleCount,
 	itemHeight,
 	files,
 	editCharacterFileUUID,
