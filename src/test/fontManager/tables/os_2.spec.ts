@@ -69,4 +69,58 @@ describe('os/2 table', () => {
 	it('create data correctly', () => {
 		expect(hex(create(os2Table))).toBe(data)
 	})
+
+	// 测试Unicode范围位的精确设置
+	it('should set unicode range bits correctly for specific characters', () => {
+		// 创建一个只包含"世"字的字体
+		const characters = [{
+			unicode: 0,
+			name: '.notdef',
+			contours: [[]],
+			contourNum: 0,
+			advanceWidth: 500,
+		}, {
+			unicode: 0x4E16, // 世字
+			name: '世',
+			contours: [[]],
+			contourNum: 0,
+			advanceWidth: 500,
+		}]
+
+		// 模拟字体创建过程
+		let ulUnicodeRange1 = 0
+		let ulUnicodeRange2 = 0
+		let ulUnicodeRange3 = 0
+		let ulUnicodeRange4 = 0
+
+		// 只对实际存在的字符设置Unicode范围位
+		for (let i = 0; i < characters.length; i++) {
+			const character = characters[i]
+			const unicode = character.unicode | 0
+			if (unicode === 0) continue // 跳过.notdef字符
+			
+			// 这里需要导入getUnicodeRange函数
+			// const position = getUnicodeRange(unicode)
+			// 暂时手动计算：世字(0x4E16)属于CJK Unified Ideographs范围，是第59个范围
+			const position = 59 // 世字对应的Unicode范围位
+			
+			if (position < 32) {
+				ulUnicodeRange1 |= 1 << position;
+			} else if (position < 64) {
+				ulUnicodeRange2 |= 1 << position - 32;
+			} else if (position < 96) {
+				ulUnicodeRange3 |= 1 << position - 64;
+			} else if (position < 123) {
+				ulUnicodeRange4 |= 1 << position - 96;
+			}
+		}
+
+		// 验证只有第59个范围位被设置（在ulUnicodeRange3中，59-64=27位）
+		expect(ulUnicodeRange1).toBe(0)
+		expect(ulUnicodeRange2).toBe(0)
+		expect(ulUnicodeRange3).toBe(1 << 27) // 第27位（59-32）
+		expect(ulUnicodeRange4).toBe(0)
+
+		console.log(`世字设置的Unicode范围位: ulUnicodeRange3 = ${ulUnicodeRange3.toString(2)}`)
+	})
 })

@@ -317,7 +317,7 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		xMax: Math.max.apply(null, xMaxs),
 		yMax: Math.max.apply(null, yMaxs),
 		advanceWidthMax: Math.max.apply(null, advanceWidths as Array<number>),
-		advanceWidthAvg: average(advanceWidths as Array<number>),
+		advanceWidthAvg: advanceWidths.reduce((a, b) => a + b, 0) / advanceWidths.length,
 		minLeftSideBearing: Math.min.apply(null, leftSideBearings),
 		maxLeftSideBearing: Math.max.apply(null, leftSideBearings),
 		minRightSideBearing: Math.min.apply(null, rightSideBearings),
@@ -325,6 +325,31 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		descender: options.descender,
 	}
 
+	// 精确设置Unicode范围位，避免设置不包含字符的范围
+	// 重新计算Unicode范围位，只包含实际存在的字符
+	ulUnicodeRange1 = 0
+	ulUnicodeRange2 = 0
+	ulUnicodeRange3 = 0
+	ulUnicodeRange4 = 0
+	
+	// 只对实际存在的字符设置Unicode范围位
+	for (let i = 0; i < characters.length; i++) {
+		const character = characters[i]
+		const unicode = character.unicode | 0
+		if (unicode === 0) continue // 跳过.notdef字符
+		
+		const position = getUnicodeRange(unicode)
+		if (position < 32) {
+			ulUnicodeRange1 |= 1 << position;
+		} else if (position < 64) {
+			ulUnicodeRange2 |= 1 << position - 32;
+		} else if (position < 96) {
+			ulUnicodeRange3 |= 1 << position - 64;
+		} else if (position < 123) {
+			ulUnicodeRange4 |= 1 << position - 96;
+		}
+	}
+	
 	const _headTable = options.tables ? options.tables.head : {}
 	const convertToFlags = (flags: Array<boolean>) => {
 		let _flags = 0
@@ -423,9 +448,9 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		ySubscriptYSize: _os2Table.ySubscriptYSize || 699,
 		ySubscriptXOffset: _os2Table.ySubscriptXOffset || 0,
 		ySubscriptYOffset: _os2Table.ySubscriptYOffset || 140,
-		ySuperscriptXSize: _os2Table.ySuperscriptXOffset || 650,
-		ySuperscriptYSize: _os2Table.ySuperscriptYOffset || 699,
-		ySuperscriptXOffset: _os2Table.ySuperscriptXOffse || 0,
+		ySuperscriptXSize: _os2Table.ySuperscriptXSize || 650,
+		ySuperscriptYSize: _os2Table.ySuperscriptYSize || 699,
+		ySuperscriptXOffset: _os2Table.ySuperscriptXOffset || 0,
 		ySuperscriptYOffset: _os2Table.ySuperscriptYOffset || 479,
 		yStrikeoutSize: _os2Table.yStrikeoutSize || 49,
 		yStrikeoutPosition: _os2Table.yStrikeoutPosition || 258,
