@@ -35,6 +35,7 @@ import {
   orderedListWithItemsForCurrentCharacterFile,
   addCharacterForCurrentFile,
   visibleEndIndex,
+  visibleCount,
 } from '../stores/files'
 import { base, canvas, fontRenderStyle, loaded, loadingMsg, tips, total, setTool, ASCIICharSet, width } from '../stores/global'
 import { saveAs } from 'file-saver'
@@ -639,17 +640,12 @@ const addLoaded = () => {
 }
 
 const __openFile = async (data) => {
-  total.value = data.file.characterList.length * 1 + visibleEndIndex.value + (data.glyphs.length + data.stroke_glyphs.length + data.radical_glyphs.length + data.comp_glyphs.length) * 3
+  total.value = data.file.characterList.length * 1 + visibleCount.value + (data.glyphs.length + data.stroke_glyphs.length + data.radical_glyphs.length + data.comp_glyphs.length) * 3
   loaded.value = 0
   loading.value = true
 
   // 处理字形数据的异步函数
   const processGlyphs = async (plainGlyphs, status) => {
-    plainGlyphs.map(async (plainGlyph) => {
-      const script_res = await fetch(`/public/templates/templates2/${plainGlyph.name}.js`)
-      const script_text = await script_res.text()
-      plainGlyph.script = `function script_${plainGlyph.uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t${script_text}\n}`
-    })
     return new Promise<void>((resolve) => {
       const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
         updateContoursAndPreview: true,
@@ -1029,7 +1025,7 @@ const importFont = () => {
     const font = parse(await buffer)
 
     loaded.value = 0
-    total.value = font.characters.length * 2 + visibleEndIndex.value
+    total.value = font.characters.length * 2 + visibleCount.value
     loading.value = true
     await new Promise<void>((resolve) => {
       requestAnimationFrame(() => {
@@ -2199,7 +2195,7 @@ const _syncData = async () => {
   }
 
   loaded.value = 0
-  total.value = file ? file.characterList.length * 1 + visibleEndIndex.value : 0 + (plainGlyphs.length + plainGlyphs_stroke.length + plainGlyphs_radical.length + plainGlyphs_comp.length) * 3
+  total.value = file ? file.characterList.length * 1 + visibleCount.value : 0 + (plainGlyphs.length + plainGlyphs_stroke.length + plainGlyphs_radical.length + plainGlyphs_comp.length) * 3
   if (total.value === 0) {
     const { locale } = i18n.global
     if (locale === 'zh') {

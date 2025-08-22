@@ -139,7 +139,6 @@
 		
 		// 只渲染可见区域的字符
 		for (let i = visibleStartIndex.value; i < Math.min(visibleEndIndex.value, characters.length); i++) {
-			addLoaded()
 			const characterFile = characters[i]
 			const cacheKey = `${characterFile.uuid}_${characterFile._o ? 'rendered' : 'pending'}`
 			
@@ -196,6 +195,7 @@
 			const maxProcessingTime = 5000 // 最大处理时间5秒
 			
 			while (renderQueue.length > 0 && errorCount < maxErrors) {
+				addLoaded()
 				// 检查是否超时
 				if (Date.now() - startTime > maxProcessingTime) {
 					console.log(`渲染队列处理超时，强制退出`)
@@ -210,7 +210,7 @@
 					continue
 				}
 				
-				console.log(`正在渲染队列中的字符: UUID: ${characterFileIndex}-${uuid}, 字符: ${characterFile.character.text}`)
+				// console.log(`正在渲染队列中的字符: UUID: ${characterFileIndex}-${uuid}, 字符: ${characterFile.character.text}`)
 				
 				// 使用canvas池获取canvas
 				const canvas = getCanvas(uuid)
@@ -233,7 +233,7 @@
 						continue
 					}
 					
-					console.log(`开始渲染字符 ${uuid}，orderedList长度: ${characterFile.orderedList.length}`)
+					// console.log(`开始渲染字符 ${uuid}，orderedList长度: ${characterFile.orderedList.length}`)
 					
 					// 渲染字符
 					const contours = componentsToContours(orderedListWithItemsForCharacterFile(characterFile), {
@@ -242,7 +242,7 @@
 						advanceWidth: unitsPerEm,
 					}, { x: 0, y: 0 }, false, true)
 
-					console.log(`字符 ${uuid} 生成轮廓数量: ${contours.length}`)
+					// console.log(`字符 ${uuid} 生成轮廓数量: ${contours.length}`)
 					
 					renderPreview2(canvas, contours)
 					renderCache.set(`${uuid}_rendered`, true)
@@ -579,7 +579,7 @@
 			// 添加到渲染队列
 			renderQueue.push(characterFile.uuid)
 			queuedCount++
-			console.log(`添加字符到渲染队列: 索引${i}, UUID: ${characterFile.uuid}, 字符: ${characterFile.character.text}`)
+			// console.log(`添加字符到渲染队列: 索引${i}, UUID: ${characterFile.uuid}, 字符: ${characterFile.character.text}`)
 		}
 		
 		console.log(`添加了 ${queuedCount} 个到渲染队列`)
