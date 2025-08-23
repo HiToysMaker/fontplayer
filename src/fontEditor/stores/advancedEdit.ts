@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { orderedListWithItemsForCharacterFile, selectedFile } from './files'
+import { orderedListWithItemsForCharacterFile, selectedFile, visibleCount } from './files'
 import * as R from 'ramda'
 import { renderPreview2 } from '../canvas/canvas'
 import { componentsToContours } from '../../features/font'
@@ -99,7 +99,7 @@ const updateCharactersAndPreview = () => {
 }
 
 const updateCharactersList = () => {
-  total.value = selectedFile.value.characterList.length * 2
+  total.value = selectedFile.value.characterList.length + visibleCount.value
   loaded.value = 0
   loading.value = true
   globalConstants.value = R.clone(constants.value)

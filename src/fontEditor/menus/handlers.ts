@@ -798,6 +798,7 @@ const __openFile = async (data) => {
       router.push('/editor')
     } else {
       clearCharacterRenderList()
+
       characterList.value.map((characterFile) => {
         addCharacterTemplate(generateCharacterTemplate(characterFile))
       })
@@ -808,7 +809,14 @@ const __openFile = async (data) => {
 
 const openFile = async () => {
   if (ENV.value === 'tauri') {
-    openFile_tauri()
+    if (router.currentRoute.value.name === 'welcome') {
+      router.push('/editor')
+      // 等待路由跳转和页面渲染完成
+      await nextTick()
+      // 再等待一个渲染周期确保页面完全加载
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    await openFile_tauri()
     return
   }
   if (files.value && files.value.length) {
@@ -817,6 +825,10 @@ const openFile = async () => {
   } else {
     if (router.currentRoute.value.name === 'welcome') {
       router.push('/editor')
+      // 等待路由跳转和页面渲染完成
+      await nextTick()
+      // 再等待一个渲染周期确保页面完全加载
+      await new Promise(resolve => setTimeout(resolve, 100))
     }
     await _openFile()
   }
@@ -1066,6 +1078,7 @@ const importFont = () => {
     // worker.postMessage([WorkerEventType.ParseFont, font, selectedFile.value.width])
 
     const list = await parseFont(font)
+
     selectedFile.value.characterList = list
     clearCharacterRenderList()
     
