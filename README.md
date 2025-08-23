@@ -1,5 +1,5 @@
 
-![GitHub Repo stars](https://img.shields.io/github/stars/HiToysmaker/fontpaleyer?style=for-the-badge?logoWidth=40&labelWidth=100)
+![GitHub Repo stars](https://img.shields.io/github/stars/HiToysmaker/fontplayer?style=for-the-badge?logoWidth=40&labelWidth=100)
 ![GitHub forks](https://img.shields.io/github/forks/HiToysmaker/fontplayer?style=for-the-badge?logoWidth=40&labelWidth=100)
 ![Gitee stars](https://gitee.com/toysmaker/fontplayer/badge/star.svg?theme=white)
 ![Gitee forks](https://gitee.com/toysmaker/fontplayer/badge/fork.svg?theme=white)
