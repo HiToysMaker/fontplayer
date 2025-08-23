@@ -1,8 +1,8 @@
 
-![GitHub Repo stars](https://img.shields.io/github/stars/HiToysmaker/fontplayer?style=for-the-badge?logoWidth=40&labelWidth=100)
-![GitHub forks](https://img.shields.io/github/forks/HiToysmaker/fontplayer?style=for-the-badge?logoWidth=40&labelWidth=100)
-![Gitee stars](https://gitee.com/toysmaker/fontplayer/badge/star.svg?theme=white)
-![Gitee forks](https://gitee.com/toysmaker/fontplayer/badge/fork.svg?theme=white)
+![![GitHub stars](https://github.com/HiToysMaker/fontplayer)](https://img.shields.io/github/stars/HiToysmaker/fontplayer?style=for-the-badge?logoWidth=40&labelWidth=100)
+![![GitHub forks](https://github.com/HiToysMaker/fontplayer)](https://img.shields.io/github/forks/HiToysmaker/fontplayer?style=for-the-badge?logoWidth=40&labelWidth=100)
+![![Gitee stars](https://gitee.com/toysmaker/fontplayer)](https://gitee.com/toysmaker/fontplayer/badge/star.svg?theme=white)
+![![Gitee forks](https://gitee.com/toysmaker/fontplayer)](https://gitee.com/toysmaker/fontplayer/badge/fork.svg?theme=white)
 
 # 字玩FontPlayer
 一款开源的字体设计工具。
