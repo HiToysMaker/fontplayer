@@ -1,13 +1,13 @@
+
+![GitHub Repo stars](https://img.shields.io/github/stars/HiToysmaker/fontpaleyer?style=for-the-badge?logoWidth=40&labelWidth=100)
+![GitHub forks](https://img.shields.io/github/forks/HiToysmaker/fontplayer?style=for-the-badge?logoWidth=40&labelWidth=100)
+![Gitee stars](https://gitee.com/toysmaker/fontplayer/badge/star.svg?theme=white)
+![Gitee forks](https://gitee.com/toysmaker/fontplayer/badge/fork.svg?theme=white)
+
 # 字玩FontPlayer
 一款开源的字体设计工具。
 
 使用Vue3 + ElementUI + Tauri2开发，支持Web端、MacOS和Windows平台。
-
-字玩在Github: ![GitHub Repo stars](https://img.shields.io/github/stars/HiToysmaker/fontpaleyer?style=for-the-badge?logoWidth=40&labelWidth=100)
-![GitHub forks](https://img.shields.io/github/forks/HiToysmaker/fontplayer?style=for-the-badge?logoWidth=40&labelWidth=100)
-
-字玩在Gitee: ![Gitee stars](https://gitee.com/toysmaker/fontplayer/badge/star.svg?theme=white)
-![Gitee forks](https://gitee.com/toysmaker/fontplayer/badge/fork.svg?theme=white)
 
 官网：https://www.font-player.com
 
