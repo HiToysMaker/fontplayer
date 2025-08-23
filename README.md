@@ -57,7 +57,7 @@ npx tauri build
 
 ### 使用指南
 #### 笔画模板与字形组装
-字玩以骨架+风格的思路抽象出可调参的笔画设计。目前内置了一套黑体风格的笔画模板，具体设计思路可以阅读![https://my.oschina.net/u/8675090/blog/18348928]《使用程序绘制中文字体 —— 中文字体的参数化设计方案初探》。之后字玩会丰富笔画模板库，提供更多参数化笔画模板。
+字玩以骨架+风格的思路抽象出可调参的笔画设计。目前内置了一套黑体风格的笔画模板，具体设计思路可以阅读![《使用程序绘制中文字体 —— 中文字体的参数化设计方案初探》](https://my.oschina.net/u/8675090/blog/18348928)。之后字玩会丰富笔画模板库，提供更多参数化笔画模板。
 
 用户可以通过拖拽骨架的方式，将笔画组装成字形。经过实践，用32个可调参笔画已经可以拟合出思源黑体中7000个常用汉字，这意味着用32个笔画可以组装成任意汉字字形。
 
@@ -82,9 +82,9 @@ npx tauri build
 在高级编辑界面，您可以批量修改字库风格。由于批量处理一小段时间，您可以选择20个以内样例字符作为调参所见即所得的预览，调整好参数后再一键应用到7000个字符上。
 
 #### 使用脚本绘制字形组件
-您可以使用脚本绘制任意形状的可调参字形组件，并在字符编辑中调用这些字形组件。具体教程和API参见：![https://www.font-player.com/Advanced/programming/](字玩脚本教程)
+您可以使用脚本绘制任意形状的可调参字形组件，并在字符编辑中调用这些字形组件。具体教程和API参见：![字玩脚本教程](https://www.font-player.com/Advanced/programming/)
 
-您也可以参考字玩提供的模板脚本进行修改：![https://gitee.com/toysmaker/fontplayer/tree/main/public/templates/templates2](笔画模板在gitee) | ![](笔画模板在github)
+您也可以参考字玩提供的模板脚本进行修改：![笔画模板在gitee](https://gitee.com/toysmaker/fontplayer/tree/main/public/templates/templates2) | ![笔画模板在github](https://github.com/toysmaker/fontplayer/tree/main/public/templates/templates2)
 
 ### 致谢
 1. opentypes.js: https://github.com/opentypejs/opentype.js
