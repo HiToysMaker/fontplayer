@@ -254,7 +254,6 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 			loading.value = false
 			loaded.value = 0
 			total.value = 0
-			return
 		}
 		const character = characters[m]
 		const unicode = character.unicode | 0
@@ -301,14 +300,13 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		// 检查是否还有更多字符需要处理
 		if (m < characters.length) {
 			if (m % 100 === 0) {
-			// 每100个字符后，给UI更多时间更新
-			await new Promise(resolve => setTimeout(resolve, 0))
+				// 每100个字符后，给UI更多时间更新
+				await new Promise(resolve => setTimeout(resolve, 0))
 			}
 			// 继续处理下一个字符
 			return compute()
 		}
 	}
-
 	await compute()
 
 	const globals = {

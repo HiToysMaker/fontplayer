@@ -2504,21 +2504,16 @@ const create = async(_table: ICffTable) => {
 	for (let start = 0; start < totalGlyphs; start += batchSize) {
 		const end = Math.min(start + batchSize, totalGlyphs);
 		for (let i = start; i < end; i++) {
-			loaded.value++;
-			if (loaded.value >= total.value) {
-				// loading.value = false;
-				// loaded.value = 0;
-				// total.value = 0;
-			}
-			const glyph = glyphTables[i];
-			const ops = glyphToOps(glyph);
-			charStringsIndexRawData.push({ type: 'CharString', value: ops });
+			loaded.value++
+			const glyph = glyphTables[i]
+			const ops = glyphToOps(glyph)
+			charStringsIndexRawData.push({ type: 'CharString', value: ops })
 		}
 		// 让出事件循环，更新进度条
-		await new Promise(resolve => setTimeout(resolve, 0));
+		await new Promise(resolve => setTimeout(resolve, 0))
 	}
 	// 全部 glyph 已收集，安全创建索引
-	const charStringsIndexData = createIndex(charStringsIndexRawData);
+	const charStringsIndexData = createIndex(charStringsIndexRawData)
 
 	const _fd: any = {
 		private: [0, 0],
