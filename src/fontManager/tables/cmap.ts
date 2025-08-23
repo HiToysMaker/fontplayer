@@ -465,10 +465,6 @@ const createTable = (characters: Array<ICharacter>) => {
 		}
 	}
 	
-	// 特别处理中文单引号，确保它映射到.notdef字符
-	// 即使OS/2表设置了第59个Unicode范围位，我们也要确保cmap表中中文单引号明确映射到.notdef
-	glyphIndexMap4[0xFF07] = 0 // 中文单引号明确映射到.notdef字符
-	
 	if (!isPlan0Only) {
 		cmapTable.encodingRecords[cmapTable.encodingRecords.length - 1].subTable.groups = groups
 		cmapTable.encodingRecords[cmapTable.encodingRecords.length - 1].subTable.glyphIndexMap = glyphIndexMap12
