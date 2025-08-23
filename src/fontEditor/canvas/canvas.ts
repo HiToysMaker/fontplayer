@@ -474,7 +474,7 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
   components.map((component, index) => {
 		// 如果组件不可见则跳过
 		// skip if in-visible
-    if (!component || component.visible === null || component.visible === undefined || !component.visible) {
+    if (!component.visible) {
       return
     }
 
@@ -494,7 +494,6 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
         closePath,
       } = component.value as unknown as IPenComponent
       ctx.strokeStyle = strokeColor || '#000'
-      ctx.lineWidth = getStrokeWidth()
       ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
       if (fillColor === 'none') {
         ctx.fillStyle = 'rgba(0, 0, 0, 0)'
@@ -542,7 +541,6 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
         closePath,
       } = component.value as unknown as IPolygonComponent
       ctx.strokeStyle = strokeColor || '#000'
-      ctx.lineWidth = getStrokeWidth()
       ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
       let _points = transformPoints(points, {
         x, y, w, h, rotation, flipX, flipY,
@@ -554,13 +552,130 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
           y: y * scale,
         })
       })
-      ctx.moveTo(_points[0].x, _points[0].y)
+      // ctx.translate(mapCanvasX(options.offset.x), mapCanvasY(options.offset.y))
+      // ctx.translate(_x + _w / 2, _y + _h / 2)
+      // ctx.rotate(rotation * Math.PI / 180)
+      // ctx.translate(-(_x + _w / 2), -(_y + _h / 2))
+      ctx.beginPath()
+			ctx.moveTo(_points[0].x, _points[0].y)
       for (let i = 1; i < _points.length; i ++) {
         ctx.lineTo(_points[i].x, _points[i].y)
       }
+      // if (closePath && fillColor) {
+      //   ctx.fill()
+      // }
       ctx.stroke()
       ctx.closePath()
       ctx.setTransform(1, 0, 0, 1, 0, 0)
+    }
+
+		// 渲染椭圆组件
+		// render ellipse component
+    if (component.type === 'ellipse') {
+      if (useSkeletonGrid) return
+      const { x, y, w, h, rotation } = component as IComponent
+      const radiusX = w / 2
+      const radiusY = h / 2
+      const ellipseX = x
+      const ellipseY = y
+      let points = getEllipsePoints(
+        radiusX,
+        radiusY,
+        1000,
+        ellipseX + radiusX,
+        ellipseY + radiusY,
+      )
+      let _points = transformPoints(points, {
+        x, y, w, h, rotation, flipX: false, flipY: false,
+      })
+      _points = _points.map((point: IPoint) => {
+        const { x, y } = computeCoords(grid, translate(point))
+        return mapCanvasCoords({
+          x: x * scale,
+          y: y * scale,
+        })
+      })
+      const {
+        strokeColor,
+        fillColor,
+        closePath,
+      } = component.value as unknown as IEllipseComponent
+      ctx.beginPath()
+			ctx.moveTo(_points[0].x, _points[0].y)
+      for (let i = 1; i < _points.length; i ++) {
+        ctx.lineTo(_points[i].x, _points[i].y)
+      }
+      ctx.lineTo(_points[0].x, _points[0].y)
+      ctx.stroke()
+      ctx.closePath()
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+    }
+
+		// 渲染长方形组件
+		// render rectangle component
+    if (component.type === 'rectangle') {
+      if (useSkeletonGrid) return
+      const { x, y, w, h, rotation } = component as IComponent
+      const points = getRectanglePoints(
+        w,
+        h,
+        x,
+        y,
+      )
+      let _points = transformPoints(points, {
+        x, y, w, h, rotation, flipX: false, flipY: false,
+      })
+      _points = _points.map((point: IPoint) => {
+        const { x, y } = computeCoords(grid, translate(point))
+        return mapCanvasCoords({
+          x: x * scale,
+          y: y * scale,
+        })
+      })
+      const scale = options.scale
+      const {
+        strokeColor,
+        fillColor,
+        closePath,
+      } = component.value as unknown as IRectangleComponent
+      ctx.strokeStyle = strokeColor || '#000'
+      ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
+      ctx.translate(mapCanvasX(options.offset.x) * scale, mapCanvasY(options.offset.y) * scale)
+      ctx.beginPath()
+			ctx.moveTo(_points[0].x, _points[0].y)
+      for (let i = 1; i < _points.length; i ++) {
+        ctx.lineTo(_points[i].x, _points[i].y)
+      }
+      ctx.lineTo(_points[0].x, _points[0].y)
+      ctx.stroke()
+      ctx.closePath()
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+    }
+
+    // 渲染字形组件
+		// render glyph component
+    if (component.type === 'glyph') {
+      if (
+        !(component.value as unknown as ICustomGlyph)._o ||
+        !(component.value as unknown as ICustomGlyph)._o.components ||
+        !(component.value as unknown as ICustomGlyph)._o.components.length ||
+        options.forceUpdate
+      ) {
+        executeScript(component.value as unknown as ICustomGlyph)
+      }
+			//executeScript(component.value as unknown as ICustomGlyph)
+			const glyph = (component.value as unknown as ICustomGlyph)._o ? (component.value as unknown as ICustomGlyph)._o : new CustomGlyph((component.value as unknown as ICustomGlyph))
+      if (options.forceUpdate) {
+        glyph.render_grid_forceUpdate(canvas, true, {
+          x: options.offset.x + (component as IGlyphComponent).ox,
+          y: options.offset.y + (component as IGlyphComponent).oy,
+        }, false, scale, grid, useSkeletonGrid)
+      } else {
+        glyph.render_grid(canvas, true, {
+          x: options.offset.x + (component as IGlyphComponent).ox,
+          y: options.offset.y + (component as IGlyphComponent).oy,
+        }, false, scale, grid, useSkeletonGrid)
+      }
     }
   })
   ctx.closePath()

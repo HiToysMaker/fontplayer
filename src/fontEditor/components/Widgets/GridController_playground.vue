@@ -178,6 +178,8 @@
 
   emitter.on('refreshPlaygroundGridController', () => {
     render()
+		console.log(orderedListWithItemsForCurrentCharacterFile.value)
+		debugger
 		renderGridCanvas(orderedListWithItemsForCurrentCharacterFile.value, canvas.value as unknown as HTMLCanvasElement, {
 			scale: 0.5,
 			forceUpdate: false,
@@ -193,7 +195,7 @@
 				y1: y1.value,
 				y2: y2.value,
 			},
-			useSkeletonGrid: true,
+			useSkeletonGrid: false,
 		})
   })
 
