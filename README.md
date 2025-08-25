@@ -80,9 +80,9 @@ npx tauri build
 - 模板工程中数字、字母、符号暂时直接思源黑体的字形，之后会逐步替换成参数化的设计
 
 模板工程单独于字玩项目以SIL OPEN FONT LICENSE开源，您可以在发行版中下载模板工程：
-- gitee release: https://gitee.com/toysmaker/fontplayer/releases
-- github release: https://github.com/HiToysMaker/fontplayer/releases
-- 文件名：字玩标准黑体模板工程.zip
+- gitee release: 
+地址: https://gitee.com/toysmaker/fontplayer/releases | 文件名：字玩标准模板工程.zip
+- github release: https://github.com/HiToysMaker/fontplayer/releases | 文件名：template.zip
 - 使用方法：解压后使用字玩“打开工程”选项打开模板工程json文件
 
 您可以：
