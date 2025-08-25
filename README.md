@@ -19,6 +19,11 @@ gitee release: https://gitee.com/toysmaker/fontplayer/releases
 
 github release: https://github.com/HiToysMaker/fontplayer/releases
 
+桌面版包含：
+Windows: fontplayer_${version}_x64-setup.exe
+MacOS Intel芯片：fontplayer_${version}_x64.dmg
+MacOS Apple芯片：fontplayer_${version}_aarch64.dmg
+
 ### 字玩的理念
 字玩致力于探索以参数化、脚本化的方式设计中文字库，帮助用户高效设计个性化字体。
 
@@ -74,11 +79,16 @@ npx tauri build
 - 模板工程中字体结构重度参考思源黑体，特别向思源黑体致谢
 - 模板工程中数字、字母、符号暂时直接思源黑体的字形，之后会逐步替换成参数化的设计
 
-模板工程单独于字玩项目以SIL协议开源，您可以在发行版中下载模板工程：
+模板工程单独于字玩项目以SIL OPEN FONT LICENSE开源，您可以在发行版中下载模板工程：
+gitee release: https://gitee.com/toysmaker/fontplayer/releases
+github release: https://github.com/HiToysMaker/fontplayer/releases
+文件名：字玩标准黑体模板工程.zip
+使用方法：解压后使用字玩“打开工程”选项打开模板工程json文件
+
 
 您可以：
   1. 将使用模板工程生成的字库用于个人或企业的设计作品中，无需声明模板作者字玩，并且允许商用
-  2. 以SIL开源协议分享您通过模板工程制作的字库或您修改的模板
+  2. 以SIL OPEN FONT LICENSE开源协议分享您通过模板工程制作的字库或您修改的模板
 
 您不能：
 直接售卖独创性不够的基于模板生成的字库
