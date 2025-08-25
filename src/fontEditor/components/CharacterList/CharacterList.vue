@@ -868,19 +868,11 @@
 		if (containerRef.value) {
 			// 查找el-scrollbar内部的滚动容器
 			const scrollContainer = containerRef.value.closest('.el-scrollbar')?.querySelector('.el-scrollbar__wrap')
-			console.log('滚动容器查找结果:', {
-				containerRef: containerRef.value,
-				scrollContainer: scrollContainer,
-				closestElScrollbar: containerRef.value.closest('.el-scrollbar'),
-				elScrollbarWrap: containerRef.value.closest('.el-scrollbar')?.querySelector('.el-scrollbar__wrap')
-			})
 			if (scrollContainer) {
 				scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
-				console.log('滚动事件监听器已绑定到:', scrollContainer)
 			} else {
 				// 如果找不到，回退到原来的方式
 				containerRef.value.addEventListener('scroll', handleScroll, { passive: true })
-				console.log('滚动事件监听器已绑定到:', containerRef.value)
 			}
 		}
 		

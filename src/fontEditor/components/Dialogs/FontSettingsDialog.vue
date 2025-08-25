@@ -30,6 +30,25 @@
   watch([() => selectedFile.value?.name, () => selectedFile.value?.fontSettings], () => {
     if (!selectedFile.value) return
     name.value = selectedFile.value.name
+    let subFamily = '常规体'
+    let subFamilyEn = 'Regular'
+    if (selectedFile.value.fontSettings?.tables?.name) {
+      selectedFile.value.fontSettings?.tables?.name.map((record) => {
+        if (record.nameID === 1 && record.langID === 0x804) {
+          record.value = name.value
+        } else if (record.nameID === 1 && record.langID === 0x409) {
+          record.value = getEnName(name.value)
+        } else if (record.nameID === 4 && record.langID === 0x804) {
+          record.value = name.value + ' ' + subFamily
+        } else if (record.nameID === 4 && record.langID === 0x409) {
+          record.value = getEnName(name.value) + ' ' + subFamilyEn
+        } else if (record.nameID === 6 && record.langID === 0x804) {
+          record.value = (getEnName(name.value) + '-' + subFamilyEn).replace(/\s/g, '').slice(0, 63)
+        } else if (record.nameID === 6 && record.langID === 0x409) {
+          record.value = (getEnName(name.value) + '-' + subFamilyEn).replace(/\s/g, '').slice(0, 63)
+        }
+      })
+    }
     unitsPerEm.value = selectedFile.value.fontSettings.unitsPerEm
     ascender.value = selectedFile.value.fontSettings.ascender
     descender.value = selectedFile.value.fontSettings.descender
