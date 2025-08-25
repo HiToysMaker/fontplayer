@@ -9,7 +9,7 @@ import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  //base: '/fontplayer_demo/',
+  // base: '/fontplayer_demo/',
   plugins: [
     vue(),
     visualizer({
