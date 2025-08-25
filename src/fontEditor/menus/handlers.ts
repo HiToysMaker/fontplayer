@@ -1656,9 +1656,6 @@ const createFont = async (options?: CreateFontOptions) => {
     }
     
     let contours = [[]]
-    if (char.character.text === '4') {
-      debugger
-    }
     if (options && options.remove_overlap && char.overlap_removed_contours?.length) {
       contours = char.overlap_removed_contours
     } else {
