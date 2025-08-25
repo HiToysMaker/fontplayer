@@ -4,7 +4,7 @@ import { PolygonComponent } from './PolygonComponent'
 import { EllipseComponent } from './EllipseComponent'
 import { RectangleComponent } from './RectangleComponent'
 import { clearCanvas, computeCoords, fillBackground, renderCanvas, renderGridCanvas } from '../canvas/canvas'
-import { fontRenderStyle, background, grid } from '../stores/global'
+import { fontRenderStyle, background, grid, getStrokeWidth } from '../stores/global'
 import { Joint } from './Joint'
 import { mapCanvasX, mapCanvasY } from '../../utils/canvas'
 
@@ -208,6 +208,7 @@ class CustomGlyph {
 				const p1 = this.getJoint(refline.start).getCoords()
 				const p2 = this.getJoint(refline.end).getCoords()
 				ctx.strokeStyle = refline.type === 'ref' ? 'red' : 'blue'
+				ctx.lineWidth = getStrokeWidth()
 				ctx.beginPath()
 				ctx.moveTo(mapCanvasX(p1.x), mapCanvasY(p1.y))
 				ctx.lineTo(mapCanvasX(p2.x), mapCanvasY(p2.y))
@@ -220,6 +221,7 @@ class CustomGlyph {
 					const p1 = this.getJoint(refline.start).getCoords()
 					const p2 = this.getJoint(refline.end).getCoords()
 					ctx.strokeStyle = refline.type === 'ref' ? 'red' : 'blue'
+					ctx.lineWidth = getStrokeWidth()
 					ctx.beginPath()
 					ctx.moveTo(mapCanvasX(p1.x), mapCanvasY(p1.y))
 					ctx.lineTo(mapCanvasX(p2.x), mapCanvasY(p2.y))

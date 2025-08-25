@@ -1,6 +1,7 @@
 import { mapCanvasX, mapCanvasY } from '../../utils/canvas'
 import { IGlyphComponent, IJoint, executeScript } from '../stores/glyph'
 import { genUUID } from '../../utils/string'
+import { getStrokeWidth } from '../stores/global'
 
 interface IPoint {
 	x: number;
@@ -84,6 +85,7 @@ const renderRefLine = (canvas, refline) => {
 	const p1 = refline.start
 	const p2 = refline.end
 	ctx.strokeStyle = refline.type === 'ref' ? 'red' : 'blue'
+	ctx.lineWidth = getStrokeWidth()
 	ctx.beginPath()
 	ctx.moveTo(mapCanvasX(p1.x), mapCanvasY(p1.y))
 	ctx.lineTo(mapCanvasX(p2.x), mapCanvasY(p2.y))
@@ -94,7 +96,7 @@ const renderJoints = (rootComponent, canvas) => {
 	const traverse = (_component, _ox, _oy) => {
 		const ox = _component.ox + _ox
 		const oy = _component.oy + _oy
-		_component.value._o.getJoints().map((joint) => {
+		_component.value._o?.getJoints().map((joint) => {
 			const { x, y } = joint.getCoords()
 			renderJoint(canvas, {
 				x: x + ox,
@@ -114,7 +116,7 @@ const renderRefLines = (rootComponent, canvas) => {
 	const traverse = (_component, _ox, _oy) => {
 		const ox = _component.ox + _ox
 		const oy = _component.oy + _oy
-		_component.value._o.getRefLines().map((_refline) => {
+		_component.value._o?.getRefLines().map((_refline) => {
 			const start = _component.value._o.getJoint(_refline.start)
 			const end = _component.value._o.getJoint(_refline.end)
 			const refline = {
@@ -146,7 +148,7 @@ const getJoints = (rootComponent, subComponentUUID) => {
 		const oy = _component.oy + _oy
 		if (subComponentUUID === _component.uuid) {
 			// 获取该节点Joints数组
-			joints = _component.value._o.getJoints().map((joint) => {
+			joints = _component.value._o?.getJoints().map((joint) => {
 				const { x, y } = joint.getCoords()
 				return {
 					name: joint.name,

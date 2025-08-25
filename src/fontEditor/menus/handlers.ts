@@ -30,14 +30,17 @@ import {
   characterList,
   generateCharacterTemplate,
   addCharacterTemplate,
+  batchAddCharacterTemplates,
   orderedListWithItemsForCharacterFile,
   orderedListWithItemsForCurrentCharacterFile,
   addCharacterForCurrentFile,
+  visibleEndIndex,
+  visibleCount,
 } from '../stores/files'
-import { base, canvas, fontRenderStyle, loaded, tips, total } from '../stores/global'
+import { base, canvas, fontRenderStyle, loaded, loadingMsg, tips, total, setTool, ASCIICharSet, width } from '../stores/global'
 import { saveAs } from 'file-saver'
 import * as R from 'ramda'
-import { genUUID, toUnicode } from '../../utils/string'
+import { genUUID, toUnicode, resetLightIdCounter, genLightId } from '../../utils/string'
 import localForage from 'localforage'
 import { ElMessageBox, ElNotification } from 'element-plus'
 import { h } from 'vue'
@@ -52,6 +55,8 @@ import type {
 import {
   componentsToContours,
   componentsToContours2,
+  formatPoints,
+  contoursToComponents,
 } from '../../features/font'
 import { emitter } from '../Event/bus'
 import {
@@ -85,8 +90,10 @@ import { loading } from '../stores/global'
 import { worker } from '../../main'
 import { WorkerEventType } from '../worker'
 import { CustomGlyph } from '../programming/CustomGlyph'
+import { Character } from '../programming/Character'
 import paper from 'paper'
 import { genPenComponent } from '../tools/pen'
+import { removeOverlapWithWasm } from '../../utils/overlap-remover'
 import { save, open } from '@tauri-apps/plugin-dialog'
 import { writeTextFile, writeFile, readFile, readTextFile } from '@tauri-apps/plugin-fs'
 import { ENV } from '../stores/system'
@@ -108,6 +115,15 @@ const plainGlyph = (glyph: ICustomGlyph, options: IPlainGlyphOptions = { clearSc
     name: glyph.name,
     components: glyph.components.map((component) => {
       const _component = Object.assign({}, component)
+
+      // 清除轮廓和预览数据，减少数据大小
+      if ((_component.value as unknown as IPenComponent).contour) {
+        (_component.value as unknown as IPenComponent).contour = null
+      }
+      if ((_component.value as unknown as IPenComponent).preview) {
+        (_component.value as unknown as IPenComponent).preview = null
+      }
+
       if (component.type === 'glyph') {
         //@ts-ignore
         //_component.value = plainGlyph(component.value)
@@ -182,6 +198,16 @@ const plainGlyph = (glyph: ICustomGlyph, options: IPlainGlyphOptions = { clearSc
 
   if (glyph._o) {
     data.objData = glyph._o.getData()
+
+    // 清除轮廓和预览数据，减少数据大小
+    data.objData._components.map((_component) => {
+      if (_component.contour) {
+        _component.contour = null
+      }
+      if (_component.preview) {
+        _component.preview = null
+      }
+    })
   }
 
   ////---------
@@ -247,10 +273,32 @@ const mapToObject = (map) => {
 //	return data
 //}
 
-const plainFile = (file: IFile) => {
+const plainFile = async (file: IFile) => {
+  const characterList: any[] = []
+  
+  // 分批处理 characterList
+  const processCharacters = async (characters: any[]) => {
+    const batchSize = 100
+    for (let i = 0; i < characters.length; i += batchSize) {
+      const batch = characters.slice(i, i + batchSize)
+      
+      // 使用 Promise 和 requestAnimationFrame 处理每一批
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          batch.forEach((character) => {
+            characterList.push(plainCharacter(character))
+          })
+          resolve()
+        })
+      })
+    }
+  }
+  
+  await processCharacters(file.characterList)
+  
   return {
     uuid: file.uuid,
-    characterList: file.characterList.map((character) => plainCharacter(character)),
+    characterList,
     name: file.name,
     width: file.width,
     height: file.height,
@@ -261,12 +309,22 @@ const plainFile = (file: IFile) => {
 }
 
 const plainCharacter = (character: ICharacterFile) => {
+  addLoaded()
   const data = {
     uuid: character.uuid,
     type: character.type,
     character: R.clone(character.character),
     components: character.components.map((component) => {
       const _component = Object.assign({}, component)
+
+      // 清除轮廓和预览数据，减少数据大小
+      if ((_component.value as unknown as IPenComponent).contour) {
+        (_component.value as unknown as IPenComponent).contour = null
+      }
+      if ((_component.value as unknown as IPenComponent).preview) {
+        (_component.value as unknown as IPenComponent).preview = null
+      }
+
       if (component.type === 'glyph') {
         //@ts-ignore
         //_component.value = plainGlyph(component.value)
@@ -294,7 +352,7 @@ const plainCharacter = (character: ICharacterFile) => {
   return data
 }
 
-const instanceGlyph = (plainGlyph) => {
+const instanceGlyph = (plainGlyph, options) => {
   plainGlyph.parameters = new ParametersMap(plainGlyph.parameters)
   plainGlyph.joints = plainGlyph.joints.map((joint) => {
     return new Joint(joint.name, { x: joint.x, y: joint.y })
@@ -302,7 +360,7 @@ const instanceGlyph = (plainGlyph) => {
   plainGlyph.components = plainGlyph.components.length ? plainGlyph.components.map((component) => {
     if (component.type === 'glyph') {
       //@ts-ignore
-      component.value = instanceGlyph(component.value)
+      component.value = instanceGlyph(component.value, false)
       //component.value.parent = plainGlyph
       component.value.parent_reference = getParentInfo(plainGlyph)
     }
@@ -313,17 +371,27 @@ const instanceGlyph = (plainGlyph) => {
   if (plainGlyph.objData) {
     glyphInstance.setData(plainGlyph.objData)
   }
+
+  if (options && options?.updateContoursAndPreview) {
+    // 工程文件中通常不包含预览和轮廓数据缓存，这里补全预览和轮廓数据缓存
+    componentsToContours(orderedListWithItemsForCharacterFile(plainGlyph), {
+      unitsPerEm: options.unitsPerEm,
+      descender: options.descender,
+      advanceWidth: options.advanceWidth,
+    }, { x: 0, y: 0 }, false, false, false)
+  }
+
   return plainGlyph
 }
 
-const instanceCharacter = (plainCharacter) => {
+const instanceCharacter = (plainCharacter, options?) => {
   if (!plainCharacter.script) {
     plainCharacter.script = `function script_${plainCharacter.uuid.replaceAll('-', '_')} (character, constants, FP) {\n\t//Todo something\n}`
   }
   plainCharacter.components = plainCharacter.components.length ? plainCharacter.components.map((component) => {
     if (component.type === 'glyph') {
       //@ts-ignore
-      component.value = instanceGlyph(component.value)
+      component.value = instanceGlyph(component.value, false)
       //component.value.parent = plainCharacter
       component.value.parent_reference = getParentInfo(plainCharacter)
       // component.value._o.getJoints().map((joint) => {
@@ -333,12 +401,22 @@ const instanceCharacter = (plainCharacter) => {
     return component
   }) : []
   //@ts-ignore
-  const glyphInstance = new CustomGlyph(plainCharacter)
+  const characterInstance = new Character(plainCharacter)
+
+  if (options && options?.updateContoursAndPreview) {
+    // 工程文件中通常不包含预览和轮廓数据缓存，这里补全预览和轮廓数据缓存
+    componentsToContours(orderedListWithItemsForCharacterFile(plainCharacter), {
+      unitsPerEm: options.unitsPerEm,
+      descender: options.descender,
+      advanceWidth: options.advanceWidth,
+    }, { x: 0, y: 0 }, false, false, false)
+  }
+
   return plainCharacter
 }
 
-const getProjectData = () => {
-  const file = plainFile(selectedFile.value)
+const getProjectData = async () => {
+  const file = await plainFile(selectedFile.value)
   const _glyphs = glyphs.value.map((glyph: ICustomGlyph) => {
     return plainGlyph(glyph)
   })
@@ -452,7 +530,11 @@ const exportGlyphs_tauri = async () => {
         })
         await nativeSaveText(data, temp_glyphs_name, ['json'])
       } else {
-        requestAnimationFrame(() => addGlyph(i + 1))
+        if (i % 100 === 0) {
+          requestAnimationFrame(() => addGlyph(i + 1))
+        } else {
+          addGlyph(i + 1)
+        }
       }
     }
   }, 50)
@@ -503,10 +585,15 @@ const exportSVG_tauri = async () => {
 }
 
 const exportFont_tauri = async (options: CreateFontOptions) => {
-  const font = createFont(options)
+  const font = await createFont(options)
+  loadingMsg.value = '已经处理完所有字符，正在生成字库文件，请稍候...'
   const buffer = toArrayBuffer(font) as ArrayBuffer
   const filename = `${selectedFile.value.name}.otf`
   nativeSaveBinary(buffer, filename, ['otf'])
+  loading.value = false
+  loaded.value = 0;
+	total.value = 0;
+  loadingMsg.value = ''
 }
 
 const showExportFontDialog_tauri = () => {
@@ -539,7 +626,7 @@ const openFile_tauri = async () => {
     const { data: rawdata } = await nativeImportTextFile(['json'])
     if (!rawdata) return
     const data = JSON.parse(rawdata)
-    __openFile(data)
+    await __openFile(data)
   }
 }
 
@@ -552,48 +639,124 @@ const addLoaded = () => {
   }
 }
 
-const __openFile = (data) => {
-  total.value = data.file.characterList.length * 2 + (data.glyphs.length + data.stroke_glyphs.length + data.radical_glyphs.length + data.comp_glyphs.length) * 3
+const __openFile = async (data) => {
+  total.value = data.file.characterList.length * 1 + visibleCount.value + (data.glyphs.length + data.stroke_glyphs.length + data.radical_glyphs.length + data.comp_glyphs.length) * 3
   loaded.value = 0
   loading.value = true
-  {
-    const plainGlyphs = data.glyphs
-    const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
-    _glyphs.map((glyph) => {
-      addGlyph(glyph, Status.GlyphList)
-      addGlyphTemplate(glyph, Status.GlyphList)
-      addLoaded()
-    })
-  }
-  {
-    const plainGlyphs = data.stroke_glyphs
-    const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
-    _glyphs.map((glyph) => {
-      addGlyph(glyph, Status.StrokeGlyphList)
-      addGlyphTemplate(glyph, Status.StrokeGlyphList)
-      addLoaded()
-    })
-  }
-  {
-    const plainGlyphs = data.radical_glyphs
-    const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
-    _glyphs.map((glyph) => {
-      addGlyph(glyph, Status.RadicalGlyphList)
-      addGlyphTemplate(glyph, Status.RadicalGlyphList)
-      addLoaded()
-    })
-  }
-  {
-    const plainGlyphs = data.comp_glyphs
-    const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
-    _glyphs.map((glyph) => {
-      addGlyph(glyph, Status.CompGlyphList)
-      addGlyphTemplate(glyph, Status.CompGlyphList)
-      addLoaded()
+
+  // 处理字形数据的异步函数
+  const processGlyphs = async (plainGlyphs, status) => {
+    return new Promise<void>((resolve) => {
+      const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
+        updateContoursAndPreview: true,
+        unitsPerEm: 1000,
+        descender: -200,
+        advanceWidth: 1000,
+      }))
+      
+      let index = 0
+      const processNext = () => {
+        if (index >= _glyphs.length) {
+          resolve()
+          return
+        }
+        
+        const glyph = _glyphs[index]
+        addGlyph(glyph, status)
+        addGlyphTemplate(glyph, status)
+        addLoaded()
+        index++
+        
+        // 每处理10个项目后让出控制权，让UI更新
+        if (index % 100 === 0) {
+          requestAnimationFrame(processNext)
+        } else {
+          processNext()
+        }
+      }
+      
+      processNext()
     })
   }
 
+  // 处理字符列表的异步函数
+  const processCharacters = async (file) => {
+    return new Promise<void>((resolve) => {
+      let index = 0
+      const processNext = () => {
+        if (index >= file.characterList.length) {
+          resolve()
+          return
+        }
+        
+        const character = file.characterList[index]
+        addLoaded()
+        const characterFile = instanceCharacter(character, {
+          updateContoursAndPreview: true,
+          unitsPerEm: file.fontSettings.unitsPerEm,
+          descender: file.fontSettings.descender,
+          advanceWidth: file.fontSettings.advanceWidth,
+        })
+
+        // // 临时脚本，用于初始化字符中调用的字形组件参数
+        // for (let i = 0; i < characterFile.components.length; i++) {
+        //   const comp = characterFile.components[i]
+        //   if (comp.type === 'glyph') {
+        //     // 组件类型是glyph
+        //     const glyph = comp.value
+        //     const params = glyph.parameters.parameters
+        //     for (let j = 0; j < params.length; j++) {
+        //       const param = params[j]
+        //       if (param.name === '起笔风格' && param.value !== 0) {
+        //         param.type = ParameterType.Constant
+        //         param.value = constants.value[0].uuid
+        //       } else if (param.name === '起笔数值') {
+        //         param.type = ParameterType.Constant
+        //         param.value = constants.value[1].uuid
+        //       } else if (param.name === '转角风格') {
+        //         param.type = ParameterType.Constant
+        //         param.value = constants.value[2].uuid
+        //       } else if (param.name === '转角数值') {
+        //         param.type = ParameterType.Constant
+        //         param.value = constants.value[3].uuid
+        //       } else if (param.name === '字重变化') {
+        //         param.type = ParameterType.Constant
+        //         param.value = constants.value[4].uuid
+        //       } else if (param.name === '弯曲程度') {
+        //         param.type = ParameterType.Constant
+        //         param.value = constants.value[5].uuid
+        //       } else if (param.name === '字重') {
+        //         param.type = ParameterType.Constant
+        //         param.value = constants.value[6].uuid
+        //       }
+        //     }
+        //   }
+        // }
+        
+        file.characterList[index] = characterFile
+        index++
+        
+        // 每处理5个字符后让出控制权，让UI更新
+        if (index % 100 === 0) {
+          requestAnimationFrame(processNext)
+        } else {
+          processNext()
+        }
+      }
+      
+      processNext()
+    })
+  }
+
+  // 异步处理所有字形数据
+  await processGlyphs(data.glyphs, Status.GlyphList)
+  await processGlyphs(data.stroke_glyphs, Status.StrokeGlyphList)
+  await processGlyphs(data.radical_glyphs, Status.RadicalGlyphList)
+  await processGlyphs(data.comp_glyphs, Status.CompGlyphList)
+
   const file = data.file
+  
+  // 处理常量数据
   if (data.constants) {
     for (let n = 0; n < data.constants.length; n++) {
       if (!constantsMap.getByUUID(data.constants[n].uuid)) {
@@ -607,10 +770,10 @@ const __openFile = (data) => {
       constantGlyphMap.set(keys[n], data.constantGlyphMap[keys[n]])
     }
   }
-  file.characterList = file.characterList.map((character) => {
-    addLoaded()
-    return instanceCharacter(character)
-  })
+
+  // 异步处理字符列表
+  await processCharacters(file)
+
   let success = true
   for (let j = 0; j < files.value.length; j++) {
     if (files.value[j].uuid === file.uuid) {
@@ -635,6 +798,7 @@ const __openFile = (data) => {
       router.push('/editor')
     } else {
       clearCharacterRenderList()
+
       characterList.value.map((characterFile) => {
         addCharacterTemplate(generateCharacterTemplate(characterFile))
       })
@@ -645,7 +809,14 @@ const __openFile = (data) => {
 
 const openFile = async () => {
   if (ENV.value === 'tauri') {
-    openFile_tauri()
+    if (router.currentRoute.value.name === 'welcome') {
+      router.push('/editor')
+      // 等待路由跳转和页面渲染完成
+      await nextTick()
+      // 再等待一个渲染周期确保页面完全加载
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    await openFile_tauri()
     return
   }
   if (files.value && files.value.length) {
@@ -654,6 +825,10 @@ const openFile = async () => {
   } else {
     if (router.currentRoute.value.name === 'welcome') {
       router.push('/editor')
+      // 等待路由跳转和页面渲染完成
+      await nextTick()
+      // 再等待一个渲染周期确保页面完全加载
+      await new Promise(resolve => setTimeout(resolve, 100))
     }
     await _openFile()
   }
@@ -671,9 +846,9 @@ const _openFile = async () => {
     for (let i = 0; i < readfiles.length; i++) {
       const reader = new FileReader()
       reader.readAsText(readfiles[i])
-      reader.onload = () => {
+      reader.onload = async () => {
         const data = JSON.parse(reader.result as string)
-        __openFile(data)
+        await __openFile(data)
       }
     }
     document.body.removeChild(input)
@@ -698,7 +873,7 @@ const saveFile = async () => {
   const constantGlyphMap_data = JSON.stringify(mapToObject(constantGlyphMap))
   await localForage.setItem('constantGlyphMap', constantGlyphMap_data)
 
-  const file = plainFile(selectedFile.value)
+  const file = await plainFile(selectedFile.value)
   const file_data = JSON.stringify(file)
   await localForage.setItem('file', file_data)
   
@@ -742,11 +917,6 @@ const saveFile = async () => {
 
 const clearCache = async () => {
   // 清空缓存
-  // const list: Array<string> = await localForage.getItem('fileList') as Array<string>
-  // list.map(async (uuid: string) => {
-  // 	await localForage.removeItem(uuid)
-  // })
-  // await localForage.removeItem('fileList')
   localForage.clear()
   ElNotification({
     title: '清空成功',
@@ -865,11 +1035,16 @@ const importFont = () => {
     const fileName = fullFileName.substring(0, fullFileName.lastIndexOf('.')); // 去掉后缀
     const buffer = _file.arrayBuffer()
     const font = parse(await buffer)
-    //updateFontSettings({
-    //	unitsPerEm: font.settings.unitsPerEm as number,
-    //	ascender: font.settings.ascender as number,
-    //	descender: font.settings.descender as number,
-    //})
+
+    loaded.value = 0
+    total.value = font.characters.length * 2 + visibleCount.value
+    loading.value = true
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        resolve()
+      })
+    })
+
     const file: IFile = {
       uuid: genUUID(),
       width: font.settings.unitsPerEm as number,
@@ -890,59 +1065,121 @@ const importFont = () => {
     if (router.currentRoute.value.name === 'welcome') {
       router.push('/editor')
     }
-    loaded.value = 0
-    total.value = 0
-    loading.value = true
-    worker.onmessage = (e) => {
-      const list = e.data
-      selectedFile.value.characterList = list
-      clearCharacterRenderList()
-      characterList.value.map((characterFile) => {
-        addCharacterTemplate(generateCharacterTemplate(characterFile))
-      })
-      loading.value = false
-      emitter.emit('renderPreviewCanvas', true)
-    }
-    worker.postMessage([WorkerEventType.ParseFont, font, selectedFile.value.width])
-    //worker.postMessage([0, 1])
-    // for (let j = 0; j < font.characters.length; j++) {
-    // 	const character: ICharacter = font.characters[j]
-    // 	//if (!character.unicode || character.name === '.notdef') continue
-    // 	if (!character.unicode && !character.name) continue
-    // 	const characterComponent = {
-    // 		uuid: genUUID(),
-    // 		text: character.unicode ? String.fromCharCode(character.unicode) : character.name,
-    // 		unicode: character.unicode ? character.unicode.toString(16) : '',
-    // 	}
-    // 	const characterFile = {
-    // 		uuid: genUUID(),
-    // 		type: 'text',
-    // 		character: characterComponent,
-    // 		components: [],
-    // 		groups: [],
-    // 		orderedList: [],
-    // 		selectedComponentsUUIDs: [],
-    // 		view: {
-    // 			zoom: 100,
-    // 			translateX: 0,
-    // 			translateY: 0,
-    // 		}
-    // 	}
-    // 	const components = contoursToComponents(character.contours, {
-    // 		unitsPerEm,
-    // 		descender,
-    // 		advanceWidth: character.advanceWidth as number,
-    // 	})
-    // 	addCharacterForCurrentFile(characterFile)
-    // 	addComponentsForCharacterFile(characterFile.uuid, components)
+    // worker.onmessage = (e) => {
+    //   const list = e.data
+    //   selectedFile.value.characterList = list
+    //   clearCharacterRenderList()
+    //   characterList.value.map((characterFile) => {
+    //     addCharacterTemplate(generateCharacterTemplate(characterFile))
+    //   })
+    //   loading.value = false
+    //   emitter.emit('renderPreviewCanvas', true)
     // }
-    //loading.value = false
-    //emitter.emit('renderPreviewCanvas', true)
+    // worker.postMessage([WorkerEventType.ParseFont, font, selectedFile.value.width])
+
+    const list = await parseFont(font)
+
+    selectedFile.value.characterList = list
+    clearCharacterRenderList()
+    
+    // 批量添加字符模板 - 性能优化
+    const batchSize = 500 // 每批处理500个字符
+    const templates: Node[] = []
+
+    for (let i = 0; i < list.length; i++) {
+      templates.push(generateCharacterTemplate(list[i]))
+      addLoaded()
+      
+      // 每batchSize个字符批量添加一次
+      if (templates.length >= batchSize || i === list.length - 1) {
+        batchAddCharacterTemplates(templates)
+        templates.length = 0 // 清空数组
+        
+        // 给浏览器一些时间处理
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => {
+            resolve()
+          })
+        })
+      }
+    }
+    emitter.emit('renderPreviewCanvas', true)
     document.body.removeChild(input)
   })
   document.body.appendChild(input)
   input.click()
   //loading.value = true
+}
+
+const parseFont = async (font) => {
+  // 重置轻量级ID计数器，避免ID冲突
+  resetLightIdCounter()
+  
+  const unitsPerEm = font.settings.unitsPerEm
+  const descender = font.settings.descender
+  const width = selectedFile.value.width
+  const list = []
+
+  for (let j = 0; j < font.characters.length; j++) {
+    addLoaded()
+    const character = font.characters[j]
+    //if (!character.unicode || character.name === '.notdef') continue
+    if (!character.unicode && !character.name) continue
+    const characterComponent = {
+      uuid: genLightId(), // 使用轻量级ID
+      text: character.unicode ? String.fromCharCode(character.unicode) : character.name,
+      unicode: character.unicode ? character.unicode.toString(16).padStart(4, '0') : '',
+    }
+    const uuid = genLightId() // 使用轻量级ID
+    const characterFile = {
+      uuid,
+      type: 'text',
+      character: characterComponent,
+      components: [],
+      groups: [],
+      orderedList: [],
+      selectedComponentsUUIDs: [],
+      view: {
+        zoom: 100,
+        translateX: 0,
+        translateY: 0,
+      },
+      info: {
+        gridSettings: {
+          dx: 0,
+          dy: 0,
+          centerSquareSize: width / 3,
+          size: width,
+          default: true,
+        },
+        useSkeletonGrid: false,
+        layout: '',
+        layoutTree: [],
+      },
+      script: `function script_${uuid.replaceAll('-', '_')} (character, constants, FP) {\n\t//Todo something\n}`,
+    }
+    const components = contoursToComponents(character.contours, {
+      unitsPerEm,
+      descender,
+      advanceWidth: character.advanceWidth,
+    })
+    components.forEach((component) => {
+      characterFile.components.push(component)
+      characterFile.orderedList.push({
+        type: 'component',
+        uuid: component.uuid,
+      })
+    })
+    list.push(characterFile)
+    if (j % 100 === 0) {
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          resolve()
+        })
+      })
+    }
+  }
+  return list
 }
 
 const importTemplates = () => {
@@ -955,6 +1192,12 @@ const importGlyphs_tauri = async () => {
   if (!rawdata) return
   const data = JSON.parse(rawdata)
   const plainGlyphs = data.glyphs
+  
+  // 设置进度条
+  loading.value = true
+  loaded.value = 0
+  total.value = plainGlyphs.length
+  
   if (data.constants) {
     for (let n = 0; n < data.constants.length; n++) {
       if (!constantsMap.getByUUID(data.constants[n].uuid)) {
@@ -968,8 +1211,34 @@ const importGlyphs_tauri = async () => {
       constantGlyphMap.set(keys[n], data.constantGlyphMap[keys[n]])
     }
   }
-  const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
-  _glyphs.map((glyph) => {
+  
+  // 分批处理 instanceGlyph
+  const _glyphs: any[] = []
+  const processGlyphs = async (glyphs: any[]) => {
+    const batchSize = 100
+    for (let i = 0; i < glyphs.length; i += batchSize) {
+      const batch = glyphs.slice(i, i + batchSize)
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          batch.forEach((plainGlyph) => {
+            const glyph = instanceGlyph(plainGlyph, {
+              updateContoursAndPreview: true,
+              unitsPerEm: 1000,
+              descender: -200,
+              advanceWidth: 1000,
+            })
+            _glyphs.push(glyph)
+            loaded.value++
+          })
+          resolve()
+        })
+      })
+    }
+  }
+  
+  await processGlyphs(plainGlyphs)
+  
+  _glyphs.forEach((glyph) => {
     if (getGlyphByUUID(glyph.uuid)) {
       repeatMark = true
     } else {
@@ -1002,6 +1271,11 @@ const importGlyphs_tauri = async () => {
       })
     }
   }
+  
+  // 结束进度条
+  loading.value = false
+  loaded.value = 0
+  total.value = 0
 }
 
 const importGlyphs = () => {
@@ -1016,10 +1290,16 @@ const importGlyphs = () => {
     for (let i = 0; i < readfiles.length; i++) {
       const reader = new FileReader()
       reader.readAsText(readfiles[i])
-      reader.onload = () => {
+      reader.onload = async () => {
         // clearGlyphRenderList(editStatus.value)
         const data = JSON.parse(reader.result as string)
         const plainGlyphs = data.glyphs
+        
+        // 设置进度条
+        loading.value = true
+        loaded.value = 0
+        total.value = plainGlyphs.length
+        
         if (data.constants) {
           for (let n = 0; n < data.constants.length; n++) {
             if (!constantsMap.getByUUID(data.constants[n].uuid)) {
@@ -1033,8 +1313,34 @@ const importGlyphs = () => {
             constantGlyphMap.set(keys[n], data.constantGlyphMap[keys[n]])
           }
         }
-        const _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
-        _glyphs.map((glyph) => {
+        
+        // 分批处理 instanceGlyph
+        const _glyphs: any[] = []
+        const processGlyphs = async (glyphs: any[]) => {
+          const batchSize = 100
+          for (let i = 0; i < glyphs.length; i += batchSize) {
+            const batch = glyphs.slice(i, i + batchSize)
+            await new Promise<void>((resolve) => {
+              requestAnimationFrame(() => {
+                batch.forEach((plainGlyph) => {
+                  const glyph = instanceGlyph(plainGlyph, {
+                    updateContoursAndPreview: true,
+                    unitsPerEm: 1000,
+                    descender: -200,
+                    advanceWidth: 1000,
+                  })
+                  _glyphs.push(glyph)
+                  loaded.value++
+                })
+                resolve()
+              })
+            })
+          }
+        }
+        
+        await processGlyphs(plainGlyphs)
+        
+        _glyphs.forEach((glyph) => {
           if (getGlyphByUUID(glyph.uuid)) {
             repeatMark = true
           } else {
@@ -1067,6 +1373,11 @@ const importGlyphs = () => {
             })
           }
         }
+        
+        // 结束进度条
+        loading.value = false
+        loaded.value = 0
+        total.value = 0
       }
     }
     document.body.removeChild(input)
@@ -1183,7 +1494,11 @@ const exportGlyphs = () => {
           const blob = new Blob([data], {type: "text/plain;charset=utf-8"})
           saveAs(blob, temp_glyphs_name)
         } else {
-          requestAnimationFrame(() => addGlyph(i + 1))
+          if (i % 100 === 0) {
+            requestAnimationFrame(() => addGlyph(i + 1))
+          } else {
+            addGlyph(i + 1)
+          }
         }
       }
     }, 50)
@@ -1265,17 +1580,56 @@ interface CreateFontOptions {
   remove_overlap?: boolean;
 }
 
-const createFont = (options?: CreateFontOptions) => {
+const createFont = async (options?: CreateFontOptions) => {
   const _width = selectedFile.value.width
   const _height = selectedFile.value.height
-  const fontCharacters = [{
-    unicode: 0,
-    name: '.notdef',
-    contours: [[]] as Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>,
-    contourNum: 0,
-    advanceWidth: Math.max(_width, _height),
-    leftSideBearing: 0,
-  }]
+  
+  // 检查字符列表中是否有name为.notdef的字形
+  let notdefCharacter = null
+  for (let i = 0; i < selectedFile.value.characterList.length; i++) {
+    const char = selectedFile.value.characterList[i]
+    if (char.character.text === '.notdef') {
+      notdefCharacter = char
+      break
+    }
+  }
+  
+  // 如果有.notdef字符，使用它；否则创建一个空的.notdef字符
+  const fontCharacters = []
+  if (notdefCharacter) {
+    // 使用现有的.notdef字符
+    let contours = [[]]
+    if (options && options.remove_overlap && notdefCharacter.overlap_removed_contours?.length) {
+      contours = notdefCharacter.overlap_removed_contours
+    } else {
+      contours = componentsToContours(
+        orderedListWithItemsForCharacterFile(notdefCharacter),
+        {
+          unitsPerEm: selectedFile.value.fontSettings.unitsPerEm,
+          descender: selectedFile.value.fontSettings.descender,
+          advanceWidth: selectedFile.value.fontSettings.unitsPerEm,
+        }, {x: 0, y: 0}, false, false, false
+      )
+    }
+    fontCharacters.push({
+      unicode: 0,
+      name: '.notdef',
+      contours,
+      contourNum: contours.length,
+      advanceWidth: notdefCharacter.info?.metrics?.advanceWidth || Math.max(_width, _height),
+      leftSideBearing: notdefCharacter.info?.metrics?.lsb || 0,
+    })
+  } else {
+    // 创建一个空的.notdef字符
+    fontCharacters.push({
+      unicode: 0,
+      name: '.notdef',
+      contours: [[]] as Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>,
+      contourNum: 0,
+      advanceWidth: Math.max(_width, _height),
+      leftSideBearing: 0,
+    })
+  }
 
   // {
   // 	unicode: 0xa0,
@@ -1295,8 +1649,17 @@ const createFont = (options?: CreateFontOptions) => {
       total.value = 0
     }
     const char: ICharacterFile = selectedFile.value.characterList[i]
+    
+    // 跳过.notdef字符，因为已经处理过了
+    if (char.character.text === '.notdef') {
+      continue
+    }
+    
     let contours = [[]]
-    if (options && options.remove_overlap && char.overlap_removed_contours) {
+    if (char.character.text === '4') {
+      debugger
+    }
+    if (options && options.remove_overlap && char.overlap_removed_contours?.length) {
       contours = char.overlap_removed_contours
     } else {
       contours = componentsToContours(
@@ -1309,6 +1672,7 @@ const createFont = (options?: CreateFontOptions) => {
       )
     }
     const { text, unicode } = char.character
+
     fontCharacters.push({
       name: text,
       unicode: parseInt(unicode, 16),
@@ -1317,6 +1681,7 @@ const createFont = (options?: CreateFontOptions) => {
       contours,
       contourNum: contours.length,
     })
+
     if (text === ' ') {
       containSpace = true
     }
@@ -1350,7 +1715,8 @@ const createFont = (options?: CreateFontOptions) => {
   fontCharacters.sort((a: any, b: any) => {
     return a.unicode - b.unicode
   })
-  const font = create(fontCharacters, {
+
+  const font = await create(fontCharacters, {
     familyName: selectedFile.value.name,
     styleName: 'Regular',
     unitsPerEm,
@@ -1361,14 +1727,19 @@ const createFont = (options?: CreateFontOptions) => {
   return font
 }
 
-const exportFont = (options: CreateFontOptions) => {
-  const font = createFont(options)
+const exportFont = async (options: CreateFontOptions) => {
+  const font = await createFont(options)
+  loadingMsg.value = '已经处理完所有字符，正在生成压缩包，请稍候...'
   const dataView = new DataView(toArrayBuffer(font) as ArrayBuffer)
   const blob = new Blob([dataView], {type: 'font/opentype'})
   var zip = new JSZip()
   zip.file(`${selectedFile.value.name}.otf`, blob)
   zip.generateAsync({type:"blob"}).then(function(content: any) {
     saveAs(content, `${selectedFile.value.name}.zip`)
+    loading.value = false
+    loaded.value = 0;
+		total.value = 0;
+    loadingMsg.value = ''
   })
 }
 
@@ -1401,11 +1772,24 @@ const copy = () => {
 const paste = () => {
   // 粘贴
   const components = clipBoard.value
+  let lastComponent: any = null
+  
   components.map((component) => {
-    component.uuid = genUUID()
-    addComponentForCurrentCharacterFile(component)
+    // 深拷贝组件，避免修改剪贴板中的原始数据
+    const clonedComponent = R.clone(component)
+    clonedComponent.uuid = genUUID()
+    addComponentForCurrentCharacterFile(clonedComponent)
+    lastComponent = clonedComponent
   })
-  setClipBoard([])
+  
+  // 设置正确的工具，确保可以拖拽编辑
+  if (lastComponent && lastComponent.type === 'glyph') {
+    setTool('glyphDragger')
+  } else {
+    setTool('select')
+  }
+  
+  // setClipBoard([])
 }
 
 const cut = () => {
@@ -1776,6 +2160,7 @@ const _syncData = async () => {
   clearGlyphRenderList(Status.StrokeGlyphList)
   clearGlyphRenderList(Status.RadicalGlyphList)
   clearGlyphRenderList(Status.CompGlyphList)
+  
   const constants_data = JSON.parse(await localForage.getItem('constants'))
   if (constants_data) {
     for (let n = 0; n < constants_data.length; n++) {
@@ -1791,6 +2176,7 @@ const _syncData = async () => {
       constantGlyphMap.set(keys[n], constantGlyphMap_data[keys[n]])
     }
   }
+  
   const glyphs_data = await localForage.getItem('glyphs')
   let plainGlyphs: Array<ICustomGlyph> = []
   if (glyphs_data) {
@@ -1822,7 +2208,7 @@ const _syncData = async () => {
   }
 
   loaded.value = 0
-  total.value = file ? file.characterList.length * 2 : 0 + (plainGlyphs.length + plainGlyphs_stroke.length + plainGlyphs_radical.length + plainGlyphs_comp.length) * 3
+  total.value = file ? file.characterList.length * 1 + visibleCount.value : 0 + (plainGlyphs.length + plainGlyphs_stroke.length + plainGlyphs_radical.length + plainGlyphs_comp.length) * 3
   if (total.value === 0) {
     const { locale } = i18n.global
     if (locale === 'zh') {
@@ -1838,62 +2224,117 @@ const _syncData = async () => {
         confirmButtonText: 'Confirm',
       })
     }
+    return
   }
-  total.value && (loading.value = true)
+  
+  loading.value = true
 
+  // 处理字形数据的异步函数
+  const processGlyphs = async (plainGlyphs, status) => {
+    return new Promise<void>((resolve) => {
+      if (plainGlyphs.length === 0) {
+        resolve()
+        return
+      }
+      
+      const _glyphs = plainGlyphs.map((plainGlyph) => {
+        return instanceGlyph(plainGlyph, {
+          updateContoursAndPreview: true,
+          unitsPerEm: 1000,
+          descender: -200,
+          advanceWidth: 1000,
+        })
+      })
+      
+      let index = 0
+      const processNext = () => {
+        if (index >= _glyphs.length) {
+          resolve()
+          return
+        }
+        
+        const glyph = _glyphs[index]
+        addGlyph(glyph, status)
+        addGlyphTemplate(glyph, status)
+        addLoaded()
+        index++
+        
+        // 每处理10个项目后让出控制权，让UI更新
+        if (index % 100 === 0) {
+          requestAnimationFrame(processNext)
+        } else {
+          processNext()
+        }
+      }
+      
+      processNext()
+    })
+  }
+
+  // 处理字符列表的异步函数
+  const processCharacters = async (file) => {
+    return new Promise<void>((resolve) => {
+      if (!file || !file.characterList || file.characterList.length === 0) {
+        resolve()
+        return
+      }
+      
+      let index = 0
+      const processNext = () => {
+        if (index >= file.characterList.length) {
+          resolve()
+          return
+        }
+        
+        const character = file.characterList[index]
+        addLoaded()
+        const characterFile = instanceCharacter(character, {
+          updateContoursAndPreview: true,
+          unitsPerEm: file.fontSettings.unitsPerEm,
+          descender: file.fontSettings.descender,
+          advanceWidth: file.fontSettings.advanceWidth,
+        })
+        
+        file.characterList[index] = characterFile
+        index++
+        
+        // 每处理5个字符后让出控制权，让UI更新
+        if (index % 100 === 0) {
+          requestAnimationFrame(processNext)
+        } else {
+          processNext()
+        }
+      }
+      
+      processNext()
+    })
+  }
+
+  // 异步处理所有字形数据
   if (glyphs_data) {
     glyphs.value = []
-    const _glyphs = plainGlyphs.map((plainGlyph) => {
-      return instanceGlyph(plainGlyph)
-    })
-    _glyphs.map((glyph) => {
-      addGlyph(glyph, Status.GlyphList)
-      addGlyphTemplate(glyph, Status.GlyphList)
-      addLoaded()
-    })
+    await processGlyphs(plainGlyphs, Status.GlyphList)
   }
 
   if (stroke_glyphs_data) {
     stroke_glyphs.value = []
-    const _glyphs = plainGlyphs_stroke.map((plainGlyph) => {
-      return instanceGlyph(plainGlyph)
-    })
-    _glyphs.map((glyph) => {
-      addGlyph(glyph, Status.StrokeGlyphList)
-      addGlyphTemplate(glyph, Status.StrokeGlyphList)
-      addLoaded()
-    })
+    await processGlyphs(plainGlyphs_stroke, Status.StrokeGlyphList)
   }
 
   if (radical_glyphs_data) {
     radical_glyphs.value = []
-    const _glyphs = plainGlyphs_radical.map((plainGlyph) => {
-      return instanceGlyph(plainGlyph)
-    })
-    _glyphs.map((glyph) => {
-      addGlyph(glyph, Status.RadicalGlyphList)
-      addGlyphTemplate(glyph, Status.RadicalGlyphList)
-      addLoaded()
-    })
+    await processGlyphs(plainGlyphs_radical, Status.RadicalGlyphList)
   }
 
   if (comp_glyphs_data) {
     comp_glyphs.value = []
-    const _glyphs = plainGlyphs_comp.map((plainGlyph) => {
-      return instanceGlyph(plainGlyph)
-    })
-    _glyphs.map((glyph) => {
-      addGlyph(glyph, Status.CompGlyphList)
-      addGlyphTemplate(glyph, Status.CompGlyphList)
-      addLoaded()
-    })
+    await processGlyphs(plainGlyphs_comp, Status.CompGlyphList)
   }
 
+  // 异步处理字符列表
   if (file_data) {
-    file.characterList.map((character) => {
-      addLoaded()
-      return instanceCharacter(character)
-    })
+    await processCharacters(file)
+    
     let success = true
     for (let j = 0; j < files.value.length; j++) {
       if (files.value[j].uuid === file.uuid) {
@@ -2201,7 +2642,12 @@ const importTemplate1 = async () => {
         }
       }
       let plainGlyphs = obj.glyphs
-      let _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
+      let _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
+        updateContoursAndPreview: true,
+        unitsPerEm: 1000,
+        descender: -200,
+        advanceWidth: 1000,
+      }))
       _glyphs.map((glyph) => {
         addGlyph(glyph, Status.StrokeGlyphList)
       })
@@ -2217,7 +2663,12 @@ const importTemplate1 = async () => {
         }
       }
       let plainGlyphs = obj.glyphs
-      let _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
+      let _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
+        updateContoursAndPreview: true,
+        unitsPerEm: 1000,
+        descender: -200,
+        advanceWidth: 1000,
+      }))
       _glyphs.map((glyph) => {
         addGlyph(glyph, Status.RadicalGlyphList)
       })
@@ -2233,7 +2684,12 @@ const importTemplate1 = async () => {
         }
       }
       let plainGlyphs = obj.glyphs
-      let _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph))
+      let _glyphs = plainGlyphs.map((plainGlyph) => instanceGlyph(plainGlyph, {
+        updateContoursAndPreview: true,
+        unitsPerEm: 1000,
+        descender: -200,
+        advanceWidth: 1000,
+      }))
       _glyphs.map((glyph) => {
         addGlyph(glyph, Status.CompGlyphList)
       })
@@ -2393,18 +2849,71 @@ const generateComponent = (data) => {
   return component
 }
 
-const computeOverlapRemovedContours = () => {
+// 检测字符是否已经不需要去除重叠
+const isAlreadyOptimized = (contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>): boolean => {
+  if (contours.length <= 1) {
+    return true // 单个轮廓不需要去除重叠
+  }
+  
+  // 简化检测逻辑：只检查是否有明显的镂空结构
+  // 对于走之旁这种有重叠的字符，不应该被误判为已经优化过
+  
+  // 检查轮廓之间是否有重叠
+  let hasOverlap = false
+  for (let i = 0; i < contours.length; i++) {
+    for (let j = i + 1; j < contours.length; j++) {
+      const contour1 = contours[i]
+      const contour2 = contours[j]
+      
+      // 计算两个轮廓的包围盒
+      let minX1 = Infinity, minY1 = Infinity, maxX1 = -Infinity, maxY1 = -Infinity
+      let minX2 = Infinity, minY2 = Infinity, maxX2 = -Infinity, maxY2 = -Infinity
+      
+      for (let k = 0; k < contour1.length; k++) {
+        const segment = contour1[k]
+        minX1 = Math.min(minX1, segment.start.x, segment.end.x)
+        minY1 = Math.min(minY1, segment.start.y, segment.end.y)
+        maxX1 = Math.max(maxX1, segment.start.x, segment.end.x)
+        maxY1 = Math.max(maxY1, segment.start.y, segment.end.y)
+      }
+      
+      for (let k = 0; k < contour2.length; k++) {
+        const segment = contour2[k]
+        minX2 = Math.min(minX2, segment.start.x, segment.end.x)
+        minY2 = Math.min(minY2, segment.start.y, segment.end.y)
+        maxX2 = Math.max(maxX2, segment.start.x, segment.end.x)
+        maxY2 = Math.max(maxY2, segment.start.y, segment.end.y)
+      }
+      
+      // 检查包围盒是否重叠
+      if (maxX1 >= minX2 && maxX2 >= minX1 && maxY1 >= minY2 && maxY2 >= minY1) {
+        hasOverlap = true
+        break
+      }
+    }
+    if (hasOverlap) break
+  }
+  
+  // 如果有重叠，说明需要去除重叠，不应该跳过
+  // 只有在没有重叠的情况下才认为已经优化过
+  return !hasOverlap
+}
+
+const computeOverlapRemovedContours = async () => {
   const {
     unitsPerEm,
     descender,
   } = selectedFile.value.fontSettings
-  for (let m = 0; m < selectedFile.value.characterList.length; m++) {
-    loaded.value++
-    if (loaded.value >= total.value) {
-      loading.value = false
-      loaded.value = 0
-      total.value = 0
+
+  let m = 0
+
+  const compute = async (): Promise<void> => {
+
+    // 检查是否完成所有字符处理
+    if (m >= selectedFile.value.characterList.length) {
+      return
     }
+
     let char = selectedFile.value.characterList[m]
     // 读取字符轮廓信息（已经将形状都转换成字体轮廓）
     let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(orderedListWithItemsForCharacterFile(char), {
@@ -2412,241 +2921,498 @@ const computeOverlapRemovedContours = () => {
       descender,
       advanceWidth: unitsPerEm,
     }, { x: 0, y: 0 }, false, false, false)
-  
-    // 将轮廓转换成Path
+
+    // 检查是否已经优化过
+    if (isAlreadyOptimized(contours)) {
+      // 即使跳过处理，也要保存原始轮廓到overlap_removed_contours
+      char.overlap_removed_contours = contours
+      m++
+      loaded.value++
+      if (loaded.value >= total.value) {
+        loading.value = false
+        loaded.value = 0
+        total.value = 0
+        return
+      }
+      // 继续处理下一个字符
+      await new Promise(resolve => setTimeout(resolve, 0))
+      return compute()
+    }
+    
+    // 使用优化后的路径创建函数
     let paths = []
     for (let i = 0; i < contours.length; i++) {
       const contour = contours[i]
-      let path = new paper.Path()
-      path.moveTo(new paper.Point(contour[0].start.x, contour[0].start.y))
-      for (let j = 0; j < contour.length; j++) {
-        const _path = contour[j]
-        if (_path.type === PathType.LINE) {
-          path.lineTo(new paper.Point((_path as unknown as ILine).end.x, (_path as unknown as ILine).end.y))
-        } else if (_path.type === PathType.CUBIC_BEZIER) {
-          path.cubicCurveTo(
-            new paper.Point(
-              (_path as unknown as ICubicBezierCurve).control1.x,
-              (_path as unknown as ICubicBezierCurve).control1.y,
-            ),
-            new paper.Point(
-              (_path as unknown as ICubicBezierCurve).control2.x,
-              (_path as unknown as ICubicBezierCurve).control2.y,
-            ),
-            new paper.Point(
-              (_path as unknown as ICubicBezierCurve).end.x,
-              (_path as unknown as ICubicBezierCurve).end.y,
-            )
-          )
-        }
+      if (contour.length === 0) continue
+      
+      const path = createOptimizedPath(contour)
+      
+      if (!path.closed) {
+        path.closePath()
       }
+      
       paths.push(path)
     }
 
-    // 合并路径，去除重叠
+    // 智能去除重叠：对于已经有镂空结构的字符，使用exclude方法避免破坏镂空
     let unitedPath = null
-    if (paths.length < 2) {
-      unitedPath = paths[1]
-    } else {
-      unitedPath = paths[0].unite(paths[1])
-      for (let i = 2; i < paths.length; i++) {
-        unitedPath = unitedPath.unite(paths[i])
+
+    // 检查是否有镂空结构
+    let hasHoles = false
+    let hasOuterContours = false
+
+    for (let i = 0; i < paths.length; i++) {
+      const path = paths[i]
+      if (!path.area) continue
+      
+      const area = path.area
+      if (Math.abs(area) > 1e-6) {
+        if (area > 0) {
+          hasOuterContours = true
+        } else {
+          hasHoles = true
+        }
       }
     }
+
+    // 如果有镂空结构，使用exclude方法避免破坏镂空
+    if (hasHoles && hasOuterContours) {
+      // 分离外轮廓和内轮廓（镂空）
+      const outerPaths: paper.Path[] = []
+      const innerPaths: paper.Path[] = []
+      
+      for (let i = 0; i < paths.length; i++) {
+        const path = paths[i]
+        if (!path.area) continue
+        
+        if (path.area > 0) {
+          outerPaths.push(path)
+        } else {
+          innerPaths.push(path)
+        }
+      }
+      
+      // 确保有外轮廓
+      if (outerPaths.length === 0) {
+        unitedPath = mergePathsWithPrecision(paths)
+      } else {
+        // 先合并外轮廓
+        unitedPath = outerPaths[0].clone()
+        for (let i = 1; i < outerPaths.length; i++) {
+          const result = unitedPath.unite(outerPaths[i]) as paper.Path
+          if (result && result.area && Math.abs(result.area) > 1e-6) {
+            unitedPath = result
+          }
+        }
+        
+        // 然后用内轮廓（镂空）排除
+        for (let i = 0; i < innerPaths.length; i++) {
+          const result = unitedPath.exclude(innerPaths[i]) as paper.Path
+          if (result && result.area && Math.abs(result.area) > 1e-6) {
+            unitedPath = result
+          } else {
+          }
+        }
+        
+        // 验证最终结果
+        if (!unitedPath || !unitedPath.area || Math.abs(unitedPath.area) < 1e-6) {
+          unitedPath = mergePathsWithPrecision(paths)
+        }
+      }
+    } else {
+      // 没有镂空结构，使用普通的unite方法
+      unitedPath = mergePathsWithPrecision(paths)
+    }
     
-    if (!unitedPath) return
+    if (!unitedPath) {
+      // 即使没有unitedPath，也要继续处理下一个字符
+      m++
+      loaded.value++
+      if (loaded.value >= total.value) {
+        loading.value = false
+        loaded.value = 0
+        total.value = 0
+        return
+      }
+      // 继续处理下一个字符
+      await new Promise(resolve => setTimeout(resolve, 0))
+      return compute()
+    }
 
     // 根据合并路径生成轮廓数据
     let overlap_removed_contours = []
-    if (unitedPath.children && unitedPath.children.length) {
-      for (let i = 0; i < unitedPath.children.length; i++) {
-        const paths = unitedPath.children[i]
-        if (!paths.curves.length) continue
-        const contour = []
-        for (let j = 0; j < paths.curves.length; j++) {
-          const curve = paths.curves[j]
-          const path = {
-            type: PathType.CUBIC_BEZIER,
-            start: { x: curve.points[0].x, y: curve.points[0].y },
-            control1: { x: curve.points[1].x, y: curve.points[1].y },
-            control2: { x: curve.points[2].x, y: curve.points[2].y },
-            end: { x: curve.points[3].x, y: curve.points[3].y },
+    
+    const extractContoursFromPath = (path: paper.Path) => {
+      const contours = []
+      
+      // 处理子路径
+      if (path.children && path.children.length > 0) {
+        for (let i = 0; i < path.children.length; i++) {
+          const child = path.children[i]
+          if (child instanceof paper.Path) {
+            const childContours = extractContoursFromPath(child)
+            contours.push(...childContours)
           }
-          contour.push(path)
         }
-        overlap_removed_contours.push(contour)
+        return contours
       }
-    } else if (unitedPath.curves) {
-      const paths = unitedPath
-      if (!paths.curves.length) return
-      const contour = []
-      for (let j = 0; j < paths.curves.length; j++) {
-        const curve = paths.curves[j]
-        const path = {
-          type: PathType.CUBIC_BEZIER,
-          start: { x: curve.points[0].x, y: curve.points[0].y },
-          control1: { x: curve.points[1].x, y: curve.points[1].y },
-          control2: { x: curve.points[2].x, y: curve.points[2].y },
-          end: { x: curve.points[3].x, y: curve.points[3].y },
+      
+      // 处理单个路径
+      if (path.curves && path.curves.length > 0) {
+        const contour = []
+        for (let j = 0; j < path.curves.length; j++) {
+          const curve = path.curves[j]
+          if (curve.points.length >= 4) {
+            const pathSegment = {
+              type: PathType.CUBIC_BEZIER,
+              start: { x: curve.points[0].x, y: curve.points[0].y },
+              control1: { x: curve.points[1].x, y: curve.points[1].y },
+              control2: { x: curve.points[2].x, y: curve.points[2].y },
+              end: { x: curve.points[3].x, y: curve.points[3].y },
+            }
+            contour.push(pathSegment)
+          }
         }
-        contour.push(path)
+        if (contour.length > 0) {
+          contours.push(contour)
+        }
       }
-      overlap_removed_contours.push(contour)
+      
+      return contours
     }
+    
+    overlap_removed_contours = extractContoursFromPath(unitedPath)
 
     char.overlap_removed_contours = overlap_removed_contours
+    
+    m++
+
+    loaded.value++
+    if (loaded.value >= total.value) {
+      loading.value = false
+      loaded.value = 0
+      total.value = 0
+      return
+    }
+
+    // 检查是否还有更多字符需要处理
+    if (m < selectedFile.value.characterList.length) {
+      if (m % 100 === 0) {
+        // 每100个字符后，给UI更多时间更新
+        await new Promise(resolve => setTimeout(resolve, 0))
+      }
+      // 继续处理下一个字符
+      return compute()
+    }
   }
+  await compute()
 }
 
-const removeOverlap = () => {
-  let char = editCharacterFile.value
-  if (editStatus.value === Status.Glyph) {
-    char = editGlyph.value
-  }
-  // 读取字符轮廓信息（已经将形状都转换成字体轮廓）
+const computeOverlapRemovedContours_wasm = async () => {
   const {
     unitsPerEm,
     descender,
   } = selectedFile.value.fontSettings
+
+  let m = 0
+
+  const compute = async (): Promise<void> => {
+
+    // 检查是否完成所有字符处理
+    if (m >= selectedFile.value.characterList.length) {
+      return
+    }
+
+    let char = selectedFile.value.characterList[m]
+    // 读取字符轮廓信息（已经将形状都转换成字体轮廓）
+    let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours2(orderedListWithItemsForCharacterFile(char),
+      { x: 0, y: 0 }, false, 1
+    )
+    // let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(orderedListWithItemsForCharacterFile(char), {
+    //   unitsPerEm,
+    //   descender,
+    //   advanceWidth: unitsPerEm,
+    // }, { x: 0, y: 0 }, false, false, false)
+
+    // 检查是否已经优化过
+    if (isAlreadyOptimized(contours)) {
+      // 即使跳过处理，也要保存原始轮廓到overlap_removed_contours
+      char.overlap_removed_contours = contours
+      m++
+      loaded.value++
+      if (loaded.value >= total.value) {
+        loading.value = false
+        loaded.value = 0
+        total.value = 0
+        return
+      }
+      // 继续处理下一个字符
+      await new Promise(resolve => setTimeout(resolve, 0))
+      return compute()
+    }
+
+    try {
+      // 使用WASM去除重叠
+      const overlap_removed_contours = await removeOverlapWithWasm(contours)
+      const options = {
+        unitsPerEm,
+        descender,
+        advanceWidth: unitsPerEm,
+      }
+      for (let i = 0; i < overlap_removed_contours.length; i++) {
+        const contour = overlap_removed_contours[i]
+        for (let j = 0; j < contour.length; j++) {
+          const path = contour[j]
+          if (path.type === PathType.LINE) {
+            const points =  formatPoints([path.start, path.end], options, 1)
+            path.start.x = points[0].x
+            path.start.y = points[0].y
+            path.end.x = points[1].x
+            path.end.y = points[1].y
+          } else if (path.type === PathType.QUADRATIC_BEZIER) {
+            const points =  formatPoints([path.start, path.end, path.control], options, 1)
+            path.start.x = points[0].x
+            path.start.y = points[0].y
+            path.end.x = points[1].x
+            path.end.y = points[1].y
+            path.control.x = points[2].x
+            path.control.y = points[2].y
+          } else if (path.type === PathType.CUBIC_BEZIER) {
+            const points =  formatPoints([path.start, path.end, path.control1, path.control2], options, 1)
+            path.start.x = points[0].x
+            path.start.y = points[0].y
+            path.end.x = points[1].x
+            path.end.y = points[1].y
+            path.control1.x = points[2].x
+            path.control1.y = points[2].y
+            path.control2.x = points[3].x
+            path.control2.y = points[3].y
+          }
+        }
+      }
+      char.overlap_removed_contours = overlap_removed_contours
+    } catch (error) {
+      console.error('Error removing overlap with WASM:', error)
+    }
+    
+    m++
+
+    loaded.value++
+    if (loaded.value >= total.value) {
+      loading.value = false
+      loaded.value = 0
+      total.value = 0
+      return
+    }
+
+    // 检查是否还有更多字符需要处理
+    if (m < selectedFile.value.characterList.length) {
+      if (m % 100 === 0) {
+        // 每100个字符后，给UI更多时间更新
+        await new Promise(resolve => setTimeout(resolve, 0))
+      }
+      // 继续处理下一个字符
+      return compute()
+    }
+  }
+
+  await compute()
+}
+
+// 优化后的removeOverlap函数
+const removeOverlap = async () => {
+  let char = editCharacterFile.value
+  if (editStatus.value === Status.Glyph) {
+    char = editGlyph.value
+  }
+  
+  const {
+    unitsPerEm,
+    descender,
+  } = selectedFile.value.fontSettings
+  
   let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours2(orderedListWithItemsForCharacterFile(char),
     { x: 0, y: 0 }, false, 1
   )
+
+  
+  // let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(orderedListWithItemsForCharacterFile(char),
+  //   { unitsPerEm, descender, advanceWidth: unitsPerEm }, { x: 0, y: 0 }, false, false, false
+  // )
+  
   if (editStatus.value == Status.Glyph) {
     contours = componentsToContours2(char._o.components,
       { x: 0, y: 0 }, true, 1
     )
   }
 
-  // 将轮廓转换成Path
+  // 检查是否已经优化过
+  if (isAlreadyOptimized(contours)) {
+    return
+  }
+
+  // 使用优化后的路径创建函数
   let paths = []
   for (let i = 0; i < contours.length; i++) {
     const contour = contours[i]
-    let path = new paper.Path()
-    path.moveTo(new paper.Point(contour[0].start.x, contour[0].start.y))
-    for (let j = 0; j < contour.length; j++) {
-      const _path = contour[j]
-      if (_path.type === PathType.LINE) {
-        path.lineTo(new paper.Point((_path as unknown as ILine).end.x, (_path as unknown as ILine).end.y))
-      } else if (_path.type === PathType.CUBIC_BEZIER) {
-        path.cubicCurveTo(
-          new paper.Point(
-            (_path as unknown as ICubicBezierCurve).control1.x,
-            (_path as unknown as ICubicBezierCurve).control1.y,
-          ),
-          new paper.Point(
-            (_path as unknown as ICubicBezierCurve).control2.x,
-            (_path as unknown as ICubicBezierCurve).control2.y,
-          ),
-          new paper.Point(
-            (_path as unknown as ICubicBezierCurve).end.x,
-            (_path as unknown as ICubicBezierCurve).end.y,
-          )
-        )
-      }
+    if (contour.length === 0) continue
+    
+    const path = createOptimizedPath(contour)
+    
+    if (!path.closed) {
+      path.closePath()
     }
+    
     paths.push(path)
   }
 
-  // 合并路径，去除重叠
+  // 智能去除重叠：对于已经有镂空结构的字符，使用exclude方法避免破坏镂空
   let unitedPath = null
-  if (paths.length < 2) {
-    unitedPath = paths[1]
-  } else {
-    unitedPath = paths[0].unite(paths[1])
-    for (let i = 2; i < paths.length; i++) {
-      unitedPath = unitedPath.unite(paths[i]) 
+
+  // 检查是否有镂空结构
+  let hasHoles = false
+  let hasOuterContours = false
+
+  for (let i = 0; i < paths.length; i++) {
+    const path = paths[i]
+    if (!path.area) continue
+    
+    const area = path.area
+    if (Math.abs(area) > 1e-6) {
+      if (area > 0) {
+        hasOuterContours = true
+      } else {
+        hasHoles = true
+      }
     }
   }
 
+  // 如果有镂空结构，使用exclude方法避免破坏镂空
+  if (hasHoles && hasOuterContours) {
+    // 分离外轮廓和内轮廓（镂空）
+    const outerPaths: paper.Path[] = []
+    const innerPaths: paper.Path[] = []
+    
+    for (let i = 0; i < paths.length; i++) {
+      const path = paths[i]
+      if (!path.area) continue
+      
+      if (path.area > 0) {
+        outerPaths.push(path)
+      } else {
+        innerPaths.push(path)
+      }
+    }
+    
+    // 确保有外轮廓
+    if (outerPaths.length === 0) {
+      unitedPath = mergePathsWithPrecision(paths)
+    } else {
+      // 先合并外轮廓
+      unitedPath = outerPaths[0].clone()
+      for (let i = 1; i < outerPaths.length; i++) {
+        const result = unitedPath.unite(outerPaths[i]) as paper.Path
+        if (result && result.area && Math.abs(result.area) > 1e-6) {
+          unitedPath = result
+        }
+      }
+      
+      // 然后用内轮廓（镂空）排除
+      for (let i = 0; i < innerPaths.length; i++) {
+        const result = unitedPath.exclude(innerPaths[i]) as paper.Path
+        if (result && result.area && Math.abs(result.area) > 1e-6) {
+          unitedPath = result
+        } else {
+        }
+      }
+      
+      // 验证最终结果
+      if (!unitedPath || !unitedPath.area || Math.abs(unitedPath.area) < 1e-6) {
+        unitedPath = mergePathsWithPrecision(paths)
+      }
+    }
+  } else {
+    // 没有镂空结构，使用普通的unite方法
+    unitedPath = mergePathsWithPrecision(paths)
+  }
+
   let components = []
-  if (unitedPath && unitedPath.children) {
-    for (let i = 0; i < unitedPath.children.length; i++) {
-      const paths = unitedPath.children[i]
-      let points = []
-      if (!paths.curves.length) continue
-      points.push({
-        uuid: genUUID(),
-        type: 'anchor',
-        x: paths.curves[0].points[0].x,
-        y: paths.curves[0].points[0].y,
-        origin: null,
-        isShow: true,
-      })
-      for (let j = 0; j < paths.curves.length; j++) {
-        const curve = paths.curves[j]
-        const control1 = {
-          uuid: genUUID(),
-          type: 'control',
-          x: curve.points[1].x,
-          y: curve.points[1].y,
-          origin: points[points.length - 1].uuid,
-          isShow: true,
+  if (unitedPath) {
+    const extractComponentsFromPath = (path: paper.Path): any[] => {
+      const components = []
+      
+      // 处理子路径
+      if (path.children && path.children.length > 0) {
+        for (let i = 0; i < path.children.length; i++) {
+          const child = path.children[i]
+          if (child instanceof paper.Path) {
+            const childComponents = extractComponentsFromPath(child)
+            components.push(...childComponents)
+          }
         }
-        const uuid = genUUID()
-        const control2 = {
+        return components
+      }
+      
+      // 处理单个路径
+      if (path.curves && path.curves.length > 0) {
+        let points = []
+        
+        // 添加起始点
+        points.push({
           uuid: genUUID(),
-          type: 'control',
-          x: curve.points[2].x,
-          y: curve.points[2].y,
-          origin: uuid,
-          isShow: true,
-        }
-        const end = {
-          uuid: uuid,
           type: 'anchor',
-          x: curve.points[3].x,
-          y: curve.points[3].y,
+          x: path.curves[0].points[0].x,
+          y: path.curves[0].points[0].y,
           origin: null,
           isShow: true,
+        })
+        
+        // 处理所有曲线段
+        for (let j = 0; j < path.curves.length; j++) {
+          const curve = path.curves[j]
+          
+          if (curve.points.length >= 4) {
+            const control1 = {
+              uuid: genUUID(),
+              type: 'control',
+              x: curve.points[1].x,
+              y: curve.points[1].y,
+              origin: points[points.length - 1].uuid,
+              isShow: true,
+            }
+            const uuid = genUUID()
+            const control2 = {
+              uuid: genUUID(),
+              type: 'control',
+              x: curve.points[2].x,
+              y: curve.points[2].y,
+              origin: uuid,
+              isShow: true,
+            }
+            const end = {
+              uuid: uuid,
+              type: 'anchor',
+              x: curve.points[3].x,
+              y: curve.points[3].y,
+              origin: null,
+              isShow: true,
+            }
+            points.push(control1, control2, end)
+          }
         }
-        points.push(control1, control2, end)
+        
+        // 只有当有足够的点时才创建组件
+        if (points.length >= 3) {
+          components.push(genPenComponent(points, true))
+        }
       }
-      components.push(genPenComponent(points, true))
+      
+      return components
     }
-  } else if (unitedPath && unitedPath.curves) {
-    const paths = unitedPath
-    let points = []
-    points.push({
-      uuid: genUUID(),
-      type: 'anchor',
-      x: paths.curves[0].points[0].x,
-      y: paths.curves[0].points[0].y,
-      origin: null,
-      isShow: true,
-    })
-    for (let j = 0; j < paths.curves.length; j++) {
-      const curve = paths.curves[j]
-      const control1 = {
-        uuid: genUUID(),
-        type: 'control',
-        x: curve.points[1].x,
-        y: curve.points[1].y,
-        origin: points[points.length - 1].uuid,
-        isShow: true,
-      }
-      const uuid = genUUID()
-      const control2 = {
-        uuid: genUUID(),
-        type: 'control',
-        x: curve.points[2].x,
-        y: curve.points[2].y,
-        origin: uuid,
-        isShow: true,
-      }
-      const end = {
-        uuid: uuid,
-        type: 'anchor',
-        x: curve.points[3].x,
-        y: curve.points[3].y,
-        origin: null,
-        isShow: true,
-      }
-      points.push(control1, control2, end)
-    }
-    components.push(genPenComponent(points, true))
-  } else {
-    return
+    
+    components = extractComponentsFromPath(unitedPath)
   }
+
   if (editStatus.value === Status.Edit) {
     editCharacterFile.value.script = `function script_${editCharacterFile.value.uuid.replaceAll('-', '_')} (character, constants, FP) {\n\t//Todo something\n}`,
     editCharacterFile.value.glyph_script = null
@@ -2665,6 +3431,141 @@ const removeOverlap = () => {
       addComponentForCurrentGlyph(components[i])
     }
     emitter.emit('renderGlyph')
+  }
+}
+
+const removeOverlap_wasm = async () => {
+  let char = editCharacterFile.value
+  if (editStatus.value === Status.Glyph) {
+    char = editGlyph.value
+  }
+  // 读取字符轮廓信息（已经将形状都转换成字体轮廓）
+  const {
+    unitsPerEm,
+    descender,
+  } = selectedFile.value.fontSettings
+  let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours2(orderedListWithItemsForCharacterFile(char),
+    { x: 0, y: 0 }, false, 1
+  )
+  if (editStatus.value == Status.Glyph) {
+    contours = componentsToContours2(char._o.components,
+      { x: 0, y: 0 }, true, 1
+    )
+  }
+
+  // 检查是否已经优化过
+  if (isAlreadyOptimized(contours)) {
+    return
+  }
+
+  try {
+    // 使用WASM去除重叠
+    const overlap_removed_contours = await removeOverlapWithWasm(contours)
+    
+    // 将去除重叠后的轮廓转换为组件
+    let components = []
+    for (let i = 0; i < overlap_removed_contours.length; i++) {
+      const contour = overlap_removed_contours[i]
+      if (contour.length === 0) continue
+      
+      let points = []
+      points.push({
+        uuid: genUUID(),
+        type: 'anchor',
+        x: contour[0].start.x,
+        y: contour[0].start.y,
+        origin: null,
+        isShow: true,
+      })
+      
+      for (let j = 0; j < contour.length; j++) {
+        const segment = contour[j]
+        if ('control1' in segment && 'control2' in segment) {
+          // 三次贝塞尔曲线
+          const control1 = {
+            uuid: genUUID(),
+            type: 'control',
+            x: segment.control1.x,
+            y: segment.control1.y,
+            origin: points[points.length - 1].uuid,
+            isShow: true,
+          }
+          const uuid = genUUID()
+          const control2 = {
+            uuid: genUUID(),
+            type: 'control',
+            x: segment.control2.x,
+            y: segment.control2.y,
+            origin: uuid,
+            isShow: true,
+          }
+          const end = {
+            uuid: uuid,
+            type: 'anchor',
+            x: segment.end.x,
+            y: segment.end.y,
+            origin: null,
+            isShow: true,
+          }
+          points.push(control1, control2, end)
+        } else if ('control' in segment) {
+          // 二次贝塞尔曲线
+          const control = {
+            uuid: genUUID(),
+            type: 'control',
+            x: segment.control.x,
+            y: segment.control.y,
+            origin: points[points.length - 1].uuid,
+            isShow: true,
+          }
+          const uuid = genUUID()
+          const end = {
+            uuid: uuid,
+            type: 'anchor',
+            x: segment.end.x,
+            y: segment.end.y,
+            origin: null,
+            isShow: true,
+          }
+          points.push(control, end)
+        } else {
+          // 直线
+          const uuid = genUUID()
+          const end = {
+            uuid: uuid,
+            type: 'anchor',
+            x: segment.end.x,
+            y: segment.end.y,
+            origin: null,
+            isShow: true,
+          }
+          points.push(end)
+        }
+      }
+      components.push(genPenComponent(points, true))
+    }
+    
+    if (editStatus.value === Status.Edit) {
+      editCharacterFile.value.script = `function script_${editCharacterFile.value.uuid.replaceAll('-', '_')} (character, constants, FP) {\n\t//Todo something\n}`,
+      editCharacterFile.value.glyph_script = null
+      editCharacterFile.value.system_script = null
+      editCharacterFile.value.orderedList = []
+      editCharacterFile.value.components = []
+      for (let i = 0; i < components.length; i++) {
+        addComponentForCurrentCharacterFile(components[i])
+      }
+      emitter.emit('renderCharacter')
+    } else if (editStatus.value === Status.Glyph) {
+      editGlyph.value.script = `function script_${editGlyph.value.uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t//Todo something\n}`,
+      editGlyph.value.glyph_script = null
+      editGlyph.value.system_script = null
+      for (let i = 0; i < components.length; i++) {
+        addComponentForCurrentGlyph(components[i])
+      }
+      emitter.emit('renderGlyph')
+    }
+  } catch (error) {
+    console.error('Error removing overlap with WASM:', error)
   }
 }
 
@@ -2694,6 +3595,101 @@ const openPlayground = () => {
       `popup,width=${1280},height=${800},left=${(screen.width - 1280) / 2}`,
     )
   }
+}
+
+
+// 添加精度控制常量
+const OVERLAP_REMOVAL_CONFIG = {
+  // 路径精度设置
+  PATH_PRECISION: 1e-6,
+  // 容差值
+  TOLERANCE: 1e-8,
+  // 最大细分次数
+  MAX_SUBDIVISIONS: 10,
+  // 曲线细分阈值
+  CURVE_SUBDIVISION_THRESHOLD: 0.1,
+  // 合并容差
+  MERGE_TOLERANCE: 1e-6
+}
+
+// 优化后的路径创建函数
+const createOptimizedPath = (contour: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>): paper.Path => {
+  const path = new paper.Path()
+  
+  if (contour.length === 0) return path
+  
+  // 移动到起始点
+  const startPoint = new paper.Point(contour[0].start.x, contour[0].start.y)
+  path.moveTo(startPoint)
+  
+  for (let j = 0; j < contour.length; j++) {
+    const segment = contour[j]
+    
+    if (segment.type === PathType.LINE) {
+      const lineSegment = segment as unknown as ILine
+      const endPoint = new paper.Point(lineSegment.end.x, lineSegment.end.y)
+      path.lineTo(endPoint)
+    } else if (segment.type === PathType.CUBIC_BEZIER) {
+      const cubicSegment = segment as unknown as ICubicBezierCurve
+      const control1 = new paper.Point(cubicSegment.control1.x, cubicSegment.control1.y)
+      const control2 = new paper.Point(cubicSegment.control2.x, cubicSegment.control2.y)
+      const endPoint = new paper.Point(cubicSegment.end.x, cubicSegment.end.y)
+      path.cubicCurveTo(control1, control2, endPoint)
+    } else if (segment.type === PathType.QUADRATIC_BEZIER) {
+      const quadSegment = segment as unknown as IQuadraticBezierCurve
+      const control = new paper.Point(quadSegment.control.x, quadSegment.control.y)
+      const endPoint = new paper.Point(quadSegment.end.x, quadSegment.end.y)
+      
+      // 将二次贝塞尔转换为三次贝塞尔
+      const cubicControl1 = startPoint.multiply(1/3).add(control.multiply(2/3))
+      const cubicControl2 = endPoint.multiply(1/3).add(control.multiply(2/3))
+      path.cubicCurveTo(cubicControl1, cubicControl2, endPoint)
+    }
+    
+    // 更新起始点
+    startPoint.x = segment.end.x
+    startPoint.y = segment.end.y
+  }
+  
+  return path
+}
+
+// 检查贝塞尔曲线控制点是否有效
+const isValidBezierControlPoint = (
+  start: paper.Point, 
+  control1: paper.Point, 
+  control2: paper.Point, 
+  end: paper.Point
+): boolean => {
+  // 检查控制点是否在合理范围内
+  const minDistance = OVERLAP_REMOVAL_CONFIG.TOLERANCE
+  const maxDistance = start.getDistance(end) * 10 // 控制点不应超过起点终点距离的10倍
+  
+  const d1 = start.getDistance(control1)
+  const d2 = control1.getDistance(control2)
+  const d3 = control2.getDistance(end)
+  
+  return d1 > minDistance && d1 < maxDistance && 
+         d2 > minDistance && d2 < maxDistance && 
+         d3 > minDistance && d3 < maxDistance
+}
+
+// 优化路径合并函数
+const mergePathsWithPrecision = (paths: paper.Path[]): paper.Path | null => {
+  if (paths.length === 0) return null
+  if (paths.length === 1) return paths[0]
+  
+  // 设置paper.js的全局精度
+  paper.settings.precision = OVERLAP_REMOVAL_CONFIG.PATH_PRECISION
+  
+  let unitedPath = paths[0].clone()
+  
+  for (let i = 1; i < paths.length; i++) {
+    const currentPath = paths[i]
+    unitedPath = unitedPath.unite(currentPath) as paper.Path
+  }
+  
+  return unitedPath
 }
 
 const tauri_handlers: IHandlerMap = {
@@ -2784,5 +3780,5 @@ export {
   nativeImportFile,
   instanceCharacter,
   nativeSaveBinary,
-  openPlayground,
+  openPlayground, addLoaded,
 }

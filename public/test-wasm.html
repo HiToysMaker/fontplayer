@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WASM Test</title>
+</head>
+<body>
+    <h1>WASM Module Test</h1>
+    <div id="status">Loading...</div>
+    <button onclick="testWasm()">Test WASM Function</button>
+    <div id="result"></div>
+
+    <script type="module">
+        async function testWasm() {
+            const statusDiv = document.getElementById('status');
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                statusDiv.textContent = 'Loading WASM module...';
+                
+                // 使用动态import加载WASM模块
+                const wasmModule = await import('/overlap_wasm.js');
+                statusDiv.textContent = 'Initializing WASM...';
+                
+                // 初始化WASM模块
+                await wasmModule.default();
+                statusDiv.textContent = 'WASM initialized successfully!';
+                
+                // 测试函数
+                const testContours = [
+                    [
+                        {
+                            type: 'LINE',
+                            start: { x: 0, y: 0 },
+                            end: { x: 100, y: 0 }
+                        },
+                        {
+                            type: 'LINE',
+                            start: { x: 100, y: 0 },
+                            end: { x: 100, y: 100 }
+                        },
+                        {
+                            type: 'LINE',
+                            start: { x: 100, y: 100 },
+                            end: { x: 0, y: 100 }
+                        },
+                        {
+                            type: 'LINE',
+                            start: { x: 0, y: 100 },
+                            end: { x: 0, y: 0 }
+                        }
+                    ]
+                ];
+                
+                const result = wasmModule.remove_overlap(JSON.stringify(testContours));
+                const parsedResult = JSON.parse(result);
+                
+                resultDiv.innerHTML = `
+                    <h3>Test Result:</h3>
+                    <pre>${JSON.stringify(parsedResult, null, 2)}</pre>
+                `;
+                
+                statusDiv.textContent = '✅ WASM test completed successfully!';
+            } catch (error) {
+                statusDiv.textContent = `❌ Error: ${error.message}`;
+                console.error('WASM test error:', error);
+            }
+        }
+        
+        // 页面加载时自动测试
+        window.addEventListener('load', testWasm);
+    </script>
+</body>
+</html> 

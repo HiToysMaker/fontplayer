@@ -8,7 +8,7 @@
 
   import { files, removeFile, setSelectedFileUUID, selectedFileUUID, editCharacterFile, selectedFile } from '../../stores/files'
   import { editGlyph, stroke_glyphs, radical_glyphs, comp_glyphs, glyphs } from '../../stores/glyph'
-  import { editStatus, Status } from '../../stores/font'
+  import { setEditStatus, editStatus, Status } from '../../stores/font'
   import { setCloseFileTipDialogVisible, setFontSettingsDialogVisible } from '../../stores/dialogs'
   import { Close, Search, InfoFilled, Tools } from '@element-plus/icons-vue'
   import { useI18n } from 'vue-i18n'
@@ -52,7 +52,13 @@
           <el-icon><Close /></el-icon>
         </span>
       </span>
-      <div class="right-btns" v-if="selectedFile">
+      <span class="advanced-edit-btn" v-show="files.value.length > 0" @pointerdown="() => setEditStatus(Status.AdvancedEdit)">
+        <el-button type="primary" size="small">
+          <el-icon><Tools /></el-icon>
+          高级编辑
+        </el-button>
+      </span>
+      <div class="right-btns" v-if="selectedFile" style="margin-left: auto;">
         <el-icon class="right-btn"><Search /></el-icon>
         <el-popover
           placement="bottom-end"
@@ -136,7 +142,14 @@
     padding: 0 10px;
   }
   .row-1 {
-    justify-content: space-between;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 15px;
+  }
+  .advanced-edit-btn {
+    display: flex;
+    align-items: center;
+    height: 36px;
   }
   .info-list {
     .info-item {

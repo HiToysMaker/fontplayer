@@ -357,12 +357,12 @@
 								/>
 							</el-select>
 							<div v-if="parameter.type === ParameterType.Number">
-								<el-input-number class="parameter-value" v-model="parameter.value"></el-input-number>
+								<el-input-number class="parameter-value" v-model="parameter.value" :precision="2"></el-input-number>
 								<el-form-item label="min" label-width="42px">
-									<el-input-number class="parameter-value" v-model="parameter.min"></el-input-number>
+									<el-input-number class="parameter-value" v-model="parameter.min" :precision="2"></el-input-number>
 								</el-form-item>
 								<el-form-item label="max" label-width="42px">
-									<el-input-number class="parameter-value" v-model="parameter.max"></el-input-number>
+									<el-input-number class="parameter-value" v-model="parameter.max" :precision="2"></el-input-number>
 								</el-form-item>
 							</div>
 							<el-select v-model="parameter.value" class="parameter-const-select" :placeholder="tm('programming.value')" v-else-if="parameter.type === ParameterType.Constant">
@@ -380,13 +380,13 @@
 											<el-input class="parameter-value" v-model="(parameter.value as IRingParameter).radius.name"></el-input>
 										</el-form-item>
 										<el-form-item label="value" label-width="42px">
-											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).radius.value"></el-input-number>
+											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).radius.value" :precision="2"></el-input-number>
 										</el-form-item>
 										<el-form-item label="min" label-width="42px">
-											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).radius.min"></el-input-number>
+											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).radius.min" :precision="2"></el-input-number>
 										</el-form-item>
 										<el-form-item label="max" label-width="42px">
-											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).radius.max"></el-input-number>
+											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).radius.max" :precision="2"></el-input-number>
 										</el-form-item>
 									</el-tab-pane>
 									<el-tab-pane label="degree">
@@ -394,13 +394,13 @@
 											<el-input class="parameter-value" v-model="(parameter.value as IRingParameter).degree.name"></el-input>
 										</el-form-item>
 										<el-form-item label="value" label-width="42px">
-											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).degree.value"></el-input-number>
+											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).degree.value" :precision="2"></el-input-number>
 										</el-form-item>
 										<el-form-item label="min" label-width="42px">
-											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).degree.min"></el-input-number>
+											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).degree.min" :precision="2"></el-input-number>
 										</el-form-item>
 										<el-form-item label="max" label-width="42px">
-											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).degree.max"></el-input-number>
+											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).degree.max" :precision="2"></el-input-number>
 										</el-form-item>
 									</el-tab-pane>
 									<el-tab-pane label="params">
@@ -411,13 +411,13 @@
 													<el-input class="parameter-value" v-model="param.name"></el-input>
 												</el-form-item>
 												<el-form-item label="value" label-width="42px">
-													<el-input-number class="parameter-value" v-model="param.value"></el-input-number>
+													<el-input-number class="parameter-value" v-model="param.value" :precision="2"></el-input-number>
 												</el-form-item>
 												<el-form-item label="min" label-width="42px">
-													<el-input-number class="parameter-value" v-model="param.min"></el-input-number>
+													<el-input-number class="parameter-value" v-model="param.min" :precision="2"></el-input-number>
 												</el-form-item>
 												<el-form-item label="max" label-width="42px">
-													<el-input-number class="parameter-value" v-model="param.max"></el-input-number>
+													<el-input-number class="parameter-value" v-model="param.max" :precision="2"></el-input-number>
 												</el-form-item>
 											</el-collapse-item>
 										</el-collapse>
@@ -452,12 +452,12 @@
 								/>
 							</el-select>
 							<div v-if="parameter.type === ParameterType.Number">
-								<el-input-number class="parameter-value" v-model="parameter.value"></el-input-number>
+								<el-input-number class="parameter-value" v-model="parameter.value" :precision="2"></el-input-number>
 								<el-form-item label="min" label-width="42px">
-									<el-input-number class="parameter-value" v-model="parameter.min"></el-input-number>
+									<el-input-number class="parameter-value" v-model="parameter.min" :precision="2"></el-input-number>
 								</el-form-item>
 								<el-form-item label="max" label-width="42px">
-									<el-input-number class="parameter-value" v-model="parameter.max"></el-input-number>
+									<el-input-number class="parameter-value" v-model="parameter.max" :precision="2"></el-input-number>
 								</el-form-item>
 							</div>
 							<el-select v-model="parameter.value" class="parameter-const-select" :placeholder="tm('programming.value')" v-else-if="parameter.type === ParameterType.Constant">
@@ -475,13 +475,13 @@
 											<el-input class="parameter-value" v-model="(parameter.value as IRingParameter).radius.name"></el-input>
 										</el-form-item>
 										<el-form-item label="value" label-width="42px">
-											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).radius.value"></el-input-number>
+											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).radius.value" :precision="2"></el-input-number>
 										</el-form-item>
 										<el-form-item label="min" label-width="42px">
-											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).radius.min"></el-input-number>
+											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).radius.min" :precision="2"></el-input-number>
 										</el-form-item>
 										<el-form-item label="max" label-width="42px">
-											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).radius.max"></el-input-number>
+											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).radius.max" :precision="2"></el-input-number>
 										</el-form-item>
 									</el-tab-pane>
 									<el-tab-pane label="degree">
@@ -489,13 +489,13 @@
 											<el-input class="parameter-value" v-model="(parameter.value as IRingParameter).degree.name"></el-input>
 										</el-form-item>
 										<el-form-item label="value" label-width="42px">
-											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).degree.value"></el-input-number>
+											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).degree.value" :precision="2"></el-input-number>
 										</el-form-item>
 										<el-form-item label="min" label-width="42px">
-											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).degree.min"></el-input-number>
+											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).degree.min" :precision="2"></el-input-number>
 										</el-form-item>
 										<el-form-item label="max" label-width="42px">
-											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).degree.max"></el-input-number>
+											<el-input-number class="parameter-value" v-model="(parameter.value as IRingParameter).degree.max" :precision="2"></el-input-number>
 										</el-form-item>
 									</el-tab-pane>
 									<el-tab-pane label="params">
@@ -506,13 +506,13 @@
 													<el-input class="parameter-value" v-model="param.name"></el-input>
 												</el-form-item>
 												<el-form-item label="value" label-width="42px">
-													<el-input-number class="parameter-value" v-model="param.value"></el-input-number>
+													<el-input-number class="parameter-value" v-model="param.value" :precision="2"></el-input-number>
 												</el-form-item>
 												<el-form-item label="min" label-width="42px">
-													<el-input-number class="parameter-value" v-model="param.min"></el-input-number>
+													<el-input-number class="parameter-value" v-model="param.min" :precision="2"></el-input-number>
 												</el-form-item>
 												<el-form-item label="max" label-width="42px">
-													<el-input-number class="parameter-value" v-model="param.max"></el-input-number>
+													<el-input-number class="parameter-value" v-model="param.max" :precision="2"></el-input-number>
 												</el-form-item>
 											</el-collapse-item>
 										</el-collapse>

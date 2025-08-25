@@ -193,7 +193,7 @@
 				y1: y1.value,
 				y2: y2.value,
 			},
-			useSkeletonGrid: true,
+			useSkeletonGrid: false,
 		})
   })
 

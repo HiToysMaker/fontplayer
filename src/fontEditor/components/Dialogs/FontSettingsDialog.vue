@@ -27,7 +27,7 @@
     }
   })
 
-  watch(selectedFile, () => {
+  watch([() => selectedFile.value?.name, () => selectedFile.value?.fontSettings], () => {
     if (!selectedFile.value) return
     name.value = selectedFile.value.name
     unitsPerEm.value = selectedFile.value.fontSettings.unitsPerEm

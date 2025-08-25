@@ -16,7 +16,7 @@ import { strokes as hei_strokes } from '../templates/strokes_1'
 import { ParametersMap } from "../programming/ParametersMap"
 import { IParameter } from "./glyph"
 import paper from 'paper'
-import { base } from "./global"
+import { base, total, loading as loadingGlobal, loaded } from "./global"
 
 // 参数类型
 // parameter type
@@ -149,6 +149,8 @@ const generateCharacterTemplate = (characterFile) => {
 }
 
 const initPlayground = async () => {
+  total.value = 0
+  loadingGlobal.value = true
   characters.value = []
   window.FP = FP
   const wrapper = document.getElementById('playground-characters-list')
@@ -346,6 +348,7 @@ const initPlayground = async () => {
   })
 
   editChar(characters.value[0].uuid)
+  loadingGlobal.value = false
 }
 
 const renderPreview = () => {
@@ -424,11 +427,11 @@ const getScript = (glyph) => {
 	return null
 }
 
-const exportFont = () => {
+const exportFont = async () => {
   if (loading.value) return
   loading.value = true
-  computeOverlapRemovedContours()
-  const font = createFont()
+  await computeOverlapRemovedContours()
+  const font = await createFont()
   //@ts-ignore
   if (!!window.__TAURI_INTERNALS__) {
     const buffer = toArrayBuffer(font) as ArrayBuffer
@@ -447,6 +450,130 @@ const exportFont = () => {
   }
 }
 
+// 添加精度控制常量
+const OVERLAP_REMOVAL_CONFIG = {
+  // 路径精度设置
+  PATH_PRECISION: 1e-6,
+  // 容差值
+  TOLERANCE: 1e-8,
+  // 最大细分次数
+  MAX_SUBDIVISIONS: 10,
+  // 曲线细分阈值
+  CURVE_SUBDIVISION_THRESHOLD: 0.1,
+  // 合并容差
+  MERGE_TOLERANCE: 1e-6
+}
+
+// 优化后的路径创建函数
+const createOptimizedPath = (contour: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>): paper.Path => {
+  const path = new paper.Path()
+  
+  if (contour.length === 0) return path
+  
+  // 移动到起始点
+  const startPoint = new paper.Point(contour[0].start.x, contour[0].start.y)
+  path.moveTo(startPoint)
+  
+  for (let j = 0; j < contour.length; j++) {
+    const segment = contour[j]
+    
+    if (segment.type === PathType.LINE) {
+      const lineSegment = segment as unknown as ILine
+      const endPoint = new paper.Point(lineSegment.end.x, lineSegment.end.y)
+      path.lineTo(endPoint)
+    } else if (segment.type === PathType.CUBIC_BEZIER) {
+      const cubicSegment = segment as unknown as ICubicBezierCurve
+      const control1 = new paper.Point(cubicSegment.control1.x, cubicSegment.control1.y)
+      const control2 = new paper.Point(cubicSegment.control2.x, cubicSegment.control2.y)
+      const endPoint = new paper.Point(cubicSegment.end.x, cubicSegment.end.y)
+      path.cubicCurveTo(control1, control2, endPoint)
+    } else if (segment.type === PathType.QUADRATIC_BEZIER) {
+      const quadSegment = segment as unknown as IQuadraticBezierCurve
+      const control = new paper.Point(quadSegment.control.x, quadSegment.control.y)
+      const endPoint = new paper.Point(quadSegment.end.x, quadSegment.end.y)
+      
+      // 将二次贝塞尔转换为三次贝塞尔
+      const cubicControl1 = startPoint.multiply(1/3).add(control.multiply(2/3))
+      const cubicControl2 = endPoint.multiply(1/3).add(control.multiply(2/3))
+      path.cubicCurveTo(cubicControl1, cubicControl2, endPoint)
+    }
+    
+    // 更新起始点
+    startPoint.x = segment.end.x
+    startPoint.y = segment.end.y
+  }
+  
+  return path
+}
+
+// 优化路径合并函数
+const mergePathsWithPrecision = (paths: paper.Path[]): paper.Path | null => {
+  if (paths.length === 0) return null
+  if (paths.length === 1) return paths[0]
+  
+  // 设置paper.js的全局精度
+  paper.settings.precision = OVERLAP_REMOVAL_CONFIG.PATH_PRECISION
+  
+  let unitedPath = paths[0].clone()
+  
+  for (let i = 1; i < paths.length; i++) {
+    const currentPath = paths[i]
+    const result = unitedPath.unite(currentPath) as paper.Path
+    if (result && result.area && Math.abs(result.area) > OVERLAP_REMOVAL_CONFIG.MERGE_TOLERANCE) {
+      unitedPath = result
+    }
+  }
+  
+  return unitedPath
+}
+
+// 检测字符是否已经不需要去除重叠
+const isAlreadyOptimized = (contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>): boolean => {
+  if (contours.length <= 1) {
+    return true // 单个轮廓不需要去除重叠
+  }
+  
+  // 检查轮廓之间是否有重叠
+  let hasOverlap = false
+  for (let i = 0; i < contours.length; i++) {
+    for (let j = i + 1; j < contours.length; j++) {
+      const contour1 = contours[i]
+      const contour2 = contours[j]
+      
+      // 计算两个轮廓的包围盒
+      let minX1 = Infinity, minY1 = Infinity, maxX1 = -Infinity, maxY1 = -Infinity
+      let minX2 = Infinity, minY2 = Infinity, maxX2 = -Infinity, maxY2 = -Infinity
+      
+      for (let k = 0; k < contour1.length; k++) {
+        const segment = contour1[k]
+        minX1 = Math.min(minX1, segment.start.x, segment.end.x)
+        minY1 = Math.min(minY1, segment.start.y, segment.end.y)
+        maxX1 = Math.max(maxX1, segment.start.x, segment.end.x)
+        maxY1 = Math.max(maxY1, segment.start.y, segment.end.y)
+      }
+      
+      for (let k = 0; k < contour2.length; k++) {
+        const segment = contour2[k]
+        minX2 = Math.min(minX2, segment.start.x, segment.end.x)
+        minY2 = Math.min(minY2, segment.start.y, segment.end.y)
+        maxX2 = Math.max(maxX2, segment.start.x, segment.end.x)
+        maxY2 = Math.max(maxY2, segment.start.y, segment.end.y)
+      }
+      
+      // 检查包围盒是否重叠
+      if (maxX1 >= minX2 && maxX2 >= minX1 && maxY1 >= minY2 && maxY2 >= minY1) {
+        hasOverlap = true
+        break
+      }
+    }
+    if (hasOverlap) break
+  }
+  
+  // 如果有重叠，说明需要去除重叠，不应该跳过
+  // 只有在没有重叠的情况下才认为已经优化过
+  return !hasOverlap
+}
+
 const computeOverlapRemovedContours = () => {
   const unitsPerEm = 1000
   const ascender = 800
@@ -459,93 +586,93 @@ const computeOverlapRemovedContours = () => {
       descender,
       advanceWidth: unitsPerEm,
     }, { x: 0, y: 0 }, false, false, false)
+
+    // 检查是否已经优化过
+    if (isAlreadyOptimized(contours)) {
+      // 即使跳过处理，也要保存原始轮廓到overlap_removed_contours
+      char.overlap_removed_contours = contours
+      continue
+    }
   
     // 将轮廓转换成Path
     let paths = []
     for (let i = 0; i < contours.length; i++) {
       const contour = contours[i]
-      let path = new paper.Path()
-      path.moveTo(new paper.Point(contour[0].start.x, contour[0].start.y))
-      for (let j = 0; j < contour.length; j++) {
-        const _path = contour[j]
-        if (_path.type === PathType.LINE) {
-          path.lineTo(new paper.Point((_path as unknown as ILine).end.x, (_path as unknown as ILine).end.y))
-        } else if (_path.type === PathType.CUBIC_BEZIER) {
-          path.cubicCurveTo(
-            new paper.Point(
-              (_path as unknown as ICubicBezierCurve).control1.x,
-              (_path as unknown as ICubicBezierCurve).control1.y,
-            ),
-            new paper.Point(
-              (_path as unknown as ICubicBezierCurve).control2.x,
-              (_path as unknown as ICubicBezierCurve).control2.y,
-            ),
-            new paper.Point(
-              (_path as unknown as ICubicBezierCurve).end.x,
-              (_path as unknown as ICubicBezierCurve).end.y,
-            )
-          )
-        }
+      if (contour.length === 0) continue
+      
+      const path = createOptimizedPath(contour)
+      
+      // 确保路径闭合
+      if (!path.closed) {
+        path.closePath()
       }
+      
       paths.push(path)
     }
 
     // 合并路径，去除重叠
-    let unitedPath = null
-    if (paths.length < 2) {
-      unitedPath = paths[1]
-    } else {
-      unitedPath = paths[0].unite(paths[1])
-      for (let i = 2; i < paths.length; i++) {
-        unitedPath = unitedPath.unite(paths[i])
-      }
-    }
+    let unitedPath = mergePathsWithPrecision(paths)
 
-    if (!unitedPath) return
+    if (!unitedPath || !unitedPath.curves || unitedPath.curves.length === 0) {
+      // 合并失败或没有有效曲线，使用原始轮廓
+      char.overlap_removed_contours = contours
+      continue
+    }
 
     // 根据合并路径生成轮廓数据
     let overlap_removed_contours = []
-    if (unitedPath.children && unitedPath.children.length) {
-      for (let i = 0; i < unitedPath.children.length; i++) {
-        const paths = unitedPath.children[i]
-        if (!paths.curves.length) continue
-        const contour = []
-        for (let j = 0; j < paths.curves.length; j++) {
-          const curve = paths.curves[j]
-          const path = {
-            type: PathType.CUBIC_BEZIER,
-            start: { x: curve.points[0].x, y: curve.points[0].y },
-            control1: { x: curve.points[1].x, y: curve.points[1].y },
-            control2: { x: curve.points[2].x, y: curve.points[2].y },
-            end: { x: curve.points[3].x, y: curve.points[3].y },
+    
+    const extractContoursFromPath = (path: paper.Path) => {
+      const contours = []
+      
+      // 处理子路径
+      if (path.children && path.children.length > 0) {
+        for (let i = 0; i < path.children.length; i++) {
+          const child = path.children[i]
+          if (child instanceof paper.Path) {
+            const childContours = extractContoursFromPath(child)
+            contours.push(...childContours)
           }
-          contour.push(path)
         }
-        overlap_removed_contours.push(contour)
+        return contours
       }
-    } else if (unitedPath.curves) {
-      const paths = unitedPath
-      if (!paths.curves.length) return
-      const contour = []
-      for (let j = 0; j < paths.curves.length; j++) {
-        const curve = paths.curves[j]
-        const path = {
-          type: PathType.CUBIC_BEZIER,
-          start: { x: curve.points[0].x, y: curve.points[0].y },
-          control1: { x: curve.points[1].x, y: curve.points[1].y },
-          control2: { x: curve.points[2].x, y: curve.points[2].y },
-          end: { x: curve.points[3].x, y: curve.points[3].y },
+      
+      // 处理单个路径
+      if (path.curves && path.curves.length > 0) {
+        const contour = []
+        for (let j = 0; j < path.curves.length; j++) {
+          const curve = path.curves[j]
+          if (curve.points.length >= 4) {
+            const pathSegment = {
+              type: PathType.CUBIC_BEZIER,
+              start: { x: curve.points[0].x, y: curve.points[0].y },
+              control1: { x: curve.points[1].x, y: curve.points[1].y },
+              control2: { x: curve.points[2].x, y: curve.points[2].y },
+              end: { x: curve.points[3].x, y: curve.points[3].y },
+            }
+            contour.push(pathSegment)
+          }
         }
-        contour.push(path)
+        if (contour.length > 0) {
+          contours.push(contour)
+        }
       }
-      overlap_removed_contours.push(contour)
+      
+      return contours
     }
+    
+    overlap_removed_contours = extractContoursFromPath(unitedPath)
 
-    char.overlap_removed_contours = overlap_removed_contours
+    // 如果没有提取到有效轮廓，使用原始轮廓
+    if (overlap_removed_contours.length === 0) {
+      char.overlap_removed_contours = contours
+    } else {
+      char.overlap_removed_contours = overlap_removed_contours
+    }
   }
 }
 
-const createFont = () => {
+const createFont = async () => {
   const _width = 1000
   const _height = 1000
   const fontCharacters = [{
@@ -554,6 +681,7 @@ const createFont = () => {
     contours: [[]] as Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>,
     contourNum: 0,
     advanceWidth: Math.max(_width, _height),
+    leftSideBearing: 0,
   }]
 
   let containSpace = false
@@ -580,6 +708,7 @@ const createFont = () => {
       name: text,
       unicode: parseInt(unicode, 16),
       advanceWidth: unitsPerEm,
+      leftSideBearing: 0,
       contours,
       contourNum: contours.length,
     })
@@ -593,6 +722,7 @@ const createFont = () => {
       name: ' ',
       unicode: parseInt('0x20', 16),
       advanceWidth: unitsPerEm,
+      leftSideBearing: 0,
       contours: [[]],
       contourNum: 0,
     })
@@ -601,7 +731,80 @@ const createFont = () => {
   fontCharacters.sort((a: any, b: any) => {
     return a.unicode - b.unicode
   })
-  const font = create(fontCharacters, {
+
+  // // 创建完整的tables配置
+  // const tables = {
+  //   head: {
+  //     majorVersion: 0x0001,
+  //     minorVersion: 0x0000,
+  //     fontRevision: 0x00010000,
+  //     flags: [
+  //       true, true, false, false, false, false, false, false,
+  //       false, false, false, false, false, false, false, false,
+  //     ],
+  //     created: {
+  //       timestamp: Math.floor(Date.now() / 1000) + 2082844800,
+  //       value: Date.now(),
+  //     },
+  //     modified: {
+  //       timestamp: Math.floor(Date.now() / 1000) + 2082844800,
+  //       value: Date.now()
+  //     },
+  //     macStyle: [
+  //       false, false, false, false, false, false, false, false,
+  //       false, false, false, false, false, false, false, false,
+  //     ],
+  //     lowestRecPPEM: 7,
+  //     fontDirectionHint: 2,
+  //   },
+  //   hhea: {
+  //     majorVersion: 0x0001,
+  //     minorVersion: 0x0000,
+  //     lineGap: 0,
+  //     caretSlopeRise: 1,
+  //     caretSlopeRun: 0,
+  //     caretOffset: 0,
+  //   },
+  //   os2: {
+  //     version: 0x0005,
+  //     usWeightClass: 400,
+  //     usWidthClass: 5,
+  //     fsType: 0,
+  //     ySubscriptXSize: 650,
+  //     ySubscriptYSize: 699,
+  //     ySubscriptXOffset: 0,
+  //     ySubscriptYOffset: 140,
+  //     ySuperscriptXSize: 650,
+  //     ySuperscriptYSize: 699,
+  //     ySuperscriptXOffset: 0,
+  //     ySuperscriptYOffset: 479,
+  //     yStrikeoutSize: 49,
+  //     yStrikeoutPosition: 258,
+  //     sFamilyClass: 0,
+  //     panose: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  //     achVendID: 'UKWN',
+  //     fsSelection: [
+  //       false, false, false, false, false, false, true, false, false, false,
+  //     ],
+  //     usMaxContext: 0,
+  //     usLowerOpticalPointSize: 8,
+  //     usUpperOpticalPointSize: 72,
+  //   },
+  //   name: [],
+  //   post: {
+  //     version: 0x00030000,
+  //     italicAngle: 0,
+  //     underlinePosition: 0,
+  //     underlineThickness: 0,
+  //     isFixedPitch: 1,
+  //     minMemType42: 0,
+  //     maxMemType42: 0,
+  //     minMemType1: 0,
+  //     maxMemType1: 0,
+  //   },
+  // }
+
+  const font = await create(fontCharacters, {
     familyName: '登鹳雀楼',
     styleName: 'Regular',
     unitsPerEm,

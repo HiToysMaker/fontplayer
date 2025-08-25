@@ -1,4 +1,9 @@
 import { ref, reactive, type Ref } from 'vue'
+import type {
+	ILine,
+	ICubicBezierCurve,
+	IQuadraticBezierCurve,
+} from '../../fontManager'
 
 /**
  * 该store文件包含了从图片中提取文字时，编辑操作中所用到的一些基础信息
@@ -44,6 +49,8 @@ export interface IPenComponent {
 	fillColor: string;
 	closePath: boolean;
 	editMode: boolean;
+	contour?: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>;
+	preview?: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>;
 }
 
 export interface IPolygonComponent {
@@ -51,6 +58,8 @@ export interface IPolygonComponent {
 	strokeColor: string;
 	fillColor: string;
 	closePath: boolean;
+	contour?: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>;
+	preview?: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>;
 }
 
 export interface IRectangleComponent {
@@ -61,6 +70,8 @@ export interface IRectangleComponent {
 	strokeColor: string;
 	fillColor: string;
 	closePath: boolean;
+	contour?: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>;
+	preview?: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>;
 }
 
 export interface IEllipseComponent {
@@ -71,6 +82,8 @@ export interface IEllipseComponent {
 	strokeColor: string;
 	fillColor: string;
 	closePath: boolean;
+	contour?: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>;
+	preview?: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>;
 }
 
 export interface ICharacterPic {
@@ -149,6 +162,7 @@ export enum Status {
 	RadicalGlyphList,
 	CompGlyphList,
 	StrokeGlyphList,
+  AdvancedEdit,
 }
 
 const prevStatus: Ref<Status> = ref(Status.CharacterList)

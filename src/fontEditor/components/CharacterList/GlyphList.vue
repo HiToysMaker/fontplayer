@@ -7,7 +7,7 @@
 	 */
 
 	import { Status } from '../../stores/font'
-	import { glyphs, executeScript, addGlyphTemplate, clearGlyphRenderList, getGlyphType, getGlyphByUUID } from '../../stores/glyph'
+	import { glyphs, executeScript, addGlyphTemplate, clearGlyphRenderList, getGlyphType, getGlyphByUUID, editGlyph } from '../../stores/glyph'
 	import { glyphComponentsDialogVisible, setGlyphComponentsDialogVisible } from '../../stores/dialogs'
 	import { onMounted, nextTick, onUnmounted } from 'vue'
 	import type {
@@ -64,14 +64,20 @@
 
 	// 渲染指定uuid的字形预览
 	// render glyph preview by uuid
-	const renderGlyphPreviewCanvasByUUID = (uuid: string) => {
+	const renderGlyphPreviewCanvasByUUID = (uuid: string, editing: boolean = false) => {
 		let glyph
-		for (let i = 0; i < glyphs.value.length; i++) {
-			glyph = glyphs.value[i]
-			if (glyph.uuid === uuid) {
-				break
+		if (!editing) {
+			for (let i = 0; i < glyphs.value.length; i++) {
+				glyph = glyphs.value[i]
+				if (glyph.uuid === uuid) {
+					break
+				}
 			}
+		} else {
+			// 编辑时，使用editGlyph
+			glyph = editGlyph.value
 		}
+		if (!glyph) return
 		executeScript(glyph)
 		glyph?.components?.map(component => {
 			if (component.type === 'glyph') {
@@ -112,6 +118,7 @@
 				// render glyph preview
 				if (timerMap.get(uuid)) {
 					clearTimeout(timerMap.get(uuid))
+					timerMap.set(uuid, null)
 				}
 				const timer = setTimeout(async () => {
 					await nextTick()
@@ -128,6 +135,35 @@
 			} else if (type === Status.CompGlyphList) {
 				emitter.emit('renderCompGlyphPreviewCanvasByUUID', uuid)
 				emitter.emit('renderCompGlyphSelectionByUUID', uuid)
+			}
+		})
+
+		// 编辑字形时，监听渲染预览字形事件
+		// listen for render preview canvas by uuid on glyph editing
+		emitter.on('renderGlyphPreviewCanvasByUUIDOnEditing', async (uuid: string) => {
+			const type: Status = getGlyphType(uuid)
+
+			if (type === Status.GlyphList) {
+				// render glyph preview
+				if (timerMap.get(uuid)) {
+					clearTimeout(timerMap.get(uuid))
+					timerMap.set(uuid, null)
+				}
+				const timer = setTimeout(async () => {
+					await nextTick()
+					renderGlyphPreviewCanvasByUUID(uuid, true)
+				}, 1000)
+				timerMap.set(uuid, timer)
+				emitter.emit('renderGlyphSelectionByUUIDOnEditing', uuid)
+			} else if (type === Status.StrokeGlyphList) {
+				emitter.emit('renderStrokeGlyphPreviewCanvasByUUIDOnEditing', uuid)
+				emitter.emit('renderStrokeGlyphSelectionByUUIDOnEditing', uuid)
+			} else if (type === Status.RadicalGlyphList) {
+				emitter.emit('renderRadicalGlyphPreviewCanvasByUUIDOnEditing', uuid)
+				emitter.emit('renderRadicalGlyphSelectionByUUIDOnEditing', uuid)
+			} else if (type === Status.CompGlyphList) {
+				emitter.emit('renderCompGlyphPreviewCanvasByUUIDOnEditing', uuid)
+				emitter.emit('renderCompGlyphSelectionByUUIDOnEditing', uuid)
 			}
 		})
 

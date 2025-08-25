@@ -56,6 +56,7 @@
 	emitter.on('renderGlyphSelectionByUUID', (uuid: string) => {
 		if (timerMap.get(uuid)) {
       clearTimeout(timerMap.get(uuid))
+      timerMap.set(uuid, null)
     }
     const timer = setTimeout(async () => {
       await nextTick()
@@ -67,6 +68,7 @@
 	emitter.on('renderStrokeGlyphSelectionByUUID', (uuid: string) => {
 		if (timerMap.get(uuid)) {
       clearTimeout(timerMap.get(uuid))
+      timerMap.set(uuid, null)
     }
     const timer = setTimeout(async () => {
       await nextTick()
@@ -78,6 +80,7 @@
 	emitter.on('renderRadicalGlyphSelectionByUUID', (uuid: string) => {
 		if (timerMap.get(uuid)) {
       clearTimeout(timerMap.get(uuid))
+      timerMap.set(uuid, null)
     }
     const timer = setTimeout(async () => {
       await nextTick()
@@ -89,6 +92,7 @@
 	emitter.on('renderCompGlyphSelectionByUUID', (uuid: string) => {
 		if (timerMap.get(uuid)) {
       clearTimeout(timerMap.get(uuid))
+      timerMap.set(uuid, null)
     }
     const timer = setTimeout(async () => {
       await nextTick()
@@ -97,9 +101,63 @@
     timerMap.set(uuid, timer)
 	})
 
+  emitter.on('renderGlyphSelectionByUUIDOnEditing', (uuid: string) => {
+		if (timerMap.get(uuid)) {
+      clearTimeout(timerMap.get(uuid))
+      timerMap.set(uuid, null)
+    }
+    const timer = setTimeout(async () => {
+      await nextTick()
+      renderGlyphPreviewCanvasByUUID(uuid, Status.GlyphList, true)
+    }, 1000)
+    timerMap.set(uuid, timer)
+	})
 
-  const renderGlyphPreviewCanvasByUUID = (uuid: string, type: Status) => {
-    let glyph = getGlyphByUUID(uuid)
+	emitter.on('renderStrokeGlyphSelectionByUUIDOnEditing', (uuid: string) => {
+		if (timerMap.get(uuid)) {
+      clearTimeout(timerMap.get(uuid))
+      timerMap.set(uuid, null)
+    }
+    const timer = setTimeout(async () => {
+      await nextTick()
+      renderGlyphPreviewCanvasByUUID(uuid, Status.StrokeGlyphList, true)
+    }, 1000)
+    timerMap.set(uuid, timer)
+	})
+
+	emitter.on('renderRadicalGlyphSelectionByUUIDOnEditing', (uuid: string) => {
+		if (timerMap.get(uuid)) {
+      clearTimeout(timerMap.get(uuid))
+      timerMap.set(uuid, null)
+    }
+    const timer = setTimeout(async () => {
+      await nextTick()
+      renderGlyphPreviewCanvasByUUID(uuid, Status.RadicalGlyphList, true)
+    }, 1000)
+    timerMap.set(uuid, timer)
+	})
+
+	emitter.on('renderCompGlyphSelectionByUUIDOnEditing', (uuid: string) => {
+		if (timerMap.get(uuid)) {
+      clearTimeout(timerMap.get(uuid))
+      timerMap.set(uuid, null)
+    }
+    const timer = setTimeout(async () => {
+      await nextTick()
+      renderGlyphPreviewCanvasByUUID(uuid, Status.CompGlyphList, true)
+    }, 100)
+    timerMap.set(uuid, timer)
+	})
+
+
+  const renderGlyphPreviewCanvasByUUID = (uuid: string, type: Status, editing: boolean = false) => {
+    let glyph = null
+    if (editing) {
+      // 编辑时，使用editGlyph
+			glyph = editGlyph.value
+    } else {
+      glyph = getGlyphByUUID(uuid)
+    }
     executeScript(glyph)
     glyph?.components?.map(component => {
       if (component.type === 'glyph') {
@@ -227,12 +285,10 @@
   }
 
 	const cancelSelect = (uuid) => {
-		selected_glyphs.value.map((glyph, index) => {
-			if (glyph.uuid === uuid) {
-				selected_glyphs.value.splice(index, 1)
-				return
-			}
-		})
+		const index = selected_glyphs.value.findIndex(glyph => glyph.uuid === uuid)
+		if (index !== -1) {
+			selected_glyphs.value.splice(index, 1)
+		}
 	}
 	
 	const handleConfirm = () => {

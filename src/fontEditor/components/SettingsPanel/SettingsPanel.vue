@@ -99,7 +99,7 @@
         </div>
         <div class="form-item" v-show="gridStyle === 'mesh'">
           <div class="form-label"> {{ t('panels.settingsPanel.mesh.precision') }} </div>
-          <el-input-number v-model="gridPrecision" :min="10" :max="50" />
+          <el-input-number v-model="gridPrecision" :min="10" :max="50" :precision="2" />
         </div>
       </el-form>
     </div>

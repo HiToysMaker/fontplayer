@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WASM 重叠去除功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 3px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            margin: 10px 0;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>WASM 重叠去除功能测试</h1>
+    
+    <div class="test-section">
+        <h2>测试1: 重叠矩形</h2>
+        <p>测试两个重叠矩形的合并效果</p>
+        <button onclick="testOverlappingRectangles()">运行测试</button>
+        <div id="result1" class="test-result"></div>
+        <canvas id="canvas1" width="400" height="300"></canvas>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试2: 带孔洞的形状</h2>
+        <p>测试带孔洞形状的非零环绕规则处理</p>
+        <button onclick="testShapeWithHole()">运行测试</button>
+        <div id="result2" class="test-result"></div>
+        <canvas id="canvas2" width="400" height="300"></canvas>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试3: 复杂形状</h2>
+        <p>测试复杂形状的重叠去除</p>
+        <button onclick="testComplexShape()">运行测试</button>
+        <div id="result3" class="test-result"></div>
+        <canvas id="canvas3" width="400" height="300"></canvas>
+    </div>
+
+    <script type="module">
+        // 导入WASM模块
+        import wasmModule from './overlap_wasm.js';
+        
+        // 初始化WASM模块
+        let remove_overlap;
+        
+        async function initWasm() {
+            try {
+                await wasmModule();
+                remove_overlap = wasmModule.remove_overlap;
+                console.log('WASM module initialized successfully');
+            } catch (error) {
+                console.error('Failed to initialize WASM module:', error);
+                throw error;
+            }
+        }
+        
+        // 测试数据：两个重叠的矩形
+        const testContours = [
+            [
+                // 第一个矩形（外轮廓）
+                {
+                    type: 'LINE',
+                    start: { x: 50, y: 50 },
+                    end: { x: 150, y: 50 }
+                },
+                {
+                    type: 'LINE',
+                    start: { x: 150, y: 50 },
+                    end: { x: 150, y: 150 }
+                },
+                {
+                    type: 'LINE',
+                    start: { x: 150, y: 150 },
+                    end: { x: 50, y: 150 }
+                },
+                {
+                    type: 'LINE',
+                    start: { x: 50, y: 150 },
+                    end: { x: 50, y: 50 }
+                }
+            ],
+            [
+                // 第二个矩形（与第一个重叠）
+                {
+                    type: 'LINE',
+                    start: { x: 100, y: 100 },
+                    end: { x: 200, y: 100 }
+                },
+                {
+                    type: 'LINE',
+                    start: { x: 200, y: 100 },
+                    end: { x: 200, y: 200 }
+                },
+                {
+                    type: 'LINE',
+                    start: { x: 200, y: 200 },
+                    end: { x: 100, y: 200 }
+                },
+                {
+                    type: 'LINE',
+                    start: { x: 100, y: 200 },
+                    end: { x: 100, y: 100 }
+                }
+            ]
+        ];
+
+        // 测试数据：带孔洞的形状
+        const testContoursWithHole = [
+            [
+                // 外轮廓（逆时针）
+                {
+                    type: 'LINE',
+                    start: { x: 50, y: 50 },
+                    end: { x: 250, y: 50 }
+                },
+                {
+                    type: 'LINE',
+                    start: { x: 250, y: 50 },
+                    end: { x: 250, y: 250 }
+                },
+                {
+                    type: 'LINE',
+                    start: { x: 250, y: 250 },
+                    end: { x: 50, y: 250 }
+                },
+                {
+                    type: 'LINE',
+                    start: { x: 50, y: 250 },
+                    end: { x: 50, y: 50 }
+                }
+            ],
+            [
+                // 内轮廓（孔洞，顺时针）
+                {
+                    type: 'LINE',
+                    start: { x: 100, y: 100 },
+                    end: { x: 100, y: 200 }
+                },
+                {
+                    type: 'LINE',
+                    start: { x: 100, y: 200 },
+                    end: { x: 200, y: 200 }
+                },
+                {
+                    type: 'LINE',
+                    start: { x: 200, y: 200 },
+                    end: { x: 200, y: 100 }
+                },
+                {
+                    type: 'LINE',
+                    start: { x: 200, y: 100 },
+                    end: { x: 100, y: 100 }
+                }
+            ]
+        ];
+
+        // 绘制轮廓到canvas
+        function drawContours(canvasId, contours, title) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 设置样式
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.fillStyle = 'rgba(0, 100, 255, 0.3)';
+            
+            // 绘制标题
+            ctx.fillStyle = '#000';
+            ctx.font = '16px Arial';
+            ctx.fillText(title, 10, 20);
+            
+            // 绘制每个轮廓
+            contours.forEach((contour, index) => {
+                if (contour.length === 0) return;
+                
+                ctx.beginPath();
+                ctx.moveTo(contour[0].start.x, contour[0].start.y);
+                
+                contour.forEach(segment => {
+                    if (segment.type === 'LINE') {
+                        ctx.lineTo(segment.end.x, segment.end.y);
+                    } else if (segment.type === 'CUBIC_BEZIER') {
+                        ctx.bezierCurveTo(
+                            segment.control1.x, segment.control1.y,
+                            segment.control2.x, segment.control2.y,
+                            segment.end.x, segment.end.y
+                        );
+                    }
+                });
+                
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            });
+        }
+
+        // 测试1: 重叠矩形
+        window.testOverlappingRectangles = async function() {
+            const resultDiv = document.getElementById('result1');
+            resultDiv.innerHTML = '<p>正在测试...</p>';
+            resultDiv.className = 'test-result';
+            
+            try {
+                // 确保WASM模块已初始化
+                if (!remove_overlap) {
+                    await initWasm();
+                }
+                
+                const result = await remove_overlap(JSON.stringify(testContours));
+                const parsedResult = JSON.parse(result);
+                
+                // 绘制原始轮廓
+                drawContours('canvas1', testContours, '原始轮廓');
+                
+                // 绘制结果
+                setTimeout(() => {
+                    drawContours('canvas1', parsedResult, '合并后结果');
+                }, 1000);
+                
+                resultDiv.innerHTML = `
+                    <p class="success">✅ 测试成功！</p>
+                    <p>输入轮廓数: ${testContours.length}</p>
+                    <p>输出轮廓数: ${parsedResult.length}</p>
+                    <details>
+                        <summary>详细结果</summary>
+                        <pre>${JSON.stringify(parsedResult, null, 2)}</pre>
+                    </details>
+                `;
+                resultDiv.className = 'test-result success';
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ 测试失败: ${error.message}</p>
+                `;
+                resultDiv.className = 'test-result error';
+            }
+        };
+
+        // 测试2: 带孔洞的形状
+        window.testShapeWithHole = async function() {
+            const resultDiv = document.getElementById('result2');
+            resultDiv.innerHTML = '<p>正在测试...</p>';
+            resultDiv.className = 'test-result';
+            
+            try {
+                // 确保WASM模块已初始化
+                if (!remove_overlap) {
+                    await initWasm();
+                }
+                
+                const result = await remove_overlap(JSON.stringify(testContoursWithHole));
+                const parsedResult = JSON.parse(result);
+                
+                // 绘制原始轮廓
+                drawContours('canvas2', testContoursWithHole, '原始轮廓（带孔洞）');
+                
+                // 绘制结果
+                setTimeout(() => {
+                    drawContours('canvas2', parsedResult, '处理后结果');
+                }, 1000);
+                
+                resultDiv.innerHTML = `
+                    <p class="success">✅ 测试成功！</p>
+                    <p>输入轮廓数: ${testContoursWithHole.length}</p>
+                    <p>输出轮廓数: ${parsedResult.length}</p>
+                    <details>
+                        <summary>详细结果</summary>
+                        <pre>${JSON.stringify(parsedResult, null, 2)}</pre>
+                    </details>
+                `;
+                resultDiv.className = 'test-result success';
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ 测试失败: ${error.message}</p>
+                `;
+                resultDiv.className = 'test-result error';
+            }
+        };
+
+        // 测试3: 复杂形状
+        window.testComplexShape = async function() {
+            const resultDiv = document.getElementById('result3');
+            resultDiv.innerHTML = '<p>正在测试...</p>';
+            resultDiv.className = 'test-result';
+            
+            try {
+                // 创建一个复杂的测试形状
+                const complexContours = [
+                    // 外轮廓
+                    [
+                        { type: 'LINE', start: { x: 50, y: 50 }, end: { x: 200, y: 50 } },
+                        { type: 'LINE', start: { x: 200, y: 50 }, end: { x: 200, y: 200 } },
+                        { type: 'LINE', start: { x: 200, y: 200 }, end: { x: 50, y: 200 } },
+                        { type: 'LINE', start: { x: 50, y: 200 }, end: { x: 50, y: 50 } }
+                    ],
+                    // 重叠的圆形（用多边形近似）
+                    [
+                        { type: 'LINE', start: { x: 100, y: 100 }, end: { x: 150, y: 100 } },
+                        { type: 'LINE', start: { x: 150, y: 100 }, end: { x: 150, y: 150 } },
+                        { type: 'LINE', start: { x: 150, y: 150 }, end: { x: 100, y: 150 } },
+                        { type: 'LINE', start: { x: 100, y: 150 }, end: { x: 100, y: 100 } }
+                    ]
+                ];
+                
+                // 确保WASM模块已初始化
+                if (!remove_overlap) {
+                    await initWasm();
+                }
+                
+                const result = await remove_overlap(JSON.stringify(complexContours));
+                const parsedResult = JSON.parse(result);
+                
+                // 绘制原始轮廓
+                drawContours('canvas3', complexContours, '复杂形状');
+                
+                // 绘制结果
+                setTimeout(() => {
+                    drawContours('canvas3', parsedResult, '处理后结果');
+                }, 1000);
+                
+                resultDiv.innerHTML = `
+                    <p class="success">✅ 测试成功！</p>
+                    <p>输入轮廓数: ${complexContours.length}</p>
+                    <p>输出轮廓数: ${parsedResult.length}</p>
+                    <details>
+                        <summary>详细结果</summary>
+                        <pre>${JSON.stringify(parsedResult, null, 2)}</pre>
+                    </details>
+                `;
+                resultDiv.className = 'test-result success';
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ 测试失败: ${error.message}</p>
+                `;
+                resultDiv.className = 'test-result error';
+            }
+        };
+    </script>
+</body>
+</html> 

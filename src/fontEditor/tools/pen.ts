@@ -20,6 +20,7 @@ import { formatPoints, genPenContour } from '../../features/font'
 import { transformPoints } from '../../utils/math'
 import { Status, editStatus } from '../stores/font'
 import { OpType, saveState, StoreType } from '../stores/edit'
+import { getStrokeWidth } from '../stores/global'
 
 let eventListenersMap: any = {}
 // 钢笔工具初始化方法
@@ -283,6 +284,7 @@ const renderPenEditor = (canvas: HTMLCanvasElement) => {
 	if (!_points.length) return
 	const w = 10
 	ctx.strokeStyle = '#000'
+	ctx.lineWidth = getStrokeWidth()
 	ctx.fillStyle = '#000'
 	ctx.beginPath()
 	ctx.moveTo(_points[0].x, _points[0].y)

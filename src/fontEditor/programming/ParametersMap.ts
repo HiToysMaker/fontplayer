@@ -1,5 +1,6 @@
 import { IParameter, constantsMap, ParameterType } from '../stores/glyph'
 import { constantsMap as constantsMap_playground } from '../stores/playground'
+import { constantsMap as constantsMap_advancedEdit } from '../stores/advancedEdit'
 
 class ParametersMap {
 	public parameters: Array<IParameter>
@@ -61,6 +62,10 @@ class ParametersMap {
 		else if (parameter.type === ParameterType.PlaygroundConstant) {
 			// playground中需要调用playground store中存储的constantsMap
 			return constantsMap_playground.getByUUID(parameter.value as string)
+		}
+		else if (parameter.type === ParameterType.AdvancedEditConstant) {
+			// advancedEdit中需要调用advancedEdit store中存储的constantsMap
+			return constantsMap_advancedEdit.getByUUID(parameter.value as string)
 		}
 		else if (parameter.type === ParameterType.Enum) {
 			// 如果选择类型，返回相应的类型value标识

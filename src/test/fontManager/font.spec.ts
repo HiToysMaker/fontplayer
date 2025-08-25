@@ -37,19 +37,25 @@ describe('font', () => {
 		unicode: 97,
 	}]
 
-	const font = createFont(characters, {
-		familyName: 'Test',
-		styleName: 'Medium',
-		unitsPerEm: 1000,
-		ascender: 800,
-		descender: -200,
-	})
-
-	it('create correct number of tables', () => {
+	it('create correct number of tables', async () => {
+		const font = await createFont(characters, {
+			familyName: 'Test',
+			styleName: 'Medium',
+			unitsPerEm: 1000,
+			ascender: 800,
+			descender: -200,
+		})
 		expect(font.tables.length).toBe(9)
 	})
 
-	test('hasChar method', () => {
+	test('hasChar method', async () => {
+		const font = await createFont(characters, {
+			familyName: 'Test',
+			styleName: 'Medium',
+			unitsPerEm: 1000,
+			ascender: 800,
+			descender: -200,
+		})
 		expect(hasChar(font, 'a')).toBe(true)
 	})
 })

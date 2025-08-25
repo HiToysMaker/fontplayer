@@ -156,7 +156,7 @@
     _selectedComponent.value.value._o.getJoints().map((joint) => {
       joint.component = _selectedComponent.value
     })
-    emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
+    emitter.emit('renderPreviewCanvasByUUIDOnEditing', editCharacterFile.value.uuid)
     emitter.emit('renderCharacter', true)
   }
 
@@ -183,7 +183,7 @@
     }
 		executeScript(_selectedComponent.value.value)
     executeCharacterScript(editCharacterFile.value)
-    emitter.emit('renderPreviewCanvasByUUID', _selectedComponent.value.value.uuid)
+    emitter.emit('renderPreviewCanvasByUUIDOnEditing', _selectedComponent.value.value.uuid)
     emitter.emit('renderCharacter')
   }
 
@@ -257,13 +257,13 @@
 
 	const setAsGlobalParam = (parameter: IParameter) => {
 		selectedParam.value = parameter
-		selectedParamType.value = 'glyph_components'
+		selectedParamType.value = 'character_components'
 		setSetAsGlobalParamDialogVisible(true)
 	}
 
 	const selectGlobalParam = (parameter: IParameter) => {
 		selectedParam.value = parameter
-		selectedParamType.value = 'glyph_components'
+		selectedParamType.value = 'character_components'
 		setSelectGlobalParamDialogVisible(true)
 	}
 
@@ -324,7 +324,7 @@
 							v-for="key in Object.keys(_selectedComponent.value.layout.params)"
 							:label="key"
 						>
-							<el-input-number v-model="_selectedComponent.value.layout.params[key]" @change="onLayoutChange"/>
+							            <el-input-number v-model="_selectedComponent.value.layout.params[key]" @change="onLayoutChange" :precision="2"/>
 							<div class="ratio-item">
 								<font-awesome-icon class="ratio-icon" :class="{
 									selected: _selectedComponent.value.layout.ratioedMap && _selectedComponent.value.layout.ratioedMap[key].ratioed

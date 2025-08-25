@@ -339,6 +339,25 @@ const parseIndex = (data: DataView, offset: number, parser?: Function) => {
 	const rawDataArray = []
 	const dataArray = []
 	if (count !== 0) {
+		// 检查offSize是否有效
+		if (offSize < 1 || offSize > 4) {
+			// console.warn(`CFF parseIndex: Invalid offSize ${offSize} at offset ${offset}, count: ${count}`)
+			// 返回空的结果
+			return {
+				data: {
+					configRawData,
+					index: {
+						count: 0,
+						offSize,
+						offset: [],
+						data: [],
+					},
+					data: [],
+				},
+				offset: offset + 3, // 跳过头部
+			}
+		}
+		
 		for (let i = 0; i < count + 1; i++) {
 			switch(offSize) {
 				case 1: {
@@ -356,9 +375,7 @@ const parseIndex = (data: DataView, offset: number, parser?: Function) => {
 					break
 				}
 				case 3: {
-					offsetArray.push(decode.decoder['uint32']())
-					configRawData.push(data.getUint8(offset2))
-					offset2++
+					offsetArray.push(decode.decoder['uint24']())
 					configRawData.push(data.getUint8(offset2))
 					offset2++
 					configRawData.push(data.getUint8(offset2))
@@ -368,15 +385,7 @@ const parseIndex = (data: DataView, offset: number, parser?: Function) => {
 					break
 				}
 				case 4: {
-					offsetArray.push(decode.decoder['bigInt']())
-					configRawData.push(data.getUint8(offset2))
-					offset2++
-					configRawData.push(data.getUint8(offset2))
-					offset2++
-					configRawData.push(data.getUint8(offset2))
-					offset2++
-					configRawData.push(data.getUint8(offset2))
-					offset2++
+					offsetArray.push(decode.decoder['uint32']())
 					configRawData.push(data.getUint8(offset2))
 					offset2++
 					configRawData.push(data.getUint8(offset2))
@@ -397,8 +406,9 @@ const parseIndex = (data: DataView, offset: number, parser?: Function) => {
 				let tmp = 0
 				if (typeof j !== 'bigint')
 					tmp = data.getUint8(_offset - 1 + j)
-				else
+				else {
 					tmp = data.getUint8(Number(BigInt(_offset - 1) + j))
+				}
 				_data.push(tmp)
 			}
 			rawDataArray.push(_data)
@@ -422,42 +432,60 @@ const parseIndex = (data: DataView, offset: number, parser?: Function) => {
 }
 
 const parseType2CharString= (charString: any, index: number, topDict: any, font: IFont) => {
+	// 验证输入参数
+	if (!charString || !Array.isArray(charString) || charString.length === 0) {
+		// console.warn(`CFF parseType2CharString: Invalid charString for index ${index}`)
+		return {
+			contours: [],
+			commands: [],
+			advanceWidth: 0
+		}
+	}
+
+	
 	const contours: Array<Array<ILine | ICubicBezierCurve>> = []
 	let contour: Array<ILine | ICubicBezierCurve> = []
 	const commands: Array<{ command: string, data: Array<number>, mask?: Array<number> }> = []
 	let width: any = null
 	let nStems = 0
 	let x = 0, y = 0
-	const stack: Array<number> = []
+	let stack: Array<number> = []
 
 	let subrs: any
 	let subrsBias: any
 	let defaultWidthX
 	let nominalWidthX
 	if (font.settings.isCIDFont) {
-			const fdIndex = topDict._fdSelect[index]
-			const fdDict = topDict._fdArray[fdIndex]
-			subrs = fdDict._subrs
-			subrsBias = fdDict._subrsBias
-			defaultWidthX = fdDict._defaultWidthX
-			nominalWidthX = fdDict._nominalWidthX
+		const fdIndex = topDict._fdSelect[index]
+		const fdDict = topDict._fdArray[fdIndex]
+		subrs = fdDict._subrs
+		subrsBias = fdDict._subrsBias
+		defaultWidthX = fdDict._defaultWidthX
+		nominalWidthX = fdDict._nominalWidthX
 	} else {
-			subrs = topDict._subrs
-			subrsBias = topDict._subrsBias
-			defaultWidthX = topDict._defaultWidthX
-			nominalWidthX = topDict._nominalWidthX
+		subrs = topDict._subrs
+		subrsBias = topDict._subrsBias
+		defaultWidthX = topDict._defaultWidthX
+		nominalWidthX = topDict._nominalWidthX
 	}
-
+	
 	const getWidth = () => {
-		if (stack.length % 2 !== 0) {
+		if (stack.length > 1 && stack.length % 2 !== 0) {
+			const oldWidth = width
 			width = stack.shift()
 		}
 	}
 
 	const parse = (charString: any) => {
+		if (!charString) return
 		let i = 0
 		while(i < charString.length) {
 			const v = charString[i]
+			if (typeof v !== 'number' || v < 0 || v > 255) {
+				// console.warn(`CFF parseType2CharString: Invalid byte value at index ${i}: ${v}`)
+				i++
+				continue
+			}
 			i++
 			switch(v) {
 				case 1: {
@@ -571,6 +599,13 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 					const dx = stack.pop() as number
 					x += dx
 					y += dy
+					// 防止NaN
+					if (isNaN(x)) {
+						x = 0
+					}
+					if (isNaN(y)) {
+						y = 0
+					}
 					commands.push({
 						command: 'rmoveto',
 						data: [dx, dy]
@@ -584,12 +619,22 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 						contours.push(contour)
 						contour = []
 					}
-					const dy = stack.pop() as number
-					y += dy
-					commands.push({
-						command: 'vmoveto',
-						data: [dy]
-					})
+					// 确保栈中有值
+					if (stack.length === 0) {
+						const dy = 0
+						y += dy
+					} else {
+						const dy = stack.pop() as number
+						y += dy
+						// 防止NaN
+						if (isNaN(y)) {
+							y = 0
+						}
+						commands.push({
+							command: 'vmoveto',
+							data: [dy]
+						})
+					}
 					break
 				}
 				case 22: {
@@ -601,6 +646,10 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 					}
 					const dx = stack.pop() as number
 					x += dx
+					// 防止NaN
+					if (isNaN(x)) {
+						x = 0
+					}
 					commands.push({
 						command: 'hmoveto',
 						data: [dx]
@@ -625,6 +674,13 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 						})
 						x += dx
 						y += dy
+						// 防止NaN
+						if (isNaN(x)) {
+							x = 0
+						}
+						if (isNaN(y)) {
+							y = 0
+						}
 						data.push(dx)
 						data.push(dy)
 					}
@@ -637,22 +693,9 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 				case 6: {
 					// hlineto
 					const data = []
-					const dx = stack.shift() as number
-					data.push(dx)
-					contour.push({
-						type: PathType.LINE,
-						start: {
-							x, y,
-						},
-						end: {
-							x: x + dx,
-							y,
-						}
-					})
-					x += dx
 					while (stack.length) {
 						const dx = stack.shift() as number
-						const dy = stack.shift() as number
+						data.push(dx)
 						contour.push({
 							type: PathType.LINE,
 							start: {
@@ -664,8 +707,23 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 							}
 						})
 						x += dx
-						y += dy
-						data.push(dx)
+						
+						// 如果还有更多数据，处理垂直线段
+						if (stack.length) {
+							const dy = stack.shift() as number
+							data.push(dy)
+							contour.push({
+								type: PathType.LINE,
+								start: {
+									x, y,
+								},
+								end: {
+									x,
+									y: y + dy,
+								}
+							})
+							y += dy
+						}
 					}
 					commands.push({
 						command: 'hlineto',
@@ -676,36 +734,37 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 				case 7: {
 					// vlineto
 					const data = []
-					const dy = stack.shift() as number
-					data.push(dy)
-					contour.push({
-						type: PathType.LINE,
-						start: {
-							x, y,
-						},
-						end: {
-							x,
-							y: y + dy,
-						}
-					})
-					y += dy
 					while (stack.length) {
-						const dx = stack.shift() as number
 						const dy = stack.shift() as number
+						data.push(dy)
 						contour.push({
 							type: PathType.LINE,
 							start: {
 								x, y,
 							},
 							end: {
-								x: x + dx,
+								x,
 								y: y + dy,
 							}
 						})
-						x += dx
 						y += dy
-						data.push(dx)
-						data.push(dy)
+						
+						// 如果还有更多数据，处理水平线段
+						if (stack.length) {
+							const dx = stack.shift() as number
+							data.push(dx)
+							contour.push({
+								type: PathType.LINE,
+								start: {
+									x, y,
+								},
+								end: {
+									x: x + dx,
+									y,
+								}
+							})
+							x += dx
+						}
 					}
 					commands.push({
 						command: 'vlineto',
@@ -754,7 +813,11 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 				case 27: {
 					// hhcurveto
 					const data = []
-					let dy = stack.length % 2 !== 0 ? data.push(stack.shift() as number) && data[0] : 0
+					let dy = 0
+					if (stack.length % 2 !== 0) {
+						dy = stack.shift() as number
+						data.push(dy)
+					}
 					while (stack.length) {
 						const dxa = stack.shift() as number
 						const dxb = stack.shift() as number
@@ -779,7 +842,12 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 							}
 						})
 						x += dxa + dxb + dxc
-						y += dy + dyb
+						if (dy) {
+							y += dy + dyb
+							dy = 0
+						} else {
+							y += dyb
+						}
 						data.push(dxa, dxb, dyb, dxc)
 					}
 					commands.push({
@@ -791,7 +859,11 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 				case 26: {
 					// vvcurveto
 					const data = []
-					let dx = stack.length % 2 !== 0 ? data.push(stack.shift() as number) && data[0] : 0
+					let dx = 0
+					if (stack.length % 2 !== 0) {
+						dx = stack.shift() as number
+						data.push(dx)
+					}
 					while (stack.length) {
 						const dya = stack.shift() as number
 						const dxb = stack.shift() as number
@@ -812,10 +884,15 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 							},
 							end: {
 								x: x + dx + dxb,
-								y: y + dya + dyb,
+								y: y + dya + dyb + dyc,
 							}
 						})
-						x += dx + dxb
+						if (dx) {
+							x += dx + dxb
+							dx = 0
+						} else {
+							x += dxb
+						}
 						y += dya + dyb + dyc
 						data.push(dya, dxb, dyb, dyc)
 					}
@@ -884,7 +961,7 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 						})
 						x += dxe + dxf
 						y += dyf === null ? dyd + dye : dyd + dye + dyf
-						data.push(dxa, dxb, dyb, dyc)
+						data.push(dyd, dxe, dye, dxf)
 						dyf !== null && data.push(dyf)
 					}
 					commands.push({
@@ -1005,6 +1082,8 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 							y: y + dyd,
 						}
 					})
+					x += dxd
+					y += dyd
 					data.push(dxd, dyd)
 					commands.push({
 						command: 'rcurveline',
@@ -1028,35 +1107,37 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 								y: y + dya,
 							}
 						})
-						x += dxa
-						y += dya
-						data.push(dxa, dya)
+											x += dxa
+					y += dya
+					data.push(dxa, dya)
+				}
+				const dxb = stack.shift() as number
+				const dyb = stack.shift() as number
+				const dxc = stack.shift() as number
+				const dyc = stack.shift() as number
+				const dxd = stack.shift() as number
+				const dyd = stack.shift() as number
+				contour.push({
+					type: PathType.CUBIC_BEZIER,
+					start: {
+						x, y,
+					},
+					control1: {
+						x: x + dxb,
+						y: y + dyb,
+					},
+					control2: {
+						x: x + dxb + dxc,
+						y: y + dyb + dyc,
+					},
+					end: {
+						x: x + dxb + dxc + dxd,
+						y: y + dyb + dyc + dyd,
 					}
-					const dxb = stack.shift() as number
-					const dyb = stack.shift() as number
-					const dxc = stack.shift() as number
-					const dyc = stack.shift() as number
-					const dxd = stack.shift() as number
-					const dyd = stack.shift() as number
-					contour.push({
-						type: PathType.CUBIC_BEZIER,
-						start: {
-							x, y,
-						},
-						control1: {
-							x: x + dxb,
-							y: y + dyb,
-						},
-						control2: {
-							x: x + dxb + dxc,
-							y: y + dyb + dyc,
-						},
-						end: {
-							x: x + dxb + dxc + dxd,
-							y: y + dxb + dxc + dyd,
-						}
-					})
-					data.push(dxb, dyb, dxc, dyc, dxd, dyd)
+				})
+				x += dxb + dxc + dxd
+				y += dyb + dyc + dyd
+				data.push(dxb, dyb, dxc, dyc, dxd, dyd)
 					commands.push({
 						command: 'rlinecurve',
 						data
@@ -1106,19 +1187,20 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 							contour.push({
 								type: PathType.CUBIC_BEZIER,
 								start: {
-									x, y,
+									x: x + dx1 + dx2 + dx3,
+									y: y + dy1 + dy2 + dy3,
 								},
 								control1: {
-									x: x + dx4,
-									y: y + dy4,
+									x: x + dx1 + dx2 + dx3 + dx4,
+									y: y + dy1 + dy2 + dy3 + dy4,
 								},
 								control2: {
-									x: x + dx4 + dx5,
-									y: y + dy4 + dy5,
+									x: x + dx1 + dx2 + dx3 + dx4 + dx5,
+									y: y + dy1 + dy2 + dy3 + dy4 + dy5,
 								},
 								end: {
-									x: x + dx4 + dx5 + dx6,
-									y: y + dy4 + dy5 + dy6,
+									x: x + dx1 + dx2 + dx3 + dx4 + dx5 + dx6,
+									y: y + dy1 + dy2 + dy3 + dy4 + dy5 + dy6,
 								}
 							})
 							x += dx4 + dx5 + dx6
@@ -1161,7 +1243,8 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 							contour.push({
 								type: PathType.CUBIC_BEZIER,
 								start: {
-									x, y,
+									x: x + dx1 + dx2 + dx3,
+									y: y + dy2,
 								},
 								control1: {
 									x: x + dx1 + dx2 + dx3 + dx4,
@@ -1217,7 +1300,8 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 							contour.push({
 								type: PathType.CUBIC_BEZIER,
 								start: {
-									x, y,
+									x: x + dx1 + dx2 + dx3,
+									y: y + dy1 + dy2,
 								},
 								control1: {
 									x: x + dx1 + dx2 + dx3 + dx4,
@@ -1278,19 +1362,20 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 							contour.push({
 								type: PathType.CUBIC_BEZIER,
 								start: {
-									x, y,
+									x: x + dx1 + dx2 + dx3,
+									y: y + dy1 + dy2 + dy3,
 								},
 								control1: {
-									x: x + dx4,
-									y: y + dy4,
+									x: x + dx1 + dx2 + dx3 + dx4,
+									y: y + dy1 + dy2 + dy3 + dy4,
 								},
 								control2: {
-									x: x + dx4 + dx5,
-									y: y + dy4 + dy5,
+									x: x + dx1 + dx2 + dx3 + dx4 + dx5,
+									y: y + dy1 + dy2 + dy3 + dy4 + dy5,
 								},
 								end: {
-									x: x + dx4 + dx5 + (d > 0 ? d6 : 0),
-									y: y + dy4 + dy5 + (d < 0 ? d6 : 0),
+									x: x + dx1 + dx2 + dx3 + dx4 + dx5 + (d > 0 ? d6 : 0),
+									y: y + dy1 + dy2 + dy3 + dy4 + dy5 + (d < 0 ? d6 : 0),
 								}
 							})
 							x += dx4 + dx5 + (d > 0 ? d6 : 0)
@@ -1310,6 +1395,23 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 					const codeIndex = stack.pop() + subrsBias
 					const subrCode = subrs[codeIndex];
 					if (subrCode) {
+						// 保存当前状态
+						const savedX = x;
+						const savedY = y;
+						const savedContour = [...contour];
+						const savedStack = [...stack];
+						
+						parse(subrCode)
+					}
+
+					break
+				}
+				case 29: {
+					// callgsubr
+					const codeIndex = stack.pop() + font.settings.gsubrsBias
+					const subrCode = font.settings.gsubrs[codeIndex];
+
+					if (subrCode) {
 						parse(subrCode)
 					}
 	
@@ -1321,7 +1423,7 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 				}
 				case 14: {
 					// endchar
-					width && getWidth()
+					width === null && getWidth()
 					if (contour.length) {
 						contours.push(contour)
 					}
@@ -1332,22 +1434,26 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 					if (v < 32) {
 						
 					} else if (v < 247) {
-						stack.push(v - 139)
+						const num = v - 139
+						stack.push(num)
 					} else if (v < 251) {
 						const b1 = charString[i]
 						i += 1;
-						stack.push((v - 247) * 256 + b1 + 108);
+						const num = (v - 247) * 256 + b1 + 108
+						stack.push(num)
 					} else if (v < 255) {
 						const b1 = charString[i]
 						i += 1
-						stack.push(-(v - 251) * 256 - b1 - 108)
+						const num = -(v - 251) * 256 - b1 - 108
+						stack.push(num)
 					} else {
 						const b1 = charString[i]
 						const b2 = charString[i + 1]
 						const b3 = charString[i + 2]
 						const b4 = charString[i + 3]
 						i += 4;
-						stack.push(((b1 << 24) | (b2 << 16) | (b3 << 8) | b4) / 65536)
+						const num = ((b1 << 24) | (b2 << 16) | (b3 << 8) | b4) / 65536
+						stack.push(num)
 					}
 					break
 				}
@@ -1356,11 +1462,22 @@ const parseType2CharString= (charString: any, index: number, topDict: any, font:
 	}
 
 	parse(charString)
-	if (!width) width = defaultWidthX
+	
+	if (!width) {
+		width = defaultWidthX
+	} else {
+		// 在CFF中，宽度是相对于nominalWidthX的差值
+		// 如果width不为null，说明从charstring中提取了宽度值
+		if (nominalWidthX !== null && nominalWidthX !== undefined) {
+			const oldWidth = width;
+			width = nominalWidthX + width;
+		}
+	}
+
 	return {
 		contours,
 		commands,
-		advanceWidth: width,
+		advanceWidth: width
 	}
 }
 
@@ -1386,7 +1503,12 @@ const parseDict = (data: DataView, offset: number = 0, size: number) => {
 	// start a new decoder
 	decode.start(data, offset)
 
-	while (decode.getOffset() < size) {
+	let start = decode.getOffset()
+
+	while ((decode.getOffset() - start) < size) {
+		if (decode.getOffset() >= data.byteLength) {
+			break
+		}
 		let op = decode.decoder['uint8']()
 
 		// The first byte for each dict item distinguishes between operator (key) and operand (value).
@@ -1530,6 +1652,8 @@ const interpretDict = (dict: any, meta: Array<any>, strings: Array<any>) => {
 									value = getString(strings, value);
 							}
 							values[j] = value;
+							
+
 					}
 					newDict[m.name] = values;
 			} else {
@@ -1572,7 +1696,8 @@ const entriesToObject = (entries: Array<any>) => {
 
 const parseTopDict = (data: DataView, strings: any) => {
 	const dict = parseDict(data, 0, data.byteLength)
-	return interpretDict(dict, TOP_DICT_META, strings)
+	const result = interpretDict(dict, TOP_DICT_META, strings)
+	return result
 }
 
 const parsePrivateDict = (data: DataView, offset: number, size: number, strings: any) => {
@@ -1604,14 +1729,16 @@ const gatherTopDicts = (data: DataView, offset: number, cffIndex: any, strings: 
 		topDict._nominalWidthX = 0
 		const privateSize = topDict.private[0]
 		const privateOffset = topDict.private[1]
-		if (privateSize !== 0 && privateOffset !== 0) {
+		if (privateSize !== null && privateOffset !== null && privateSize !== 0 && privateOffset !== 0) {
 			const privateDict: any = parsePrivateDict(data, privateOffset + offset, privateSize, strings)
+
 			topDict._defaultWidthX = privateDict.defaultWidthX
 			topDict._nominalWidthX = privateDict.nominalWidthX
-			if (privateDict.subrs !== 0) {
-				const subrOffset = privateOffset + privateDict.subrs
+			if (privateDict.Subrs !== 0) {
+				const subrOffset = privateOffset + privateDict.Subrs
 				const subrIndex = parseIndex(data, subrOffset + offset)
-				topDict._subrs = subrIndex.data
+
+				topDict._subrs = subrIndex.data.data
 				topDict._subrsBias = calcSubroutineBias(topDict._subrs)
 			}
 			topDict._privateDict = privateDict
@@ -1873,10 +2000,13 @@ const parse = (data: DataView, offset: number, font: IFont) => {
 	const _header = parseHeader(data, offset)
 	// 解析name index
 	// parse name index
+
+	
 	const _nameIndex = parseIndex(data, _header.offset)
 	// 解析topDict index
 	// parse topDic index
 	const _topDictIndex = parseIndex(data, _nameIndex.offset)
+
 	// 解析string index
 	// parse string index
 	const _stringIndex = parseIndex(data, _topDictIndex.offset, (bytes: any) => {
@@ -1895,6 +2025,8 @@ const parse = (data: DataView, offset: number, font: IFont) => {
 
 	const topDictArray = gatherTopDicts(data, _globalSubrIndex.offset, _topDictIndex.data.data, _stringIndex.data.data)
 	const topDict = topDictArray[0]
+	
+
 
 	if (topDict._privateDict) {
 		font.settings.defaultWidthX = topDict._privateDict.defaultWidthX
@@ -1943,14 +2075,40 @@ const parse = (data: DataView, offset: number, font: IFont) => {
 		_encodings = parseEncodings(data, offset + topDict.encoding)
 	}
 	const _charsets = parseCharsets(data, offset + topDict.charset, font, _stringIndex.data)
-	const _charStringsIndex = parseIndex(data, offset + topDict.charStrings)
-
+	// 在CFF字体中，charStrings是相对于CFF表开始位置的偏移量
+	const charStringsOffset = offset + topDict.charStrings
+	
+	const _charStringsIndex = parseIndex(data, charStringsOffset)
+	
 	// 解析每个glyph字形
 	// parse each glyph
 	const glyphTables = [] 
-	for (let i = 0; i < (font.settings.numGlyphs as number); i ++) {
-		const charString = _charStringsIndex.data.data[i]
-		glyphTables.push(parseType2CharString(charString, i, topDict, font))
+	// 在CFF字体中，numGlyphs应该从charStringsIndex中获取
+	const numGlyphs = _charStringsIndex.data.index.count
+	const charStringsData = _charStringsIndex.data.data
+	
+	// 使用charsets.data的长度作为实际的glyph数量
+	const actualNumGlyphs = _charsets.data.length
+	
+	for (let i = 0; i < actualNumGlyphs; i ++) {
+		let charString
+		if (i < charStringsData.length) {
+			charString = charStringsData[i]
+		} else {
+			charString = []
+		}
+		
+		try {
+			const glyph = parseType2CharString(charString, i, topDict, font)
+			glyphTables.push(glyph)
+		} catch (error) {
+			// 创建一个空的glyph作为fallback
+			glyphTables.push({
+				contours: [],
+				commands: [],
+				advanceWidth: 0
+			})
+		}
 	}
 
 	return {
@@ -1985,7 +2143,7 @@ const createIndex = (indexData: Array<any>) => {
 	}
 
 	const encodedOffsets: Array<number> = []
-	const offSize = 2//(1 + Math.floor(Math.log(offset) / Math.log(2)) / 8) | 0
+	const offSize = 4//2//(1 + Math.floor(Math.log(offset) / Math.log(2)) / 8) | 0
 	const offsetEncoder = [undefined, encoder.uint8, encoder.uint16, encoder.uint24, encoder.uint32][offSize]
 	for (let i = 0; i < offsets.length; i += 1) {
 		const encodedOffset = (offsetEncoder as Function)(offsets[i])
@@ -2249,8 +2407,8 @@ let cnt = 0
  * @param table ICffTable table
  * @returns raw data array, each entry is type of 8-bit number
  */
-const create = (_table: ICffTable) => {
-	const table = R.clone(_table)
+const create = async(_table: ICffTable) => {
+	const table = _table//R.clone(_table)
 	// 创建header数据
 	// create header data
 	const header = table.header
@@ -2290,17 +2448,71 @@ const create = (_table: ICffTable) => {
 	// 创建charstrings数据
 	// create charstrings data
 	const charStringsIndexRawData = []
-	for (let i = 0; i < glyphTables.length; i++) {
-		loaded.value++
-		if (loaded.value >= total.value) {
-			loading.value = false
-			loaded.value = 0
-			total.value = 0
+
+	// let m = 0
+
+	// const computeGlyphOps = async (): Promise<void> => {
+	// 	// 检查是否完成所有字符处理
+	// 	if (m >= glyphTables.length) {
+	// 		return
+	// 	}
+
+	// 	loaded.value++
+	// 	if (loaded.value >= total.value) {
+	// 		loading.value = false
+	// 		loaded.value = 0
+	// 		total.value = 0
+	// 		return
+	// 	}
+	// 	const glyph = glyphTables[m]
+	// 	const ops = glyphToOps(glyph)
+	// 	charStringsIndexRawData.push({type: 'CharString', value: ops})
+
+	// 	m++
+	// 	// 检查是否还有更多字符需要处理
+	// 	if (m < glyphTables.length) {
+	// 		if (m % 100 === 0) {
+	// 			// 每100个字符后，给UI更多时间更新
+	// 			await new Promise(resolve => setTimeout(resolve, 0))
+	// 		}
+	// 		// 继续处理下一个字符
+	// 		return computeGlyphOps()
+	// 	}
+	// }
+
+	// await computeGlyphOps()
+
+	// const charStringsIndexData = createIndex(charStringsIndexRawData)
+
+
+	// for (let i = 0; i < glyphTables.length; i++) {
+	// 	loaded.value++
+	// 	if (loaded.value >= total.value) {
+	// 		loading.value = false
+	// 		loaded.value = 0
+	// 		total.value = 0
+	// 	}
+	// 	const glyph = glyphTables[i]
+	// 	const ops = glyphToOps(glyph)
+	// 	charStringsIndexRawData.push({type: 'CharString', value: ops})
+	// }
+	// const charStringsIndexData = createIndex(charStringsIndexRawData)
+
+	// 替换掉递归方案，用显式批处理
+	const batchSize = 100;
+	const totalGlyphs = glyphTables.length;
+	for (let start = 0; start < totalGlyphs; start += batchSize) {
+		const end = Math.min(start + batchSize, totalGlyphs);
+		for (let i = start; i < end; i++) {
+			loaded.value++
+			const glyph = glyphTables[i]
+			const ops = glyphToOps(glyph)
+			charStringsIndexRawData.push({ type: 'CharString', value: ops })
 		}
-		const glyph = glyphTables[i]
-		const ops = glyphToOps(glyph)
-		charStringsIndexRawData.push({type: 'CharString', value: ops})
+		// 让出事件循环，更新进度条
+		await new Promise(resolve => setTimeout(resolve, 0))
 	}
+	// 全部 glyph 已收集，安全创建索引
 	const charStringsIndexData = createIndex(charStringsIndexRawData)
 
 	const _fd: any = {

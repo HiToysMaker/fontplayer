@@ -522,10 +522,10 @@
         label-width="50px"
       >
         <el-form-item label="平滑">
-          <el-input-number v-model="maxError" :min="1" :max="10" :disabled="step!==3" @input="onMaxErrorChange"/>
+                      <el-input-number v-model="maxError" :min="1" :max="10" :disabled="step!==3" @input="onMaxErrorChange" :precision="2"/>
         </el-form-item>
         <el-form-item label="过滤">
-          <el-input-number v-model="dropThreshold" :min="0" :max="100" :disabled="step!==3" @input="onDropThresholdChange"/>
+                      <el-input-number v-model="dropThreshold" :min="0" :max="100" :disabled="step!==3" @input="onDropThresholdChange" :precision="2"/>
         </el-form-item>
         <el-button-group class="step-button-group">
           <el-button :disabled="step !== 3" @pointerdown="handleFitCurve" size="small">{{ t('panels.picEditPanel.confirm') }}</el-button>

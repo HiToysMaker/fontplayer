@@ -50,7 +50,7 @@ const menus = {
 		templates: {
 			templates: '模板',
 			test1: '测试模板1',
-			test2: '测试模板2',
+			test2: '黑体笔画模板',
 		},
 		tools: {
 			remove_overlap: '去除重叠',

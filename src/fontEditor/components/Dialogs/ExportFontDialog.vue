@@ -13,7 +13,7 @@
   import { IFile, selectedFile } from '../../stores/files'
   import { computeOverlapRemovedContours, exportFont, mapToObject, plainFile, plainGlyph } from '../../menus/handlers'
   import { ICustomGlyph, comp_glyphs, constantGlyphMap, constants, glyphs, radical_glyphs, stroke_glyphs } from '../../stores/glyph'
-  import { total, loaded, loading } from '../../stores/global'
+  import { total, loaded, loading, loadingMsg } from '../../stores/global'
   const { tm, t } = useI18n()
 
   const options = ref({
@@ -32,11 +32,14 @@
     }
     loaded.value = 0
     loading.value = true
-    if (options.value.remove_overlap) {
-      computeOverlapRemovedContours()
-    }
-    exportFont(options.value)
-    setExportFontDialogVisible(false)
+    loadingMsg.value = '正在对字符进行处理，请稍候...'
+    setTimeout(async () => {
+      if (options.value.remove_overlap) {
+        await computeOverlapRemovedContours()
+      }
+      setTimeout(() => exportFont(options.value), 100)
+      setExportFontDialogVisible(false)
+    }, 100)
   }
 </script>
 

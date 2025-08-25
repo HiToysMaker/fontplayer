@@ -43,6 +43,7 @@ import {
 } from '@fortawesome/free-regular-svg-icons'
 
 import { initWorker } from './fontEditor/worker'
+// import { initializeWasm } from './utils/init-wasm'
 
 import localForage from 'localforage'
 
@@ -122,6 +123,12 @@ app.mount('#app')
 
 const worker = initWorker()
 //const worker = new MyWorker()
+
+// // 初始化WASM模块
+// initializeWasm().then(async success => {
+// }).catch(error => {
+//   console.error('❌ Failed to initialize WASM:', error)
+// })
 
 export {
   app,

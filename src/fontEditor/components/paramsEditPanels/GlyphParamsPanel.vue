@@ -239,7 +239,7 @@
             v-for="key in Object.keys(editGlyph.layout.params)"
             :label="key"
           >
-            <el-input-number v-model="editGlyph.layout.params[key]" @change="onLayoutParamsChange"/>
+            <el-input-number v-model="editGlyph.layout.params[key]" @change="onLayoutParamsChange" :precision="2"/>
           </el-form-item>
           <el-form-item label="编辑结构">
             <el-switch v-model="editingLayout" />

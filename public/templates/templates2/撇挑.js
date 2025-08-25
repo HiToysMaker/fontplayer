@@ -182,11 +182,11 @@ glyph.onSkeletonDragEnd = (data) => {
   glyph.setParam('撇-水平延伸', _params.pie_horizonalSpan)
   glyph.setParam('撇-竖直延伸', _params.pie_verticalSpan)
   glyph.setParam('撇-弯曲游标', _params.pie_bendCursor)
-  glyph.setParam('撇-弯曲度', _params.pie_bendDegree - 30 * global_params.bending_degree)
+  glyph.setParam('撇-弯曲度', _params.pie_bendDegree - 10 * global_params.bending_degree)
   glyph.setParam('挑-水平延伸', _params.tiao_horizonalSpan)
   glyph.setParam('挑-竖直延伸', _params.tiao_verticalSpan)
   glyph.setParam('挑-弯曲游标', _params.tiao_bendCursor)
-  glyph.setParam('挑-弯曲度', _params.tiao_bendDegree - 30 * global_params.bending_degree)
+  glyph.setParam('挑-弯曲度', _params.tiao_bendDegree - 10 * global_params.bending_degree)
   glyph.tempData = null
 }
 

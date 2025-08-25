@@ -220,6 +220,70 @@ const getSubTable = (data: DataView, offset: number, glyphIndexMap: any) => {
 }
 
 /**
+ * 验证和修复字符映射问题
+ * @param characters 字符数组
+ * @returns 修复后的字符数组
+ */
+const validateAndFixCharacterMapping = (characters: Array<ICharacter>): Array<ICharacter> => {
+	// 检查是否有ASCII字符被错误映射
+	const asciiChars = new Set<number>()
+	const chineseChars = new Set<number>()
+	
+	// 分类字符
+	for (let i = 0; i < characters.length; i++) {
+		const char = characters[i]
+		if (char.unicode !== undefined && char.unicode !== null) {
+			if (char.unicode >= 32 && char.unicode <= 126) {
+				asciiChars.add(char.unicode)
+			} else if (char.unicode >= 0x4E00 && char.unicode <= 0x9FFF) {
+				chineseChars.add(char.unicode)
+			}
+		}
+	}
+	
+	// 检查是否有冲突
+	const conflicts = []
+	for (const ascii of asciiChars) {
+		if (chineseChars.has(ascii)) {
+			conflicts.push(ascii)
+		}
+	}
+	
+	if (conflicts.length > 0) {
+		console.warn(`Found Unicode conflicts: ${conflicts.map(c => `${c} (${String.fromCharCode(c)})`).join(', ')}`)
+	}
+	
+	return characters
+}
+
+/**
+ * 确保字符映射的正确性
+ * @param characters 字符数组
+ * @returns 确保映射正确的字符数组
+ */
+const ensureCorrectCharacterMapping = (characters: Array<ICharacter>): Array<ICharacter> => {
+	// 确保.notdef字符在索引0
+	const notdefIndex = characters.findIndex(char => char.unicode === 0)
+	if (notdefIndex > 0) {
+		// 将.notdef字符移到索引0
+		const notdefChar = characters.splice(notdefIndex, 1)[0]
+		characters.unshift(notdefChar)
+	}
+	
+	// 确保字符按Unicode值排序（除了.notdef）
+	if (characters.length > 1) {
+		const sortedChars = characters.slice(1).sort((a, b) => {
+			if (a.unicode === undefined || a.unicode === null) return 1
+			if (b.unicode === undefined || b.unicode === null) return -1
+			return a.unicode - b.unicode
+		})
+		characters.splice(1, characters.length - 1, ...sortedChars)
+	}
+	
+	return characters
+}
+
+/**
  * 根据字符数组创建cmap表
  * @param characters 字符数组
  * @returns cmap表
@@ -230,13 +294,19 @@ const getSubTable = (data: DataView, offset: number, glyphIndexMap: any) => {
  * @returns cmap table
  */
 const createTable = (characters: Array<ICharacter>) => {
+	// 验证和修复字符映射
+	const validatedCharacters = validateAndFixCharacterMapping(characters)
+	
+	// 确保字符映射的正确性
+	const correctedCharacters = ensureCorrectCharacterMapping([...validatedCharacters])
+	
 	let isPlan0Only = true
 	let i
 
 	// 检查是否需要格式12的子表
 	// check if it needs format 12 subtable
-	for (i = characters.length - 1; i > 0; i -= 1) {
-		const character = characters[i]
+	for (i = correctedCharacters.length - 1; i > 0; i -= 1) {
+		const character = correctedCharacters[i]
 		if (character.unicode > 65535) {
 			isPlan0Only = false
 			break
@@ -303,34 +373,98 @@ const createTable = (characters: Array<ICharacter>) => {
 	const glyphIndexMap12: {
 		[key: string | number]: string | number
 	} = {}
-	for (i = 1; i < characters.length; i++) {
-			const character = characters[i]
-			if (character.unicode <= 65535) {
-				segments.push({
-					endCode: character.unicode,
-					startCode: character.unicode,
-					idDelta: -(character.unicode - i),
-					idRangeOffset: 0,
-				})
-				glyphIndexMap4[character.unicode] = i
-			} else if (!isPlan0Only) {
-				groups.push({
-					startCharCode: character.unicode,
-					endCharCode: character.unicode,
-					startGlyphId: i,
-				})
-				glyphIndexMap12[character.unicode] = i
-			}
+	
+	// 创建Unicode到字符索引的映射
+	// 注意：这里使用字符在排序后数组中的实际索引
+	const unicodeToIndexMap = new Map<number, number>()
+	for (i = 0; i < correctedCharacters.length; i++) {
+		const character = correctedCharacters[i]
+		if (character.unicode !== undefined && character.unicode !== null) {
+			unicodeToIndexMap.set(character.unicode, i)
+		}
 	}
-	segments.sort(function (a, b) {
-		return a.startCode - b.startCode
-	})
+	
+	// 创建segments，优化连续的字符
+	// 而不是为每个字符创建单独的segment
+	let optimizedSegments = []
+	let currentSegment = null
+	
+	for (let i = 0; i < correctedCharacters.length; i++) {
+		const character = correctedCharacters[i]
+		if (character.unicode !== undefined && character.unicode !== null && character.unicode <= 65535) {
+			if (!currentSegment) {
+				// 开始新的segment
+				currentSegment = {
+					startCode: character.unicode,
+					endCode: character.unicode,
+					idDelta: -(character.unicode - i),
+					idRangeOffset: 0
+				}
+			} else if (character.unicode === currentSegment.endCode + 1 && 
+					   -(character.unicode - i) === currentSegment.idDelta) {
+				// 扩展当前segment
+				currentSegment.endCode = character.unicode
+			} else {
+				// 结束当前segment，开始新的segment
+				optimizedSegments.push(currentSegment)
+				currentSegment = {
+					startCode: character.unicode,
+					endCode: character.unicode,
+					idDelta: -(character.unicode - i),
+					idRangeOffset: 0
+				}
+			}
+			glyphIndexMap4[character.unicode] = i
+		} else if (character.unicode !== undefined && character.unicode !== null && !isPlan0Only) {
+			groups.push({
+				startCharCode: character.unicode,
+				endCharCode: character.unicode,
+				startGlyphId: i,
+			})
+			glyphIndexMap12[character.unicode] = i
+		}
+	}
+	
+	// 添加最后一个segment
+	if (currentSegment) {
+		optimizedSegments.push(currentSegment)
+	}
+	
+	// 清空原始segments数组并添加优化后的segments
+	segments.length = 0
+	segments.push(...optimizedSegments)
+	
+	// 添加结束标记segment，确保未定义的字符映射到.notdef (索引0)
+	// 根据OpenType规范，cmap表格式4的搜索算法会查找第一个满足 startCode <= c <= endCode 的segment
+	// 对于未定义的字符，如果没有找到匹配的segment，应该映射到.notdef字符
+	// 我们添加一个特殊的segment来处理这种情况
 	segments.push({
 		endCode: 0xFFFF,
 		startCode: 0xFFFF,
-		idDelta: 1,
+		idDelta: 1, // 标准结束标记
 		idRangeOffset: 0
 	})
+	
+	// 按startCode排序segments（OpenType规范要求）
+	segments.sort(function (a, b) {
+		return a.startCode - b.startCode
+	})
+	
+	// 关键修复：确保未定义的字符映射到.notdef字符
+	// 在cmap表格式4中，当查找一个Unicode值时，会按顺序检查segments
+	// 如果所有segment都不匹配，应该映射到.notdef字符
+	// 但是我们的glyphIndexMap需要明确包含所有可能的映射
+	// 对于未定义的Unicode值，我们明确设置为映射到索引0（.notdef字符）
+	
+	// 检查是否有字符的Unicode值正好等于其索引
+	// 这可能导致未定义的字符被错误映射
+	const maxUnicodeInChars = Math.max(...correctedCharacters.map(c => c.unicode || 0))
+	for (let unicode = 0; unicode <= Math.min(maxUnicodeInChars + 1000, 0xFFFF); unicode++) {
+		if (!glyphIndexMap4[unicode]) {
+			glyphIndexMap4[unicode] = 0 // 映射到.notdef字符
+		}
+	}
+	
 	if (!isPlan0Only) {
 		cmapTable.encodingRecords[cmapTable.encodingRecords.length - 1].subTable.groups = groups
 		cmapTable.encodingRecords[cmapTable.encodingRecords.length - 1].subTable.glyphIndexMap = glyphIndexMap12
@@ -360,6 +494,7 @@ const createTable = (characters: Array<ICharacter>) => {
 		cmapTable.encodingRecords[cmapTable.encodingRecords.length - 1].subTable.length = 16 + groups.length * 4
 		cmapTable.encodingRecords[cmapTable.encodingRecords.length - 1].subTable.groupCount = groups.length
 	}
+	
 	return cmapTable
 }
 

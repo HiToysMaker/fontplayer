@@ -26,7 +26,7 @@
   }
 
   const updateFont = () => {
-    if ( selectedFile.value.fontSettings) {
+    if (selectedFile.value.fontSettings) {
       selectedFile.value.fontSettings.tables = {
         head: head_data.value,
         hhea: hhea_data.value,

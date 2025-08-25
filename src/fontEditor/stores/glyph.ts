@@ -1,6 +1,6 @@
 import { Component, ICharacterFile, IComponent, addComponentForCurrentCharacterFile, editCharacterFile, selectedFile, selectedItemByUUID } from './files'
-import { ref, computed, type Ref } from 'vue'
-import { loading, setTool, tool } from './global'
+import { ref, computed, type Ref, nextTick } from 'vue'
+import { loading, setTool, tool, total } from './global'
 import * as R from 'ramda'
 import { getBound } from '../../utils/math'
 import type { IPoint } from './pen'
@@ -137,6 +137,7 @@ export enum ParameterType {
 	RingController,
 	Enum,
 	PlaygroundConstant,
+	AdvancedEditConstant,
 }
 
 const parameterCompKey = ref(0)
@@ -181,6 +182,85 @@ export interface IParameter {
 }
 
 const constants: Ref<Array<IConstant>> = ref([])
+
+// const constants: Ref<Array<IConstant>> = ref<Array<IConstant>>([
+//   {
+//     uuid: genUUID(),
+//     name: '起笔风格',
+//     type: ParameterType.Enum,
+//     value: 2,
+//     options: [
+//       {
+//         value: 0,
+//         label: '无起笔样式',
+//       },
+//       {
+//         value: 1,
+//         label: '凸笔起笔',
+//       },
+//       {
+//         value: 2,
+//         label: '凸笔圆角起笔',
+//       }
+//     ]
+//   },
+//   {
+//     uuid: genUUID(),
+//     name: '起笔数值',
+//     type: ParameterType.Number,
+//     value: 1,
+//     min: 0,
+//     max: 2,
+//   },
+//   {
+//     uuid: genUUID(),
+//     name: '转角风格',
+//     type: ParameterType.Enum,
+//     value: 1,
+//     options: [
+//       {
+//         value: 0,
+//         label: '默认转角样式',
+//       },
+//       {
+//         value: 1,
+//         label: '转角圆滑凸起',
+//       }
+//     ]
+//   },
+//   {
+//     uuid: genUUID(),
+//     name: '转角数值',
+//     type: ParameterType.Number,
+//     value: 1,
+//     min: 1,
+//     max: 2,
+//   },
+//   {
+//     uuid: genUUID(),
+//     name: '字重变化',
+//     type: ParameterType.Number,
+//     value: 0,
+//     min: 0,
+//     max: 2,
+//   },
+//   {
+//     uuid: genUUID(),
+//     name: '弯曲程度',
+//     type: ParameterType.Number,
+//     value: 1,
+//     min: 0,
+//     max: 2,
+//   },
+//   {
+//     uuid: genUUID(),
+//     name: '字重',
+//     type: ParameterType.Number,
+//     value: 50,
+//     min: 40,
+//     max: 100,
+//   },
+// ])
 //const constants: Ref<Array<IConstant>> = ref(Object.keys(globalConstants).map((key) => {
 //	return {
 //		uuid: genUUID(),
@@ -340,18 +420,26 @@ const getGlyphType = (uuid: string) => {
 	return Status.Glyph
 }
 
-// 当前编辑的字形
-// current edit glyph
-const editGlyph = computed(() => {
-	if (!editGlyphUUID.value) return null
-	// for (let i = 0; i < glyphs.value.length; i++) {
-	//   if (editGlyphUUID.value === glyphs.value[i].uuid) {
-	//     return glyphs.value[i]
-	//   }
-	// }
-	// return null
-	return getGlyphByUUID(editGlyphUUID.value)
-})
+// // 当前编辑的字形
+// // current edit glyph
+// const editGlyph = computed(() => {
+// 	if (!editGlyphUUID.value) return null
+// 	// for (let i = 0; i < glyphs.value.length; i++) {
+// 	//   if (editGlyphUUID.value === glyphs.value[i].uuid) {
+// 	//     return glyphs.value[i]
+// 	//   }
+// 	// }
+// 	// return null
+// 	return getGlyphByUUID(editGlyphUUID.value)
+// })
+
+// 由于列表中有大量字符时，computed属性计算过慢，editCharacterFile改用手动赋值，不使用computed
+const editGlyph = ref(null)
+// 将列表中指定uuid的字符数据设置为editCharacterFile
+const setEditGlyphByUUID = (uuid: string) => {
+	let glyph = getGlyphByUUID(editGlyphUUID.value)
+	editGlyph.value = R.clone(glyph)
+}
 
 // 当前选择的组件
 // selected component, return null for no component selected, 'multi' for multi-selection.
@@ -622,7 +710,12 @@ const insertComponentForCurrentGlyph = (component: Component, options: { uuid: s
 const setSelectionForCurrentGlyph = (uuid: string) => {
 	if (uuid) {
 		if (enableMultiSelect.value) {
-			editGlyph.value.selectedComponentsUUIDs.push(uuid)
+			const index = editGlyph.value.selectedComponentsUUIDs.indexOf(uuid)
+			if (index === -1) {
+				editGlyph.value.selectedComponentsUUIDs.push(uuid)
+			} else {
+				editGlyph.value.selectedComponentsUUIDs.splice(index, 1)
+			}
 		} else {
 			editGlyph.value.selectedComponentsUUIDs = [uuid]
 		}
@@ -1321,10 +1414,20 @@ const deleteCharacter = (e: MouseEvent, uuid: string) => {
 
 // 编辑字符，进入字符编辑器
 // go to glyph editor
-const editGlyphFile = (uuid: string) => {
-	setEditGlyphUUID(uuid)
-	setPrevStatus(editStatus.value)
-	setEditStatus(Status.Glyph)
+const editGlyphFile = async (uuid: string) => {
+	// setEditGlyphUUID(uuid)
+	// setPrevStatus(editStatus.value)
+	// setEditStatus(Status.Glyph)
+	loading.value = true
+	total.value = 0
+	await nextTick()
+	setTimeout(() => {
+		setEditGlyphUUID(uuid)
+		setEditGlyphByUUID(editGlyphUUID.value)
+		setPrevStatus(editStatus.value)
+		setEditStatus(Status.Glyph)
+		loading.value = false
+	}, 500)
 }
 
 // 重命名字形

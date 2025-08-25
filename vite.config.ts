@@ -27,7 +27,9 @@ export default defineConfig({
       plugins: [
         copyPlugin({
           targets: [
-            { src: 'lib/**/*', dest: 'dist/lib' }
+            { src: 'lib/**/*', dest: 'dist/lib' },
+            { src: 'public/overlap_wasm_bg.wasm', dest: 'dist' },
+            { src: 'public/overlap_wasm.js', dest: 'dist' }
           ],
           hook: 'writeBundle',
         }),
@@ -45,4 +47,7 @@ export default defineConfig({
   define: {
     Module: {}
   },
+  optimizeDeps: {
+    exclude: ['overlap_wasm']
+  }
 })

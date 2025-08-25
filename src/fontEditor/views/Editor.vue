@@ -38,9 +38,10 @@
   import exportFileDialog from '../../fontEditor/components/Dialogs/ExportFileDialog.vue'
   import exportFontDialog from '../../fontEditor/components/Dialogs/ExportFontDialog.vue'
   import exportFontTauriDialog from '../components/Dialogs/ExportFontDialog_tauri.vue'
+  import AdvancedEditPanel from './AdvancedEditPanel/AdvancedEditPanel.vue'
   import { editStatus, Status } from '../../fontEditor/stores/font'
   import { ENV } from '../../fontEditor/stores/system'
-  import { loading, loaded, total } from '../../fontEditor/stores/global'
+  import { loading, loaded, total, loadingMsg } from '../../fontEditor/stores/global'
   import { ref, onMounted, onUnmounted } from 'vue'
   import { onBeforeRouteLeave } from 'vue-router'
   import { initGlyphEnvironment } from '../stores/glyph'
@@ -157,11 +158,11 @@
     >
       <div class="el-loading-spinner" v-show="loading && total === 0">
         <svg class="circular" viewBox="0 0 50 50"><circle class="path" cx="25" cy="25" r="20" fill="none"></circle></svg>
-        <div>{{ t('panels.paramsPanel.loadingMsg') }}</div>
+        <div>{{loadingMsg || t('panels.paramsPanel.loadingMsg') }}</div>
       </div>
       <div v-show="loading && total != 0" class="loading-text">
         <el-progress :text-inside="true" :stroke-width="20" :percentage="Math.round(loaded / total * 100)" />
-        <div>{{ t('panels.paramsPanel.loadedMsg', { percent: Math.round(loaded / total * 100)}) }}</div>
+        <div>{{ loadingMsg? loadingMsg + `进度：${Math.round(loaded / total * 100)}%` : t('panels.paramsPanel.loadedMsg', { percent: Math.round(loaded / total * 100)}) }}</div>
       </div>
       <div class="side-bar-wrap" :style="{
         flex: ENV === 'web' ? '0 0 36px': '0 0 36px',
@@ -171,30 +172,33 @@
       </div>
       <div class="main-panel">
         <header class="header-wrapper" :style="{
-          flex: ENV === 'web' ? ((editStatus === Status.CharacterList || editStatus === Status.GlyphList || editStatus === Status.StrokeGlyphList || editStatus === Status.RadicalGlyphList || editStatus === Status.CompGlyphList || editStatus === Status.Pic) ? '0 0 0px' : '0 0 50px') : ((editStatus === Status.CharacterList || editStatus === Status.GlyphList|| editStatus === Status.StrokeGlyphList || editStatus === Status.RadicalGlyphList || editStatus === Status.CompGlyphList || editStatus === Status.Pic) ? '0 0 0px' : '0 0 50px')
+          flex: ENV === 'web' ? ((editStatus === Status.CharacterList || editStatus === Status.GlyphList || editStatus === Status.StrokeGlyphList || editStatus === Status.RadicalGlyphList || editStatus === Status.CompGlyphList || editStatus === Status.Pic || editStatus === Status.AdvancedEdit) ? '0 0 0px' : '0 0 50px') : ((editStatus === Status.CharacterList || editStatus === Status.GlyphList|| editStatus === Status.StrokeGlyphList || editStatus === Status.RadicalGlyphList || editStatus === Status.CompGlyphList || editStatus === Status.Pic || editStatus === Status.AdvancedEdit) ? '0 0 0px' : '0 0 50px')
         }">
           <!--<top-bar></top-bar>-->
           <tool-bar v-show="editStatus === Status.Edit || editStatus === Status.Glyph"></tool-bar>
         </header>
-        <main class="inner-wrapper">
-          <aside class="left-panel-wrapper" v-show="editStatus !== Status.CharacterList && editStatus !== Status.GlyphList && editStatus !== Status.StrokeGlyphList && editStatus !== Status.RadicalGlyphList && editStatus !== Status.CompGlyphList">
+        <main class="advanced-edit-panel-wrapper" v-if="editStatus === Status.AdvancedEdit">
+          <advanced-edit-panel></advanced-edit-panel>
+        </main>
+        <main class="inner-wrapper" v-show="editStatus !== Status.AdvancedEdit">
+          <aside class="left-panel-wrapper" v-show="editStatus !== Status.CharacterList && editStatus !== Status.GlyphList && editStatus !== Status.StrokeGlyphList && editStatus !== Status.RadicalGlyphList && editStatus !== Status.CompGlyphList && editStatus !== Status.AdvancedEdit">
             <left-panel></left-panel>
           </aside>
           <main class="main-wrapper">
-            <header class="files-bar-wrapper" v-show="editStatus !== Status.Pic">
+            <header class="files-bar-wrapper" v-show="editStatus !== Status.Pic && editStatus !== Status.AdvancedEdit">
               <files-bar></files-bar>
             </header>
-            <main class="canvas-panel-wrapper" :style="{
+            <main class="canvas-panel-wrapper" v-show="editStatus !== Status.AdvancedEdit" :style="{
               height: (editStatus === Status.Edit || editStatus === Status.Pic) ? 'calc(100% - 72px)' : 'calc(100% - 36px)'
             }">
               <font-panel></font-panel>
             </main>
-            <footer class="zoom-bar-wrapper" v-show="editStatus !== Status.CharacterList && editStatus !== Status.GlyphList && editStatus !== Status.StrokeGlyphList && editStatus !== Status.RadicalGlyphList && editStatus !== Status.CompGlyphList">
+            <footer class="zoom-bar-wrapper" v-show="editStatus !== Status.CharacterList && editStatus !== Status.GlyphList && editStatus !== Status.StrokeGlyphList && editStatus !== Status.RadicalGlyphList && editStatus !== Status.CompGlyphList && editStatus !== Status.AdvancedEdit">
               <bottom-bar v-if="editStatus === Status.Edit"></bottom-bar>
               <glyph-bottom-bar v-else-if="editStatus === Status.Glyph"></glyph-bottom-bar>
             </footer>
           </main>
-          <aside class="right-panel-wrapper" v-show="editStatus !== Status.CharacterList && editStatus !== Status.GlyphList && editStatus !== Status.StrokeGlyphList && editStatus !== Status.RadicalGlyphList && editStatus !== Status.CompGlyphList">
+          <aside class="right-panel-wrapper" v-show="editStatus !== Status.CharacterList && editStatus !== Status.GlyphList && editStatus !== Status.StrokeGlyphList && editStatus !== Status.RadicalGlyphList && editStatus !== Status.CompGlyphList && editStatus !== Status.AdvancedEdit">
             <right-panel></right-panel>
           </aside>
         </main>
@@ -287,5 +291,9 @@
   }
   .el-progress {
     width: 300px;
+  }
+  .advanced-edit-panel-wrapper {
+    height: 100%;
+    width: 100%;
   }
 </style>

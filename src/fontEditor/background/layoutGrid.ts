@@ -5,6 +5,7 @@ import {
 
 import { editCharacterFile } from '../stores/files'
 import { renderLayout } from '../../features/layout'
+import { getStrokeWidth } from '../stores/global'
 
 /**
  * 绘制网格背景
@@ -29,7 +30,7 @@ const layoutGrid = (
 	const ctx = (canvas as unknown as HTMLCanvasElement).getContext('2d') as CanvasRenderingContext2D
 
 	ctx.strokeStyle = '#811616'
-	ctx.lineWidth = 2
+	ctx.lineWidth = getStrokeWidth()
 
 	// grid
 	ctx.beginPath()

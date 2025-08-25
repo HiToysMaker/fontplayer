@@ -19,7 +19,7 @@ import { modifyComponentForCharacterFile, type IPolygonComponent, type IRectangl
 import type { IEllipseComponent } from '../fontEditor/stores/files'
 import { fitCurve, type IPoint } from '../features/fitCurve'
 import { getEllipsePoints, getRectanglePoints, transformPoints } from '../utils/math'
-import { genUUID } from '../utils/string'
+import { genUUID, genLightId } from '../utils/string'
 import { width } from '../fontEditor/stores/global'
 import { ICustomGlyph, IGlyphComponent, executeScript, modifyComponentForGlyph, orderedListWithItemsForGlyph } from '../fontEditor/stores/glyph'
 import { EllipseComponent } from '../fontEditor/programming/EllipseComponent'
@@ -28,6 +28,7 @@ import { PenComponent } from '../fontEditor/programming/PenComponent'
 import { PolygonComponent } from '../fontEditor/programming/PolygonComponent'
 import { computeCoords } from '../fontEditor/canvas/canvas'
 import { executeScript as executeScript_playground } from '../fontEditor/stores/playground'
+import { executeScript as executeScript_advancedEdit } from '../fontEditor/stores/advancedEdit'
 
 const contoursToComponents = (contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>, options: {
 	unitsPerEm: number,
@@ -40,7 +41,7 @@ const contoursToComponents = (contours: Array<Array<ILine | IQuadraticBezierCurv
 			const path = contour[i]
 			if (i === 0) {
 				points.push({
-					uuid: genUUID(),
+					uuid: genLightId(), // 使用轻量级ID
 					x: path.start.x,
 					y: path.start.y,
 					type: 'anchor',
@@ -51,7 +52,7 @@ const contoursToComponents = (contours: Array<Array<ILine | IQuadraticBezierCurv
 			switch (path.type) {
 				case PathType.LINE: {
 					const control1 = {
-						uuid: genUUID(),
+						uuid: genLightId(), // 使用轻量级ID
 						x: path.start.x,
 						y: path.start.y,
 						type: 'control',
@@ -59,7 +60,7 @@ const contoursToComponents = (contours: Array<Array<ILine | IQuadraticBezierCurv
 						isShow: true,
 					}
 					const anchor2 = {
-						uuid: genUUID(),
+						uuid: genLightId(), // 使用轻量级ID
 						x: path.end.x,
 						y: path.end.y,
 						type: 'anchor',
@@ -67,7 +68,7 @@ const contoursToComponents = (contours: Array<Array<ILine | IQuadraticBezierCurv
 						isShow: true,
 					}
 					const control2 = {
-						uuid: genUUID(),
+						uuid: genLightId(), // 使用轻量级ID
 						x: path.end.x,
 						y: path.end.y,
 						type: 'control',
@@ -79,7 +80,7 @@ const contoursToComponents = (contours: Array<Array<ILine | IQuadraticBezierCurv
 				}
 				case PathType.QUADRATIC_BEZIER: {
 					const control1 = {
-						uuid: genUUID(),
+						uuid: genLightId(), // 使用轻量级ID
 						x: path.start.x + 2 / 3 * (path.control.x - path.start.x),
 						y: path.start.y + 2 / 3 * (path.control.y - path.start.y),
 						type: 'control',
@@ -87,7 +88,7 @@ const contoursToComponents = (contours: Array<Array<ILine | IQuadraticBezierCurv
 						isShow: true,
 					}
 					const anchor2 = {
-						uuid: genUUID(),
+						uuid: genLightId(), // 使用轻量级ID
 						x: path.end.x,
 						y: path.end.y,
 						type: 'anchor',
@@ -95,7 +96,7 @@ const contoursToComponents = (contours: Array<Array<ILine | IQuadraticBezierCurv
 						isShow: true,
 					}
 					const control2 = {
-						uuid: genUUID(),
+						uuid: genLightId(), // 使用轻量级ID
 						x: path.end.x + 2 / 3 * (path.control.x - path.end.x),
 						y: path.end.y + 2 / 3 * (path.control.y - path.end.y),
 						type: 'control',
@@ -107,7 +108,7 @@ const contoursToComponents = (contours: Array<Array<ILine | IQuadraticBezierCurv
 				}
 				case PathType.CUBIC_BEZIER: {
 					const control1 = {
-						uuid: genUUID(),
+						uuid: genLightId(), // 使用轻量级ID
 						x: path.control1.x,
 						y: path.control1.y,
 						type: 'control',
@@ -115,7 +116,7 @@ const contoursToComponents = (contours: Array<Array<ILine | IQuadraticBezierCurv
 						isShow: true,
 					}
 					const anchor2 = {
-						uuid: genUUID(),
+						uuid: genLightId(), // 使用轻量级ID
 						x: path.end.x,
 						y: path.end.y,
 						type: 'anchor',
@@ -123,7 +124,7 @@ const contoursToComponents = (contours: Array<Array<ILine | IQuadraticBezierCurv
 						isShow: true,
 					}
 					const control2 = {
-						uuid: genUUID(),
+						uuid: genLightId(), // 使用轻量级ID
 						x: path.control2.x,
 						y: path.control2.y,
 						type: 'control',
@@ -137,7 +138,7 @@ const contoursToComponents = (contours: Array<Array<ILine | IQuadraticBezierCurv
 		}
 		if (points.length && (points[points.length - 1].x !== points[0].x || points[points.length - 1].x !== points[0].y)) {
 			points.push({
-				uuid: genUUID(),
+				uuid: genLightId(), // 使用轻量级ID
 				x: points[points.length - 1].x,
 				y: points[points.length - 1].y,
 				type: 'control',
@@ -145,7 +146,7 @@ const contoursToComponents = (contours: Array<Array<ILine | IQuadraticBezierCurv
 				isShow: true,
 			})
 			points.push({
-				uuid: genUUID(),
+				uuid: genLightId(), // 使用轻量级ID
 				x: points[0].x,
 				y: points[0].y,
 				type: 'control',
@@ -153,7 +154,7 @@ const contoursToComponents = (contours: Array<Array<ILine | IQuadraticBezierCurv
 				isShow: true,
 			})
 			points.push({
-				uuid: genUUID(),
+				uuid: genLightId(), // 使用轻量级ID
 				x: points[0].x,
 				y: points[0].y,
 				type: 'anchor',
@@ -219,6 +220,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 	grid?: any,
 	useSkeletonGrid?: boolean,
 	playground?: boolean,
+	advancedEdit?: boolean,
 }, offset: {
 	x: number,
 	y: number,
@@ -226,10 +228,13 @@ const componentsToContours = (components: Array<_Component>, options: {
 	//-------
 	// forceUpdate = true
 	//-------
+	if (options && !options.advanceWidth) {
+		options.advanceWidth = options.unitsPerEm
+	}
 	const useSkeletonGrid = (options && options.useSkeletonGrid) || false
 	let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = []
 	components.map((component) => {
-		if (!component.usedInCharacter) return
+		if (!component?.usedInCharacter) return
 		let { x, y, w, h, rotation, flipX, flipY } = component as IComponent
 		//x && (x += offset.x)
 		//y && (y += offset.y)
@@ -465,6 +470,8 @@ const componentsToContours = (components: Array<_Component>, options: {
 				if (!glyph._o || forceUpdate) {
 					if (options && options.playground) {
 						executeScript_playground(glyph)
+					} else if (options && options.advancedEdit) {
+						executeScript_advancedEdit(glyph)
 					} else {
 						executeScript(glyph)
 					}

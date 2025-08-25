@@ -4,6 +4,7 @@ import { selectedFile } from '../stores/files';
 import { formatPoints, genRectangleContour, translate } from '../../features/font';
 import * as R from 'ramda';
 import { computeCoords } from '../canvas/canvas';
+import { getStrokeWidth } from '../stores/global';
 
 interface IOption {
 	offset?: {
@@ -39,6 +40,7 @@ class RectangleComponent {
 		const scale = options.scale
 		const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 		ctx.strokeStyle = '#000'
+		ctx.lineWidth = getStrokeWidth()
 		ctx.translate(mapCanvasX(options.offset.x) * scale, mapCanvasY(options.offset.y) * scale)
 		ctx.beginPath()
 		ctx.rect(mapCanvasX(this.x) * scale, mapCanvasY(this.y) * scale, mapCanvasX(this.width) * scale, mapCanvasY(this.height) * scale)
@@ -67,6 +69,7 @@ class RectangleComponent {
 		const scale = options.scale
 		const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 		ctx.strokeStyle = '#000'
+		ctx.lineWidth = getStrokeWidth()
 		ctx.beginPath()
 		const start = computeCoords(options.grid, translate({ x: points[0].x, y: points[0].y }))
 		ctx.moveTo(mapCanvasX(start.x) * scale, mapCanvasY(start.y) * scale)
@@ -100,8 +103,12 @@ class RectangleComponent {
 		this.height = data.height
 		this.type = data.type
 		this.usedInCharacter = data.usedInCharacter
-		this.contour = R.clone(data.contour)
-		this.preview = R.clone(data.preview)
+		if (data.contour) {
+			this.contour = R.clone(data.contour)
+		}
+		if (data.preview) {
+			this.preview = R.clone(data.preview)
+		}
 	}
 
 	public updateData = (isGlyph: boolean = true, offset: {x: number, y: number}, grid?: any) => {

@@ -100,6 +100,17 @@ const templates = [
 	}
 ]
 
+export const ASCIICharSet = '1234567890-=！@#￥%……&*()~:"{}[]|\?/<>,.;\'+abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+// 线条宽度相关常量
+const strokeWidthRatio = 2.0 // 显示系数
+const strokeWidth = 2.0 // 基础线条宽度
+
+// 获取当前设备的线条宽度
+const getStrokeWidth = () => {
+  return strokeWidthRatio * strokeWidth / (window.devicePixelRatio || 1)
+}
+
 const setTool = (item: string) => {
 	tool.value = item
 }
@@ -128,6 +139,7 @@ const setCanvas = (value: HTMLCanvasElement) => {
 const loading = ref(false)
 const loaded = ref(0)
 const total = ref(100)
+const loadingMsg = ref('')
 
 const gridChanged = ref(false)
 
@@ -138,6 +150,7 @@ export {
 	width,
 	height,
 	background,
+	loadingMsg,
 	setTool,
 	setWidth,
 	setHeight,
@@ -162,4 +175,7 @@ export {
 	gridChanged,
 	useSkeletonGrid,
 	base,
+	strokeWidthRatio,
+	strokeWidth,
+	getStrokeWidth,
 }

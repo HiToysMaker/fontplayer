@@ -1,6 +1,7 @@
 import { gridSettings, loaded, loading, setTool, total } from './global'
+import { ElMessage } from 'element-plus'
 import * as R from 'ramda'
-import { ref, computed, type Ref, reactive } from 'vue'
+import { ref, computed, type Ref, reactive, nextTick } from 'vue'
 import localForage from 'localforage'
 import { getBound } from '../../utils/math'
 import type { IPoint } from './pen'
@@ -320,16 +321,42 @@ const usedComponents = computed(() => {
 
 // 当前编辑的字符文件
 // current edit character file
-const editCharacterFile = computed(() => {
-	if (!selectedFileUUID.value) return null
+// const editCharacterFile = computed(() => {
+// 	if (!selectedFileUUID.value) return null
+// 	const characters = selectedFile.value.characterList
+// 	for (let i = 0; i < characters.length; i++) {
+// 		if (editCharacterFileUUID.value === characters[i].uuid) {
+// 			return characters[i]
+// 		}
+// 	}
+// 	return null
+// })
+// 由于列表中有大量字符时，computed属性计算过慢，editCharacterFile改用手动赋值，不使用computed
+const editCharacterFile = ref(null)
+// 将列表中指定uuid的字符数据设置为editCharacterFile
+const setEditCharacterFileByUUID = (uuid: string) => {
+	let character = null
 	const characters = selectedFile.value.characterList
 	for (let i = 0; i < characters.length; i++) {
 		if (editCharacterFileUUID.value === characters[i].uuid) {
-			return characters[i]
+			character = characters[i]
+			break
 		}
 	}
-	return null
-})
+	editCharacterFile.value = R.clone(character)
+}
+const resetEditCharacterFile = () => {
+	editCharacterFile.value = null
+}
+const updateCharacterListFromEditFile = () => {
+	const characters = selectedFile.value.characterList
+	for (let i = 0; i < characters.length; i++) {
+		if (editCharacterFileUUID.value === characters[i].uuid) {
+			characters[i] = R.clone(editCharacterFile.value)
+			break
+		}
+	}
+}
 
 // 当前选择的字体文件
 // selected font file
@@ -350,8 +377,7 @@ const characterList = computed(() => {
 // selected components
 const selectedComponents = computed(() => {
 	if (!selectedFileUUID.value) return null
-	const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	const components = characterFile?.selectedComponentsUUIDs.map((uuid: string) => {
 		// return selectedItemByUUID(characterFile.components, uuid)
 		return traverseComponents(characterFile.components, uuid)
@@ -380,8 +406,7 @@ const traverseComponents = (components, uuid) => {
 // sub components list
 const SubComponents = computed(() => {
 	if (!selectedFileUUID.value) return null
-	const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	if (!characterFile?.selectedComponentsTree || !characterFile?.selectedComponentsTree.length) return null
 	let rootComponent = null
 	for (let i = 0; i < characterFile?.selectedComponentsTree.length - 1; i++) {
@@ -405,8 +430,7 @@ const SubComponents = computed(() => {
 // root for sub components list
 const SubComponentsRoot = computed(() => {
 	if (!selectedFileUUID.value) return null
-	const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	if (!characterFile?.selectedComponentsTree || !characterFile?.selectedComponentsTree.length) return null
 	let rootComponent = null
 	for (let i = 0; i < characterFile?.selectedComponentsTree.length - 1; i++) {
@@ -427,8 +451,7 @@ const selectedSubComponent = computed(() => {
 	if (!selectedFileUUID.value) {
 		rs = null
 	} else {
-		const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-		const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+		const characterFile = editCharacterFile.value
 		if (!characterFile?.selectedComponentsTree || !characterFile?.selectedComponentsTree.length) {
 			rs = null
 		} else {
@@ -455,8 +478,7 @@ const selectedSubComponent = computed(() => {
 // components for current character file
 const componentsForCurrentCharacterFile = computed(() => {
 	if (!selectedFileUUID.value) return []
-	const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	return characterFile.components
 })
 
@@ -464,8 +486,7 @@ const componentsForCurrentCharacterFile = computed(() => {
 // ordered component list (with component itself) for current character file
 const orderedListWithItemsForCurrentCharacterFile = computed(() => {
 	if (!selectedFileUUID.value || !editCharacterFileUUID.value) return []
-	const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	return characterFile.orderedList.map((item: {
 		type: string,
 		uuid: string,
@@ -495,8 +516,7 @@ const orderedListWithItemsForCharacterFile = (characterFile: ICharacterFile) => 
 // ordered component list (with NO component itself) for current character file
 const orderedListForCurrentCharacterFile = computed(() => {
 	if (!selectedFileUUID.value) return []
-	const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	return characterFile.orderedList
 })
 
@@ -504,8 +524,7 @@ const orderedListForCurrentCharacterFile = computed(() => {
 // selected components' uuids
 const selectedComponentsUUIDs = computed(() => {
 	if (!selectedFileUUID.value) return ''
-	const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	return characterFile.selectedComponentsUUIDs
 })
 
@@ -657,8 +676,7 @@ const modifyCharacterFile = (uuid: string, options: any) => {
  * @param uuid uuid of component to be removed
  */
 const removeOrderedItemForCurrentCharacterFile = (uuid: string) => {
-	const file = selectedFile.value
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	const index = (() => {
 		for (let i = 0; i < characterFile.orderedList.length; i++) {
 			if (characterFile.orderedList[i].uuid === uuid)
@@ -680,8 +698,7 @@ const removeOrderedItemForCurrentCharacterFile = (uuid: string) => {
  * @param uuid uuid of component to be removed
  */
 const removeComponentForCurrentCharacterFile = (uuid: string) => {
-	const file = selectedFile.value
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	const index = (() => {
 		for (let i = 0; i < characterFile.components.length; i++) {
 			if (characterFile.components[i].uuid === uuid)
@@ -707,8 +724,7 @@ const removeComponentForCurrentCharacterFile = (uuid: string) => {
  * @param options 配置选项
  */
 const insertComponentForCurrentCharacterFile = (component: Component, options: { uuid: string, pos: string }) => {
-	const file = selectedFile.value
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	characterFile.components.push(component)
 	insertOrderedItemForCurrentCharacterFile({
 		type: 'component',
@@ -727,11 +743,15 @@ const insertComponentForCurrentCharacterFile = (component: Component, options: {
  * @param uuid uuid of component to be selected
  */
 const setSelectionForCurrentCharacterFile = (uuid: string) => {
-	const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	if (uuid) {
 		if (enableMultiSelect.value) {
-			characterFile.selectedComponentsUUIDs.push(uuid)
+			const index = characterFile.selectedComponentsUUIDs.indexOf(uuid)
+			if (index === -1) {
+				characterFile.selectedComponentsUUIDs.push(uuid)
+			} else {
+				characterFile.selectedComponentsUUIDs.splice(index, 1)
+			}
 		} else {
 			characterFile.selectedComponentsUUIDs = [uuid]
 		}
@@ -751,8 +771,7 @@ const setSelectionForCurrentCharacterFile = (uuid: string) => {
  * @param options options
  */
 const modifySubComponent = (options) => {
-	const file = selectedItemByUUID(files.value, selectedFileUUID.value)
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	if (!characterFile?.selectedComponentsTree || !characterFile?.selectedComponentsTree.length) {
 		return
 	} else {
@@ -792,8 +811,7 @@ const modifySubComponent = (options) => {
  * @param options options
  */
 const modifyComponentForCurrentCharacterFile = (uuid: string, options: any) => {
-	const file = selectedFile.value
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	const components = R.clone(characterFile.components)
 	components.forEach((component: Component) => {
 		if (component.uuid === uuid) {
@@ -868,7 +886,7 @@ const modifyComponentForCurrentCharacterFile = (uuid: string, options: any) => {
 		}
 		characterFile.components = components
 	})
-	emitter.emit('renderPreviewCanvasByUUID', editCharacterFileUUID.value)
+	emitter.emit('renderPreviewCanvasByUUIDOnEditing', editCharacterFileUUID.value)
 }
 
 /**
@@ -972,8 +990,7 @@ const modifyComponentForCharacterFile = (uuid: string, options: any, characterUU
  * @param group components group
  */
 const addGroupForCurrentCharacterFile = (group: { type: string, uuid: string }) => {
-	const file = selectedFile.value
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value	
 	characterFile.groups.push(group)
 }
 
@@ -986,8 +1003,7 @@ const addGroupForCurrentCharacterFile = (group: { type: string, uuid: string }) 
  * @param item ordered item
  */
 const addOrderedItemForCurrentCharacterFile = (item: { type: string, uuid: string }) => {
-	const file = selectedFile.value
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	characterFile.orderedList.push(item)
 }
 
@@ -1021,8 +1037,7 @@ const insertOrderedItemForCurrentCharacterFile = (
 	item: { type: string, uuid: string },
 	options: { uuid: string, pos: string },
 ) => {
-	const file = selectedFile.value
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	const index = (() => {
 		for(let i = 0; i < characterFile.orderedList.length; i++) {
 			if (characterFile.orderedList[i].uuid === options.uuid) return i
@@ -1045,8 +1060,7 @@ const insertOrderedItemForCurrentCharacterFile = (
  * @param list ordered list
  */
 const setOrderedListForCurrentCharacterFile = (list: Array<{ type: string, uuid: string }>) => {
-	const file = selectedFile.value
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	characterFile.orderedList = list
 }
 
@@ -1131,8 +1145,7 @@ const removeCharacterForCurrentFile = (uuid: string) => {
  * @param component component to be added
  */
 const addComponentForCurrentCharacterFile = (component: Component) => {
-	const file = selectedFile.value
-	const characterFile = selectedItemByUUID(file.characterList, editCharacterFileUUID.value)
+	const characterFile = editCharacterFile.value
 	characterFile.components.push(component)
 	addOrderedItemForCurrentCharacterFile({
 		type: 'component',
@@ -1279,16 +1292,33 @@ const findLeafNodes = (tree) => {
 
 // 编辑字符，进入字符编辑器
 // go to character editor
-const editCharacter = (uuid: string) => {
-	setEditCharacterFileUUID(uuid)
-	setPrevStatus(editStatus.value)
-	setEditStatus(Status.Edit)
+const editCharacter = async (uuid: string) => {
+	loading.value = true
+	total.value = 0
+	await nextTick()
+	setTimeout(() => {
+		setEditCharacterFileUUID(uuid)
+		setEditCharacterFileByUUID(editCharacterFileUUID.value)
+		setPrevStatus(editStatus.value)
+		setEditStatus(Status.Edit)
+	}, 500)
 }
 
 // 删除字符
 // delete character
 const deleteCharacter = (e: MouseEvent, uuid: string) => {
 	e.stopPropagation()
+	
+	// 检查是否为.notdef字符，如果是则不允许删除
+	const character = selectedFile.value.characterList.find(char => char.uuid === uuid)
+	if (character && character.character.text === '.notdef') {
+		ElMessage({
+			message: '.notdef字符不能被删除',
+			type: 'warning'
+		})
+		return
+	}
+	
 	removeCharacterForCurrentFile(uuid)
 	deleteCharacterTemplate(uuid)
 }
@@ -1297,6 +1327,17 @@ const deleteCharacter = (e: MouseEvent, uuid: string) => {
 // rename character
 const renameCharacter = (e: MouseEvent, uuid: string) => {
 	e.stopPropagation()
+	
+	// 检查是否为.notdef字符，如果是则不允许编辑名称
+	const character = selectedFile.value.characterList.find(char => char.uuid === uuid)
+	if (character && character.character.text === '.notdef') {
+		ElMessage({
+			message: '.notdef字符的名称不能被编辑',
+			type: 'warning'
+		})
+		return
+	}
+	
 	editedCharacterUUID.value = uuid
 	setEditCharacterDialogVisible(true)
 }
@@ -1347,6 +1388,26 @@ const addCharacterTemplate = (el) => {
 	}
 }
 
+// 批量添加字符模板 - 性能优化版本
+// batch add character templates for better performance
+const batchAddCharacterTemplates = (elements: (HTMLElement | Node)[]) => {
+	const wrapper = document.getElementById('character-render-list')
+	const defaultEl = wrapper.querySelector('.default-character')
+	
+	if (!defaultEl) return
+	
+	// 使用DocumentFragment来批量操作DOM
+	const fragment = document.createDocumentFragment()
+	
+	// 将所有元素添加到fragment中
+	elements.forEach(el => {
+		fragment.appendChild(el)
+	})
+	
+	// 一次性插入所有元素
+	wrapper.insertBefore(fragment, defaultEl)
+}
+
 // 清空字符列表
 // clear character rander list
 const clearCharacterRenderList = () => {
@@ -1357,7 +1418,109 @@ const clearCharacterRenderList = () => {
 	wrapper.appendChild(defaultEl)
 }
 
+// 虚拟滚动字符模板管理器
+// virtual scrolling character template manager
+class VirtualCharacterList {
+	private container: HTMLElement
+	private items: any[] = []
+	private itemHeight: number = 60 // 每个字符项的高度
+	private visibleCount: number = 20 // 可见字符数量
+	private scrollTop: number = 0
+	private startIndex: number = 0
+	private endIndex: number = 0
+	
+	constructor(containerId: string) {
+		this.container = document.getElementById(containerId)!
+		this.setupContainer()
+	}
+	
+	private setupContainer() {
+		// 设置容器样式
+		this.container.style.position = 'relative'
+		this.container.style.overflow = 'auto'
+		this.container.style.height = '100%'
+		
+		// 添加滚动监听
+		this.container.addEventListener('scroll', this.handleScroll.bind(this))
+	}
+	
+	setItems(items: any[]) {
+		this.items = items
+		this.updateScrollHeight()
+		this.renderVisibleItems()
+	}
+	
+	private updateScrollHeight() {
+		// 设置总高度以支持滚动
+		const totalHeight = this.items.length * this.itemHeight
+		this.container.style.height = `${totalHeight}px`
+	}
+	
+	private handleScroll() {
+		this.scrollTop = this.container.scrollTop
+		this.renderVisibleItems()
+	}
+	
+	private renderVisibleItems() {
+		// 计算可见范围
+		this.startIndex = Math.floor(this.scrollTop / this.itemHeight)
+		this.endIndex = Math.min(
+			this.startIndex + this.visibleCount,
+			this.items.length
+		)
+		
+		// 清空容器
+		this.container.innerHTML = ''
+		
+		// 添加顶部占位符
+		const topSpacer = document.createElement('div')
+		topSpacer.style.height = `${this.startIndex * this.itemHeight}px`
+		this.container.appendChild(topSpacer)
+		
+		// 渲染可见项
+		for (let i = this.startIndex; i < this.endIndex; i++) {
+			const item = this.items[i]
+			const element = generateCharacterTemplate(item) as HTMLElement
+			element.style.position = 'absolute'
+			element.style.top = `${i * this.itemHeight}px`
+			this.container.appendChild(element)
+		}
+		
+		// 添加底部占位符
+		const bottomSpacer = document.createElement('div')
+		bottomSpacer.style.height = `${(this.items.length - this.endIndex) * this.itemHeight}px`
+		this.container.appendChild(bottomSpacer)
+	}
+}
+
+// 创建虚拟滚动实例
+let virtualList: VirtualCharacterList | null = null
+
+// 初始化虚拟滚动
+const initVirtualCharacterList = () => {
+	if (!virtualList) {
+		virtualList = new VirtualCharacterList('character-render-list')
+	}
+}
+
+// 使用虚拟滚动添加字符
+const addCharactersWithVirtualScroll = (characterList: any[]) => {
+	if (!virtualList) {
+		initVirtualCharacterList()
+	}
+	virtualList!.setItems(characterList)
+}
+
+const visibleStartIndex = ref(0)
+const visibleEndIndex = ref(500) // 增加默认渲染字符数量
+const visibleCount = ref(500) // 增加默认渲染字符数量
+	const itemHeight = 122 // 每个字符项的实际高度：112px(内容) + 10px(gap间距)
+
 export {
+	visibleStartIndex,
+	visibleEndIndex,
+	visibleCount,
+	itemHeight,
 	files,
 	editCharacterFileUUID,
 	selectedFileUUID,
@@ -1403,6 +1566,7 @@ export {
 	generateCharacterTemplate,
 	deleteCharacterTemplate,
 	addCharacterTemplate,
+	batchAddCharacterTemplates,
 	clearCharacterRenderList,
 	modifyComponentForCharacterFile,
 	SubComponents,
@@ -1410,4 +1574,9 @@ export {
 	selectedSubComponent,
 	modifySubComponent,
 	executeCharactersGlyphsScript,
+	setEditCharacterFileByUUID,
+	resetEditCharacterFile,
+	updateCharacterListFromEditFile,
+	traverseComponents,
+	addCharactersWithVirtualScroll,
 }

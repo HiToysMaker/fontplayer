@@ -6,12 +6,14 @@ import {
 	mapCanvasHeight,
 	getCoord,
 } from '../../utils/canvas'
-import { editGlyph, executeScript, getRatioLayout, getRatioLayout2, modifyComponentForCurrentGlyph, modifySubComponent, selectedComponent as selectedComponent_glyph, selectedComponentUUID, selectedSubComponent, SubComponentsRoot } from '../../fontEditor/stores/glyph'
-import { draggingJoint, putAtCoord, setEditing, movingJoint } from '../stores/glyphDragger_glyph'
+import { editGlyph, executeScript, getRatioLayout, getRatioLayout2, modifyComponentForCurrentGlyph, modifySubComponent, selectedComponent, selectedComponentUUID, selectedSubComponent, SubComponentsRoot, type ICustomGlyph } from '../../fontEditor/stores/glyph'
+import { getRatioCoords } from '../../features/layout'
+import { draggingJoint, putAtCoord, setEditing, movingJoint, editGlyphOnDragging, selectedSubComponentOnDragging, selectedComponentOnDragging, SubComponentsRootOnDragging } from '../stores/glyphDragger_glyph'
 import { draggable, dragOption, checkJoints } from '../../fontEditor/stores/global'
 import { emitter } from '../Event/bus'
-import { selectedItemByUUID } from '../stores/files'
 import { getJoints } from '../programming/Joint'
+import * as R from 'ramda'
+import { selectedItemByUUID } from '../stores/files'
 
 const getBound = (joints) => {
 	let x_min = Infinity
@@ -42,98 +44,110 @@ const distance = (x1, y1, x2, y2) => {
 	return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2))
 }
 
-const addScript = () => {
-	const glyph = selectedSubComponent.value ? selectedSubComponent.value.value : selectedComponent_glyph?.value?.value
-	const comp = selectedSubComponent.value ? selectedSubComponent.value : selectedComponent_glyph?.value
-	const unitsPerEm = 1000//selectedFile.value.fontSettings?.unitsPerEm
-	
-	if (!editGlyph.value.glyph_script) {
-		editGlyph.value.glyph_script = {}
+const addScript = (coords?) => {
+	const glyph = selectedSubComponentOnDragging.value ? selectedSubComponentOnDragging.value.value : selectedComponentOnDragging?.value?.value
+	const comp = selectedSubComponentOnDragging.value ? selectedSubComponentOnDragging.value : selectedComponentOnDragging?.value
+	const unitsPerEm = 1000 //selectedFile.value.fontSettings?.unitsPerEm
+	if (!editGlyphOnDragging.value.glyph_script) {
+		editGlyphOnDragging.value.glyph_script = {}
 	}
-
-	if (dragOption.value === 'default' && !selectedSubComponent.value) {
-		if (editGlyph.value?.glyph_script && editGlyph.value?.glyph_script[comp.uuid]) {
-			delete editGlyph.value?.glyph_script[comp.uuid]
+	if (dragOption.value === 'default' && !selectedSubComponentOnDragging.value) {
+		if (editGlyphOnDragging.value?.glyph_script && editGlyphOnDragging.value?.glyph_script[comp.uuid]) {
+			delete editGlyphOnDragging.value?.glyph_script[comp.uuid]
 			return
 		}
-	} else if (dragOption.value === 'default' && !!selectedSubComponent.value) {
-		if (SubComponentsRoot.value.value?.glyph_script && SubComponentsRoot.value.value?.glyph_script[comp.uuid]) {
-			delete SubComponentsRoot.value.value?.glyph_script[comp.uuid]
+	} else if (dragOption.value === 'default' && !!selectedSubComponentOnDragging.value) {
+		if (SubComponentsRootOnDragging.value.value?.glyph_script && SubComponentsRootOnDragging.value.value?.glyph_script[comp.uuid]) {
+			delete SubComponentsRootOnDragging.value.value?.glyph_script[comp.uuid]
 			return
 		}
-	} else if (dragOption.value === 'layout' && editGlyph.value.layout && !selectedSubComponent.value) {
+	} else if (dragOption.value === 'layout' && !selectedSubComponentOnDragging.value) {
 		if (draggingJoint.value && putAtCoord.value) {
+			let coord = null
+			let dx = 0
+			let dy = 0
+			let d = Infinity
 			const { x, y } = putAtCoord.value
-			const layout_width = getRatioLayout(glyph, 'width')
-			const layout_height = getRatioLayout(glyph, 'height')
-			const ratio_width = (x - (unitsPerEm - layout_width) / 2) / layout_width
-			const ratio_height = (y - (unitsPerEm - layout_height) / 2) / layout_height
-			let script = `if (window.glyph.getComponent('${comp.name}')) { window.glyph.getComponent('${comp.name}').ox = (${unitsPerEm} - window.glyph.getRatioLayout('width')) / 2 + window.glyph.getRatioLayout('width') * ${ratio_width} - window.glyph.getGlyph('${comp.name}')?.getJoint('${draggingJoint.value.name}')?.x; }`
-			script += `if (window.glyph.getComponent('${comp.name}')) { window.glyph.getComponent('${comp.name}').oy = (${unitsPerEm} - window.glyph.getRatioLayout('height')) / 2 + window.glyph.getRatioLayout('height') * ${ratio_height} - window.glyph.getGlyph('${comp.name}')?.getJoint('${draggingJoint.value.name}')?.y; }`
-			editGlyph.value.glyph_script[comp.uuid] = script
+			for (let i = 0; i < coords.length; i++) {
+				const _coord = coords[i]
+				const _d = distance(x, y, _coord.x,  _coord.y)
+				if (_d < d) {
+					d = _d
+					coord = _coord
+					dx = x - coord.x
+					dy = y - coord.y
+				}
+			}
+			const coords_script = `const ratio_coord = window.character.getRatioCoords(window.character.getLayoutByID('${coord.id}'),${coord.col},${coord.row},${coord.layout.coordsSegment})`
+			let script = `${coords_script};`
+			script += `if (window.character.getComponent('${comp.name}')) { window.character.getComponent('${comp.name}').ox = ratio_coord.x+${dx} - window.character.getGlyph('${comp.name}')?.getJoint('${draggingJoint.value.name}')?.x; }`
+			script += `if (window.character.getComponent('${comp.name}')) { window.character.getComponent('${comp.name}').oy = ratio_coord.y+${dy} - window.character.getGlyph('${comp.name}')?.getJoint('${draggingJoint.value.name}')?.y; }`
+			editGlyphOnDragging.value.glyph_script[comp.uuid] = script
+			executeScript(editGlyphOnDragging.value)
 		} else if (putAtCoord.value) {
+			let coord = null
+			let dx = 0
+			let dy = 0
+			let d = Infinity
 			const { x, y } = putAtCoord.value
-			const _ox = x - unitsPerEm / 2
-			const _oy = y - unitsPerEm / 2
-			const layout_width = getRatioLayout(glyph, 'width')
-			const layout_height = getRatioLayout(glyph, 'height')
-			const ratio_width = (_ox - (unitsPerEm - layout_width) / 2) / layout_width
-			const ratio_height = (_oy - (unitsPerEm - layout_height) / 2) / layout_height
-			let script = `if (window.glyph.getComponent('${comp.name}')) { window.glyph.getComponent('${comp.name}').ox = (${unitsPerEm} - window.glyph.getRatioLayout('width')) / 2 + window.glyph.getRatioLayout('width') * ${ratio_width}; }`
-			script += `if (window.glyph.getComponent('${comp.name}')) { window.glyph.getComponent('${comp.name}').oy = (${unitsPerEm} - window.glyph.getRatioLayout('height')) / 2 + window.glyph.getRatioLayout('height') * ${ratio_height}; }`
-			editGlyph.value.glyph_script[comp.uuid] = script
+			for (let i = 0; i < coords.length; i++) {
+				const _coord = coords[i]
+				const _d = distance(x, y, _coord.x,  _coord.y)
+				if (_d < d) {
+					d = _d
+					coord = _coord
+					dx = x - coord.x
+					dy = y - coord.y
+				}
+			}
+			const coords_script = `const ratio_coord = window.character.getRatioCoords(window.character.getLayoutByID('${coord.id}'),${coord.col},${coord.row},${coord.layout.coordsSegment})`
+			const script = `${coords_script};window.character.getComponent('${comp.name}')?.ox = ratio_coord.x + ${dx} - ${unitsPerEm / 2};window.character.getComponent('${comp.name}')?.oy = ratio_coord.y + ${dy} - ${unitsPerEm / 2}`
+			editGlyphOnDragging.value.glyph_script[comp.uuid] = script
+			executeScript(editGlyphOnDragging.value)
 		}
-	} else if (dragOption.value === 'layout' && !!selectedSubComponent.value) {
-		if (!SubComponentsRoot.value.value.glyph_script) {
-			SubComponentsRoot.value.value.glyph_script = {}
+	} else if (dragOption.value === 'layout' && !!selectedSubComponentOnDragging.value) {
+		if (!SubComponentsRootOnDragging.value.value.glyph_script) {
+			SubComponentsRootOnDragging.value.value.glyph_script = {}
 		}
 		const { ox, oy } = getOrigin2()
 		if (draggingJoint.value && putAtCoord.value) {
 			const { x, y } = putAtCoord.value
-			const layout_width = getRatioLayout2(SubComponentsRoot.value.value, 'width')
-			const layout_height = getRatioLayout2(SubComponentsRoot.value.value, 'height')
+			const layout_width = getRatioLayout2(SubComponentsRootOnDragging.value.value, 'width')
+			const layout_height = getRatioLayout2(SubComponentsRootOnDragging.value.value, 'height')
 			const ratio_width = (x - (unitsPerEm - layout_width) / 2 - ox) / layout_width
 			const ratio_height = (y - (unitsPerEm - layout_height) / 2 - oy) / layout_height
 
-			const _x = selectedSubComponent.value.value._o.getJoint(`${draggingJoint.value.name}`)?.x;
+			const _x = selectedSubComponentOnDragging.value.value._o.getJoint(`${draggingJoint.value.name}`)?.x;
 			const __x = (unitsPerEm - layout_width) / 2 + layout_width * ratio_width
 
 			let script = `if (window.glyph.getComponent('${comp.name}')) { window.glyph.getComponent('${comp.name}').ox = (${unitsPerEm} - window.glyph.getRatioLayout('width')) / 2 + window.glyph.getRatioLayout('width') * ${ratio_width} - window.glyph.getGlyph('${comp.name}')?.getJoint('${draggingJoint.value.name}')?.x; }`
 			script += `if (window.glyph.getComponent('${comp.name}')) { window.glyph.getComponent('${comp.name}').oy = (${unitsPerEm} - window.glyph.getRatioLayout('height')) / 2 + window.glyph.getRatioLayout('height') * ${ratio_height} - window.glyph.getGlyph('${comp.name}')?.getJoint('${draggingJoint.value.name}')?.y; }`
-			SubComponentsRoot.value.value.glyph_script[comp.uuid] = script
+			SubComponentsRootOnDragging.value.value.glyph_script[comp.uuid] = script
 		} else if (putAtCoord.value) {
 			const { x, y } = putAtCoord.value
 			const _ox = x - unitsPerEm / 2
 			const _oy = y - unitsPerEm / 2
-			const layout_width = getRatioLayout2(SubComponentsRoot.value.value, 'width')
-			const layout_height = getRatioLayout2(SubComponentsRoot.value.value, 'height')
+			const layout_width = getRatioLayout2(SubComponentsRootOnDragging.value.value, 'width')
+			const layout_height = getRatioLayout2(SubComponentsRootOnDragging.value.value, 'height')
 			const ratio_width = (_ox - (unitsPerEm - layout_width) / 2 - ox) / layout_width
 			const ratio_height = (_oy - (unitsPerEm - layout_height) / 2 - oy) / layout_height
 			let script = `if (window.glyph.getComponent('${comp.name}')) { window.glyph.getComponent('${comp.name}').ox = (${unitsPerEm} - window.glyph.getRatioLayout('width')) / 2 + window.glyph.getRatioLayout('width') * ${ratio_width}; }`
 			script += `if (window.glyph.getComponent('${comp.name}')) { window.glyph.getComponent('${comp.name}').oy = (${unitsPerEm} - window.glyph.getRatioLayout('height')) / 2 + window.glyph.getRatioLayout('height') * ${ratio_height}; }`
-			SubComponentsRoot.value.value.glyph_script[comp.uuid] = script
+			SubComponentsRootOnDragging.value.value.glyph_script[comp.uuid] = script
 		}
-		executeScript(SubComponentsRoot.value.value)
+		executeScript(SubComponentsRootOnDragging.value.value)
 	}
-
-	executeScript(editGlyph.value)
-	emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
 	emitter.emit('renderGlyph', true)
-	// if (editGlyph.value.layout && editingLayout.value) {
-	//   renderLayoutEditor(canvas, editGlyph.value, 0, 0)
-	// }
 }
 
 // 字形拖拽工具初始化方法
 // initializer for glyph dragger tool
-const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) => {
-	const glyph = selectedSubComponent.value ? selectedSubComponent.value.value : selectedComponent_glyph?.value?.value
-	let { ox, oy } = getOrigin()
+const initGlyphDragger = (canvas: HTMLCanvasElement) => {
+	let ox
+	let oy
 	let _ox
 	let _oy
-	if (!glyph) return
-	const comp = selectedComponent_glyph.value
-	const unitsPerEm = 1000//selectedFile.value.fontSettings?.unitsPerEm
+	const unitsPerEm = 1000 //selectedFile.value.fontSettings?.unitsPerEm
 
 	let mousedown: boolean = false
 	let mousemove: boolean = false
@@ -144,25 +158,32 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) 
 	let coords = []
 	const onMouseDown = (e: MouseEvent) => {
 		if (!draggable.value) return
+		editGlyphOnDragging.value = R.clone(editGlyph.value)
+		for (let i = 0; i < editGlyphOnDragging.value.components.length; i++) {
+			const component = editGlyphOnDragging.value.components[i]
+			if (component.type === 'glyph') {
+				executeScript(component.value)
+			}
+		}
 		// joint数据格式：{x, y, name}
 		let joints = []
 		let glyph = null
-		if (selectedSubComponent.value) {
+		if (selectedSubComponentOnDragging.value) {
 			// 当前选中组件为子字形组件
-			joints = getJoints(selectedComponent_glyph?.value, selectedSubComponent.value.uuid)
-			glyph = selectedSubComponent.value.value
-		} else if (selectedComponent_glyph?.value) {
+			joints = getJoints(selectedComponentOnDragging?.value, selectedSubComponentOnDragging.value.uuid)
+			glyph = selectedSubComponentOnDragging.value.value
+		} else if (selectedComponentOnDragging?.value) {
 			// 当前选中组件为根目录中组件
-			joints = getJoints(selectedComponent_glyph?.value, selectedComponent_glyph?.value.uuid)
-			glyph = selectedComponent_glyph?.value?.value
+			joints = getJoints(selectedComponentOnDragging?.value, selectedComponentOnDragging?.value.uuid)
+			glyph = selectedComponentOnDragging?.value?.value
 		}
 		if (!glyph || !glyph._o) return
+		coords = []
 		mouseDownX = getCoord(e.offsetX)
 		mouseDownY = getCoord(e.offsetY)
-		const d = 10
-		if (checkJoints.value && !draggingJoint.value) {
+		const d = 20
+		if (checkJoints.value) {
 			for (let i = 0; i < joints.length; i++) {
-				const { ox, oy } = getOrigin()
 				const { x, y } = joints[i]
 				if (distance(x, y, mouseDownX, mouseDownY) <= d) {
 					// 拖拽关键点
@@ -185,23 +206,30 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) 
 		const origin = getOrigin()
 		ox = origin.ox
 		oy = origin.oy
-		_ox = selectedSubComponent.value ? selectedSubComponent.value.ox : selectedComponent_glyph.value.ox
-		_oy = selectedSubComponent.value ? selectedSubComponent.value.oy : selectedComponent_glyph.value.oy
 		// lastX = selectedComponent.value.ox
 		// lastY = selectedComponent.value.oy
+		_ox = selectedSubComponentOnDragging.value ? selectedSubComponentOnDragging.value.ox : selectedComponentOnDragging.value.ox
+		_oy = selectedSubComponentOnDragging.value ? selectedSubComponentOnDragging.value.oy : selectedComponentOnDragging.value.oy
 		window.addEventListener('mouseup', onMouseUp)
+		// canvas.addEventListener('mousemove', onMouseMove)
 	}
 	const onMouseMove = (e: MouseEvent) => {
 		const d = 20
 		const dx = getCoord(e.offsetX) - lastX
 		const dy = getCoord(e.offsetY) - lastY
 		let glyph = null
-		if (selectedSubComponent.value) {
+		if (editGlyphOnDragging.value && selectedSubComponentOnDragging.value) {
+			// 当前选中组件为子字形组件
+			glyph = selectedSubComponentOnDragging.value.value
+		} else if (editGlyphOnDragging.value && selectedComponentOnDragging?.value) {
+			// 当前选中组件为根目录中组件
+			glyph = selectedComponentOnDragging?.value?.value
+		} else if (!editGlyphOnDragging.value && selectedSubComponent.value) {
 			// 当前选中组件为子字形组件
 			glyph = selectedSubComponent.value.value
-		} else if (selectedComponent_glyph?.value) {
+		} else if (!editGlyphOnDragging.value && selectedComponent?.value) {
 			// 当前选中组件为根目录中组件
-			glyph = selectedComponent_glyph?.value?.value
+			glyph = selectedComponent?.value?.value
 		}
 		mousemove = true
 		if (mousedown) {
@@ -211,12 +239,19 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) 
 					x: ox + dx + unitsPerEm / 2,
 					y: oy + dy + unitsPerEm / 2,
 				}
-				if (!selectedSubComponent.value) {
-					addScript()
-					modifyComponentForCurrentGlyph(selectedComponentUUID.value, {
-						ox: _ox + dx,
-						oy: _oy + dy,
-					})
+				if (!selectedSubComponentOnDragging.value) {
+					//addScript()
+					// modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
+					// 	ox: _ox + dx,
+					// 	oy: _oy + dy,
+					// })
+					for (let i = 0; i < editGlyphOnDragging.value.components.length; i++) {
+						if (editGlyphOnDragging.value.components[i].uuid === selectedComponentUUID.value) {
+							editGlyphOnDragging.value.components[i].ox = _ox + dx
+							editGlyphOnDragging.value.components[i].oy = _oy + dy
+						}
+					}
+					emitter.emit('renderGlyph')
 				} else {
 					addScript()
 					modifySubComponent({
@@ -237,30 +272,41 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) 
 					x: ox + draggingJoint.value.x + dx,
 					y: oy + draggingJoint.value.y + dy,
 				}
-				if (!selectedSubComponent.value) {
+				if (!selectedSubComponentOnDragging.value) {
 					addScript()
-					modifyComponentForCurrentGlyph(selectedComponentUUID.value, {
-						ox: _ox + dx,
-						oy: _oy + dy,
-					})
+					// modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
+					// 	ox: _ox + dx,
+					// 	oy: _oy + dy,
+					// })
+					for (let i = 0; i < editGlyphOnDragging.value.components.length; i++) {
+						if (editGlyphOnDragging.value.components[i].uuid === selectedComponentUUID.value) {
+							editGlyphOnDragging.value.components[i].ox = _ox + dx
+							editGlyphOnDragging.value.components[i].oy = _oy + dy
+						}
+					}
 				} else {
 					addScript()
-					modifySubComponent({
-						ox: _ox + dx,
-						oy: _oy + dy,
-					})
+					// modifySubComponent({
+					// 	ox: _ox + dx,
+					// 	oy: _oy + dy,
+					// })
+					for (let i = 0; i < editGlyphOnDragging.value.components.length; i++) {
+						if (editGlyphOnDragging.value.components[i].uuid === selectedComponentUUID.value) {
+							editGlyphOnDragging.value.components[i].ox = _ox + dx
+							editGlyphOnDragging.value.components[i].oy = _oy + dy
+						}
+					}
 				}
 			}
 		} else if (checkJoints.value) {
 			// joint数据格式：{x, y, name}
 			let joints = []
-			let glyph = null
 			if (selectedSubComponent.value) {
 				// 当前选中组件为子字形组件
-				joints = getJoints(selectedComponent_glyph?.value, selectedSubComponent.value.uuid)
-			} else if (selectedComponent_glyph?.value) {
+				joints = getJoints(selectedComponent?.value, selectedSubComponent.value.uuid)
+			} else if (selectedComponent?.value) {
 				// 当前选中组件为根目录中组件
-				joints = getJoints(selectedComponent_glyph?.value, selectedComponent_glyph?.value.uuid)
+				joints = getJoints(selectedComponent?.value, selectedComponent?.value.uuid)
 			}
 			if (!glyph) return
 			const d = 10
@@ -279,12 +325,12 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) 
 	}
 	const onMouseUp = (e: MouseEvent) => {
 		let glyph = null
-		if (selectedSubComponent.value) {
+		if (selectedSubComponentOnDragging.value) {
 			// 当前选中组件为子字形组件
-			glyph = selectedSubComponent.value.value
-		} else if (selectedComponent_glyph?.value) {
+			glyph = selectedSubComponentOnDragging.value.value
+		} else if (selectedComponentOnDragging?.value) {
 			// 当前选中组件为根目录中组件
-			glyph = selectedComponent_glyph?.value?.value
+			glyph = selectedComponentOnDragging?.value?.value
 		}
 		const dx = getCoord(e.offsetX) - lastX
 		const dy = getCoord(e.offsetY) - lastY
@@ -296,11 +342,11 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) 
 				deltaY: dy,
 			})
 		}
+		window.removeEventListener('mouseup', onMouseUp)
 		setEditing(false)
-		if (mousemove && mousedown) {
+		if (mousemove) {
 			// addScript(glyph, coords)
-			window.removeEventListener('mouseup', onMouseUp)
-			addScript()
+			addScript(coords)
 		}
 		mousedown = false
 		mousemove = false
@@ -310,33 +356,45 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = true) 
 		lastY = 0
 		putAtCoord.value = null
 		draggingJoint.value = null
-		movingJoint.value = null
+		editGlyph.value.glyph_script = R.clone(editGlyphOnDragging.value.glyph_script)
+		editGlyph.value.components = R.clone(editGlyphOnDragging.value.components)
+		editGlyphOnDragging.value = null
+		emitter.emit('renderPreviewCanvasByUUIDOnEditing', editGlyph.value.uuid)
 	}
 	canvas.addEventListener('mousedown', onMouseDown)
-	window.addEventListener('mousemove', onMouseMove)
+	canvas.addEventListener('mousemove', onMouseMove)
 	const closeGlyphDragger = () => {
 		canvas.removeEventListener('mousedown', onMouseDown)
-		window.removeEventListener('mousemove', onMouseMove)
-		window.removeEventListener('mouseup', onMouseUp)
+		canvas.removeEventListener('mousemove', onMouseMove)
+		editGlyphOnDragging.value = null
 		setEditing(false)
 	}
 	return closeGlyphDragger
 }
 
-const renderGlyphSelector = (canvas: HTMLCanvasElement, _editGlyph: boolean = true) => {
-	const glyph = selectedSubComponent.value ? selectedSubComponent.value.value : selectedComponent_glyph?.value?.value
-	const { ox, oy } = getOrigin()
-	if (!glyph) return
-	//executeScript(editGlyph.value)
-
-	let joints = []
-	if (selectedSubComponent.value) {
+const renderGlyphSelector = (canvas: HTMLCanvasElement, editGlyph: boolean = false) => {
+	let glyph = null
+	let comp = null
+	if (editGlyphOnDragging.value && selectedSubComponentOnDragging.value) {
 		// 当前选中组件为子字形组件
-		joints = getJoints(selectedComponent_glyph?.value, selectedSubComponent.value.uuid)
-	} else if (selectedComponent_glyph?.value) {
+		glyph = selectedSubComponentOnDragging.value.value
+		comp = selectedSubComponentOnDragging.value
+	} else if (editGlyphOnDragging.value && selectedComponentOnDragging?.value) {
 		// 当前选中组件为根目录中组件
-		joints = getJoints(selectedComponent_glyph?.value, selectedComponent_glyph?.value.uuid)
+		glyph = selectedComponentOnDragging?.value?.value
+		comp = selectedComponentOnDragging.value
+	} else if (!editGlyphOnDragging.value && selectedSubComponent.value) {
+		// 当前选中组件为子字形组件
+		glyph = selectedSubComponent.value.value
+		comp = selectedSubComponent.value
+	} else if (!editGlyphOnDragging.value && selectedComponent?.value) {
+		// 当前选中组件为根目录中组件
+		glyph = selectedComponent?.value?.value
+		comp = selectedComponent.value
 	}
+	if (!glyph) return
+	const { ox, oy } = getOrigin()
+	let joints = getJoints(comp, comp.uuid)
 	const getJoint = (name: string) => {
 		for (let i = 0; i < joints.length; i++) {
 			if (joints[i].name === name) {
@@ -355,7 +413,7 @@ const renderGlyphSelector = (canvas: HTMLCanvasElement, _editGlyph: boolean = tr
 	const _h = mapCanvasHeight(h)
 	const d = 5
 	const ctx = canvas.getContext('2d')
-	ctx.strokeStyle = '#79bbff'
+	// ctx.strokeStyle = '#79bbff'
 	// ctx.strokeRect(_x, _y, _w, _h)
 	// ctx.strokeRect(_x - d, _y - d, d * 2, d * 2)
 	// ctx.strokeRect(_x + _w - d, _y - d, d * 2, d * 2)
@@ -393,9 +451,22 @@ const renderGlyphSelector = (canvas: HTMLCanvasElement, _editGlyph: boolean = tr
 }
 
 const getOrigin = () => {
-	if (selectedSubComponent.value) {
-		let { ox, oy } = selectedComponent_glyph.value
-		let root = selectedComponent_glyph.value
+	if (selectedSubComponentOnDragging.value) {
+		let { ox, oy } = selectedComponentOnDragging.value
+		let root = selectedComponentOnDragging.value
+		for (let i = 1; i < editGlyphOnDragging.value.selectedComponentsTree.length; i++) {
+			const compUUID = editGlyphOnDragging.value.selectedComponentsTree[i]
+			const comp = selectedItemByUUID(root.value.components, compUUID)
+			root = comp
+			ox += comp.ox
+			oy += comp.oy
+		}
+		return {
+			ox, oy,
+		}
+	} else if (selectedSubComponent.value) {
+		let { ox, oy } = selectedComponent.value
+		let root = selectedComponent.value
 		for (let i = 1; i < editGlyph.value.selectedComponentsTree.length; i++) {
 			const compUUID = editGlyph.value.selectedComponentsTree[i]
 			const comp = selectedItemByUUID(root.value.components, compUUID)
@@ -408,15 +479,28 @@ const getOrigin = () => {
 		}
 	}
 	return {
-		ox: selectedComponent_glyph.value.ox,
-		oy: selectedComponent_glyph.value.oy,
+		ox: editGlyphOnDragging.value ? selectedComponentOnDragging.value.ox : selectedComponent.value.ox,
+		oy: editGlyphOnDragging.value ? selectedComponentOnDragging.value.oy : selectedComponent.value.oy,
 	}
 }
 
 const getOrigin2 = () => {
-	if (selectedSubComponent.value) {
-		let { ox, oy } = selectedComponent_glyph.value
-		let root = selectedComponent_glyph.value
+	if (selectedSubComponentOnDragging.value) {
+		let { ox, oy } = selectedComponentOnDragging.value
+		let root = selectedComponentOnDragging.value
+		for (let i = 1; i < editGlyphOnDragging.value.selectedComponentsTree.length - 1; i++) {
+			const compUUID = editGlyphOnDragging.value.selectedComponentsTree[i]
+			const comp = selectedItemByUUID(root.value.components, compUUID)
+			root = comp
+			ox += comp.ox
+			oy += comp.oy
+		}
+		return {
+			ox, oy,
+		}
+	} else if (selectedSubComponent.value) {
+		let { ox, oy } = selectedComponent.value
+		let root = selectedComponent.value
 		for (let i = 1; i < editGlyph.value.selectedComponentsTree.length - 1; i++) {
 			const compUUID = editGlyph.value.selectedComponentsTree[i]
 			const comp = selectedItemByUUID(root.value.components, compUUID)
@@ -429,8 +513,8 @@ const getOrigin2 = () => {
 		}
 	}
 	return {
-		ox: selectedComponent_glyph.value.ox,
-		oy: selectedComponent_glyph.value.oy,
+		ox: editGlyphOnDragging.value ? selectedComponentOnDragging.value.ox : selectedComponent.value.ox,
+		oy: editGlyphOnDragging.value ? selectedComponentOnDragging.value.oy : selectedComponent.value.oy,
 	}
 }
 

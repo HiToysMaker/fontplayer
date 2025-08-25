@@ -132,7 +132,7 @@ const parseFont = (buffer: ArrayBuffer) => {
  * @param options font options
  * @returns font object
  */
-const createFont = (characters: Array<ICharacter>, options: IOption) => {
+const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 	let enName = ''
 	for(let i = 0; i < options.familyName.length; i++) {
 		const charcode = options.familyName[i].charCodeAt(0)
@@ -241,15 +241,21 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 	let ulUnicodeRange2 = 0
 	let ulUnicodeRange3 = 0
 	let ulUnicodeRange4 = 0
+	let m = 0
 
-	for (let i = 0; i < characters.length; i += 1) {
+	const compute = async (): Promise<void> => {
+		// 检查是否完成所有字符处理
+		if (m >= characters.length) {
+			return
+		}
+
 		loaded.value++
 		if (loaded.value >= total.value) {
 			loading.value = false
 			loaded.value = 0
 			total.value = 0
 		}
-		const character = characters[i]
+		const character = characters[m]
 		const unicode = character.unicode | 0
 
 		if ((firstCharIndex as number) > unicode || firstCharIndex === undefined) {
@@ -289,11 +295,19 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 		character.yMax = metrics.yMax
 		character.rightSideBearing = metrics.rightSideBearing
 		character.leftSideBearing = metrics.leftSideBearing
-		// leftSideBearings.push(500)
-		// rightSideBearings.push(0)
-		// advanceWidths.push(1000)
 
+		m++
+		// 检查是否还有更多字符需要处理
+		if (m < characters.length) {
+			if (m % 100 === 0) {
+				// 每100个字符后，给UI更多时间更新
+				await new Promise(resolve => setTimeout(resolve, 0))
+			}
+			// 继续处理下一个字符
+			return compute()
+		}
 	}
+	await compute()
 
 	const globals = {
 		xMin: Math.min.apply(null, xMins),
@@ -301,7 +315,7 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 		xMax: Math.max.apply(null, xMaxs),
 		yMax: Math.max.apply(null, yMaxs),
 		advanceWidthMax: Math.max.apply(null, advanceWidths as Array<number>),
-		advanceWidthAvg: average(advanceWidths as Array<number>),
+		advanceWidthAvg: advanceWidths.reduce((a, b) => a + b, 0) / advanceWidths.length,
 		minLeftSideBearing: Math.min.apply(null, leftSideBearings),
 		maxLeftSideBearing: Math.max.apply(null, leftSideBearings),
 		minRightSideBearing: Math.min.apply(null, rightSideBearings),
@@ -309,6 +323,31 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 		descender: options.descender,
 	}
 
+	// 精确设置Unicode范围位，避免设置不包含字符的范围
+	// 重新计算Unicode范围位，只包含实际存在的字符
+	ulUnicodeRange1 = 0
+	ulUnicodeRange2 = 0
+	ulUnicodeRange3 = 0
+	ulUnicodeRange4 = 0
+	
+	// 只对实际存在的字符设置Unicode范围位
+	for (let i = 0; i < characters.length; i++) {
+		const character = characters[i]
+		const unicode = character.unicode | 0
+		if (unicode === 0) continue // 跳过.notdef字符
+		
+		const position = getUnicodeRange(unicode)
+		if (position < 32) {
+			ulUnicodeRange1 |= 1 << position;
+		} else if (position < 64) {
+			ulUnicodeRange2 |= 1 << position - 32;
+		} else if (position < 96) {
+			ulUnicodeRange3 |= 1 << position - 64;
+		} else if (position < 123) {
+			ulUnicodeRange4 |= 1 << position - 96;
+		}
+	}
+	
 	const _headTable = options.tables ? options.tables.head : {}
 	const convertToFlags = (flags: Array<boolean>) => {
 		let _flags = 0
@@ -407,9 +446,9 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 		ySubscriptYSize: _os2Table.ySubscriptYSize || 699,
 		ySubscriptXOffset: _os2Table.ySubscriptXOffset || 0,
 		ySubscriptYOffset: _os2Table.ySubscriptYOffset || 140,
-		ySuperscriptXSize: _os2Table.ySuperscriptXOffset || 650,
-		ySuperscriptYSize: _os2Table.ySuperscriptYOffset || 699,
-		ySuperscriptXOffset: _os2Table.ySuperscriptXOffse || 0,
+		ySuperscriptXSize: _os2Table.ySuperscriptXSize || 650,
+		ySuperscriptYSize: _os2Table.ySuperscriptYSize || 699,
+		ySuperscriptXOffset: _os2Table.ySuperscriptXOffset || 0,
 		ySuperscriptYOffset: _os2Table.ySuperscriptYOffset || 479,
 		yStrikeoutSize: _os2Table.yStrikeoutSize || 49,
 		yStrikeoutPosition: _os2Table.yStrikeoutPosition || 258,
@@ -448,7 +487,7 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 	for (let i = 0; i < characters.length; i++) {
 		const character = characters[i]
 		const advanceWidth = character.advanceWidth || 0
-		const leftSideBearing = character.leftSideBearing || 0
+		const leftSideBearing = Math.round(character.leftSideBearing || 0)
 		hmtxTable.hMetrics.push({
 			advanceWidth,
 			lsb: leftSideBearing,
@@ -463,9 +502,9 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 	// define name table
 	const getEnglishName = (name: string) => {
 		const translations = fontNames[name as keyof typeof fontNames]
-    if (translations) {
-      return translations.en
-    }
+		if (translations) {
+			return translations.en
+		}
 	}
 	const englishFamilyName = getEnglishName('fontFamily')
 	const englishStyleName = getEnglishName('fontSubfamily')
@@ -545,7 +584,7 @@ const createFont = (characters: Array<ICharacter>, options: IOption) => {
 	}
 	headTable.checkSumAdjustment = 0x00000000
 
-	let _font = createFontData(tables, 'checksum')
+	let _font = await createFontData(tables, 'checksum')
 
 	const checkSum = _font.checksum
 	//const checkSum = computeCheckSum(_font.data)

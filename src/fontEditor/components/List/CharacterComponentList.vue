@@ -74,7 +74,14 @@
     if (!selectedComponent.value || (selectedComponent.value && selectedComponent.value.uuid !== uuid)) {
       hasSelected = false
     }
-    setSelectionForCurrentCharacterFile(uuid)
+    if (selectedComponentsUUIDs.value.indexOf(uuid) !== -1) {
+      hasSelected = true
+    }
+    if (selectedComponent.value === 'multi' && enableMultiSelect.value) {
+      setSelectionForCurrentCharacterFile(uuid)
+    } else {
+      !hasSelected && setSelectionForCurrentCharacterFile(uuid)
+    }
     const component = selectedItemByUUID(editCharacterFile.value.components, uuid)
     if (component.type === 'glyph' && component.value.components && component.value.components.length) {
       let hasGlyph = false
@@ -204,12 +211,24 @@
   const paste = (uuid: string) => {
     // 粘贴
     const components = clipBoard.value
+    let lastComponent: any = null
+    
     for (let i = components.length - 1; i >= 0; i--) {
-      const component = components[i]
+      // 使用 R.clone 进行深拷贝，避免循环引用问题
+      const component = R.clone(components[i])
       component.uuid = genUUID()
       insertComponentForCurrentCharacterFile(component, { uuid, pos: 'next' })
+      lastComponent = component
     }
-    setClipBoard([])
+    
+    // 设置正确的工具，确保可以拖拽编辑
+    if (lastComponent && lastComponent.type === 'glyph') {
+      setTool('glyphDragger')
+    } else {
+      setTool('select')
+    }
+    
+    // 不清空剪贴板，允许重复粘贴
     onPopover.value = false
     popoverVisibleMap[uuid] = false
   }

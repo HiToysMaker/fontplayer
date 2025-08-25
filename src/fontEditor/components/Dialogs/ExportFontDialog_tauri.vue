@@ -13,7 +13,7 @@
   import { IFile, selectedFile } from '../../stores/files'
   import { computeOverlapRemovedContours, exportFont_tauri, mapToObject, plainFile, plainGlyph } from '../../menus/handlers'
   import { ICustomGlyph, comp_glyphs, constantGlyphMap, constants, glyphs, radical_glyphs, stroke_glyphs } from '../../stores/glyph'
-  import { total, loaded, loading } from '../../stores/global'
+  import { total, loaded, loading, loadingMsg } from '../../stores/global'
   const { tm, t } = useI18n()
 
   const options = ref({
@@ -25,12 +25,21 @@
   }
 
   const handleClick = async () => {
-    total.value = selectedFile.value.characterList.length * 4
+    if (options.value.remove_overlap) {
+      total.value = selectedFile.value.characterList.length * 4
+    } else {
+      total.value = selectedFile.value.characterList.length * 3
+    }
     loaded.value = 0
     loading.value = true
-    computeOverlapRemovedContours()
-    await exportFont_tauri(options.value)
-    setExportFontTauriDialogVisible(false)
+    loadingMsg.value = '正在对字符进行处理，请稍候...'
+    setTimeout(async () => {
+      if (options.value.remove_overlap) {
+        await computeOverlapRemovedContours()
+      }
+      setTimeout(() => exportFont_tauri(options.value), 100)
+      setExportFontTauriDialogVisible(false)
+    }, 100)
   }
 </script>
 

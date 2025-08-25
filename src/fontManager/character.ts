@@ -142,7 +142,7 @@ const getMetrics = (character: ICharacter) => {
  * @param tables font tables
  * @returns characters
  */
-const parseTablesToCharacters = (tables: Array<ITable>) => {
+const parseTablesToCharacters = (tables: Array<ITable>) => {	
 	const characters: Array<ICharacter> = []
 	const cmapTable = tables.filter((table: ITable) => table.name === 'cmap')[0].table as unknown as ICmapTable
 	const htmxTable = tables.filter((table: ITable) => table.name === 'hmtx')[0].table as unknown as IHmtxTable
@@ -167,10 +167,19 @@ const parseTablesToCharacters = (tables: Array<ITable>) => {
 		})
 	} else if (tables.filter((table: ITable) => table.name === 'CFF ')[0]) {
 		const cffTable = tables.filter((table: ITable) => table.name === 'CFF ')[0].table as unknown as ICffTable
+		
+
+		
 		Object.keys(cmapTable.glyphIndexMap).forEach((code) => {
 			//const unicode = Number(code).toString(16)
 			const index = cmapTable.glyphIndexMap[code]
 			const glyphTable = (cffTable.glyphTables as Array<IGlyphTable>)[index]
+			
+			// 检查glyphTable是否存在
+			if (!glyphTable) {
+				return
+			}
+			
 			characters.push({
 				unicode: Number(code),
 				contours: glyphTable.contours,
