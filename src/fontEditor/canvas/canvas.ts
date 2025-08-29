@@ -407,48 +407,6 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
     }
     ctx.stroke()
   }
-
-
-  // 调试
-  // 渲染钢笔组件
-  // render pen component
-  const component = components[0]
-  if (component?.type === 'pen') {
-    const { x, y, w, h, rotation, flipX, flipY } = component as IComponent
-    const _x = mapCanvasX(x) * scale
-    const _y = mapCanvasY(y) * scale
-    const _w = mapCanvasWidth(w) * scale
-    const _h = mapCanvasHeight(h) * scale
-    const {
-      strokeColor,
-      fillColor,
-      points,
-      closePath,
-    } = component.value as unknown as IPenComponent
-    ctx.strokeStyle = strokeColor || '#000'
-    ctx.lineWidth = getStrokeWidth()
-    ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
-    if (fillColor === 'none') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0)'
-    }
-    // let _points = transformPoints(points, {
-    //   x, y, w, h, rotation, flipX, flipY,
-    // })
-    let _points = transformPoints(points, {
-      x, y, w, h, rotation: 0, flipX, flipY,
-    })
-    _points = _points.map((point: IPoint) => {
-      return mapCanvasCoords({
-        x: point.x * scale,
-        y: point.y * scale,
-      })
-    })
-    ctx.fillStyle = 'red'
-    for (let i = 0; i < _points.length; i++) {
-      ctx.fillRect(_points[i].x, _points[i].y, 10, 10)
-    }
-    ctx.setTransform(1, 0, 0, 1, 0, 0)
-  }
 }
 
 const computeCoords = (grid, point) => {

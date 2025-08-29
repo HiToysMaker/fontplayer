@@ -324,7 +324,7 @@
         </el-form>
       </div>
     </div>
-    <div class="title">骨架绑定</div>
+    <!-- <div class="title">骨架绑定</div>
     <div class="skeleton-wrap">
       <el-button
         v-if="!editGlyph.skeleton && (!editGlyph._o?.getSkeleton || !editGlyph._o?.getSkeleton())"
@@ -361,15 +361,15 @@
         @pointerdown="bindSkeleton"
       >绑定骨架</el-button>
       <el-button
-        v-if="!onSkeletonBind && editGlyph.skeleton && (!editGlyph._o?.getSkeleton || !editGlyph._o?.getSkeleton())"
+        v-if="editGlyph.skeleton && !onSkeletonBind"
         @pointerdown="modifySkeleton"
       >修改骨架</el-button>
       <el-button
         type="danger"
-        v-if="editGlyph.skeleton && (!editGlyph._o?.getSkeleton || !editGlyph._o?.getSkeleton())"
+        v-if="editGlyph.skeleton && !onSkeletonBind"
         @pointerdown="removeSkeleton"
       >删除骨架</el-button>
-    </div>
+    </div> -->
 		<div class="parameters-wrap">
       <div class="title">{{ t('panels.paramsPanel.params.title') }}</div>
       <el-form
@@ -824,8 +824,10 @@
 
   .skeleton-wrap {
     padding: 10px;
+    padding-bottom: 0;
     .el-button {
       width: 100%;
+      margin-left: 0;
       margin-bottom: 10px;
     }
     .el-select {

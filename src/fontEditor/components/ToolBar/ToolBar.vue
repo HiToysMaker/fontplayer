@@ -97,7 +97,8 @@
   }
 
   const toList = () => {
-    setEditStatus(Status.CharacterList)
+    // setEditStatus(Status.CharacterList)
+    setEditStatus(prevStatus.value)
   }
 
   let glyph_window = null

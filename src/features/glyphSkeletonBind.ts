@@ -830,8 +830,6 @@ function transformPointToWorld(point: { x: number; y: number }, matrix: number[]
 
 // 应用变形到组件
 export function applySkeletonTransformation(glyph: CustomGlyph, newSkeleton: any) {
-  console.log('applySkeletonTransformation', newSkeleton)
-  
   const penComponents = glyph.components.filter(comp => comp.type === 'pen') as IComponent[];
   if (penComponents.length === 0) {
     console.warn('No pen components found in applySkeletonTransformation');
@@ -839,15 +837,10 @@ export function applySkeletonTransformation(glyph: CustomGlyph, newSkeleton: any
   }
   
   const penComponent = penComponents[0];
-  console.log('Original pen component points before transformation:', 
-    (penComponent.value as unknown as IPenComponent).points.map(p => ({ x: p.x, y: p.y })));
   
   const transformedPoints = calculateTransformedPoints(glyph, newSkeleton);
-  console.log('Transformed points:', transformedPoints);
   
   if (transformedPoints.length === (penComponent.value as unknown as IPenComponent).points.length) {
-    console.log('applySkeletonTransformation 2', transformedPoints);
-    
     // 更新控制点位置
     (penComponent.value as unknown as IPenComponent).points.forEach((point, index) => {
       const newPoint = transformedPoints[index];
@@ -860,16 +853,11 @@ export function applySkeletonTransformation(glyph: CustomGlyph, newSkeleton: any
     (penComponent as IComponent).y = bound.y;
     (penComponent as IComponent).w = bound.w;
     (penComponent as IComponent).h = bound.h;
-    
-    console.log('Pen component points after transformation:', 
-      (penComponent.value as unknown as IPenComponent).points.map(p => ({ x: p.x, y: p.y })));
   } else {
     console.warn('Transformed points length mismatch:', 
       transformedPoints.length, 
       (penComponent.value as unknown as IPenComponent).points.length);
   }
-  
-  console.log('applySkeletonTransformation 3', (penComponent.value as unknown as IPenComponent).points);
   
   // 强制触发重新渲染
   // emitter.emit('renderCharacter')

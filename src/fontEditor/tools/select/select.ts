@@ -228,7 +228,6 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 						return
 					}
 				}
-				console.log(333)
 				setSelectionForCurrentGlyph('')
 			}
 			document.removeEventListener('mouseup', onMouseUp)
@@ -343,7 +342,6 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 // 渲染组件选择编辑器
 // render selection editor for selected component
 const renderSelectEditor = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = false) => {
-	console.log(555)
 	if (!glyph && !selectedComponent.value) return
 	if (glyph && !selectedComponent_glyph.value) return
 	if (!glyph) {
@@ -359,7 +357,6 @@ const renderSelectEditor = (canvas: HTMLCanvasElement, d: number = 10, glyph: bo
 			selectedComponent_glyph.value.type === 'pen' &&
 			(selectedComponent_glyph.value.value as unknown as IPenComponent).editMode
 		) {
-			console.log(111)
 			renderSelectPenEditor(canvas, d, true)
 			return
 		}
@@ -381,7 +378,6 @@ const renderSelectEditor = (canvas: HTMLCanvasElement, d: number = 10, glyph: bo
 	ctx.strokeRect(_x - d, _y + _h - d, d * 2, d * 2)
 	ctx.strokeRect(_x + _w - d, _y + _h - d, d * 2, d * 2)
 	ctx.setTransform(1, 0, 0, 1, 0, 0)
-	console.log(666)
 }
 
 export {
