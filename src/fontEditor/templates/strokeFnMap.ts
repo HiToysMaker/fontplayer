@@ -4,7 +4,6 @@ import { bindSkeletonGlyph_heng, instanceBasicGlyph_heng, updateSkeletonListener
 
 const updateSkeletonTransformation = (glyph: CustomGlyph) => {
   const skeleton = glyph.getSkeleton()
-  console.log('updateSkeletonTransformation 2', skeleton)
   applySkeletonTransformation(glyph, skeleton)
 }
 

@@ -1208,6 +1208,25 @@ const addComponentsForCharacterFile = (characterFileUUID: string, components: Ar
 }
 
 /**
+ * 在当前字符文件中添加组件列表
+ * @param components 要被添加的组件列表
+ */
+/**
+ * add components to current character file
+ * @param components components to be added
+ */
+const addComponentsForCurrentCharacterFile = (components: Array<IComponent>) => {
+	const character = editCharacterFile.value
+	components.forEach((component) => {
+		character.components.push(component)
+		addOrderedItemForCurrentCharacterFile({
+			type: 'component',
+			uuid: component.uuid,
+		})
+	})
+}
+
+/**
  * 执行字符脚本
  * @param character 字符文件
  */
@@ -1579,4 +1598,5 @@ export {
 	updateCharacterListFromEditFile,
 	traverseComponents,
 	addCharactersWithVirtualScroll,
+	addComponentsForCurrentCharacterFile,
 }

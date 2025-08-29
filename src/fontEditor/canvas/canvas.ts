@@ -709,7 +709,6 @@ const render = (canvas: HTMLCanvasElement, renderBackground: Boolean = true, for
         scale: 1,
       })
     } else {
-      console.log('renderCanvas', orderedListWithItemsForCurrentCharacterFile.value)
       renderCanvas(orderedListWithItemsForCurrentCharacterFile.value, canvas as HTMLCanvasElement, {
         forceUpdate,
         fill: false,

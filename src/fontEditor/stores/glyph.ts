@@ -1184,6 +1184,20 @@ const addComponentsForGlyph = (glyphUUID: string, components: Array<IComponent>)
 }
 
 /**
+ * 在当前字形文件中添加组件列表
+ * @param components 要被添加的组件列表
+ */
+/**
+ * add components to current glyph
+ * @param components components to be added
+ */
+const addComponentsForCurrentGlyph = (components: Array<IComponent>) => {
+	components.forEach((component) => {
+		addComponentForCurrentGlyph(component)
+	})
+}
+
+/**
  * 在指定字形中添加组件
  * @param glyphUUID uuid for glyph
  * @param component 要被添加的组件
@@ -1267,7 +1281,6 @@ const getScript = (glyph) => {
 // 执行字形脚本
 // execute glyph script
 const executeScript = (targetGlyph) => {
-	console.log('executeScript', targetGlyph)
 	try {
 		// 字形实例缓存了数据，表示字形正在拖拽编辑中，则返回不执行脚本运行操作
 		if (targetGlyph._o && targetGlyph._o.tempData) return
@@ -1277,10 +1290,8 @@ const executeScript = (targetGlyph) => {
 			if (strokeFn) {
 				strokeFn.instanceBasicGlyph(targetGlyph)
 				if (targetGlyph.skeleton.onSkeletonBind) {
-					console.log('1')
 					strokeFn.updateSkeletonListenerBeforeBind(targetGlyph._o)
 				} else {
-					console.log('2')
 					strokeFn.updateSkeletonListenerAfterBind(targetGlyph._o)
 				}
 				return
@@ -1766,4 +1777,5 @@ export {
 	skeletonOptions,
 	updateGlyphListFromEditFile ,
 	resetEditGlyph,
+	addComponentsForCurrentGlyph,
 }

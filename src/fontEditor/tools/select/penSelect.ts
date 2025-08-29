@@ -169,6 +169,8 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 			lastY = _y
 			setSelectionForCurrentCharacterFile('')
 		}
+		document.addEventListener('mouseup', onMouseUp)
+		canvas.addEventListener('keydown', onKeyDown)
 	}
 
 	const onMouseMove = (e: MouseEvent) => {
@@ -303,6 +305,8 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 		modifyComponentValue()
 		mousedown = false
 		selectControl.value = 'null'
+		document.removeEventListener('mouseup', onMouseUp)
+		canvas.removeEventListener('keydown', onKeyDown)
 	}
 
 	const onEnter = (e: KeyboardEvent) => {
@@ -366,8 +370,6 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 
 	canvas?.addEventListener('mousedown', onMouseDown)
 	document.addEventListener('mousemove', onMouseMove)
-	document.addEventListener('mouseup', onMouseUp)
-	canvas.addEventListener('keydown', onKeyDown)
 	const closeSelect = () => {
 		canvas?.removeEventListener('mousedown', onMouseDown)
 		document.removeEventListener('mousemove', onMouseMove)

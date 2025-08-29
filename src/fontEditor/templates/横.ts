@@ -79,7 +79,6 @@ const updateSkeletonListener_before_bind_heng = (glyph: CustomGlyph) => {
     const jointsMap = Object.assign({}, glyph.tempData)
     switch (draggingJoint.name) {
       case 'start': {
-        console.log('start')
         // 拖拽第一个joint，整体移动骨架
         const deltaX = data.deltaX
         const deltaY = data.deltaY
@@ -127,7 +126,6 @@ const updateSkeletonListener_before_bind_heng = (glyph: CustomGlyph) => {
   }
   
   glyph.onSkeletonDrag = (data) => {
-    console.log('onSkeletonDrag', data)
     if (!glyph.tempData) return
     glyph.clear()
     // joint数据格式：{x, y, name}
@@ -181,14 +179,12 @@ const updateSkeletonListener_after_bind_heng = (glyph: CustomGlyph) => {
   }
   
   glyph.onSkeletonDrag = (data) => {
-    console.log('onSkeletonDrag after bind', data)
     if (!glyph.tempData) return
     glyph.clear()
     // joint数据格式：{x, y, name}
     const jointsMap = getJointsMap(data)
     const _params = computeParamsByJoints(jointsMap, glyph)
     updateGlyphByParams(_params, glyph)
-    console.log('updateSkeletonTransformation')
     updateSkeletonTransformation(glyph)
   }
   

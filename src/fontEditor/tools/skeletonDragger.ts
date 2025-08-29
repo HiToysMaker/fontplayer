@@ -107,7 +107,6 @@ const initSkeletonDragger = (canvas: HTMLCanvasElement) => {
 		window.addEventListener('mouseup', onMouseUp)
 	}
 	const onMouseMove = (e: MouseEvent) => {
-    console.log('onMouseMove')
 		const d = 20
 		const dx = getCoord(e.offsetX) - lastX
 		const dy = getCoord(e.offsetY) - lastY
@@ -115,7 +114,6 @@ const initSkeletonDragger = (canvas: HTMLCanvasElement) => {
 		mousemove = true
 		if (mousedown) {
 			// 没有拖拽joint节点
-      console.log('mousemove draggingJoint', draggingJoint.value, glyph._o?.onSkeletonDrag)
 			if (draggingJoint.value && glyph._o?.onSkeletonDrag) {
 				// 如果设置了onSkeletonDrag，则骨架可拖拽，拖拽骨架则不再移动字形
 				glyph._o.onSkeletonDrag({
@@ -126,20 +124,16 @@ const initSkeletonDragger = (canvas: HTMLCanvasElement) => {
 				emitter.emit('renderGlyph')
 			}
 		} else {
-      console.log('1')
 			// joint数据格式：{x, y, name}
 			let joints = getJoints()
-      console.log(joints)
 			const d = 10
 			let mark = false
 			const mouseMoveX = getCoord(e.offsetX)
 			const mouseMoveY = getCoord(e.offsetY)
 			for (let i = 0; i < joints.length; i++) {
 				const { x, y } = joints[i]
-        console.log('x', x, 'y', y, 'mouseMoveX', mouseMoveX, 'mouseMoveY', mouseMoveY)
 				if (distance(x, y, mouseMoveX, mouseMoveY) <= d) {
 					movingJoint.value = joints[i]
-          console.log('movingJoint', movingJoint.value)
 					mark = true
 				}
 			}
@@ -173,7 +167,6 @@ const initSkeletonDragger = (canvas: HTMLCanvasElement) => {
 	canvas.addEventListener('mousedown', onMouseDown)
 	canvas.addEventListener('mousemove', onMouseMove)
 	const closeGlyphDragger = () => {
-    console.log('closeSkeletonDragger')
 		canvas.removeEventListener('mousedown', onMouseDown)
 		canvas.removeEventListener('mousemove', onMouseMove)
 		editGlyphOnDragging.value = null
@@ -183,7 +176,6 @@ const initSkeletonDragger = (canvas: HTMLCanvasElement) => {
 }
 
 const renderSkeletonSelector = (canvas: HTMLCanvasElement, editGlyph: boolean = false) => {
-  console.log('renderSkeletonSelector')
 	let joints = getJoints()
 	const getJoint = (name: string) => {
 		for (let i = 0; i < joints.length; i++) {

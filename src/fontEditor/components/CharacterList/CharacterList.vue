@@ -969,6 +969,7 @@
 		emitter.off('updateCharacterInfoPreviewCanvasByUUID')
 		emitter.off('renderPreviewCanvasByUUID')
 		emitter.off('renderPreviewCanvas')
+		emitter.off('renderPreviewCanvasByUUIDOnEditing')
 	})
 	// 更新组件时，渲染预览画布
 	// renderPreviewCanvas on updated

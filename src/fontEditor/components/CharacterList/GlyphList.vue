@@ -226,6 +226,7 @@
 		emitter.off('renderGlyphPreviewCanvas')
 		emitter.off('renderGlyphPreviewCanvasByUUID')
 		emitter.off('updateGlyphInfoPreviewCanvasByUUID')
+		emitter.off('renderGlyphPreviewCanvasByUUIDOnEditing')
 	})
 
 	// 更新组件时，渲染预览画布

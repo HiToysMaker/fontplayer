@@ -20,6 +20,7 @@
     scripts_map,
     updateGlyphListFromEditFile,
     resetEditGlyph,
+    setSelectionForCurrentGlyph,
   } from '../../stores/glyph'
   import { onMounted, ref, type Ref, watch, onUnmounted, nextTick } from 'vue'
   import {
@@ -92,7 +93,6 @@
     initTool()
     render()
     emitter.on('renderGlyph', () => {
-      console.log('renderGlyph')
       render()
       renderRefComponents()
     })
@@ -143,7 +143,7 @@
     }
     setTool('')
     updateGlyphListFromEditFile()
-    resetEditGlyph()
+    // resetEditGlyph()
   })
 
   // 渲染辅助信息
@@ -244,7 +244,7 @@
     switch (tool.value) {
       case 'select':
         if (selectedComponentUUID.value) {
-          renderSelectEditor(canvas.value)
+          renderSelectEditor(canvas.value, 10, true)
         }
         break
       case 'glyphDragger':
@@ -252,6 +252,9 @@
           closeTool = initGlyphDragger(canvas.value)
           renderGlyphSelector(canvas.value)
         }
+        break
+      case 'params':
+        setSelectionForCurrentGlyph('')
         break
     }
 		renderRefComponents()
@@ -287,7 +290,7 @@
     if (editingLayout.value && (selectedComponent.value || SubComponentsRoot.value)) {
       renderLayoutEditor(canvas.value)
     }
-    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
     tool.value === 'pen' && renderPenEditor(canvas.value)
 		renderRefComponents()
     emitter.emit('renderGlyphPreviewCanvasByUUIDOnEditing', editGlyph.value.uuid)
@@ -318,7 +321,7 @@
     setCanvas(_canvas)
     render()
 		renderRefComponents()
-    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
     tool.value === 'pen' && renderPenEditor(canvas.value)
     emitter.emit('renderGlyphPreviewCanvasByUUIDOnEditing', editGlyph.value.uuid)
   })
@@ -328,7 +331,7 @@
     penEditing,
   ], () => {
     render()
-    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
     tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!penEditing.value) return
     renderPenEditor(canvas.value)
@@ -339,7 +342,7 @@
     polygonEditing,
   ], () => {
     render()
-    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
     tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!polygonEditing.value) return
     renderPolygonEditor(polygonPoints, canvas.value)
@@ -353,7 +356,7 @@
     ellipseEditing,
   ], () => {
     render()
-    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
     tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!ellipseEditing.value) return
     renderEllipseEditor(canvas.value)
@@ -367,7 +370,7 @@
     rectangleEditing,
   ], () => {
     render()
-    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
     tool.value === 'pen' && renderPenEditor(canvas.value)
     if (!rectangleEditing.value) return
     renderRectangleEditor(canvas.value)
@@ -405,7 +408,7 @@
     editingLayout.value = false
     render()
     if (!selectedComponentUUID.value) return
-    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
     tool.value === 'pen' && renderPenEditor(canvas.value)
     renderRefComponents()
     emitter.emit('renderGlyphPreviewCanvasByUUIDOnEditing', editGlyph.value.uuid)
@@ -417,7 +420,7 @@
   ], () => {
     render()
     renderRefComponents()
-    tool.value === 'select' && renderSelectEditor(canvas.value)
+    tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
     tool.value === 'pen' && renderPenEditor(canvas.value)
     emitter.emit('renderGlyphPreviewCanvasByUUIDOnEditing', editGlyph.value.uuid)
   })
@@ -440,7 +443,7 @@
   ], () => {
     if (tool.value === 'select') {
       render()
-      renderSelectEditor(canvas.value)
+      renderSelectEditor(canvas.value, 10, true)
     }
   })
 
