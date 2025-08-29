@@ -153,7 +153,8 @@
 
 	onUnmounted(() => {
     emitter.off('renderStrokeGlyphPreviewCanvas')
-    emitter.off('renderStrokeGlyphPreviewCanvasByUUID')
+    emitter.off('renderStrokeGlyphPreviewCanvasByUUID')	
+    emitter.off('renderStrokeGlyphPreviewCanvasByUUIDOnEditing')
   })
 
 	// 更新组件时，渲染预览画布

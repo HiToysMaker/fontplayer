@@ -78,6 +78,8 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 			mousedown = false
 			return
 		}
+		document.addEventListener('mouseup', onMouseUp)
+		canvas.addEventListener('keydown', onKeyDown)
 	}
 
 	const onMouseMove = (e: MouseEvent) => {
@@ -228,6 +230,8 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 				}
 				setSelectionForCurrentGlyph('')
 			}
+			document.removeEventListener('mouseup', onMouseUp)
+			canvas.removeEventListener('keydown', onKeyDown)
 		}
 		const comp = glyph ? selectedComponent_glyph.value : selectedComponent.value
 		if (!comp || !comp.visible) return
@@ -325,8 +329,6 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 
 	canvas?.addEventListener('mousedown', onMouseDown)
 	document.addEventListener('mousemove', onMouseMove)
-	document.addEventListener('mouseup', onMouseUp)
-	canvas.addEventListener('keydown', onKeyDown)
 	const closeSelect = () => {
 		canvas?.removeEventListener('mousedown', onMouseDown)
 		document.removeEventListener('mousemove', onMouseMove)

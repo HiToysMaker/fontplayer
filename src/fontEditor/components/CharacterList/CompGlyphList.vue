@@ -153,6 +153,7 @@
 	onUnmounted(() => {
 		emitter.off('renderCompGlyphPreviewCanvas')
 		emitter.off('renderCompGlyphPreviewCanvasByUUID')
+		emitter.off('renderCompGlyphPreviewCanvasByUUIDOnEditing')
 	})
 
 	// 更新组件时，渲染预览画布

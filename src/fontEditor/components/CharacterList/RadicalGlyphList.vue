@@ -156,6 +156,7 @@
   onUnmounted(() => {
     emitter.off('renderRadicalGlyphPreviewCanvas')
     emitter.off('renderRadicalGlyphPreviewCanvasByUUID')
+    emitter.off('renderRadicalGlyphPreviewCanvasByUUIDOnEditing')
   })
 
   // 更新组件时，渲染预览画布

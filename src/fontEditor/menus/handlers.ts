@@ -1877,7 +1877,7 @@ const getFromFontPic = () => {
 }
 
 const getFromPic = () => {
-  if (editCharacterFile.value.fontPic) {
+  if (editStatus.value === Status.Edit && editCharacterFile.value.fontPic) {
     getFromFontPic()
     return
   }

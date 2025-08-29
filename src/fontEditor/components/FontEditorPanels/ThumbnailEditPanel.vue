@@ -32,9 +32,9 @@
     Status,
     prevEditStatus,
   } from '../../stores/font'
-  import { addComponentsForCharacterFile, editCharacterFileUUID, selectedFile } from '../../stores/files'
+  import { addComponentsForCharacterFile, addComponentsForCurrentCharacterFile, editCharacterFileUUID, selectedFile } from '../../stores/files'
   import { toBlackWhiteBitMap } from '../../../features/image'
-  import { onMounted, ref, watch, nextTick, type Ref, onBeforeUnmount } from 'vue'
+  import { onMounted, ref, watch, nextTick, type Ref, onBeforeUnmount, onUnmounted } from 'vue'
   import { renderCanvas, clearCanvas } from '../../canvas/canvas'
   import { ElMessage } from 'element-plus'
   import {
@@ -46,7 +46,7 @@
   import * as R from 'ramda'
   import { emitter } from '../../Event/bus'
   import { ArrowLeftBold, ArrowRightBold } from '@element-plus/icons-vue'
-  import { addComponentsForGlyph, editGlyphUUID } from '../../stores/glyph'
+  import { addComponentsForCurrentGlyph, addComponentsForGlyph, editGlyphUUID } from '../../stores/glyph'
   import { useI18n } from 'vue-i18n'
   const { tm, t, locale } = useI18n()
 
@@ -216,6 +216,18 @@
   }
 
   onMounted(() => {
+    emitter.on('toggleLocalBrushEdit', (enable: boolean) => {
+      const canvas: HTMLCanvasElement = thumbnailCanvas.value as HTMLCanvasElement
+      if (!!enable) {
+        document.addEventListener('mousemove', onMouseMove)
+        canvas.addEventListener('mousedown', onMouseDown)
+        render()
+      } else {
+        document.removeEventListener('mousemove', onMouseMove)
+        canvas.removeEventListener('mousedown', onMouseDown)
+        render()
+      }
+    })
     updateStyle()
     window.addEventListener('resize', updateStyle)
     render()
@@ -326,34 +338,25 @@
     window.addEventListener('mouseup', onMouseUp)
   }
 
-  emitter.on('toggleLocalBrushEdit', (enable: boolean) => {
-    const canvas: HTMLCanvasElement = thumbnailCanvas.value as HTMLCanvasElement
-    if (!!enable) {
-      document.addEventListener('mousemove', onMouseMove)
-      canvas.addEventListener('mousedown', onMouseDown)
-      render()
-    } else {
-      document.removeEventListener('mousemove', onMouseMove)
-      canvas.removeEventListener('mousedown', onMouseDown)
-      render()
-    }
-  })
-
   onBeforeUnmount(() => {
     window.removeEventListener('resize', updateStyle)
+    emitter.off('toggleLocalBrushEdit')
+    const canvas: HTMLCanvasElement = thumbnailCanvas.value as HTMLCanvasElement
+    document.removeEventListener('mousemove', onMouseMove)
+    canvas.removeEventListener('mousedown', onMouseDown)
   })
 
   const confirm = async () => {
     const components = curvesComponents.value
     if (prevEditStatus.value === Status.Edit) {
-      addComponentsForCharacterFile(editCharacterFileUUID.value, components)
+      addComponentsForCurrentCharacterFile(components)
       emitter.emit('renderPreviewCanvasByUUID', editCharacterFileUUID.value)
       reset()
       setEditStatus(Status.Edit)
       await nextTick()
       resetEditPic()
     } else if (prevEditStatus.value === Status.Glyph) {
-      addComponentsForGlyph(editGlyphUUID.value, components)
+      addComponentsForCurrentGlyph(components)
       emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyphUUID.value)
       reset()
       setEditStatus(Status.Glyph)

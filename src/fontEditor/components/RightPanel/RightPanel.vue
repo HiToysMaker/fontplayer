@@ -61,23 +61,23 @@
     <!-- <settings-panel
       v-if="!selectedComponentUUID_glyph && editStatus === Status.Edit"
     ></settings-panel> -->
-    <pen-edit-panel
-      v-if="selectedComponentUUID_glyph && selectedComponent_glyph.type === 'pen'"
-    ></pen-edit-panel>
-    <ellipse-edit-panel
-      v-if="selectedComponentUUID_glyph && selectedComponent_glyph.type === 'ellipse'"
-    ></ellipse-edit-panel>
-    <rectangle-edit-panel
-      v-if="selectedComponentUUID_glyph && selectedComponent_glyph.type === 'rectangle'"
-    ></rectangle-edit-panel>
-    <polygon-edit-panel
-      v-if="selectedComponentUUID_glyph && selectedComponent_glyph.type === 'polygon'"
-    ></polygon-edit-panel>
     <glyph-params-panel
       v-if="tool === 'params'"
     ></glyph-params-panel>
+    <pen-edit-panel
+      v-else-if="selectedComponentUUID_glyph && selectedComponent_glyph.type === 'pen'"
+    ></pen-edit-panel>
+    <ellipse-edit-panel
+      v-else-if="selectedComponentUUID_glyph && selectedComponent_glyph.type === 'ellipse'"
+    ></ellipse-edit-panel>
+    <rectangle-edit-panel
+      v-else-if="selectedComponentUUID_glyph && selectedComponent_glyph.type === 'rectangle'"
+    ></rectangle-edit-panel>
+    <polygon-edit-panel
+      v-else-if="selectedComponentUUID_glyph && selectedComponent_glyph.type === 'polygon'"
+    ></polygon-edit-panel>
     <glyph-edit-panel-glyph
-      v-if="tool !== 'params' && editStatus === Status.Glyph && selectedComponentUUID_glyph && selectedComponent_glyph.type === 'glyph'"
+      v-else-if="tool !== 'params' && editStatus === Status.Glyph && selectedComponentUUID_glyph && selectedComponent_glyph.type === 'glyph'"
     ></glyph-edit-panel-glyph>
   </div>
 </template>

@@ -23,7 +23,7 @@
     setEditCharacterFileByUUID,
     updateCharacterListFromEditFile,
   } from '../../stores/files'
-  import { onMounted, ref, type Ref, watch, onUnmounted } from 'vue'
+  import { onMounted, ref, type Ref, watch, onUnmounted, computed } from 'vue'
   import {
     mapCanvasWidth,
     mapCanvasHeight,
@@ -145,7 +145,7 @@
     }
     setTool('')
     updateCharacterListFromEditFile()
-    resetEditCharacterFile()
+    // resetEditCharacterFile()
   })
 
   const onGridChange = (dx, dy, centerSquareSize) => {
@@ -370,8 +370,6 @@
     tool.value === 'select' && renderSelectEditor(canvas.value)
     tool.value === 'pen' && renderPenEditor(canvas.value)
     emitter.emit('renderPreviewCanvasByUUIDOnEditing', editCharacterFile.value.uuid)
-  }, {
-    deep: true,
   })
 
   watch([
