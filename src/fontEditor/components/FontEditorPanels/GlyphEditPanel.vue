@@ -18,6 +18,8 @@
     SubComponentsRoot,
     tempScript,
     scripts_map,
+    updateGlyphListFromEditFile,
+    resetEditGlyph,
   } from '../../stores/glyph'
   import { onMounted, ref, type Ref, watch, onUnmounted, nextTick } from 'vue'
   import {
@@ -35,6 +37,7 @@
   import { initLayoutResizer, renderLayoutEditor } from '../../tools/glyphLayoutResizer_glyph'
   import { initGlyphDragger, renderGlyphSelector } from '../../tools/glyphDragger_glyph'
   import { editing as glyphEditing, draggingJoint, putAtCoord, movingJoint, editGlyphOnDragging, selectedSubComponentOnDragging, SubComponentsRootOnDragging, selectedComponentOnDragging } from '../../stores/glyphDragger_glyph'
+  import { editing as skeletonEditing, draggingJoint as skeletonDraggingJoint, putAtCoord as skeletonPutAtCoord, movingJoint as skeletonMovingJoint } from '../../stores/skeletonDragger'
   import {
     selectControl,
     selectAnchor,
@@ -58,6 +61,8 @@
   import { initCoordsViewer } from '../../tools/coordsViewer'
   import { clearState, OpType, redo, saveState, StoreType, undo } from '../../stores/edit'
   import { renderJoints, renderRefLines } from '../../programming/Joint'
+  import { initSkeletonDragger, renderSkeletonSelector } from '../../tools/skeletonDragger'
+  import { onSkeletonBind, onSkeletonDragging } from '../../stores/skeletonDragger'
 
   const mounted: Ref<boolean> = ref(false)
   let closeTool: Function | null = null
@@ -87,6 +92,7 @@
     initTool()
     render()
     emitter.on('renderGlyph', () => {
+      console.log('renderGlyph')
       render()
       renderRefComponents()
     })
@@ -136,6 +142,8 @@
       closeLayoutResizer()
     }
     setTool('')
+    updateGlyphListFromEditFile()
+    resetEditGlyph()
   })
 
   // 渲染辅助信息
@@ -162,7 +170,7 @@
         }
       }
     } else {
-      if (checkJoints.value) {
+      if (checkJoints.value || onSkeletonBind.value) {
         if (selectedSubComponent.value) {
           renderJoints(selectedSubComponent.value, canvas.value)
         } else if (SubComponentsRoot.value) {
@@ -176,7 +184,7 @@
           })
         }
       }
-      if (checkRefLines.value) {
+      if (checkRefLines.value || onSkeletonBind.value) {
         if (selectedSubComponent.value) {
           renderRefLines(selectedSubComponent.value, canvas.value)
         } else if (SubComponentsRoot.value) {
@@ -250,6 +258,16 @@
     initTool()
   })
 
+  let closeSkeletonDragger: Function | null = null
+  watch([onSkeletonDragging], () => {
+    if (onSkeletonDragging.value) {
+      closeSkeletonDragger = initSkeletonDragger(canvas.value)
+      renderSkeletonSelector(canvas.value)
+    } else {
+      closeSkeletonDragger && closeSkeletonDragger()
+    }
+  })
+
   // editingLayout改变时重置LayoutResizer
   // watch for editingLayout
   watch([editingLayout, () => editGlyph.value.selectedComponentsTree], () => {
@@ -263,8 +281,6 @@
   }, {
     deep: true
   })
-
-
 
   watch([() => selectedComponent.value?.value?.layout, () => SubComponentsRoot.value?.value?.layout], () => {
     render()
@@ -370,6 +386,18 @@
   })
 
   watch([
+    skeletonEditing,
+    skeletonDraggingJoint,
+    skeletonPutAtCoord,
+		skeletonMovingJoint,
+  ], () => {
+    render()
+		renderRefComponents()
+		renderSkeletonSelector(canvas.value)
+    if (!skeletonEditing.value) return
+  })
+
+  watch([
     selectedComponentUUID,
     componentsForCurrentGlyph,
     selectedComponent,
@@ -392,8 +420,6 @@
     tool.value === 'select' && renderSelectEditor(canvas.value)
     tool.value === 'pen' && renderPenEditor(canvas.value)
     emitter.emit('renderGlyphPreviewCanvasByUUIDOnEditing', editGlyph.value.uuid)
-  }, {
-    deep: true,
   })
 
   watch([

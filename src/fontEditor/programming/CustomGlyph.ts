@@ -59,6 +59,7 @@ class CustomGlyph {
 		y: number,
 	} = { x: 0, y: 0 }, fill: boolean = false, scale: number = 1) {
 		const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
+		console.log('render glyph', orderedListWithItemsForGlyph(this._glyph))
 		renderCanvas(orderedListWithItemsForGlyph(this._glyph), canvas, {
 			offset,
 			scale: scale,

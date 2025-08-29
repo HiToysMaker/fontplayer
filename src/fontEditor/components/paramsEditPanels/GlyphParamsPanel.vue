@@ -6,10 +6,10 @@
 	 * params editing panel for glyph
 	 */
 
-  import { getRatioOptions, ParameterType, getConstant, IParameter, executeScript, editGlyph, IRingParameter, IParameter2, getRatioLayout, ICustomGlyph, selectedParam, selectedParamType, constantGlyphMap, ConstantType, getGlyphByUUID, GlyphType } from '../../stores/glyph'
+  import { skeletonOptions, getRatioOptions, ParameterType, getConstant, IParameter, executeScript, editGlyph, IRingParameter, IParameter2, getRatioLayout, ICustomGlyph, selectedParam, selectedParamType, constantGlyphMap, ConstantType, getGlyphByUUID, GlyphType } from '../../stores/glyph'
   import { useI18n } from 'vue-i18n'
   import { emitter } from '../../Event/bus'
-  import { checkJoints, checkRefLines } from '../../stores/global'
+  import { checkJoints, checkRefLines, setTool } from '../../stores/global'
 	import RingController from '../../components/Widgets/RingController.vue'
   import { editing as editingLayout } from '../../stores/glyphLayoutResizer_glyph'
 	import { nextTick, onMounted, ref, watch } from 'vue'
@@ -19,7 +19,84 @@
   import { More } from '@element-plus/icons-vue'
   import { OpType, saveState, StoreType } from '../../stores/edit'
   import { editStatus, Status } from '../../stores/font'
+  import { strokes } from '../../templates/strokes_1'
+  import { strokeFnMap } from '../../templates/strokeFnMap'
+  import { onSkeletonSelect, onSkeletonBind, onSkeletonDragging } from '../../stores/skeletonDragger'
+  import { genUUID } from '../../../utils/string'
   const { t, tm } = useI18n()
+  const onChangeSkeleton = (value: string) => {
+    // 设置骨架
+    const type = value
+    const skeleton = {
+      type,
+      ox: 0,
+      oy: 0,
+    }
+    editGlyph.value.skeleton = skeleton
+
+    // 根据骨架设置字形参数
+    const stroke = strokes.find((stroke) => stroke.name === type)
+    if (stroke) {
+      const parameters = editGlyph.value.parameters.parameters
+      for (let j = 0; j < stroke.params.length; j++) {
+        const param = stroke.params[j]
+        parameters.push({
+          uuid: genUUID(),
+          name: param.name,
+          type: ParameterType.Number,
+          value: param.default,
+          min: param.min || 0,
+          max: param.max || 1000,
+        })
+      }
+    }
+    const strokeFn = strokeFnMap[type]
+    strokeFn && strokeFn.instanceBasicGlyph(editGlyph.value)
+    strokeFn && strokeFn.updateSkeletonListenerBeforeBind(editGlyph.value._o)
+    onSkeletonSelect.value = false
+    editGlyph.value.skeleton.onSkeletonBind = true
+    onSkeletonDragging.value = true
+    emitter.emit('renderGlyph')
+  }
+
+  const bindSkeleton = () => {
+    const { type } = editGlyph.value.skeleton
+    const strokeFn = strokeFnMap[type]
+    if (strokeFn) {
+      strokeFn.bindSkeletonGlyph(editGlyph.value)
+      strokeFn.updateSkeletonListenerAfterBind(editGlyph.value._o)
+    }
+    onSkeletonDragging.value = false
+    editGlyph.value.skeleton.onSkeletonBind = false
+  }
+
+  const removeSkeleton = () => {
+    const { type } = editGlyph.value.skeleton
+    editGlyph.value.skeleton = null
+    const stroke = strokes.find((stroke) => stroke.name === type)
+    if (stroke) { 
+      stroke.params.map((param) => {
+        const index = editGlyph.value.parameters.parameters.findIndex((p) => p.name === param.name)
+        if (index !== -1) {
+          editGlyph.value.parameters.parameters.splice(index, 1)
+        }
+      })
+    }
+  }
+
+  const modifySkeleton = () => {
+    onSkeletonSelect.value = false
+    editGlyph.value.skeleton.onSkeletonBind = true
+    onSkeletonDragging.value = true
+  }
+
+  const handleChangeSkeletonOX = (value: number) => {
+    editGlyph.value.skeleton.ox = value
+  }
+  const handleChangeSkeletonOY = (value: number) => {
+    editGlyph.value.skeleton.oy = value
+  }
+
   const controlType = ref(0)
 	const controlTypeOptions = [
 		{
@@ -246,6 +323,52 @@
           </el-form-item>
         </el-form>
       </div>
+    </div>
+    <div class="title">骨架绑定</div>
+    <div class="skeleton-wrap">
+      <el-button
+        v-if="!editGlyph.skeleton && (!editGlyph._o?.getSkeleton || !editGlyph._o?.getSkeleton())"
+        @pointerdown="onSkeletonSelect = true"
+      >添加骨架</el-button>
+      <el-select
+        v-if="onSkeletonSelect"
+        v-model="editGlyph.type" class="skeleton-type-select" placeholder="骨架类型" :disabled="!onSkeletonSelect"
+        @change="(value) => onChangeSkeleton(value)"
+      >
+        <el-option
+          v-for="item in skeletonOptions"
+          :key="item.value"
+          :label="item.label"
+          :value="item.value"
+        />
+      </el-select>
+      <el-form-item label="骨架OX" v-if="onSkeletonBind && !onSkeletonSelect && editGlyph.skeleton">
+        <el-input-number
+          :model-value="editGlyph.skeleton.ox"
+          :precision="1"
+          @change="handleChangeSkeletonOX"
+        />
+      </el-form-item>
+      <el-form-item label="骨架OY" v-if="onSkeletonBind && !onSkeletonSelect && editGlyph.skeleton">
+        <el-input-number
+          :model-value="editGlyph.skeleton.oy"
+          :precision="1"
+          @change="handleChangeSkeletonOY"
+        />
+      </el-form-item>
+      <el-button
+        v-if="onSkeletonBind && !onSkeletonSelect && editGlyph.skeleton && !editGlyph.skeleton?.skeletonBindData"
+        @pointerdown="bindSkeleton"
+      >绑定骨架</el-button>
+      <el-button
+        v-if="!onSkeletonBind && editGlyph.skeleton && (!editGlyph._o?.getSkeleton || !editGlyph._o?.getSkeleton())"
+        @pointerdown="modifySkeleton"
+      >修改骨架</el-button>
+      <el-button
+        type="danger"
+        v-if="editGlyph.skeleton && (!editGlyph._o?.getSkeleton || !editGlyph._o?.getSkeleton())"
+        @pointerdown="removeSkeleton"
+      >删除骨架</el-button>
     </div>
 		<div class="parameters-wrap">
       <div class="title">{{ t('panels.paramsPanel.params.title') }}</div>
@@ -698,4 +821,20 @@
 			left: 5px;
 		}
 	}
+
+  .skeleton-wrap {
+    padding: 10px;
+    .el-button {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    .el-select {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    .el-form-item {
+      margin: 0;
+      margin-bottom: 10px;
+    }
+  }
 </style>

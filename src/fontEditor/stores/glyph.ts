@@ -16,6 +16,7 @@ import { emitter } from '../Event/bus'
 import { Status, editStatus, setEditStatus, setPrevStatus } from './font'
 import { copiedGlyphUUID, editedGlyphUUID, glyphComponentsDialogVisible2, setAddGlyphDialogVisible, setCopyGlyphDialogVisible, setEditGlyphDialogVisible } from './dialogs'
 import { enableMultiSelect } from './files'
+import { strokeFnMap } from '../templates/strokeFnMap'
 
 // 字形组件数据结构
 // custom component data struct
@@ -52,7 +53,35 @@ export interface ICustomGlyph {
 	objData?: any;
 	script_reference?: string;
 	parent_reference?: ParentInfo;
+	skeleton?: ISkeleton | null;
 }
+
+interface ISkeleton {
+	type: string;
+	ox: number;
+	oy: number;
+	skeletonBindData?: any;
+	onSkeletonBind?: boolean;
+}
+
+const skeletonOptions = [
+	{
+		label: '横',
+		value: '横',
+	},
+	{
+		label: '竖',
+		value: '竖',
+	},
+	{
+		label: '撇',
+		value: '撇',
+	},
+	{
+		label: '捺',
+		value: '捺',
+	},
+]
 
 interface ParentInfo {
 	uuid: string;
@@ -439,6 +468,29 @@ const editGlyph = ref(null)
 const setEditGlyphByUUID = (uuid: string) => {
 	let glyph = getGlyphByUUID(editGlyphUUID.value)
 	editGlyph.value = R.clone(glyph)
+}
+const resetEditGlyph = () => {
+	editGlyph.value = null
+}
+const updateGlyphListFromEditFile = () => {
+	const glyphType = getGlyphType(editGlyph.value.uuid)
+	let glyphs = null
+	if (glyphType === Status.GlyphList) {
+		glyphs = glyphs.value
+	} else if (glyphType === Status.RadicalGlyphList) {
+		glyphs = radical_glyphs.value
+	} else if (glyphType === Status.StrokeGlyphList) {
+		glyphs = stroke_glyphs.value
+	} else if (glyphType === Status.CompGlyphList) {
+		glyphs = comp_glyphs.value
+	}
+	if (!glyphs) return
+	for (let i = 0; i < glyphs.length; i++) {
+		if (editGlyph.value.uuid === glyphs[i].uuid) {
+			glyphs[i] = R.clone(editGlyph.value)
+			break
+		}
+	}
 }
 
 // 当前选择的组件
@@ -1215,9 +1267,25 @@ const getScript = (glyph) => {
 // 执行字形脚本
 // execute glyph script
 const executeScript = (targetGlyph) => {
+	console.log('executeScript', targetGlyph)
 	try {
 		// 字形实例缓存了数据，表示字形正在拖拽编辑中，则返回不执行脚本运行操作
 		if (targetGlyph._o && targetGlyph._o.tempData) return
+
+		if (targetGlyph.skeleton) {
+			const strokeFn = strokeFnMap[targetGlyph.type]
+			if (strokeFn) {
+				strokeFn.instanceBasicGlyph(targetGlyph)
+				if (targetGlyph.skeleton.onSkeletonBind) {
+					console.log('1')
+					strokeFn.updateSkeletonListenerBeforeBind(targetGlyph._o)
+				} else {
+					console.log('2')
+					strokeFn.updateSkeletonListenerAfterBind(targetGlyph._o)
+				}
+				return
+			}
+		}
 
 		const glyphInstance = new CustomGlyph(targetGlyph)
 		const _glyph = glyphInstance._glyph
@@ -1695,4 +1763,7 @@ export {
 	getParentInfo,
 	scripts_map,
 	tempScript,
+	skeletonOptions,
+	updateGlyphListFromEditFile ,
+	resetEditGlyph,
 }
