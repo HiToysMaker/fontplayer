@@ -115,6 +115,7 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
   scale: 1,
   forceUpdate: false,
 }) => {
+  console.log('renderCanvas', components)
   const scale = options.scale//canvas.width / (selectedFile.value.fontSettings.unitsPerEm as number)
   const ctx: CanvasRenderingContext2D = canvas.getContext('2d') as CanvasRenderingContext2D
   //ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
@@ -280,6 +281,7 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       }
       for (let i = 3; i < _points.length - 1; i += 3) {
         if (i + 3 >= _points.length) break
+        console.log('render point i', i, _points[i + 1].x, _points[i + 1].y, _points[i + 2].x, _points[i + 2].y, _points[i + 3].x, _points[i + 3].y)
         ctx.bezierCurveTo(_points[i + 1].x, _points[i + 1].y, _points[i + 2].x, _points[i + 2].y, _points[i + 3].x, _points[i + 3].y)
       }
       ctx.setTransform(1, 0, 0, 1, 0, 0)
@@ -404,6 +406,48 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       ctx.fill("nonzero")
     }
     ctx.stroke()
+  }
+
+
+  // 调试
+  // 渲染钢笔组件
+  // render pen component
+  const component = components[0]
+  if (component?.type === 'pen') {
+    const { x, y, w, h, rotation, flipX, flipY } = component as IComponent
+    const _x = mapCanvasX(x) * scale
+    const _y = mapCanvasY(y) * scale
+    const _w = mapCanvasWidth(w) * scale
+    const _h = mapCanvasHeight(h) * scale
+    const {
+      strokeColor,
+      fillColor,
+      points,
+      closePath,
+    } = component.value as unknown as IPenComponent
+    ctx.strokeStyle = strokeColor || '#000'
+    ctx.lineWidth = getStrokeWidth()
+    ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
+    if (fillColor === 'none') {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0)'
+    }
+    // let _points = transformPoints(points, {
+    //   x, y, w, h, rotation, flipX, flipY,
+    // })
+    let _points = transformPoints(points, {
+      x, y, w, h, rotation: 0, flipX, flipY,
+    })
+    _points = _points.map((point: IPoint) => {
+      return mapCanvasCoords({
+        x: point.x * scale,
+        y: point.y * scale,
+      })
+    })
+    ctx.fillStyle = 'red'
+    for (let i = 0; i < _points.length; i++) {
+      ctx.fillRect(_points[i].x, _points[i].y, 10, 10)
+    }
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
   }
 }
 
@@ -691,6 +735,7 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
 }
 
 const render = (canvas: HTMLCanvasElement, renderBackground: Boolean = true, forceUpdate: boolean = false) => {
+  console.log('render 1', forceUpdate)
   clearCanvas(canvas as HTMLCanvasElement)
   if (renderBackground) {
     fillBackground(canvas as HTMLCanvasElement, background, grid)
@@ -701,6 +746,7 @@ const render = (canvas: HTMLCanvasElement, renderBackground: Boolean = true, for
   }
   if (editStatus.value === Status.Edit) {
     if (editCharacterFileOnDragging.value) {
+      console.log('render 2', editCharacterFileOnDragging.value)
       // 当拖拽字形组件时，为提升性能使用临时变量
       renderCanvas(orderedListWithItemsForCharacterFile(editCharacterFileOnDragging.value), canvas as HTMLCanvasElement, {
         forceUpdate,

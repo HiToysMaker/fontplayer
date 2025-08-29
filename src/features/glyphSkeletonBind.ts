@@ -1,3 +1,5 @@
+import { getBound } from "@/utils/math";
+import { emitter } from "../fontEditor/Event/bus";
 import { CustomGlyph } from "../fontEditor/programming/CustomGlyph";
 import { IPenComponent, IComponent } from "../fontEditor/stores/files";
 
@@ -32,9 +34,6 @@ const glyphSkeletonBind = (glyph: CustomGlyph) => {
   const skeleton = glyph.getSkeleton();
   const components = glyph.components;
 
-  console.log('glyphSkeletonBind - skeleton:', skeleton);
-  console.log('glyphSkeletonBind - components:', components);
-
   // 只处理Pen类型的组件
   const penComponents = components.filter(comp => comp.type === 'pen') as IComponent[];
   if (penComponents.length === 0) {
@@ -46,19 +45,14 @@ const glyphSkeletonBind = (glyph: CustomGlyph) => {
   
   // 阶段一：骨架分析
   const bones = skeletonToBones(skeleton);
-  console.log('glyphSkeletonBind - bones:', bones);
   
   // 阶段二：控制点绑定与权重分配
   const points = componentsToPoints(penComponent);
-  console.log('glyphSkeletonBind - points:', points);
   
   const pointsBonesMap = points.map((point, index) => {
     const binding = calculatePointBones(point, bones, index);
-    console.log(`glyphSkeletonBind - point ${index} binding:`, binding);
     return binding;
   });
-
-  console.log('glyphSkeletonBind - pointsBonesMap:', pointsBonesMap);
 
   // 存储绑定信息到glyph对象中，供后续变形使用
   (glyph as any).skeletonBindData = {
@@ -131,8 +125,6 @@ function skeletonToBones(skeleton: any): Bone[] {
     // 根据长度确定分段数量，确保每段长度在合理范围内
     const segmentLength = Math.max(20, totalLength / 8); // 每段至少20像素，最多8段
     const segments = Math.max(3, Math.ceil(totalLength / segmentLength)); // 至少3段
-    
-    console.log(`直线骨架分段: 总长度=${totalLength}, 分段数=${segments}, 每段长度=${segmentLength}`);
     
     for (let i = 0; i < segments; i++) {
       const t1 = i / segments;
@@ -275,8 +267,6 @@ function calculatePointBones(point: { x: number; y: number }, bones: Bone[], poi
     // 根据技术方案，使用骨骼长度的2.5倍作为影响阈值，确保更多点能绑定到多根骨骼
     const threshold = bone.length * 2.5;
     
-    console.log(`Point ${pointIndex} to bone ${boneIndex}: distance=${distance}, threshold=${threshold}, bone.length=${bone.length}`);
-    
     if (distance <= threshold) {
       // 基于距离的权重计算
       const weight = 1.0 / (distance + 0.001); // 防止除零
@@ -305,15 +295,12 @@ function calculatePointBones(point: { x: number; y: number }, bones: Bone[], poi
         return;
       }
       
-      console.log(`Point ${pointIndex} bound to bone ${boneIndex}: weight=${finalWeight}, falloff=${falloff}`);
-      
       boneWeights.push({
         boneIndex,
         weight: finalWeight,
         localCoords
       });
     } else {
-      console.log(`Point ${pointIndex} too far from bone ${boneIndex}: distance=${distance} > threshold=${threshold}`);
     }
   });
   
@@ -346,8 +333,6 @@ function calculatePointBones(point: { x: number; y: number }, bones: Bone[], poi
     });
     
     if (closestBoneIndex >= 0) {
-      console.log(`Using fallback binding for point ${pointIndex} to bone ${closestBoneIndex} with distance ${minDistance}`);
-      
       // 使用简单的权重计算
       const weight = 1.0 / (minDistance + 0.001);
       const falloff = calculateFalloff(closestLocalCoords.u);
@@ -371,9 +356,6 @@ function calculatePointBones(point: { x: number; y: number }, bones: Bone[], poi
   boneWeights.sort((a, b) => a.weight - b.weight);
   const selectedBones = boneWeights.slice(-Math.min(4, boneWeights.length));
   
-  console.log(`Point ${pointIndex} - boneWeights before selection:`, boneWeights.map(b => ({ boneIndex: b.boneIndex, weight: b.weight })));
-  console.log(`Point ${pointIndex} - selectedBones before normalization:`, selectedBones.map(b => ({ boneIndex: b.boneIndex, weight: b.weight })));
-  
   // 归一化权重
   const totalWeight = selectedBones.reduce((sum, bone) => {
     if (typeof bone.weight !== 'number' || isNaN(bone.weight)) {
@@ -382,8 +364,6 @@ function calculatePointBones(point: { x: number; y: number }, bones: Bone[], poi
     }
     return sum + bone.weight;
   }, 0);
-  
-  console.log(`Point ${pointIndex} - totalWeight:`, totalWeight);
   
   // 验证总权重
   if (totalWeight <= 0 || isNaN(totalWeight)) {
@@ -398,10 +378,7 @@ function calculatePointBones(point: { x: number; y: number }, bones: Bone[], poi
     });
   }
   
-  console.log(`Point ${pointIndex} - selectedBones after normalization:`, selectedBones.map(b => ({ boneIndex: b.boneIndex, weight: b.weight })));
-  
   binding.bones = selectedBones;
-  console.log(`Final binding for point ${pointIndex}:`, binding);
   return binding;
 }
 
@@ -496,7 +473,6 @@ function pointToBoneDistance(point: { x: number; y: number }, bone: Bone) {
 // 工具函数
 function normalize(vector: { x: number; y: number }): { x: number; y: number } {
   const length = Math.sqrt(vector.x ** 2 + vector.y ** 2);
-  console.log('normalize - input vector:', vector, 'length:', length);
   
   if (length === 0 || isNaN(length)) {
     console.warn('Cannot normalize zero or NaN vector:', vector);
@@ -504,7 +480,6 @@ function normalize(vector: { x: number; y: number }): { x: number; y: number } {
   }
   
   const result = { x: vector.x / length, y: vector.y / length };
-  console.log('normalize - result:', result);
   return result;
 }
 
@@ -534,7 +509,9 @@ function calculateBoneTransformationMatrix(originalBone: Bone, newBone: Bone): n
   const invOriginalMatrix = invertMatrix(originalMatrix);
   
   // 组合变换：新矩阵 * 逆原始矩阵
-  return multiplyMatrices(newMatrix, invOriginalMatrix);
+  const result = multiplyMatrices(newMatrix, invOriginalMatrix);
+  
+  return result;
 }
 
 // 矩阵求逆
@@ -597,12 +574,8 @@ export function calculateTransformedPoints(glyph: CustomGlyph, newSkeleton: any)
     return originalPoints.map(p => ({ x: p.x, y: p.y })); // 返回原始点
   }
   
-  console.log('calculateTransformedPoints - originalPoints:', originalPoints);
-  console.log('calculateTransformedPoints - newSkeleton:', newSkeleton);
-  
   // 更新骨骼的当前变换矩阵
   updateBoneMatrices(bones, newSkeleton);
-  console.log('calculateTransformedPoints - updated bones:', bones);
   
   // 计算每个控制点的新位置
   const transformedPoints = pointsBonesMap.map((binding, index) => {
@@ -612,11 +585,9 @@ export function calculateTransformedPoints(glyph: CustomGlyph, newSkeleton: any)
     }
     
     const transformedPoint = calculatePointTransformation(binding, bones, originalPoints[index]);
-    console.log(`Point ${index} transformation: original (${originalPoints[index].x}, ${originalPoints[index].y}) -> transformed (${transformedPoint.x}, ${transformedPoint.y})`);
     return transformedPoint;
   });
   
-  console.log('calculateTransformedPoints - final transformed points:', transformedPoints);
   return transformedPoints;
 }
 
@@ -628,9 +599,6 @@ function updateBoneMatrices(bones: Bone[], newSkeleton: any) {
   }
   
   const skeletonType = detectSkeletonType(newSkeleton);
-  console.log('updateBoneMatrices - skeletonType:', skeletonType);
-  console.log('updateBoneMatrices - newSkeleton:', newSkeleton);
-  console.log('updateBoneMatrices - bones before update:', bones);
   
   if (skeletonType === 'horizontal' || skeletonType === 'vertical') {
     // 直线骨架
@@ -642,14 +610,10 @@ function updateBoneMatrices(bones: Bone[], newSkeleton: any) {
       return;
     }
     
-    console.log('updateBoneMatrices - start:', start, 'end:', end);
-    
     // 更新所有骨骼段
     const totalLength = Math.sqrt((end.x - start.x) ** 2 + (end.y - start.y) ** 2);
     const segmentLength = Math.max(20, totalLength / 8);
     const segments = Math.max(3, Math.ceil(totalLength / segmentLength));
-    
-    console.log(`updateBoneMatrices - 更新${segments}个骨骼段`);
     
     for (let i = 0; i < segments && i < bones.length; i++) {
       const originalBone = { ...bones[i] }; // 保存原始骨骼状态
@@ -684,7 +648,6 @@ function updateBoneMatrices(bones: Bone[], newSkeleton: any) {
       // 计算从原始骨骼到新骨骼的变换矩阵
       bone.currentMatrix = calculateBoneTransformationMatrix(originalBone, bone);
       
-      console.log(`updateBoneMatrices - 骨骼段${i} 更新完成:`, bone.currentMatrix);
     }
     
   } else if (skeletonType === 'pie' || skeletonType === 'na') {
@@ -728,7 +691,6 @@ function updateBoneMatrices(bones: Bone[], newSkeleton: any) {
     }
   }
   
-  console.log('updateBoneMatrices - bones after update:', bones);
 }
 
 // 计算单个控制点的变换
@@ -746,8 +708,6 @@ function calculatePointTransformation(binding: PointBinding, bones: Bone[], orig
     console.warn('No bones bound to point:', binding);
     return originalPoint;
   }
-  
-  console.log(`Calculating transformation for point (${originalPoint.x}, ${originalPoint.y}) with ${binding.bones.length} bones`);
   
   binding.bones.forEach(({ boneIndex, weight, localCoords }, boneBindingIndex) => {
     const bone = bones[boneIndex];
@@ -768,11 +728,8 @@ function calculatePointTransformation(binding: PointBinding, bones: Bone[], orig
       return;
     }
     
-    console.log(`Bone ${boneIndex} (binding ${boneBindingIndex}): weight=${weight}, currentMatrix=${bone.currentMatrix}`);
-    
     // 直接使用变换矩阵变换点
     const transformedPoint = transformPointToWorld(originalPoint, bone.currentMatrix);
-    console.log(`Transformed point for bone ${boneIndex}: (${transformedPoint.x}, ${transformedPoint.y})`);
     
     // 验证变换结果
     if (isNaN(transformedPoint.x) || isNaN(transformedPoint.y)) {
@@ -786,7 +743,6 @@ function calculatePointTransformation(binding: PointBinding, bones: Bone[], orig
     newX += weightedX;
     newY += weightedY;
     
-    console.log(`Bone ${boneIndex} contribution: weight=${weight}, weighted=(${weightedX}, ${weightedY}), running total=(${newX}, ${newY})`);
   });
   
   // 如果所有计算都失败，返回原始点
@@ -795,7 +751,6 @@ function calculatePointTransformation(binding: PointBinding, bones: Bone[], orig
     return originalPoint;
   }
   
-  console.log(`Final transformation result: (${newX}, ${newY})`);
   return { x: newX, y: newY };
 }
 
@@ -896,10 +851,15 @@ export function applySkeletonTransformation(glyph: CustomGlyph, newSkeleton: any
     // 更新控制点位置
     (penComponent.value as unknown as IPenComponent).points.forEach((point, index) => {
       const newPoint = transformedPoints[index];
-      console.log(`Updating point ${index}: from (${point.x}, ${point.y}) to (${newPoint.x}, ${newPoint.y})`);
       point.x = newPoint.x;
       point.y = newPoint.y;
     });
+
+    const bound = getBound((penComponent.value as unknown as IPenComponent).points);
+    (penComponent as IComponent).x = bound.x;
+    (penComponent as IComponent).y = bound.y;
+    (penComponent as IComponent).w = bound.w;
+    (penComponent as IComponent).h = bound.h;
     
     console.log('Pen component points after transformation:', 
       (penComponent.value as unknown as IPenComponent).points.map(p => ({ x: p.x, y: p.y })));
@@ -911,20 +871,8 @@ export function applySkeletonTransformation(glyph: CustomGlyph, newSkeleton: any
   
   console.log('applySkeletonTransformation 3', (penComponent.value as unknown as IPenComponent).points);
   
-  // 修复渲染调用 - 移除有问题的渲染调用
-  // 注释掉有问题的渲染调用，让系统自然触发重新渲染
-  /*
-  if (glyph.render) {
-    console.log('Triggering glyph render');
-    glyph.render();
-  }
-  
-  // 如果glyph有更新方法，也调用它
-  if (typeof glyph.update === 'function') {
-    console.log('Triggering glyph update');
-    glyph.update();
-  }
-  */
+  // 强制触发重新渲染
+  // emitter.emit('renderCharacter')
 }
 
 export { glyphSkeletonBind };
