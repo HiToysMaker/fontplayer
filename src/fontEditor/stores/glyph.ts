@@ -1286,7 +1286,7 @@ const executeScript = (targetGlyph) => {
 		if (targetGlyph._o && targetGlyph._o.tempData) return
 
 		if (targetGlyph.skeleton) {
-			const strokeFn = strokeFnMap[targetGlyph.type]
+			const strokeFn = strokeFnMap[targetGlyph.skeleton.type]
 			if (strokeFn) {
 				strokeFn.instanceBasicGlyph(targetGlyph)
 				if (targetGlyph.skeleton.onSkeletonBind) {

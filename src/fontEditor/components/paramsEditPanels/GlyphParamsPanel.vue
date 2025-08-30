@@ -12,7 +12,7 @@
   import { checkJoints, checkRefLines, setTool } from '../../stores/global'
 	import RingController from '../../components/Widgets/RingController.vue'
   import { editing as editingLayout } from '../../stores/glyphLayoutResizer_glyph'
-	import { nextTick, onMounted, ref, watch } from 'vue'
+	import { computed, nextTick, onMounted, ref, watch } from 'vue'
 	import { CustomGlyph } from '../../programming/CustomGlyph'
   import { setSelectGlobalParamDialogVisible, setSetAsGlobalParamDialogVisible } from '../../stores/dialogs'
 	import { selectedFile, selectedItemByUUID } from '../../stores/files'
@@ -24,6 +24,7 @@
   import { onSkeletonSelect, onSkeletonBind, onSkeletonDragging } from '../../stores/skeletonDragger'
   import { genUUID } from '../../../utils/string'
   const { t, tm } = useI18n()
+
   const onChangeSkeleton = (value: string) => {
     // 设置骨架
     const type = value
@@ -49,6 +50,15 @@
           max: param.max || 1000,
         })
       }
+      // 添加弯曲程度参数
+      parameters.push({
+        uuid: genUUID(),
+        name: '弯曲程度',
+        type: ParameterType.Number,
+        value: 1,
+        min: 0,
+        max: 2,
+      })
     }
     const strokeFn = strokeFnMap[type]
     strokeFn && strokeFn.instanceBasicGlyph(editGlyph.value)
@@ -324,7 +334,7 @@
         </el-form>
       </div>
     </div>
-    <!-- <div class="title">骨架绑定</div>
+    <div class="title">骨架绑定</div>
     <div class="skeleton-wrap">
       <el-button
         v-if="!editGlyph.skeleton && (!editGlyph._o?.getSkeleton || !editGlyph._o?.getSkeleton())"
@@ -332,7 +342,10 @@
       >添加骨架</el-button>
       <el-select
         v-if="onSkeletonSelect"
-        v-model="editGlyph.type" class="skeleton-type-select" placeholder="骨架类型" :disabled="!onSkeletonSelect"
+        :model-value="editGlyph.skeleton?.type"
+        class="skeleton-type-select"
+        placeholder="骨架类型"
+        :disabled="!onSkeletonSelect"
         @change="(value) => onChangeSkeleton(value)"
       >
         <el-option
@@ -369,7 +382,7 @@
         v-if="editGlyph.skeleton && !onSkeletonBind"
         @pointerdown="removeSkeleton"
       >删除骨架</el-button>
-    </div> -->
+    </div>
 		<div class="parameters-wrap">
       <div class="title">{{ t('panels.paramsPanel.params.title') }}</div>
       <el-form
