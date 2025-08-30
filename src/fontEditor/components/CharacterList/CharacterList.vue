@@ -171,17 +171,14 @@
 	// 处理渲染队列
 	const processRenderQueue = async () => {
 		if (isRendering) {
-			console.log(`跳过渲染队列处理: isRendering=${isRendering}, queueLength=${renderQueue.length}`)
 			return
 		}
 		
 		if (renderQueue.length === 0) {
-			console.log(`渲染队列为空，重置渲染状态`)
 			isRendering = false
 			return
 		}
 		
-		console.log(`开始处理渲染队列，队列长度: ${renderQueue.length}`)
 		isRendering = true
 		
 		try {
@@ -198,7 +195,6 @@
 				addLoaded()
 				// 检查是否超时
 				if (Date.now() - startTime > maxProcessingTime) {
-					console.log(`渲染队列处理超时，强制退出`)
 					break
 				}
 				const uuid = renderQueue.shift()!
@@ -206,16 +202,12 @@
 				const characterFileIndex = characters.findIndex(c => c.uuid === uuid)
 				
 				if (!characterFile) {
-					console.log(`找不到字符文件: ${uuid}`)
 					continue
 				}
-				
-				// console.log(`正在渲染队列中的字符: UUID: ${characterFileIndex}-${uuid}, 字符: ${characterFile.character.text}`)
-				
+
 				// 使用canvas池获取canvas
 				const canvas = getCanvas(uuid)
 				if (!canvas) {
-					console.log(`找不到canvas: ${uuid}`)
 					errorCount++
 					continue
 				}
@@ -228,13 +220,10 @@
 					
 					// 检查是否有内容需要渲染
 					if (!characterFile.orderedList || !characterFile.orderedList.length) {
-						console.log(`字符 ${uuid} 没有orderedList，跳过渲染`)
 						renderCache.set(`${uuid}_pending`, true)
 						continue
 					}
-					
-					// console.log(`开始渲染字符 ${uuid}，orderedList长度: ${characterFile.orderedList.length}`)
-					
+
 					// 渲染字符
 					const contours = componentsToContours(orderedListWithItemsForCharacterFile(characterFile), {
 						unitsPerEm,
@@ -242,8 +231,6 @@
 						advanceWidth: unitsPerEm,
 					}, { x: 0, y: 0 }, false, true)
 
-					// console.log(`字符 ${uuid} 生成轮廓数量: ${contours.length}`)
-					
 					renderPreview2(canvas, contours)
 					renderCache.set(`${uuid}_rendered`, true)
 					processedCount++
@@ -267,18 +254,15 @@
 				}
 			}
 			
-			console.log(`渲染队列处理完成，处理了 ${processedCount} 个字符，错误 ${errorCount} 个`)
 			
 			// 清理缓存和池
 			cleanupCache()
 			cleanupCanvasPool()
 			
 		} catch (error) {
-			console.error('渲染队列处理过程中发生错误:', error)
 		} finally {
 			// 确保渲染状态被重置
 			isRendering = false
-			console.log(`渲染状态已重置: isRendering=${isRendering}`)
 		}
 	}
 	
@@ -335,13 +319,6 @@
 					const rect = firstChar.getBoundingClientRect()
 					const containerRect = wrapper.getBoundingClientRect()
 					const relativeTop = rect.top - containerRect.top
-					console.log(`=== DOM调试 ===`)
-					console.log(`第一个字符相对位置: ${relativeTop}px`)
-					console.log(`滚动位置: ${scrollTop}px`)
-					console.log(`字符高度: ${itemTotalHeight}px`)
-					console.log(`理论第一个字符行: ${Math.floor(relativeTop / itemTotalHeight)}`)
-					console.log(`理论第一个字符索引: ${Math.floor(relativeTop / itemTotalHeight) * actualItemsPerRow}`)
-					console.log(`=== DOM调试结束 ===`)
 				}
 			}
 		}
@@ -356,16 +333,11 @@
 		const debugExpectedFirstChar = () => {
 			// 根据滚动位置计算应该显示的第一个字符
 			const expectedFirstCharIndex = Math.floor(scrollTop / itemTotalHeight) * actualItemsPerRow
-			console.log(`=== 期望第一个字符调试 ===`)
-			console.log(`期望第一个字符索引: ${expectedFirstCharIndex}`)
-			console.log(`计算过程: Math.floor(${scrollTop} / ${itemTotalHeight}) * ${actualItemsPerRow} = ${Math.floor(scrollTop / itemTotalHeight)} * ${actualItemsPerRow}`)
-			
+
 			// 检查这个索引的字符是否存在
 			if (expectedFirstCharIndex < totalCharacters) {
 				const expectedChar = selectedFile.value?.characterList[expectedFirstCharIndex]
-				console.log(`期望第一个字符: ${expectedChar?.character?.text || 'undefined'}`)
 			}
-			console.log(`=== 期望第一个字符调试结束 ===`)
 		}
 		
 		debugExpectedFirstChar()
@@ -377,25 +349,6 @@
 		const actualTotalHeight = totalRows * itemTotalHeight
 		const scrollPercentage = scrollTop / (actualTotalHeight - containerHeight)
 		const isAtBottom = scrollPercentage >= 0.90 // 当滚动到90%以上时认为到底部，更早触发
-		
-		// 调试信息
-		console.log('=== 可见区域计算调试 ===')
-		console.log(`滚动位置: ${scrollTop}`)
-		console.log(`容器高度: ${containerHeight}`)
-		console.log(`容器宽度: ${containerWidth}`)
-		console.log(`理论每行字符数: ${itemsPerRow}`)
-		console.log(`实际每行字符数: ${actualItemsPerRow}`)
-		console.log(`字符总高度: ${itemTotalHeight}`)
-		console.log(`当前行: ${currentRow}`)
-		console.log(`可见行数: ${totalVisibleRows}`)
-		console.log(`总字符数: ${totalCharacters}`)
-		console.log(`总行数: ${totalRows}`)
-		console.log(`最大滚动位置: ${maxScrollTop}`)
-		console.log(`实际总高度: ${actualTotalHeight}`)
-		console.log(`滚动百分比: ${(scrollPercentage * 100).toFixed(2)}%`)
-		console.log(`是否滚动到底部: ${isAtBottom}`)
-		console.log(`当前滚动位置: ${scrollTop}`)
-		console.log(`最大滚动位置: ${maxScrollTop}`)
 		
 		// 计算实际滚动位置对应的可见区域（无论是否在底部模式）
 		// 使用更精确的计算方式，考虑实际的滚动偏移
@@ -415,16 +368,7 @@
 			currentCharIndex + visibleCharCount + bufferCharCount,
 			totalCharacters
 		)
-		
-		// 添加详细的可见区域计算调试
-		console.log(`=== 可见区域计算详情 ===`)
-		console.log(`当前字符索引: ${currentCharIndex} = Math.floor(${scrollTop} / ${itemTotalHeight}) * ${actualItemsPerRow}`)
-		console.log(`可见字符数: ${visibleCharCount} = ${totalVisibleRows} * ${actualItemsPerRow}`)
-		console.log(`缓冲字符数: ${bufferCharCount} = Math.max(70, Math.ceil(${visibleCharCount} * 0.5))`)
-		console.log(`实际起始索引: ${actualStartIndex} = Math.max(0, ${currentCharIndex} - ${bufferCharCount})`)
-		console.log(`实际结束索引: ${actualEndIndex} = Math.min(${currentCharIndex} + ${visibleCharCount} + ${bufferCharCount}, ${totalCharacters})`)
-		console.log(`=== 可见区域计算详情结束 ===`)
-		
+
 		if (isAtBottom) {
 			// 底部模式：同时渲染底部区域和实际可见区域
 			const bufferSize = Math.min(totalVisibleRows * actualItemsPerRow * 3, totalCharacters) // 显示最后3倍可见行数的字符
@@ -436,25 +380,18 @@
 			
 			visibleStartIndex.value = mergedStartIndex
 			visibleEndIndex.value = mergedEndIndex
-			console.log(`底部模式 - 底部区域: ${lastRowStart} - ${totalCharacters}`)
-			console.log(`底部模式 - 实际可见区域: ${actualStartIndex} - ${actualEndIndex}`)
-			console.log(`底部模式 - 合并后可见区域: ${mergedStartIndex} - ${mergedEndIndex}`)
 		} else {
 			// 正常滚动时的可见区域计算
 			visibleStartIndex.value = actualStartIndex
 			visibleEndIndex.value = actualEndIndex
-			console.log(`正常模式 - 可见区域: ${actualStartIndex} - ${actualEndIndex}`)
 		}
-		console.log('====================')
 		
 		// 强制刷新可见区域
-		console.log(`准备强制刷新可见区域: ${visibleStartIndex.value} - ${visibleEndIndex.value}`)
 		forceRefreshVisibleCharacters()
 	}
 	
 	// 监听滚动事件，更新可见区域
 	const handleScroll = () => {
-		console.log('滚动事件被触发!')
 		// 标记正在滚动
 		isScrolling = true
 		
@@ -518,57 +455,20 @@
 		renderVisibleCharacters()
 	}
 	
-	// 调试函数：检查当前渲染状态
-	const debugRenderState = () => {
-		console.log('=== 渲染状态调试 ===')
-		console.log(`可见区域: ${visibleStartIndex.value} - ${visibleEndIndex.value}`)
-		console.log(`正在滚动: ${isScrolling}`)
-		console.log(`正在渲染: ${isRendering}`)
-		console.log(`渲染队列长度: ${renderQueue.length}`)
-		console.log(`缓存大小: ${renderCache.size}`)
-		console.log(`Canvas池大小: ${canvasPool.size}`)
-		
-		const characters = selectedFile.value?.characterList || []
-		console.log(`总字符数: ${characters.length}`)
-		
-		// 检查可见区域的字符
-		for (let i = visibleStartIndex.value; i < Math.min(visibleEndIndex.value, characters.length); i++) {
-			const char = characters[i]
-			const cacheKey = `${char.uuid}_${char._o ? 'rendered' : 'pending'}`
-			console.log(`字符 ${i}: ${char.uuid}, 已缓存: ${renderCache.has(cacheKey)}`)
-		}
-		
-		// 检查滚动容器状态
-		const scrollContainer = containerRef.value?.closest('.el-scrollbar')?.querySelector('.el-scrollbar__wrap')
-		if (scrollContainer) {
-			console.log(`滚动容器高度: ${scrollContainer.clientHeight}`)
-			console.log(`滚动位置: ${scrollContainer.scrollTop}`)
-			console.log(`容器宽度: ${scrollContainer.clientWidth}`)
-		}
-		
-		console.log('====================')
-	}
-	
 	// 强制刷新可见字符
 	const forceRefreshVisibleCharacters = () => {
 		const characters = selectedFile.value?.characterList || []
 		if (!characters.length) return
-		
-		console.log(`=== 强制刷新可见字符 ===`)
-		console.log(`当前可见区域: ${visibleStartIndex.value} - ${visibleEndIndex.value}`)
-		console.log(`总字符数: ${characters.length}`)
 		
 		// 使用已经计算好的可见区域，不再重新计算
 		
 		// 强制清空渲染队列，优先处理可见区域
 		const oldQueueLength = renderQueue.length
 		renderQueue.length = 0
-		console.log(`清空渲染队列，原队列长度: ${oldQueueLength}`)
 		
 		// 清除所有缓存，强制重新渲染
 		const oldCacheSize = renderCache.size
 		renderCache.clear()
-		console.log(`清除了所有缓存，原缓存大小: ${oldCacheSize}`)
 		
 		// 添加可见区域的字符到渲染队列
 		let queuedCount = 0
@@ -579,24 +479,16 @@
 			// 添加到渲染队列
 			renderQueue.push(characterFile.uuid)
 			queuedCount++
-			// console.log(`添加字符到渲染队列: 索引${i}, UUID: ${characterFile.uuid}, 字符: ${characterFile.character.text}`)
 		}
-		
-		console.log(`添加了 ${queuedCount} 个到渲染队列`)
-		console.log(`渲染队列长度: ${renderQueue.length}`)
-		console.log(`正在渲染: ${isRendering}`)
 		
 		// 开始渲染
 		if (renderQueue.length > 0) {
 			if (!isRendering) {
-				console.log(`开始处理渲染队列`)
 				processRenderQueue()
 			} else {
-				console.log(`正在渲染中，等待当前渲染完成`)
 				// 等待当前渲染完成后再处理新队列
 				const checkRendering = () => {
 					if (!isRendering && renderQueue.length > 0) {
-						console.log(`当前渲染完成，开始处理新队列`)
 						processRenderQueue()
 					} else if (isRendering) {
 						// 继续等待
@@ -606,15 +498,12 @@
 				requestAnimationFrame(checkRendering)
 			}
 		} else {
-			console.log(`渲染队列为空，无需处理`)
 		}
 		
-		console.log(`=== 强制刷新完成 ===`)
 	}
 	
 	// 暴露调试函数到全局
 	if (typeof window !== 'undefined') {
-		(window as any).debugRenderState = debugRenderState
 		;(window as any).forceRefreshVisibleCharacters = forceRefreshVisibleCharacters
 		;(window as any).checkVisibleCharacters = () => {
 			const characters = selectedFile.value?.characterList || []
@@ -633,18 +522,6 @@
 			}
 		}
 		
-		// 添加底部滚动调试函数
-		;(window as any).debugBottomScroll = () => {
-			// 强制滚动到底部并更新可见区域
-			const scrollContainer = containerRef.value?.closest('.el-scrollbar')?.querySelector('.el-scrollbar__wrap')
-			if (scrollContainer) {
-				scrollContainer.scrollTop = scrollContainer.scrollHeight
-				setTimeout(() => {
-					updateVisibleArea(scrollContainer)
-				}, 100)
-			}
-		}
-		
 		// 测试函数：直接设置底部可见区域
 		;(window as any).testBottomArea = () => {
 			const characters = selectedFile.value?.characterList || []
@@ -653,7 +530,6 @@
 				const startIndex = Math.max(0, characters.length - 200)
 				visibleStartIndex.value = startIndex
 				visibleEndIndex.value = characters.length
-				console.log(`测试底部区域: ${startIndex} - ${characters.length}`)
 				forceRefreshVisibleCharacters()
 			}
 		}
@@ -661,38 +537,28 @@
 		// 检查DOM中的字符显示
 		;(window as any).checkDOMCharacters = () => {
 			const characters = selectedFile.value?.characterList || []
-			console.log(`=== 检查DOM中的字符显示 ===`)
-			console.log(`可见区域: ${visibleStartIndex.value} - ${visibleEndIndex.value}`)
 			
 			// 检查最后几个字符是否在DOM中
 			for (let i = Math.max(0, characters.length - 10); i < characters.length; i++) {
 				const char = characters[i]
 				const canvas = document.getElementById(`preview-canvas-${char.uuid}`)
 				const wrapper = document.querySelector(`.character-${char.uuid}`)
-				console.log(`字符 ${i}: ${char.character.text}, canvas存在: ${!!canvas}, wrapper存在: ${!!wrapper}`)
 			}
 			
 			// 检查可见区域的字符
-			console.log(`=== 检查可见区域字符 ===`)
 			for (let i = visibleStartIndex.value; i < Math.min(visibleEndIndex.value, characters.length); i++) {
 				const char = characters[i]
 				const canvas = document.getElementById(`preview-canvas-${char.uuid}`)
 				const wrapper = document.querySelector(`.character-${char.uuid}`)
 				const cacheKey = `${char.uuid}_rendered`
 				const isCached = renderCache.has(cacheKey)
-				console.log(`可见字符 ${i}: ${char.character.text}, canvas存在: ${!!canvas}, wrapper存在: ${!!wrapper}, 已缓存: ${isCached}`)
 			}
-			console.log(`=== DOM检查完成 ===`)
 		}
 		
 		// 添加底部滚动调试函数
 		;(window as any).debugBottomScrollInfo = () => {
 			const characters = selectedFile.value?.characterList || []
 			const scrollContainer = containerRef.value?.closest('.el-scrollbar')?.querySelector('.el-scrollbar__wrap')
-			
-			console.log('=== 底部滚动调试 ===')
-			console.log(`总字符数: ${characters.length}`)
-			console.log(`当前可见区域: ${visibleStartIndex.value} - ${visibleEndIndex.value}`)
 			
 			if (scrollContainer) {
 				const scrollTop = scrollContainer.scrollTop
@@ -705,17 +571,10 @@
 				// 由于Grid布局可能没有占满宽度，增加容错
 				const actualItemsPerRow = Math.max(1, itemsPerRow - 1) // 减少1个作为容错
 				
-				console.log(`滚动位置: ${scrollTop}`)
-				console.log(`容器高度: ${containerHeight}`)
-				console.log(`容器宽度: ${containerWidth}`)
-				console.log(`理论每行字符数: ${itemsPerRow}`)
-				console.log(`实际每行字符数: ${actualItemsPerRow}`)
-				console.log(`字符总高度: ${itemTotalHeight}`)
+				
 				
 				const currentRow = Math.floor(scrollTop / itemTotalHeight)
 				const visibleRows = Math.ceil(containerHeight / itemTotalHeight)
-				console.log(`当前行: ${currentRow}`)
-				console.log(`可见行数: ${visibleRows}`)
 				
 				// 计算理论上的可见区域
 				const theoreticalStart = Math.max(0, currentRow * actualItemsPerRow - actualItemsPerRow * 2)
@@ -723,48 +582,34 @@
 					(currentRow + visibleRows + 5) * actualItemsPerRow,
 					characters.length
 				)
-				console.log(`理论可见区域: ${theoreticalStart} - ${theoreticalEnd}`)
 				
 				// 计算总行数
 				const totalRows = Math.ceil(characters.length / actualItemsPerRow)
-				console.log(`总行数: ${totalRows}`)
 				
 				// 计算最大滚动位置
 				const maxScrollTop = totalRows * itemTotalHeight - containerHeight
-				console.log(`最大滚动位置: ${maxScrollTop}`)
-				console.log(`是否滚动到底部: ${scrollTop >= maxScrollTop - 50}`)
 				
 				// 如果滚动到底部，计算应该显示的字符
 				if (scrollTop >= maxScrollTop - 50) {
 					const bottomStartIndex = Math.max(0, characters.length - (visibleRows + 5) * actualItemsPerRow)
-					console.log(`底部应该显示的起始索引: ${bottomStartIndex}`)
 				}
 			}
-			console.log('====================')
 		}
 		
 		// 强制重新处理渲染队列
 		;(window as any).forceProcessRenderQueue = () => {
-			console.log(`=== 强制重新处理渲染队列 ===`)
-			console.log(`当前渲染状态: isRendering=${isRendering}`)
-			console.log(`渲染队列长度: ${renderQueue.length}`)
 			
 			// 强制重置渲染状态
 			isRendering = false
 			
 			// 重新处理队列
 			if (renderQueue.length > 0) {
-				console.log(`开始强制处理渲染队列`)
 				processRenderQueue()
-			} else {
-				console.log(`渲染队列为空`)
 			}
-			console.log(`=== 强制处理完成 ===`)
 		}
 		
 		// 强制重置并重新渲染
 		;(window as any).forceResetAndRender = () => {
-			console.log(`=== 强制重置并重新渲染 ===`)
 			
 			// 强制重置所有状态
 			isRendering = false
@@ -772,7 +617,6 @@
 			renderCache.clear()
 			canvasPool.clear()
 			
-			console.log(`状态已重置: isRendering=${isRendering}, queueLength=${renderQueue.length}`)
 			
 			// 强制重新计算可见区域并渲染
 			const scrollContainer = containerRef.value?.closest('.el-scrollbar')?.querySelector('.el-scrollbar__wrap')
@@ -781,12 +625,10 @@
 				forceRefreshVisibleCharacters()
 			}
 			
-			console.log(`=== 强制重置完成 ===`)
 		}
 		
 		// 检查canvas元素是否存在
 		;(window as any).checkCanvasElements = () => {
-			console.log(`=== 检查Canvas元素 ===`)
 			const characters = selectedFile.value?.characterList || []
 			
 			// 检查可见区域的canvas
@@ -795,18 +637,10 @@
 				const canvas = document.getElementById(`preview-canvas-${char.uuid}`)
 				const wrapper = document.querySelector(`.character-${char.uuid}`)
 				
-				console.log(`字符 ${i}: ${char.character.text}`)
-				console.log(`  - Canvas ID: preview-canvas-${char.uuid}`)
-				console.log(`  - Canvas存在: ${!!canvas}`)
-				console.log(`  - Wrapper存在: ${!!wrapper}`)
-				
 				if (canvas) {
 					const canvasElement = canvas as HTMLCanvasElement
-					console.log(`  - Canvas尺寸: ${canvasElement.width}x${canvasElement.height}`)
-					console.log(`  - Canvas可见: ${canvasElement.offsetWidth > 0 && canvasElement.offsetHeight > 0}`)
 				}
 			}
-			console.log(`=== Canvas检查完成 ===`)
 		}
 	}
 
