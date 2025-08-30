@@ -115,7 +115,6 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
   scale: 1,
   forceUpdate: false,
 }) => {
-  console.log('renderCanvas', components)
   const scale = options.scale//canvas.width / (selectedFile.value.fontSettings.unitsPerEm as number)
   const ctx: CanvasRenderingContext2D = canvas.getContext('2d') as CanvasRenderingContext2D
   //ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
@@ -281,7 +280,6 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       }
       for (let i = 3; i < _points.length - 1; i += 3) {
         if (i + 3 >= _points.length) break
-        console.log('render point i', i, _points[i + 1].x, _points[i + 1].y, _points[i + 2].x, _points[i + 2].y, _points[i + 3].x, _points[i + 3].y)
         ctx.bezierCurveTo(_points[i + 1].x, _points[i + 1].y, _points[i + 2].x, _points[i + 2].y, _points[i + 3].x, _points[i + 3].y)
       }
       ctx.setTransform(1, 0, 0, 1, 0, 0)
@@ -693,7 +691,6 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
 }
 
 const render = (canvas: HTMLCanvasElement, renderBackground: Boolean = true, forceUpdate: boolean = false) => {
-  console.log('render 1', forceUpdate)
   clearCanvas(canvas as HTMLCanvasElement)
   if (renderBackground) {
     fillBackground(canvas as HTMLCanvasElement, background, grid)
@@ -704,7 +701,6 @@ const render = (canvas: HTMLCanvasElement, renderBackground: Boolean = true, for
   }
   if (editStatus.value === Status.Edit) {
     if (editCharacterFileOnDragging.value) {
-      console.log('render 2', editCharacterFileOnDragging.value)
       // 当拖拽字形组件时，为提升性能使用临时变量
       renderCanvas(orderedListWithItemsForCharacterFile(editCharacterFileOnDragging.value), canvas as HTMLCanvasElement, {
         forceUpdate,
