@@ -143,10 +143,10 @@ const loadingMsg = ref('')
 
 const gridChanged = ref(false)
 
-const maxSegment = 8
+const maxSegment = 15//8
 const minSegment = 3
 
-const skeletonThreshold = 10//2.5
+const skeletonThreshold = 2.5//2.5
 
 export {
 	tool,

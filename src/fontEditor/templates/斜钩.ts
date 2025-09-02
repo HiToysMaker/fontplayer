@@ -10,8 +10,8 @@ export const skeletonToBones_xie_gou = (skeleton: any): any[] => {
   const bones: any[] = [];
   const { xie_start, xie_end, xie_bend, gou_start, gou_end } = skeleton;
   
-      // 斜的部分 - 贝塞尔曲线段
-    const xieSegments = maxSegment;
+  // 斜的部分 - 贝塞尔曲线段
+  const xieSegments = maxSegment;
   for (let i = 0; i < xieSegments; i++) {
     const t1 = i / xieSegments;
     const t2 = (i + 1) / xieSegments;
@@ -41,7 +41,7 @@ export const skeletonToBones_xie_gou = (skeleton: any): any[] => {
   
   // 钩的部分 - 直线段
   const gouLength = Math.sqrt((gou_end.x - gou_start.x) ** 2 + (gou_end.y - gou_start.y) ** 2);
-  const gouSegments = Math.max(minSegment, Math.ceil(gouLength / 20));
+  const gouSegments = maxSegment//Math.max(minSegment, Math.ceil(gouLength / 20));
   
   for (let i = 0; i < gouSegments; i++) {
     const t1 = i / gouSegments;
@@ -96,8 +96,6 @@ const quadraticBezierPoint = (p0: any, p1: any, p2: any, t: number) => {
   const y = (1 - t) ** 2 * p0.y + 2 * (1 - t) * t * p1.y + t ** 2 * p2.y;
   return { x, y };
 };
-
-
 
 const instanceBasicGlyph_xie_gou = (plainGlyph: ICustomGlyph) => {
   const glyph = new CustomGlyph(plainGlyph)

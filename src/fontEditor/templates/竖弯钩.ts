@@ -12,7 +12,7 @@ export const skeletonToBones_shu_wan_gou = (skeleton: any): any[] => {
   
   // 竖的部分 - 直线段
   const shuLength = Math.sqrt((shu_end.x - shu_start.x) ** 2 + (shu_end.y - shu_start.y) ** 2);
-  const shuSegments = Math.max(minSegment, Math.ceil(shuLength / 20));
+  const shuSegments = maxSegment//Math.max(minSegment, Math.ceil(shuLength / 20));
   
   for (let i = 0; i < shuSegments; i++) {
     const t1 = i / shuSegments;
@@ -49,7 +49,7 @@ export const skeletonToBones_shu_wan_gou = (skeleton: any): any[] => {
   
   // 弯的部分 - 直线段
   const wanLength = Math.sqrt((wan_end.x - wan_start.x) ** 2 + (wan_end.y - wan_start.y) ** 2);
-  const wanSegments = Math.max(minSegment, Math.ceil(wanLength / 20));
+  const wanSegments = maxSegment//Math.max(minSegment, Math.ceil(wanLength / 20));
   
   for (let i = 0; i < wanSegments; i++) {
     const t1 = i / wanSegments;
@@ -90,7 +90,7 @@ export const skeletonToBones_shu_wan_gou = (skeleton: any): any[] => {
   
   // 钩的部分 - 直线段
   const gouLength = Math.sqrt((gou_end.x - gou_start.x) ** 2 + (gou_end.y - gou_start.y) ** 2);
-  const gouSegments = Math.max(minSegment, Math.ceil(gouLength / 20));
+  const gouSegments = maxSegment//Math.max(minSegment, Math.ceil(gouLength / 20));
   
   for (let i = 0; i < gouSegments; i++) {
     const t1 = i / gouSegments;

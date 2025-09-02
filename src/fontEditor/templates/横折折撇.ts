@@ -12,7 +12,7 @@ export const skeletonToBones_heng_zhe_zhe_pie = (skeleton: any): any[] => {
   
   // 横的部分 - 直线段
   const hengLength = Math.sqrt((heng_end.x - heng_start.x) ** 2 + (heng_end.y - heng_start.y) ** 2);
-  const hengSegments = Math.max(minSegment, Math.ceil(hengLength / 20));
+  const hengSegments = maxSegment//Math.max(minSegment, Math.ceil(hengLength / 20));
   
   for (let i = 0; i < hengSegments; i++) {
     const t1 = i / hengSegments;
@@ -49,7 +49,7 @@ export const skeletonToBones_heng_zhe_zhe_pie = (skeleton: any): any[] => {
   
   // 折1的部分 - 直线段
   const zhe1Length = Math.sqrt((zhe1_end.x - zhe1_start.x) ** 2 + (zhe1_end.y - zhe1_start.y) ** 2);
-  const zhe1Segments = Math.max(minSegment, Math.ceil(zhe1Length / 20));
+  const zhe1Segments = maxSegment//Math.max(minSegment, Math.ceil(zhe1Length / 20));
   
   for (let i = 0; i < zhe1Segments; i++) {
     const t1 = i / zhe1Segments;
@@ -90,7 +90,7 @@ export const skeletonToBones_heng_zhe_zhe_pie = (skeleton: any): any[] => {
   
   // 折2的部分 - 直线段
   const zhe2Length = Math.sqrt((zhe2_end.x - zhe2_start.x) ** 2 + (zhe2_end.y - zhe2_start.y) ** 2);
-  const zhe2Segments = Math.max(minSegment, Math.ceil(zhe2Length / 20));
+  const zhe2Segments = maxSegment//Math.max(minSegment, Math.ceil(zhe2Length / 20));
   
   for (let i = 0; i < zhe2Segments; i++) {
     const t1 = i / zhe2Segments;
@@ -131,7 +131,7 @@ export const skeletonToBones_heng_zhe_zhe_pie = (skeleton: any): any[] => {
   
   // 撇的部分 - 分为两段：pie_start到pie_bend，pie_bend到pie_end
   const pie1Length = Math.sqrt((pie_bend.x - pie_start.x) ** 2 + (pie_bend.y - pie_start.y) ** 2);
-  const pie1Segments = Math.max(minSegment, Math.ceil(pie1Length / 20));
+  const pie1Segments = maxSegment//Math.max(minSegment, Math.ceil(pie1Length / 20));
   
   for (let i = 0; i < pie1Segments; i++) {
     const t1 = i / pie1Segments;
@@ -172,7 +172,7 @@ export const skeletonToBones_heng_zhe_zhe_pie = (skeleton: any): any[] => {
   
   // 撇的第二段：pie_bend到pie_end
   const pie2Length = Math.sqrt((pie_end.x - pie_bend.x) ** 2 + (pie_end.y - pie_bend.y) ** 2);
-  const pie2Segments = Math.max(minSegment, Math.ceil(pie2Length / 20));
+  const pie2Segments = maxSegment//Math.max(minSegment, Math.ceil(pie2Length / 20));
   
   for (let i = 0; i < pie2Segments; i++) {
     const t1 = i / pie2Segments;

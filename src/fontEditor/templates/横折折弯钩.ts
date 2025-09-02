@@ -13,7 +13,7 @@ export const skeletonToBones_heng_zhe_zhe_wan_gou = (skeleton: any): any[] => {
   
   // 横的部分 - 直线段
   const hengLength = Math.sqrt((heng_end.x - heng_start.x) ** 2 + (heng_end.y - heng_start.y) ** 2);
-  const hengSegments = Math.max(minSegment, Math.ceil(hengLength / 20));
+  const hengSegments = maxSegment//Math.max(minSegment, Math.ceil(hengLength / 20));
   
   for (let i = 0; i < hengSegments; i++) {
     const t1 = i / hengSegments;
@@ -50,7 +50,7 @@ export const skeletonToBones_heng_zhe_zhe_wan_gou = (skeleton: any): any[] => {
   debugger
   // 折1的部分 - 直线段
   const zhe1Length = Math.sqrt((zhe1_end.x - zhe1_start.x) ** 2 + (zhe1_end.y - zhe1_start.y) ** 2);
-  const zhe1Segments = Math.max(minSegment, Math.ceil(zhe1Length / 20));
+  const zhe1Segments = maxSegment//Math.max(minSegment, Math.ceil(zhe1Length / 20));
   
   for (let i = 0; i < zhe1Segments; i++) {
     const t1 = i / zhe1Segments;
@@ -91,7 +91,7 @@ export const skeletonToBones_heng_zhe_zhe_wan_gou = (skeleton: any): any[] => {
   
   // 折2的部分 - 直线段
   const zhe2Length = Math.sqrt((zhe2_end.x - zhe2_start.x) ** 2 + (zhe2_end.y - zhe2_start.y) ** 2);
-  const zhe2Segments = Math.max(minSegment, Math.ceil(zhe2Length / 20));
+  const zhe2Segments = maxSegment//Math.max(minSegment, Math.ceil(zhe2Length / 20));
   
   for (let i = 0; i < zhe2Segments; i++) {
     const t1 = i / zhe2Segments;
@@ -132,7 +132,7 @@ export const skeletonToBones_heng_zhe_zhe_wan_gou = (skeleton: any): any[] => {
   
   // 弯的部分 - 直线段
   const wanLength = Math.sqrt((wan_end.x - wan_start.x) ** 2 + (wan_end.y - wan_start.y) ** 2);
-  const wanSegments = Math.max(minSegment, Math.ceil(wanLength / 20));
+  const wanSegments = maxSegment//Math.max(minSegment, Math.ceil(wanLength / 20));
   
   for (let i = 0; i < wanSegments; i++) {
     const t1 = i / wanSegments;
@@ -173,7 +173,7 @@ export const skeletonToBones_heng_zhe_zhe_wan_gou = (skeleton: any): any[] => {
   
   // 钩的部分 - 直线段
   const gouLength = Math.sqrt((gou_end.x - gou_start.x) ** 2 + (gou_end.y - gou_start.y) ** 2);
-  const gouSegments = Math.max(minSegment, Math.ceil(gouLength / 20));
+  const gouSegments = maxSegment//Math.max(minSegment, Math.ceil(gouLength / 20));
   
   for (let i = 0; i < gouSegments; i++) {
     const t1 = i / gouSegments;

@@ -10,8 +10,8 @@ export const skeletonToBones_pie_tiao = (skeleton: any): any[] => {
   const bones: any[] = [];
   const { pie_start, pie_end, pie_bend, tiao_start, tiao_end, tiao_bend } = skeleton;
   
-      // 撇的部分 - 贝塞尔曲线段
-    const pieSegments = maxSegment;
+  // 撇的部分 - 贝塞尔曲线段
+  const pieSegments = maxSegment;
   for (let i = 0; i < pieSegments; i++) {
     const t1 = i / pieSegments;
     const t2 = (i + 1) / pieSegments;
@@ -39,8 +39,8 @@ export const skeletonToBones_pie_tiao = (skeleton: any): any[] => {
     bones.push(bone);
   }
   
-      // 挑的部分 - 贝塞尔曲线段
-    const tiaoSegments = maxSegment;
+  // 挑的部分 - 贝塞尔曲线段
+  const tiaoSegments = maxSegment;
   for (let i = 0; i < tiaoSegments; i++) {
     const t1 = i / tiaoSegments;
     const t2 = (i + 1) / tiaoSegments;

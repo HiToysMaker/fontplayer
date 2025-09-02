@@ -12,7 +12,7 @@ export const skeletonToBones_heng_pie_wan_gou = (skeleton: any): any[] => {
   
   // 横的部分 - 直线段
   const hengLength = Math.sqrt((heng_end.x - heng_start.x) ** 2 + (heng_end.y - heng_start.y) ** 2);
-  const hengSegments = Math.max(minSegment, Math.ceil(hengLength / 20));
+  const hengSegments = maxSegment//Math.max(minSegment, Math.ceil(hengLength / 20));
   
   for (let i = 0; i < hengSegments; i++) {
     const t1 = i / hengSegments;
@@ -47,8 +47,8 @@ export const skeletonToBones_heng_pie_wan_gou = (skeleton: any): any[] => {
     bones.push(bone);
   }
   
-      // 撇的部分 - 贝塞尔曲线段
-    const pieSegments = maxSegment;
+  // 撇的部分 - 贝塞尔曲线段
+  const pieSegments = maxSegment;
   for (let i = 0; i < pieSegments; i++) {
     const t1 = i / pieSegments;
     const t2 = (i + 1) / pieSegments;
@@ -80,11 +80,11 @@ export const skeletonToBones_heng_pie_wan_gou = (skeleton: any): any[] => {
     bones.push(bone);
   }
   
-      // 弯钩的部分 - 贝塞尔曲线段
-    const wangouSegments = maxSegment;
-      for (let i = 0; i < wangouSegments; i++) {
-      const t1 = i / wangouSegments;
-      const t2 = (i + 1) / wangouSegments;
+  // 弯钩的部分 - 贝塞尔曲线段
+  const wangouSegments = maxSegment;
+  for (let i = 0; i < wangouSegments; i++) {
+    const t1 = i / wangouSegments;
+    const t2 = (i + 1) / wangouSegments;
     
     const p1 = quadraticBezierPoint(wangou_start, wangou_bend, wangou_end, t1);
     const p2 = quadraticBezierPoint(wangou_start, wangou_bend, wangou_end, t2);
@@ -115,7 +115,7 @@ export const skeletonToBones_heng_pie_wan_gou = (skeleton: any): any[] => {
   
   // 钩的部分 - 贝塞尔曲线段
   const gouLength = Math.sqrt((wangou_end.x - wangou_start.x) ** 2 + (wangou_end.y - wangou_start.y) ** 2);
-  const gouSegments = Math.max(minSegment, Math.ceil(gouLength / 20));
+  const gouSegments = maxSegment//Math.max(minSegment, Math.ceil(gouLength / 20));
   for (let i = 0; i < gouSegments; i++) {
     const t1 = i / gouSegments;
     const t2 = (i + 1) / gouSegments;

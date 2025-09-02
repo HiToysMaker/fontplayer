@@ -12,7 +12,7 @@ export const skeletonToBones_shu_tiao = (skeleton: any): any[] => {
   
   // 竖的部分 - 直线段
   const shuLength = Math.sqrt((shu_end.x - shu_start.x) ** 2 + (shu_end.y - shu_start.y) ** 2);
-  const shuSegments = Math.max(minSegment, Math.ceil(shuLength / 20));
+  const shuSegments = maxSegment//Math.max(minSegment, Math.ceil(shuLength / 20));
   
   for (let i = 0; i < shuSegments; i++) {
     const t1 = i / shuSegments;
@@ -49,7 +49,7 @@ export const skeletonToBones_shu_tiao = (skeleton: any): any[] => {
   
   // 挑的部分 - 直线段
   const tiaoLength = Math.sqrt((tiao_end.x - tiao_start.x) ** 2 + (tiao_end.y - tiao_start.y) ** 2);
-  const tiaoSegments = Math.max(minSegment, Math.ceil(tiaoLength / 20));
+  const tiaoSegments = maxSegment//Math.max(minSegment, Math.ceil(tiaoLength / 20));
   
   for (let i = 0; i < tiaoSegments; i++) {
     const t1 = i / tiaoSegments;

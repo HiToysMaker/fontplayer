@@ -1087,7 +1087,11 @@ function calculatePointTransformation(binding: PointBinding, bones: Bone[], orig
     const weightedY = weight * transformedPoint.y;
     newX += weightedX;
     newY += weightedY;
-    
+    if (boneIndex === 100) {
+      console.log('boneIndex', boneIndex, weight, localCoords);
+      console.log('transformedPoint', transformedPoint);
+      debugger
+    }
   });
   
   // 如果所有计算都失败，返回原始点
