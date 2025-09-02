@@ -4,12 +4,74 @@ import { refline, range } from "../../utils/glyph";
 import { FP } from "../programming/FPUtils";
 import { applySkeletonTransformation, glyphSkeletonBind } from "../../features/glyphSkeletonBind";
 import { updateSkeletonTransformation } from "./strokeFnMap";
+import { minSegment, maxSegment } from "../stores/global";
+// 竖的骨架转骨骼函数
+export const skeletonToBones_shu = (skeleton: any): any[] => {
+  const bones: any[] = [];
+  const { start, end } = skeleton;
+  
+  // 直线段
+  const totalLength = Math.sqrt((end.x - start.x) ** 2 + (end.y - start.y) ** 2);
+  const segments = Math.max(minSegment, Math.ceil(totalLength / 20));
+  
+  for (let i = 0; i < segments; i++) {
+    const t1 = i / segments;
+    const t2 = (i + 1) / segments;
+    
+    const p1 = {
+      x: start.x + (end.x - start.x) * t1,
+      y: start.y + (end.y - start.y) * t1
+    };
+    const p2 = {
+      x: start.x + (end.x - start.x) * t2,
+      y: start.y + (end.y - start.y) * t2
+    };
+    
+    const bone: any = {
+      id: `segment_${i}`,
+      start: p1,
+      end: p2,
+      length: Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2),
+      uAxis: normalize({ x: p2.x - p1.x, y: p2.y - p1.y }),
+      vAxis: normalize({ x: -(p2.y - p1.y), y: p2.x - p1.x }),
+      children: [],
+      bindMatrix: createIdentityMatrix(),
+      currentMatrix: createIdentityMatrix()
+    };
+    
+    if (i > 0) {
+      bone.parent = `segment_${i - 1}`;
+      bones[i - 1].children.push(bone.id);
+    }
+    
+    bones.push(bone);
+  }
+  
+  return bones;
+};
+
+// 辅助函数
+const normalize = (vector: { x: number; y: number }) => {
+  const length = Math.sqrt(vector.x ** 2 + vector.y ** 2);
+  return length > 0 ? { x: vector.x / length, y: vector.y / length } : { x: 0, y: 0 };
+};
+
+const createIdentityMatrix = () => [1, 0, 0, 1, 0, 0];
+
+const quadraticBezierPoint = (p0: any, p1: any, p2: any, t: number) => {
+  const x = (1 - t) ** 2 * p0.x + 2 * (1 - t) * t * p1.x + t ** 2 * p2.x;
+  const y = (1 - t) ** 2 * p0.y + 2 * (1 - t) * t * p1.y + t ** 2 * p2.y;
+  return { x, y };
+};
+
+
 
 const instanceBasicGlyph_shu = (plainGlyph: ICustomGlyph) => {
   const glyph = new CustomGlyph(plainGlyph)
   const params = {
     length: glyph.getParam('长度'),
     skeletonRefPos: glyph.getParam('参考位置'),
+    weight: glyph.getParam('字重') || 40,
   }
 
   updateGlyphByParams(params, glyph)
@@ -25,7 +87,7 @@ const bindSkeletonGlyph_shu = (plainGlyph: ICustomGlyph) => {
 }
 
 const updateGlyphByParams = (params, glyph) => {
-  const { length, skeletonRefPos } = params
+  const { length, skeletonRefPos, weight } = params
 
   const { ox : _ox, oy : _oy } = glyph._glyph.skeleton
 
@@ -33,8 +95,6 @@ const updateGlyphByParams = (params, glyph) => {
   const oy = 500
   const x0 = 500 + _ox || 0
   const y0 = 250 + _oy || 0
-
-  const weight = glyph.getParam('字重') || 40
 
   let start, end
   const start_ref = new FP.Joint(
@@ -128,6 +188,7 @@ const computeParamsByJoints = (jointsMap, glyph) => {
   return {
     length,
     skeletonRefPos: glyph.getParam('参考位置'),
+    weight: glyph.getParam('字重') || 40,
   }
 }
 

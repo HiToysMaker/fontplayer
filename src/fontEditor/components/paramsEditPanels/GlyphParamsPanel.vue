@@ -50,6 +50,26 @@
           max: param.max || 1000,
         })
       }
+      parameters.push({
+        uuid: genUUID(),
+        name: '参考位置',
+        type: ParameterType.Enum,
+        value: 0,
+        options: [
+          {
+            value: 0,
+            label: '默认',
+          },
+          {
+            value: 1,
+            label: '右侧（上侧）',
+          },
+          {
+            value: 2,
+            label: '左侧（下侧）',
+          }
+        ]
+      })
       // 添加弯曲程度参数
       parameters.push({
         uuid: genUUID(),
@@ -78,6 +98,7 @@
     }
     onSkeletonDragging.value = false
     editGlyph.value.skeleton.onSkeletonBind = false
+    console.log('bindSkeleton', editGlyph.value.skeleton)
   }
 
   const removeSkeleton = () => {

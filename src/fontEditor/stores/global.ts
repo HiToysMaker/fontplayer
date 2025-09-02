@@ -143,6 +143,11 @@ const loadingMsg = ref('')
 
 const gridChanged = ref(false)
 
+const maxSegment = 8
+const minSegment = 3
+
+const skeletonThreshold = 10//2.5
+
 export {
 	tool,
 	grid,
@@ -178,4 +183,7 @@ export {
 	strokeWidthRatio,
 	strokeWidth,
 	getStrokeWidth,
+	maxSegment,
+	minSegment,
+	skeletonThreshold,
 }

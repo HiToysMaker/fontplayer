@@ -4,6 +4,57 @@ import { refline, range } from "../../utils/glyph";
 import { FP } from "../programming/FPUtils";
 import { applySkeletonTransformation, glyphSkeletonBind } from "../../features/glyphSkeletonBind";
 import { updateSkeletonTransformation } from "./strokeFnMap";
+import { minSegment, maxSegment } from "../stores/global";
+// 捺的骨架转骨骼函数
+export const skeletonToBones_na = (skeleton: any): any[] => {
+  const bones: any[] = [];
+  const { start, bend, end } = skeleton;
+  
+  // 贝塞尔曲线段
+  const segments = maxSegment;
+  for (let i = 0; i < segments; i++) {
+    const t1 = i / segments;
+    const t2 = (i + 1) / segments;
+    
+    const p1 = quadraticBezierPoint(start, bend, end, t1);
+    const p2 = quadraticBezierPoint(start, bend, end, t2);
+    
+    const bone: any = {
+      id: `segment_${i}`,
+      start: p1,
+      end: p2,
+      length: Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2),
+      uAxis: normalize({ x: p2.x - p1.x, y: p2.y - p1.y }),
+      vAxis: normalize({ x: -(p2.y - p1.y), y: p2.x - p1.x }),
+      children: [],
+      bindMatrix: createIdentityMatrix(),
+      currentMatrix: createIdentityMatrix()
+    };
+    
+    if (i > 0) {
+      bone.parent = `segment_${i - 1}`;
+      bones[i - 1].children.push(bone.id);
+    }
+    
+    bones.push(bone);
+  }
+  
+  return bones;
+};
+
+// 辅助函数
+const normalize = (vector: { x: number; y: number }) => {
+  const length = Math.sqrt(vector.x ** 2 + vector.y ** 2);
+  return length > 0 ? { x: vector.x / length, y: vector.y / length } : { x: 0, y: 0 };
+};
+
+const createIdentityMatrix = () => [1, 0, 0, 1, 0, 0];
+
+const quadraticBezierPoint = (p0: any, p1: any, p2: any, t: number) => {
+  const x = (1 - t) ** 2 * p0.x + 2 * (1 - t) * t * p1.x + t ** 2 * p2.x;
+  const y = (1 - t) ** 2 * p0.y + 2 * (1 - t) * t * p1.y + t ** 2 * p2.y;
+  return { x, y };
+};
 
 const instanceBasicGlyph_na = (plainGlyph: ICustomGlyph) => {
   const glyph = new CustomGlyph(plainGlyph)
@@ -12,6 +63,8 @@ const instanceBasicGlyph_na = (plainGlyph: ICustomGlyph) => {
     verticalSpan: glyph.getParam('竖直延伸'),
     bendCursor: glyph.getParam('弯曲游标'),
     bendDegree: Number(glyph.getParam('弯曲度')) + 30 * Number(glyph.getParam('弯曲程度')),
+    skeletonRefPos: glyph.getParam('参考位置'),
+    weight: glyph.getParam('字重') || 40,
   }
 
   updateGlyphByParams(params, glyph)
@@ -118,6 +171,8 @@ const computeParamsByJoints = (jointsMap, glyph) => {
     verticalSpan,
     bendCursor,
     bendDegree,
+    skeletonRefPos: glyph.getParam('参考位置'),
+    weight: glyph.getParam('字重') || 40,
   }
 }
 
