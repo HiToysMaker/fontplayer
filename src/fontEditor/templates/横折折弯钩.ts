@@ -7,7 +7,6 @@ import { updateSkeletonTransformation } from "./strokeFnMap";
 import { minSegment, maxSegment } from "../stores/global";
 // 横折折弯钩的骨架转骨骼函数
 export const skeletonToBones_heng_zhe_zhe_wan_gou = (skeleton: any): any[] => {
-  console.log('skeletonToBones_heng_zhe_zhe_wan_gou', skeleton)
   const bones: any[] = [];
   const { heng_start, heng_end, zhe1_start, zhe1_end, zhe2_start, zhe2_end, wan_start, wan_end, gou_start, gou_end } = skeleton;
   
@@ -47,7 +46,7 @@ export const skeletonToBones_heng_zhe_zhe_wan_gou = (skeleton: any): any[] => {
     
     bones.push(bone);
   }
-  debugger
+
   // 折1的部分 - 直线段
   const zhe1Length = Math.sqrt((zhe1_end.x - zhe1_start.x) ** 2 + (zhe1_end.y - zhe1_start.y) ** 2);
   const zhe1Segments = maxSegment//Math.max(minSegment, Math.ceil(zhe1Length / 20));
@@ -173,7 +172,7 @@ export const skeletonToBones_heng_zhe_zhe_wan_gou = (skeleton: any): any[] => {
   
   // 钩的部分 - 直线段
   const gouLength = Math.sqrt((gou_end.x - gou_start.x) ** 2 + (gou_end.y - gou_start.y) ** 2);
-  const gouSegments = maxSegment//Math.max(minSegment, Math.ceil(gouLength / 20));
+  const gouSegments = minSegment//maxSegment//Math.max(minSegment, Math.ceil(gouLength / 20));
   
   for (let i = 0; i < gouSegments; i++) {
     const t1 = i / gouSegments;

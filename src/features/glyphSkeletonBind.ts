@@ -96,9 +96,6 @@ const glyphSkeletonBind = (glyph: CustomGlyph) => {
     return binding;
   });
 
-  console.log('pointsBonesMap', pointsBonesMap);
-  debugger
-
   // 存储绑定信息到glyph对象中，供后续变形使用
   (glyph as any).skeletonBindData = {
     bones,
@@ -360,7 +357,6 @@ function skeletonToBones(skeleton: any): Bone[] {
 
 // 调用对应笔画的骨架转骨骼函数
 function callStrokeSkeletonToBones(skeletonType: SkeletonType, skeleton: any): Bone[] {
-  // console.log('callStrokeSkeletonToBones', skeletonType, skeleton)
   try {
     switch (skeletonType) {
       case 'heng_gou':
@@ -500,9 +496,6 @@ function calculatePointBones(point: { x: number; y: number }, bones: Bone[], poi
   
   // 计算点到每根骨骼的距离和权重
   const boneWeights: Array<{ boneIndex: number; weight: number; localCoords: { u: number; v: number } }> = [];
-  
-  //console.log('bones', bones, point)
-  //debugger
 
   bones.forEach((bone, boneIndex) => {
     // 验证骨骼
@@ -528,16 +521,13 @@ function calculatePointBones(point: { x: number; y: number }, bones: Bone[], poi
     
     // 根据技术方案，使用骨骼长度的2.5倍作为影响阈值，确保更多点能绑定到多根骨骼
     const threshold = bone.length * skeletonThreshold//2.5;
-
-    // console.log('distance', distance, 'threshold', threshold)
-    // debugger
     
     if (distance <= threshold) {
       // 基于距离的权重计算
       const weight = 1.0 / (distance + 0.001); // 防止除零
       
       // 验证权重
-      if (typeof weight !== 'number' || isNaN(weight) || weight <= 0) {
+      if (typeof weight !== 'number' || isNaN(weight) || weight < 0) {
         console.warn('Invalid weight calculated:', weight, 'for distance:', distance);
         return;
       }
@@ -555,7 +545,7 @@ function calculatePointBones(point: { x: number; y: number }, bones: Bone[], poi
       const finalWeight = weight * falloff;
       
       // 验证最终权重
-      if (typeof finalWeight !== 'number' || isNaN(finalWeight) || finalWeight <= 0) {
+      if (typeof finalWeight !== 'number' || isNaN(finalWeight) || finalWeight < 0) {
         console.warn('Invalid final weight:', finalWeight, 'weight:', weight, 'falloff:', falloff);
         return;
       }
@@ -1062,7 +1052,7 @@ function calculatePointTransformation(binding: PointBinding, bones: Bone[], orig
     }
     
     // 验证权重
-    if (typeof weight !== 'number' || isNaN(weight) || weight <= 0) {
+    if (typeof weight !== 'number' || isNaN(weight) || weight < 0) {
       console.warn('Invalid weight:', weight);
       return;
     }
@@ -1087,11 +1077,6 @@ function calculatePointTransformation(binding: PointBinding, bones: Bone[], orig
     const weightedY = weight * transformedPoint.y;
     newX += weightedX;
     newY += weightedY;
-    if (boneIndex === 100) {
-      console.log('boneIndex', boneIndex, weight, localCoords);
-      console.log('transformedPoint', transformedPoint);
-      debugger
-    }
   });
   
   // 如果所有计算都失败，返回原始点
@@ -1303,3 +1288,14 @@ const bindHandDrawnShape = (glyph) => {
 3. 绑定数据会存储在glyph.skeletonBindData中
 4. 变形计算使用线性混合蒙皮算法，适合字体变形场景
 */
+
+export {
+  pointToBoneDistance,
+  calculatePointTransformation,
+  transformPointToLocal,
+  transformPointToWorld,
+  updateBoneMatrices,
+  updateLinearBoneMatrices,
+  updateCurveBoneMatrices,
+  updateCompositeBoneMatrices,
+}
