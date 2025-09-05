@@ -16,7 +16,7 @@ import { emitter } from '../Event/bus'
 import { Status, editStatus, setEditStatus, setPrevStatus } from './font'
 import { copiedGlyphUUID, editedGlyphUUID, glyphComponentsDialogVisible2, setAddGlyphDialogVisible, setCopyGlyphDialogVisible, setEditGlyphDialogVisible } from './dialogs'
 import { enableMultiSelect } from './files'
-import { strokeFnMap } from '../templates/strokeFnMap'
+import { strokeFnMap, updateSkeletonTransformation } from '../templates/strokeFnMap'
 import { updateGlyphWeight } from '../../features/glyphWeight'
 
 // 字形组件数据结构
@@ -1414,7 +1414,8 @@ const executeScript = (targetGlyph) => {
 				} else {
 					strokeFn.updateSkeletonListenerAfterBind(targetGlyph._o)
 				}
-				updateGlyphWeight(targetGlyph)
+				updateSkeletonTransformation(targetGlyph._o)
+				// updateGlyphWeight(targetGlyph)
 				return
 			}
 		}

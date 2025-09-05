@@ -37,6 +37,7 @@ import { skeletonToBones_shu_zhe_zhe_gou } from "../fontEditor/templates/竖折�
 import { skeletonToBones_shu_gou } from "../fontEditor/templates/竖钩"
 import { skeletonToBones_wan_gou } from "../fontEditor/templates/弯钩"
 import { maxSegment, minSegment, skeletonThreshold } from "../fontEditor/stores/global"
+import * as R from "ramda";
 
 // 骨骼定义
 interface Bone {
@@ -1172,7 +1173,34 @@ export function applySkeletonTransformation(glyph: CustomGlyph, newSkeleton: any
   
   const penComponent = penComponents[0];
   
-  const transformedPoints = calculateTransformedPoints(glyph, newSkeleton);
+  let transformedPoints = calculateTransformedPoints(glyph, newSkeleton);
+
+  // 更新字重
+  const weight = glyph.getParam('字重') as number
+  const originWeight = glyph._glyph.skeleton.originWeight
+  if (weight && weight !== originWeight) {
+    const d = (weight - originWeight) / 2
+    const points = transformedPoints
+    const newPoints = R.clone(transformedPoints)
+    for (let i = 0; i < points.length - 1; i+=3) {
+      const bezier = [points[i], points[i+1], points[i+2], points[i+3]]
+      const angle1 = Math.atan2(bezier[1].y - bezier[0].y, bezier[1].x - bezier[0].x)
+      const angle2 = Math.atan2(bezier[3].y - bezier[2].y, bezier[3].x - bezier[2].x)
+      const p1 = { x: bezier[0].x - Math.sin(angle1) * d, y: bezier[0].y + Math.cos(angle1) * d }
+      const p2 = { x: bezier[1].x - Math.sin(angle1) * d, y: bezier[1].y + Math.cos(angle1) * d }
+      const p3 = { x: bezier[2].x - Math.sin(angle2) * d, y: bezier[2].y + Math.cos(angle2) * d }
+      const p4 = { x: bezier[3].x - Math.sin(angle2) * d, y: bezier[3].y + Math.cos(angle2) * d }
+      newPoints[i].x = p1.x
+      newPoints[i].y = p1.y
+      newPoints[i+1].x = p2.x
+      newPoints[i+1].y = p2.y
+      newPoints[i+2].x = p3.x
+      newPoints[i+2].y = p3.y
+      newPoints[i+3].x = p4.x
+      newPoints[i+3].y = p4.y
+    };
+    transformedPoints = newPoints
+  }
   
   if (transformedPoints.length === (penComponent.value as unknown as IPenComponent).points.length) {
     // 更新控制点位置
