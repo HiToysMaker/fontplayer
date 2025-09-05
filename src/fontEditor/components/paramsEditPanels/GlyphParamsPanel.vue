@@ -24,6 +24,7 @@
   import { onSkeletonSelect, onSkeletonBind, onSkeletonDragging, onWeightSetting, onSelectBone, selectedBone, weightValue, brushSize } from '../../stores/skeletonDragger'
   import { genUUID } from '../../../utils/string'
   import { initWeightSelector, renderBoneAndWeight } from '../../tools/weightSetting'
+  import { calculateGlyphWeight } from '../../../features/glyphWeight'
   const { t, tm } = useI18n()
 
   const onChangeSkeleton = (value: string) => {
@@ -98,6 +99,8 @@
       strokeFn.updateSkeletonListenerAfterBind(editGlyph.value._o)
     }
     onSkeletonDragging.value = false
+    editGlyph.value.skeleton.originWeight = calculateGlyphWeight(editGlyph.value)
+    editGlyph.value.parameters.set('字重', editGlyph.value.skeleton.originWeight)
     editGlyph.value.skeleton.onSkeletonBind = false
   }
 
