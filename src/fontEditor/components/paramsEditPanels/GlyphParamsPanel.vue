@@ -9,10 +9,10 @@
   import { skeletonOptions, getRatioOptions, ParameterType, getConstant, IParameter, executeScript, editGlyph, IRingParameter, IParameter2, getRatioLayout, ICustomGlyph, selectedParam, selectedParamType, constantGlyphMap, ConstantType, getGlyphByUUID, GlyphType } from '../../stores/glyph'
   import { useI18n } from 'vue-i18n'
   import { emitter } from '../../Event/bus'
-  import { checkJoints, checkRefLines, setTool } from '../../stores/global'
+  import { canvas, checkJoints, checkRefLines, setTool } from '../../stores/global'
 	import RingController from '../../components/Widgets/RingController.vue'
   import { editing as editingLayout } from '../../stores/glyphLayoutResizer_glyph'
-	import { nextTick, onMounted, ref, watch } from 'vue'
+	import { computed, nextTick, onMounted, ref, watch } from 'vue'
 	import { CustomGlyph } from '../../programming/CustomGlyph'
   import { setSelectGlobalParamDialogVisible, setSetAsGlobalParamDialogVisible } from '../../stores/dialogs'
 	import { selectedFile, selectedItemByUUID } from '../../stores/files'
@@ -21,9 +21,12 @@
   import { editStatus, Status } from '../../stores/font'
   import { strokes } from '../../templates/strokes_1'
   import { strokeFnMap } from '../../templates/strokeFnMap'
-  import { onSkeletonSelect, onSkeletonBind, onSkeletonDragging } from '../../stores/skeletonDragger'
+  import { onSkeletonSelect, onSkeletonBind, onSkeletonDragging, onWeightSetting, onSelectBone, selectedBone, weightValue, brushSize } from '../../stores/skeletonDragger'
   import { genUUID } from '../../../utils/string'
+  import { initWeightSelector, renderBoneAndWeight } from '../../tools/weightSetting'
+  import { calculateGlyphWeight } from '../../../features/glyphWeight'
   const { t, tm } = useI18n()
+
   const onChangeSkeleton = (value: string) => {
     // 设置骨架
     const type = value
@@ -49,6 +52,35 @@
           max: param.max || 1000,
         })
       }
+      parameters.push({
+        uuid: genUUID(),
+        name: '参考位置',
+        type: ParameterType.Enum,
+        value: 0,
+        options: [
+          {
+            value: 0,
+            label: '默认',
+          },
+          {
+            value: 1,
+            label: '右侧（上侧）',
+          },
+          {
+            value: 2,
+            label: '左侧（下侧）',
+          }
+        ]
+      })
+      // 添加弯曲程度参数
+      parameters.push({
+        uuid: genUUID(),
+        name: '弯曲程度',
+        type: ParameterType.Number,
+        value: 1,
+        min: 0,
+        max: 2,
+      })
     }
     const strokeFn = strokeFnMap[type]
     strokeFn && strokeFn.instanceBasicGlyph(editGlyph.value)
@@ -67,6 +99,8 @@
       strokeFn.updateSkeletonListenerAfterBind(editGlyph.value._o)
     }
     onSkeletonDragging.value = false
+    editGlyph.value.skeleton.originWeight = calculateGlyphWeight(editGlyph.value)
+    editGlyph.value.parameters.set('字重', editGlyph.value.skeleton.originWeight)
     editGlyph.value.skeleton.onSkeletonBind = false
   }
 
@@ -95,6 +129,39 @@
   }
   const handleChangeSkeletonOY = (value: number) => {
     editGlyph.value.skeleton.oy = value
+  }
+
+  let closeWeightSelector: Function | null = null
+  const initWeightSetting = () => {
+    onWeightSetting.value = true
+    onSelectBone.value = true
+    closeWeightSelector = initWeightSelector(canvas.value)
+    emitter.emit('renderGlyph')
+    renderBoneAndWeight(canvas.value)
+  }
+  const closeWeightSetting = () => {
+    onWeightSetting.value = false
+    onSelectBone.value = false
+    closeWeightSelector && closeWeightSelector()
+    closeWeightSelector = null
+    emitter.emit('renderGlyph')
+  }
+
+  const _selectedBone = computed({
+    get: () => {
+      return selectedBone.value ? selectedBone.value.index : null
+    },
+    set: (value) => {
+      if (selectedBone.value) {
+        selectedBone.value.index = value
+      }
+    }
+  })
+  const handleChangeSelectedBone = (value: number) => {
+    selectedBone.value = editGlyph.value.skeleton.skeletonBindData.bones[value]
+    selectedBone.value.index = value
+    emitter.emit('renderGlyph')
+    renderBoneAndWeight(canvas.value)
   }
 
   const controlType = ref(0)
@@ -324,7 +391,7 @@
         </el-form>
       </div>
     </div>
-    <!-- <div class="title">骨架绑定</div>
+    <div class="title">骨架绑定</div>
     <div class="skeleton-wrap">
       <el-button
         v-if="!editGlyph.skeleton && (!editGlyph._o?.getSkeleton || !editGlyph._o?.getSkeleton())"
@@ -332,7 +399,10 @@
       >添加骨架</el-button>
       <el-select
         v-if="onSkeletonSelect"
-        v-model="editGlyph.type" class="skeleton-type-select" placeholder="骨架类型" :disabled="!onSkeletonSelect"
+        :model-value="editGlyph.skeleton?.type"
+        class="skeleton-type-select"
+        placeholder="骨架类型"
+        :disabled="!onSkeletonSelect"
         @change="(value) => onChangeSkeleton(value)"
       >
         <el-option
@@ -362,14 +432,32 @@
       >绑定骨架</el-button>
       <el-button
         v-if="editGlyph.skeleton && !onSkeletonBind"
+        @pointerdown="initWeightSetting"
+      >手动设置权重</el-button>
+      <el-button
+        v-if="editGlyph.skeleton && !onSkeletonBind && !onWeightSetting"
         @pointerdown="modifySkeleton"
       >修改骨架</el-button>
       <el-button
         type="danger"
-        v-if="editGlyph.skeleton && !onSkeletonBind"
+        v-if="editGlyph.skeleton && !onSkeletonBind && !onWeightSetting"
         @pointerdown="removeSkeleton"
       >删除骨架</el-button>
-    </div> -->
+      <div class="weight-setting-wrap" v-if="onWeightSetting">
+        <el-form-item label="选择骨骼" :label-width="80">
+          <el-select v-model="_selectedBone" placeholder="选择骨骼" @change="handleChangeSelectedBone">
+            <el-option v-for="(bone, index) in editGlyph.skeleton.skeletonBindData.bones" :key="index" :label="bone.id" :value="index" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="权重" :label-width="80">
+          <el-input-number v-model="weightValue" :precision="2" :min="0" :max="1" />
+        </el-form-item>
+        <el-form-item label="笔刷大小" :label-width="80">
+          <el-input-number v-model="brushSize" :precision="2" :min="10" :max="100" />
+        </el-form-item>
+        <el-button @pointerdown="closeWeightSetting">完成设置</el-button>
+      </div>
+    </div>
 		<div class="parameters-wrap">
       <div class="title">{{ t('panels.paramsPanel.params.title') }}</div>
       <el-form

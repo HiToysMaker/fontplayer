@@ -16,7 +16,8 @@ import { emitter } from '../Event/bus'
 import { Status, editStatus, setEditStatus, setPrevStatus } from './font'
 import { copiedGlyphUUID, editedGlyphUUID, glyphComponentsDialogVisible2, setAddGlyphDialogVisible, setCopyGlyphDialogVisible, setEditGlyphDialogVisible } from './dialogs'
 import { enableMultiSelect } from './files'
-import { strokeFnMap } from '../templates/strokeFnMap'
+import { strokeFnMap, updateSkeletonTransformation } from '../templates/strokeFnMap'
+import { updateGlyphWeight } from '../../features/glyphWeight'
 
 // 字形组件数据结构
 // custom component data struct
@@ -62,9 +63,11 @@ interface ISkeleton {
 	oy: number;
 	skeletonBindData?: any;
 	onSkeletonBind?: boolean;
+	originWeight?: number;
 }
 
 const skeletonOptions = [
+	// 基础笔画
 	{
 		label: '横',
 		value: '横',
@@ -80,6 +83,123 @@ const skeletonOptions = [
 	{
 		label: '捺',
 		value: '捺',
+	},
+	{
+		label: '点',
+		value: '点',
+	},
+	{
+		label: '挑',
+		value: '挑',
+	},
+	{
+		label: '平捺',
+		value: '平捺',
+	},
+	// 横类复合笔画
+	{
+		label: '横钩',
+		value: '横钩',
+	},
+	{
+		label: '横撇',
+		value: '横撇',
+	},
+	{
+		label: '横折',
+		value: '横折',
+	},
+	{
+		label: '横折2',
+		value: '横折2',
+	},
+	{
+		label: '横折钩',
+		value: '横折钩',
+	},
+	{
+		label: '横折弯',
+		value: '横折弯',
+	},
+	{
+		label: '横折弯钩',
+		value: '横折弯钩',
+	},
+	{
+		label: '横折挑',
+		value: '横折挑',
+	},
+	{
+		label: '横弯钩',
+		value: '横弯钩',
+	},
+	{
+		label: '横撇弯钩',
+		value: '横撇弯钩',
+	},
+	{
+		label: '横折折撇',
+		value: '横折折撇',
+	},
+	{
+		label: '横折折弯钩',
+		value: '横折折弯钩',
+	},
+	// 竖类复合笔画
+	{
+		label: '竖钩',
+		value: '竖钩',
+	},
+	{
+		label: '竖弯',
+		value: '竖弯',
+	},
+	{
+		label: '竖弯钩',
+		value: '竖弯钩',
+	},
+	{
+		label: '竖折',
+		value: '竖折',
+	},
+	{
+		label: '竖撇',
+		value: '竖撇',
+	},
+	{
+		label: '竖挑',
+		value: '竖挑',
+	},
+	{
+		label: '竖折折钩',
+		value: '竖折折钩',
+	},
+	// 撇捺类复合笔画
+	{
+		label: '撇挑',
+		value: '撇挑',
+	},
+	{
+		label: '撇点',
+		value: '撇点',
+	},
+	{
+		label: '挑捺',
+		value: '挑捺',
+	},
+	// 其他复合笔画
+	{
+		label: '弯钩',
+		value: '弯钩',
+	},
+	{
+		label: '斜钩',
+		value: '斜钩',
+	},
+	// 特殊复合笔画
+	{
+		label: '二横折',
+		value: '二横折',
 	},
 ]
 
@@ -1286,7 +1406,7 @@ const executeScript = (targetGlyph) => {
 		if (targetGlyph._o && targetGlyph._o.tempData) return
 
 		if (targetGlyph.skeleton) {
-			const strokeFn = strokeFnMap[targetGlyph.type]
+			const strokeFn = strokeFnMap[targetGlyph.skeleton.type]
 			if (strokeFn) {
 				strokeFn.instanceBasicGlyph(targetGlyph)
 				if (targetGlyph.skeleton.onSkeletonBind) {
@@ -1294,6 +1414,8 @@ const executeScript = (targetGlyph) => {
 				} else {
 					strokeFn.updateSkeletonListenerAfterBind(targetGlyph._o)
 				}
+				updateSkeletonTransformation(targetGlyph._o)
+				// updateGlyphWeight(targetGlyph)
 				return
 			}
 		}

@@ -239,7 +239,7 @@ const range = (value, range) => {
 }
 
 const computeParamsByJoints = (jointsMap) => {
-  const { heng1_start, heng1_end, zhe1_start, zhe1_end, heng2_start, heng2_end, zhe2_start, zhe2_end, gou_start, gou_end } = jointsMap
+  const { heng1_start, heng1_end, zhe1_start, zhe1_end, heng2_start, heng2_end, zhe2_start, zhe2_end } = jointsMap
   const heng1_length_range = glyph.getParamRange('横1-长度')
   const zhe1_horizonal_span_range = glyph.getParamRange('折1-水平延伸')
   const zhe1_vertical_span_range = glyph.getParamRange('折1-竖直延伸')

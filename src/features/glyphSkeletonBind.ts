@@ -3,6 +3,42 @@ import { emitter } from "../fontEditor/Event/bus";
 import { CustomGlyph } from "../fontEditor/programming/CustomGlyph";
 import { IPenComponent, IComponent } from "../fontEditor/stores/files";
 
+// 导入所有笔画的skeletonToBones函数
+import { skeletonToBones_heng } from "../fontEditor/templates/横"
+import { skeletonToBones_shu } from "../fontEditor/templates/竖"
+import { skeletonToBones_pie } from "../fontEditor/templates/撇"
+import { skeletonToBones_na } from "../fontEditor/templates/捺"
+import { skeletonToBones_dian } from "../fontEditor/templates/点"
+import { skeletonToBones_tiao } from "../fontEditor/templates/挑"
+import { skeletonToBones_heng_gou } from "../fontEditor/templates/横钩"
+import { skeletonToBones_ping_na } from "../fontEditor/templates/平捺"
+import { skeletonToBones_tiao_na } from "../fontEditor/templates/挑捺"
+import { skeletonToBones_pie_dian } from "../fontEditor/templates/撇点"
+import { skeletonToBones_pie_tiao } from "../fontEditor/templates/撇挑"
+import { skeletonToBones_heng_pie_wan_gou } from "../fontEditor/templates/横撇弯钩"
+import { skeletonToBones_xie_gou } from "../fontEditor/templates/斜钩"
+import { skeletonToBones_shu_zhe } from "../fontEditor/templates/竖折"
+import { skeletonToBones_shu_wan_gou } from "../fontEditor/templates/竖弯钩"
+import { skeletonToBones_shu_wan } from "../fontEditor/templates/竖弯"
+import { skeletonToBones_shu_tiao } from "../fontEditor/templates/竖挑"
+import { skeletonToBones_shu_pie } from "../fontEditor/templates/竖撇"
+import { skeletonToBones_heng_zhe_tiao } from "../fontEditor/templates/横折挑"
+import { skeletonToBones_heng_zhe2 } from "../fontEditor/templates/横折2"
+import { skeletonToBones_heng_zhe_wan } from "../fontEditor/templates/横折弯"
+import { skeletonToBones_er_heng_zhe } from "../fontEditor/templates/二横折"
+import { skeletonToBones_heng_zhe } from "../fontEditor/templates/横折"
+import { skeletonToBones_heng_zhe_zhe_wan_gou } from "../fontEditor/templates/横折折弯钩"
+import { skeletonToBones_heng_zhe_wan_gou } from "../fontEditor/templates/横折弯钩"
+import { skeletonToBones_heng_wan_gou } from "../fontEditor/templates/横弯钩"
+import { skeletonToBones_heng_zhe_gou } from "../fontEditor/templates/横折钩"
+import { skeletonToBones_heng_pie } from "../fontEditor/templates/横撇"
+import { skeletonToBones_heng_zhe_zhe_pie } from "../fontEditor/templates/横折折撇"
+import { skeletonToBones_shu_zhe_zhe_gou } from "../fontEditor/templates/竖折折钩"
+import { skeletonToBones_shu_gou } from "../fontEditor/templates/竖钩"
+import { skeletonToBones_wan_gou } from "../fontEditor/templates/弯钩"
+import { maxSegment, minSegment, skeletonThreshold } from "../fontEditor/stores/global"
+import * as R from "ramda";
+
 // 骨骼定义
 interface Bone {
   id: string;
@@ -28,7 +64,14 @@ interface PointBinding {
 }
 
 // 骨架类型
-type SkeletonType = 'horizontal' | 'vertical' | 'pie' | 'na';
+type SkeletonType = 'line' | 'curve' | 'heng' | 'shu' | 'pie' | 'na' |
+  'heng_gou' | 'shu_pie' | 'heng_pie' | 'heng_na' | 'shu_gou' |
+  'heng_zhe' | 'shu_zhe' | 'heng_wan_gou' | 'shu_wan' | 'tiao_na' |
+  'pie_tiao' | 'pie_dian' | 'heng_pie_wan_gou' | 'heng_zhe_wan_gou' |
+  'heng_zhe_zhe_wan_gou' | 'heng_zhe_zhe_pie' | 'shu_zhe_zhe_gou' |
+  'heng_zhe_tiao' | 'heng_zhe_wan' | 'heng_zhe_gou' | 'heng_zhe_pie' |
+  'er_heng_zhe' | 'heng_zhe2' | 'shu_tiao' | 'shu_wan_gou' | 'xie_gou' |
+  'wan_gou' | 'dian' | 'tiao' | 'ping_na';
 
 const glyphSkeletonBind = (glyph: CustomGlyph) => {
   const skeleton = glyph.getSkeleton();
@@ -89,7 +132,8 @@ function detectSkeletonType(skeleton: any): SkeletonType {
     const dx = Math.abs(end.x - start.x);
     const dy = Math.abs(end.y - start.y);
     
-    return dx > dy ? 'horizontal' : 'vertical';
+    // return dx > dy ? 'horizontal' : 'vertical';
+    return 'line'
   } else if (jointNames.includes('start') && jointNames.includes('bend') && jointNames.includes('end')) {
     // 有bend点，判断是撇还是捺
     const start = skeleton.start;
@@ -103,10 +147,104 @@ function detectSkeletonType(skeleton: any): SkeletonType {
     // 撇：从右上到左下，捺：从左上到右下
     // 通过比较水平方向的变化来判断
     const startToEndX = end.x - start.x;
-    return startToEndX < 0 ? 'pie' : 'na';
+    //return startToEndX < 0 ? 'pie' : 'na';
+    return 'curve'
+  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('zhe1_start') && jointNames.includes('zhe1_end') && jointNames.includes('zhe2_start') && jointNames.includes('zhe2_end') && jointNames.includes('wan_start') && jointNames.includes('wan_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
+    // 复合笔画：横折折弯钩类
+    return 'heng_zhe_zhe_wan_gou';
+  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('zhe1_start') && jointNames.includes('zhe1_end') && jointNames.includes('zhe2_start') && jointNames.includes('zhe2_end') && jointNames.includes('pie_start') && jointNames.includes('pie_end')) {
+    // 复合笔画：横折折撇类
+    return 'heng_zhe_zhe_pie';
+  } else if (jointNames.includes('heng1_start') && jointNames.includes('heng1_end') && jointNames.includes('heng2_start') && jointNames.includes('heng2_end') && jointNames.includes('zhe1_start') && jointNames.includes('zhe1_end') && jointNames.includes('zhe2_start') && jointNames.includes('zhe2_end')) {
+    // 复合笔画：二横折类
+    return 'er_heng_zhe';
+  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('wan_start') && jointNames.includes('wan_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
+    // 复合笔画：横折弯钩类
+    return 'heng_zhe_wan_gou';
+  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('wan_start') && jointNames.includes('wan_end')) {
+    // 复合笔画：横折弯类
+    return 'heng_zhe_wan';
+  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('zhe_start') && jointNames.includes('zhe_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
+    // 复合笔画：横折钩类
+    return 'heng_zhe_gou';
+  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('zhe_start') && jointNames.includes('zhe_end') && jointNames.includes('tiao_start') && jointNames.includes('tiao_end')) {
+    // 复合笔画：横折挑类
+    return 'heng_zhe_tiao';
+  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('zhe_start') && jointNames.includes('zhe_end') && jointNames.includes('pie_start') && jointNames.includes('pie_end')) {
+    // 复合笔画：横折撇类
+    return 'heng_zhe_pie';
+  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('pie_start') && jointNames.includes('pie_end') && jointNames.includes('wan_start') && jointNames.includes('wan_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
+    // 复合笔画：横撇弯钩类
+    return 'heng_pie_wan_gou';
+  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('wan_start') && jointNames.includes('wan_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
+    // 复合笔画：横弯钩类
+    return 'heng_wan_gou';
+  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('pie_start') && jointNames.includes('pie_end')) {
+    // 复合笔画：横撇类
+    return 'heng_pie';
+  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
+    // 复合笔画：横钩类
+    return 'heng_gou';
+  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('zhe_start') && jointNames.includes('zhe_end')) {
+    // 复合笔画：横折类
+    return 'heng_zhe';
+  } else if (jointNames.includes('shu_start') && jointNames.includes('shu_end') && jointNames.includes('zhe1_start') && jointNames.includes('zhe1_end') && jointNames.includes('zhe2_start') && jointNames.includes('zhe2_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
+    // 复合笔画：竖折折钩类
+    return 'shu_zhe_zhe_gou';
+  } else if (jointNames.includes('shu_start') && jointNames.includes('shu_end') && jointNames.includes('wan_start') && jointNames.includes('wan_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
+    // 复合笔画：竖弯钩类
+    return 'shu_wan_gou';
+  } else if (jointNames.includes('shu_start') && jointNames.includes('shu_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
+    // 复合笔画：竖钩类
+    return 'shu_gou';
+  } else if (jointNames.includes('shu_start') && jointNames.includes('shu_end') && jointNames.includes('zhe_start') && jointNames.includes('zhe_end')) {
+    // 复合笔画：竖折类
+    return 'shu_zhe';
+  } else if (jointNames.includes('shu_start') && jointNames.includes('shu_end') && jointNames.includes('wan_start') && jointNames.includes('wan_end')) {
+    // 复合笔画：竖弯类
+    return 'shu_wan';
+  } else if (jointNames.includes('shu_start') && jointNames.includes('shu_end') && jointNames.includes('pie_start') && jointNames.includes('pie_end')) {
+    // 复合笔画：竖撇类
+    return 'shu_pie';
+  } else if (jointNames.includes('shu_start') && jointNames.includes('shu_end') && jointNames.includes('tiao_start') && jointNames.includes('tiao_end')) {
+    // 复合笔画：竖挑类
+    return 'shu_tiao';
+  } else if (jointNames.includes('pie_start') && jointNames.includes('pie_end') && jointNames.includes('tiao_start') && jointNames.includes('tiao_end')) {
+    // 复合笔画：撇挑类
+    return 'pie_tiao';
+  } else if (jointNames.includes('pie_start') && jointNames.includes('pie_end') && jointNames.includes('dian_start') && jointNames.includes('dian_end')) {
+    // 复合笔画：撇点类
+    return 'pie_dian';
+  } else if (jointNames.includes('tiao_start') && jointNames.includes('tiao_end') && jointNames.includes('na_start') && jointNames.includes('na_end')) {
+    // 复合笔画：挑捺类
+    return 'tiao_na';
+  } else if (jointNames.includes('wan_start') && jointNames.includes('wan_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
+    // 复合笔画：弯钩类
+    return 'wan_gou';
+  } else if (jointNames.includes('xie_start') && jointNames.includes('xie_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
+    // 复合笔画：斜钩类
+    return 'xie_gou';
+  } else if (jointNames.includes('start') && jointNames.includes('end') && jointNames.includes('bend')) {
+    // 点类
+    return 'dian';
+  } else if (jointNames.includes('start') && jointNames.includes('end')) {
+    // 基础笔画：横、竖、撇、捺、挑、平捺
+    if (jointNames.includes('heng_start') && jointNames.includes('heng_end')) {
+      return 'heng';
+    } else if (jointNames.includes('shu_start') && jointNames.includes('shu_end')) {
+      return 'shu';
+    } else if (jointNames.includes('pie_start') && jointNames.includes('pie_end')) {
+      return 'pie';
+    } else if (jointNames.includes('na_start') && jointNames.includes('na_end')) {
+      return 'na';
+    } else if (jointNames.includes('tiao_start') && jointNames.includes('tiao_end')) {
+      return 'tiao';
+    } else if (jointNames.includes('ping_na_start') && jointNames.includes('ping_na_end')) {
+      return 'ping_na';
+    }
   }
   
-  return 'horizontal'; // 默认
+  return 'line'; // 默认
 }
 
 // 阶段一：骨架分析 - 将骨架转换为骨骼集合
@@ -114,7 +252,10 @@ function skeletonToBones(skeleton: any): Bone[] {
   const bones: Bone[] = [];
   const jointNames = Object.keys(skeleton);
   
-  if (jointNames.includes('start') && jointNames.includes('end') && !jointNames.includes('bend')) {
+  // 检测骨架类型并调用对应的处理函数
+  const skeletonType = detectSkeletonType(skeleton);
+  
+  if (skeletonType === 'line') {
     // 直线骨架（横、竖）- 离散化为多个骨骼段
     const start = skeleton.start;
     const end = skeleton.end;
@@ -123,8 +264,8 @@ function skeletonToBones(skeleton: any): Bone[] {
     const totalLength = Math.sqrt((end.x - start.x) ** 2 + (end.y - start.y) ** 2);
     
     // 根据长度确定分段数量，确保每段长度在合理范围内
-    const segmentLength = Math.max(20, totalLength / 8); // 每段至少20像素，最多8段
-    const segments = Math.max(3, Math.ceil(totalLength / segmentLength)); // 至少3段
+    const segmentLength = Math.max(20, totalLength / maxSegment); // 每段至少20像素，最多8段
+    const segments = Math.max(minSegment, Math.ceil(totalLength / segmentLength)); // 至少3段
     
     for (let i = 0; i < segments; i++) {
       const t1 = i / segments;
@@ -160,14 +301,14 @@ function skeletonToBones(skeleton: any): Bone[] {
       bones.push(bone);
     }
     
-  } else if (jointNames.includes('start') && jointNames.includes('bend') && jointNames.includes('end')) {
+  } else if (skeletonType === 'curve') {
     // 曲线骨架（撇、捺）- 使用二次贝塞尔曲线
     const start = skeleton.start;
     const bend = skeleton.bend;
     const end = skeleton.end;
     
     // 将贝塞尔曲线离散化为多个骨骼段
-    const segments = 8; // 分段数量
+    const segments = maxSegment; // 分段数量
     for (let i = 0; i < segments; i++) {
       const t1 = i / segments;
       const t2 = (i + 1) / segments;
@@ -194,6 +335,16 @@ function skeletonToBones(skeleton: any): Bone[] {
       
       bones.push(bone);
     }
+  } else {
+    // 复合笔画 - 调用对应的处理函数
+    try {
+      const strokeBones = callStrokeSkeletonToBones(skeletonType, skeleton);
+      bones.push(...strokeBones);
+    } catch (error) {
+      console.warn(`Failed to process skeleton type ${skeletonType}:`, error);
+      // 回退到默认处理
+      return skeletonToBones(skeleton);
+    }
   }
   
   // 计算绑定时的变换矩阵
@@ -203,6 +354,111 @@ function skeletonToBones(skeleton: any): Bone[] {
   });
   
   return bones;
+}
+
+// 调用对应笔画的骨架转骨骼函数
+function callStrokeSkeletonToBones(skeletonType: SkeletonType, skeleton: any): Bone[] {
+  try {
+    switch (skeletonType) {
+      case 'heng_gou':
+        return skeletonToBones_heng_gou(skeleton);
+      
+      case 'shu_pie':
+        return skeletonToBones_shu_pie(skeleton);
+      
+      case 'heng_pie':
+        return skeletonToBones_heng_pie(skeleton);
+      
+      case 'heng_na':
+        // 横捺暂时使用捺的处理函数
+        return skeletonToBones_na(skeleton);
+      
+      case 'shu_gou':
+        return skeletonToBones_shu_gou(skeleton);
+      
+      case 'heng_zhe':
+        return skeletonToBones_heng_zhe(skeleton);
+      
+      case 'shu_zhe':
+        return skeletonToBones_shu_zhe(skeleton);
+      
+      case 'heng_wan_gou':
+        return skeletonToBones_heng_wan_gou(skeleton);
+      
+      case 'shu_wan':
+        return skeletonToBones_shu_wan(skeleton);
+      
+      case 'tiao_na':
+        return skeletonToBones_tiao_na(skeleton);
+      
+      case 'pie_tiao':
+        return skeletonToBones_pie_tiao(skeleton);
+      
+      case 'pie_dian':
+        return skeletonToBones_pie_dian(skeleton);
+      
+      case 'heng_pie_wan_gou':
+        return skeletonToBones_heng_pie_wan_gou(skeleton);
+      
+      case 'heng_zhe_wan_gou':
+        return skeletonToBones_heng_zhe_wan_gou(skeleton);
+      
+      case 'heng_zhe_zhe_wan_gou':
+        return skeletonToBones_heng_zhe_zhe_wan_gou(skeleton);
+      
+      case 'heng_zhe_zhe_pie':
+        return skeletonToBones_heng_zhe_zhe_pie(skeleton);
+      
+      case 'shu_zhe_zhe_gou':
+        return skeletonToBones_shu_zhe_zhe_gou(skeleton);
+      
+      case 'heng_zhe_tiao':
+        return skeletonToBones_heng_zhe_tiao(skeleton);
+      
+      case 'heng_zhe_wan':
+        return skeletonToBones_heng_zhe_wan(skeleton);
+      
+      case 'heng_zhe_gou':
+        return skeletonToBones_heng_zhe_gou(skeleton);
+      
+      case 'heng_zhe_pie':
+        return skeletonToBones_heng_pie(skeleton);
+      
+      case 'er_heng_zhe':
+        return skeletonToBones_er_heng_zhe(skeleton);
+      
+      case 'heng_zhe2':
+        return skeletonToBones_heng_zhe2(skeleton);
+      
+      case 'shu_tiao':
+        return skeletonToBones_shu_tiao(skeleton);
+      
+      case 'shu_wan_gou':
+        return skeletonToBones_shu_wan_gou(skeleton);
+      
+      case 'xie_gou':
+        return skeletonToBones_xie_gou(skeleton);
+      
+      case 'wan_gou':
+        return skeletonToBones_wan_gou(skeleton);
+      
+      case 'dian':
+        return skeletonToBones_dian(skeleton);
+      
+      case 'tiao':
+        return skeletonToBones_tiao(skeleton);
+      
+      case 'ping_na':
+        return skeletonToBones_ping_na(skeleton);
+      
+      default:
+        console.warn(`No specific skeletonToBones function for type: ${skeletonType}`);
+        return [];
+    }
+  } catch (error) {
+    console.warn(`Failed to call skeletonToBones for type ${skeletonType}:`, error);
+    return [];
+  }
 }
 
 // 二次贝塞尔曲线上的点
@@ -241,7 +497,7 @@ function calculatePointBones(point: { x: number; y: number }, bones: Bone[], poi
   
   // 计算点到每根骨骼的距离和权重
   const boneWeights: Array<{ boneIndex: number; weight: number; localCoords: { u: number; v: number } }> = [];
-  
+
   bones.forEach((bone, boneIndex) => {
     // 验证骨骼
     if (!bone || typeof bone.length !== 'number' || isNaN(bone.length) || bone.length <= 0) {
@@ -265,14 +521,14 @@ function calculatePointBones(point: { x: number; y: number }, bones: Bone[], poi
     }
     
     // 根据技术方案，使用骨骼长度的2.5倍作为影响阈值，确保更多点能绑定到多根骨骼
-    const threshold = bone.length * 2.5;
+    const threshold = bone.length * skeletonThreshold//2.5;
     
     if (distance <= threshold) {
       // 基于距离的权重计算
       const weight = 1.0 / (distance + 0.001); // 防止除零
       
       // 验证权重
-      if (typeof weight !== 'number' || isNaN(weight) || weight <= 0) {
+      if (typeof weight !== 'number' || isNaN(weight) || weight < 0) {
         console.warn('Invalid weight calculated:', weight, 'for distance:', distance);
         return;
       }
@@ -290,7 +546,7 @@ function calculatePointBones(point: { x: number; y: number }, bones: Bone[], poi
       const finalWeight = weight * falloff;
       
       // 验证最终权重
-      if (typeof finalWeight !== 'number' || isNaN(finalWeight) || finalWeight <= 0) {
+      if (typeof finalWeight !== 'number' || isNaN(finalWeight) || finalWeight < 0) {
         console.warn('Invalid final weight:', finalWeight, 'weight:', weight, 'falloff:', falloff);
         return;
       }
@@ -600,97 +856,177 @@ function updateBoneMatrices(bones: Bone[], newSkeleton: any) {
   
   const skeletonType = detectSkeletonType(newSkeleton);
   
-  if (skeletonType === 'horizontal' || skeletonType === 'vertical') {
+  if (skeletonType === 'line') {
     // 直线骨架
-    const start = newSkeleton.start;
-    const end = newSkeleton.end;
-    
-    if (!start || !end) {
-      console.warn('Invalid start or end point:', start, end);
-      return;
-    }
-    
-    // 更新所有骨骼段
-    const totalLength = Math.sqrt((end.x - start.x) ** 2 + (end.y - start.y) ** 2);
-    const segmentLength = Math.max(20, totalLength / 8);
-    const segments = Math.max(3, Math.ceil(totalLength / segmentLength));
-    
-    for (let i = 0; i < segments && i < bones.length; i++) {
-      const originalBone = { ...bones[i] }; // 保存原始骨骼状态
-      const bone = bones[i];
-      
-      const t1 = i / segments;
-      const t2 = (i + 1) / segments;
-      
-      const p1 = {
-        x: start.x + (end.x - start.x) * t1,
-        y: start.y + (end.y - start.y) * t1
-      };
-      const p2 = {
-        x: start.x + (end.x - start.x) * t2,
-        y: start.y + (end.y - start.y) * t2
-      };
-      
-      // 更新骨骼位置和方向
-      bone.start = p1;
-      bone.end = p2;
-      bone.length = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
-      
-      // 验证长度
-      if (isNaN(bone.length) || bone.length < 0.001) {
-        console.warn('Invalid bone length:', bone.length);
-        bone.length = 0.001; // 设置最小长度
-      }
-      
-      bone.uAxis = normalize({ x: p2.x - p1.x, y: p2.y - p1.y });
-      bone.vAxis = normalize({ x: -(p2.y - p1.y), y: p2.x - p1.x });
-      
-      // 计算从原始骨骼到新骨骼的变换矩阵
-      bone.currentMatrix = calculateBoneTransformationMatrix(originalBone, bone);
-      
-    }
-    
-  } else if (skeletonType === 'pie' || skeletonType === 'na') {
+    updateLinearBoneMatrices(bones, newSkeleton);
+  } else if (skeletonType === 'curve') {
     // 曲线骨架
-    const start = newSkeleton.start;
-    const bend = newSkeleton.bend;
-    const end = newSkeleton.end;
-    
-    if (!start || !bend || !end) {
-      console.warn('Invalid skeleton points:', start, bend, end);
-      return;
-    }
-    
-    const segments = 8;
-    for (let i = 0; i < segments && i < bones.length; i++) {
-      const t1 = i / segments;
-      const t2 = (i + 1) / segments;
-      
-      const p1 = quadraticBezierPoint(start, bend, end, t1);
-      const p2 = quadraticBezierPoint(start, bend, end, t2);
-      
-      const originalBone = { ...bones[i] }; // 保存原始骨骼状态
-      const bone = bones[i];
-      
-      // 更新骨骼位置和方向
-      bone.start = p1;
-      bone.end = p2;
-      bone.length = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
-      
-      // 验证长度
-      if (isNaN(bone.length) || bone.length < 0.001) {
-        console.warn('Invalid bone length:', bone.length);
-        bone.length = 0.001; // 设置最小长度
-      }
-      
-      bone.uAxis = normalize({ x: p2.x - p1.x, y: p2.y - p1.y });
-      bone.vAxis = normalize({ x: -(p2.y - p1.y), y: p2.x - p1.x });
-      
-      // 计算从原始骨骼到新骨骼的变换矩阵
-      bone.currentMatrix = calculateBoneTransformationMatrix(originalBone, bone);
-    }
+    updateCurveBoneMatrices(bones, newSkeleton);
+  } else {
+    // 复合笔画 - 调用对应的处理函数
+    updateCompositeBoneMatrices(bones, newSkeleton, skeletonType);
+  }
+}
+
+// 更新直线骨骼的变换矩阵
+function updateLinearBoneMatrices(bones: Bone[], newSkeleton: any) {
+  const start = newSkeleton.start;
+  const end = newSkeleton.end;
+  
+  if (!start || !end) {
+    console.warn('Invalid start or end point:', start, end);
+    return;
   }
   
+  // 更新所有骨骼段
+  const totalLength = Math.sqrt((end.x - start.x) ** 2 + (end.y - start.y) ** 2);
+  const segmentLength = Math.max(20, totalLength / maxSegment);
+  const segments = Math.max(minSegment, Math.ceil(totalLength / segmentLength));
+  
+  for (let i = 0; i < segments && i < bones.length; i++) {
+    const originalBone = { ...bones[i] }; // 保存原始骨骼状态
+    const bone = bones[i];
+    
+    const t1 = i / segments;
+    const t2 = (i + 1) / segments;
+    
+    const p1 = {
+      x: start.x + (end.x - start.x) * t1,
+      y: start.y + (end.y - start.y) * t1
+    };
+    const p2 = {
+      x: start.x + (end.x - start.x) * t2,
+      y: start.y + (end.y - start.y) * t2
+    };
+    
+    // 更新骨骼位置和方向
+    bone.start = p1;
+    bone.end = p2;
+    bone.length = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
+    
+    // 验证长度
+    if (isNaN(bone.length) || bone.length < 0.001) {
+      console.warn('Invalid bone length:', bone.length);
+      bone.length = 0.001; // 设置最小长度
+    }
+    
+    bone.uAxis = normalize({ x: p2.x - p1.x, y: p2.y - p1.y });
+    bone.vAxis = normalize({ x: -(p2.y - p1.y), y: p2.x - p1.x });
+    
+    // 计算从原始骨骼到新骨骼的变换矩阵
+    bone.currentMatrix = calculateBoneTransformationMatrix(originalBone, bone);
+  }
+}
+
+// 更新曲线骨骼的变换矩阵
+function updateCurveBoneMatrices(bones: Bone[], newSkeleton: any) {
+  const start = newSkeleton.start;
+  const bend = newSkeleton.bend;
+  const end = newSkeleton.end;
+  
+  if (!start || !bend || !end) {
+    console.warn('Invalid skeleton points:', start, bend, end);
+    return;
+  }
+  
+  const segments = maxSegment;
+  for (let i = 0; i < segments && i < bones.length; i++) {
+    const t1 = i / segments;
+    const t2 = (i + 1) / segments;
+    
+    const p1 = quadraticBezierPoint(start, bend, end, t1);
+    const p2 = quadraticBezierPoint(start, bend, end, t2);
+    
+    const originalBone = { ...bones[i] }; // 保存原始骨骼状态
+    const bone = bones[i];
+    
+    // 更新骨骼位置和方向
+    bone.start = p1;
+    bone.end = p2;
+    bone.length = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
+    
+    // 验证长度
+    if (isNaN(bone.length) || bone.length < 0.001) {
+      console.warn('Invalid bone length:', bone.length);
+      bone.length = 0.001; // 设置最小长度
+    }
+    
+    bone.uAxis = normalize({ x: p2.x - p1.x, y: p2.y - p1.y });
+    bone.vAxis = normalize({ x: -(p2.y - p1.y), y: p2.x - p1.x });
+    
+    // 计算从原始骨骼到新骨骼的变换矩阵
+    bone.currentMatrix = calculateBoneTransformationMatrix(originalBone, bone);
+  }
+}
+
+// 更新复合笔画骨骼的变换矩阵
+function updateCompositeBoneMatrices(bones: Bone[], newSkeleton: any, skeletonType: SkeletonType) {
+  try {
+    // 调用对应笔画的skeletonToBones函数获取新的骨骼结构
+    const newBones = callStrokeSkeletonToBones(skeletonType, newSkeleton);
+    
+    if (newBones.length === 0) {
+      console.warn(`No bones generated for skeleton type: ${skeletonType}`);
+      return;
+    }
+    
+    // 确保骨骼数量匹配
+    if (newBones.length !== bones.length) {
+      console.warn(`Bone count mismatch: expected ${bones.length}, got ${newBones.length}`);
+      // 调整骨骼数量
+      while (bones.length < newBones.length) {
+        bones.push(createDefaultBone(`extra_${bones.length}`));
+      }
+      while (bones.length > newBones.length) {
+        bones.pop();
+      }
+    }
+    
+    // 更新每个骨骼
+    for (let i = 0; i < bones.length && i < newBones.length; i++) {
+      const originalBone = { ...bones[i] }; // 保存原始骨骼状态
+      const newBone = newBones[i];
+      const bone = bones[i];
+      
+      // 更新骨骼属性
+      bone.start = newBone.start;
+      bone.end = newBone.end;
+      bone.length = newBone.length;
+      bone.uAxis = newBone.uAxis;
+      bone.vAxis = newBone.vAxis;
+      bone.children = newBone.children;
+      bone.parent = newBone.parent;
+      
+      // 验证长度
+      if (isNaN(bone.length) || bone.length < 0.001) {
+        console.warn('Invalid bone length:', bone.length);
+        bone.length = 0.001; // 设置最小长度
+      }
+      
+      // 计算从原始骨骼到新骨骼的变换矩阵
+      bone.currentMatrix = calculateBoneTransformationMatrix(originalBone, bone);
+    }
+    
+  } catch (error) {
+    console.warn(`Failed to update composite bone matrices for type ${skeletonType}:`, error);
+    // 回退到默认处理
+    updateLinearBoneMatrices(bones, newSkeleton);
+  }
+}
+
+// 创建默认骨骼
+function createDefaultBone(id: string): Bone {
+  return {
+    id,
+    start: { x: 0, y: 0 },
+    end: { x: 1, y: 0 },
+    length: 1,
+    uAxis: { x: 1, y: 0 },
+    vAxis: { x: 0, y: 1 },
+    children: [],
+    bindMatrix: createIdentityMatrix(),
+    currentMatrix: createIdentityMatrix()
+  };
 }
 
 // 计算单个控制点的变换
@@ -717,7 +1053,7 @@ function calculatePointTransformation(binding: PointBinding, bones: Bone[], orig
     }
     
     // 验证权重
-    if (typeof weight !== 'number' || isNaN(weight) || weight <= 0) {
+    if (typeof weight !== 'number' || isNaN(weight) || weight < 0) {
       console.warn('Invalid weight:', weight);
       return;
     }
@@ -742,7 +1078,6 @@ function calculatePointTransformation(binding: PointBinding, bones: Bone[], orig
     const weightedY = weight * transformedPoint.y;
     newX += weightedX;
     newY += weightedY;
-    
   });
   
   // 如果所有计算都失败，返回原始点
@@ -838,7 +1173,34 @@ export function applySkeletonTransformation(glyph: CustomGlyph, newSkeleton: any
   
   const penComponent = penComponents[0];
   
-  const transformedPoints = calculateTransformedPoints(glyph, newSkeleton);
+  let transformedPoints = calculateTransformedPoints(glyph, newSkeleton);
+
+  // 更新字重
+  const weight = glyph.getParam('字重') as number
+  const originWeight = glyph._glyph.skeleton.originWeight
+  if (weight && weight !== originWeight) {
+    const d = (weight - originWeight) / 2
+    const points = transformedPoints
+    const newPoints = R.clone(transformedPoints)
+    for (let i = 0; i < points.length - 1; i+=3) {
+      const bezier = [points[i], points[i+1], points[i+2], points[i+3]]
+      const angle1 = Math.atan2(bezier[1].y - bezier[0].y, bezier[1].x - bezier[0].x)
+      const angle2 = Math.atan2(bezier[3].y - bezier[2].y, bezier[3].x - bezier[2].x)
+      const p1 = { x: bezier[0].x - Math.sin(angle1) * d, y: bezier[0].y + Math.cos(angle1) * d }
+      const p2 = { x: bezier[1].x - Math.sin(angle1) * d, y: bezier[1].y + Math.cos(angle1) * d }
+      const p3 = { x: bezier[2].x - Math.sin(angle2) * d, y: bezier[2].y + Math.cos(angle2) * d }
+      const p4 = { x: bezier[3].x - Math.sin(angle2) * d, y: bezier[3].y + Math.cos(angle2) * d }
+      newPoints[i].x = p1.x
+      newPoints[i].y = p1.y
+      newPoints[i+1].x = p2.x
+      newPoints[i+1].y = p2.y
+      newPoints[i+2].x = p3.x
+      newPoints[i+2].y = p3.y
+      newPoints[i+3].x = p4.x
+      newPoints[i+3].y = p4.y
+    };
+    transformedPoints = newPoints
+  }
   
   if (transformedPoints.length === (penComponent.value as unknown as IPenComponent).points.length) {
     // 更新控制点位置
@@ -955,3 +1317,13 @@ const bindHandDrawnShape = (glyph) => {
 4. 变形计算使用线性混合蒙皮算法，适合字体变形场景
 */
 
+export {
+  pointToBoneDistance,
+  calculatePointTransformation,
+  transformPointToLocal,
+  transformPointToWorld,
+  updateBoneMatrices,
+  updateLinearBoneMatrices,
+  updateCurveBoneMatrices,
+  updateCompositeBoneMatrices,
+}

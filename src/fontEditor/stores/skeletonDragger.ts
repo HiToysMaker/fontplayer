@@ -30,6 +30,13 @@ const onSkeletonBind = computed(() => {
 
 const onSkeletonDragging = ref(false)
 
+// 刷权重
+const onSelectBone = ref(false)
+const selectedBone = ref(null)
+const onWeightSetting = ref(false)
+const weightValue = ref(0.5)
+const brushSize = ref(100)
+
 export {
 	editing,
 	setEditing,
@@ -40,4 +47,9 @@ export {
   onSkeletonSelect,
   onSkeletonBind,
   onSkeletonDragging,
+  onSelectBone,
+  selectedBone,
+  onWeightSetting,
+  weightValue,
+  brushSize,
 }

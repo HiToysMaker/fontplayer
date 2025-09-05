@@ -5,8 +5,8 @@ import { FP } from "../programming/FPUtils";
 import { applySkeletonTransformation, glyphSkeletonBind } from "../../features/glyphSkeletonBind";
 import { updateSkeletonTransformation } from "./strokeFnMap";
 import { minSegment, maxSegment } from "../stores/global";
-// 横的骨架转骨骼函数
-export const skeletonToBones_heng = (skeleton: any): any[] => {
+// 竖的骨架转骨骼函数
+export const skeletonToBones_shu = (skeleton: any): any[] => {
   const bones: any[] = [];
   const { start, end } = skeleton;
   
@@ -66,7 +66,7 @@ const quadraticBezierPoint = (p0: any, p1: any, p2: any, t: number) => {
 
 
 
-const instanceBasicGlyph_heng = (plainGlyph: ICustomGlyph) => {
+const instanceBasicGlyph_shu = (plainGlyph: ICustomGlyph) => {
   const glyph = new CustomGlyph(plainGlyph)
   const params = {
     length: glyph.getParam('长度'),
@@ -79,9 +79,9 @@ const instanceBasicGlyph_heng = (plainGlyph: ICustomGlyph) => {
   return
 }
 
-const bindSkeletonGlyph_heng = (plainGlyph: ICustomGlyph) => {
+const bindSkeletonGlyph_shu = (plainGlyph: ICustomGlyph) => {
   if (!plainGlyph._o) {
-    instanceBasicGlyph_heng(plainGlyph)
+    instanceBasicGlyph_shu(plainGlyph)
   }
   glyphSkeletonBind(plainGlyph._o)
 }
@@ -93,8 +93,8 @@ const updateGlyphByParams = (params, glyph) => {
 
   const ox = 500
   const oy = 500
-  const x0 = 250 + _ox || 0
-  const y0 = 500 + _oy || 0
+  const x0 = 500 + _ox || 0
+  const y0 = 250 + _oy || 0
 
   let start, end
   const start_ref = new FP.Joint(
@@ -107,24 +107,25 @@ const updateGlyphByParams = (params, glyph) => {
   const end_ref = new FP.Joint(
     'end_ref',
     {
-      x: start_ref.x + length,
-      y: start_ref.y,
+      x: start_ref.x,
+      y: start_ref.y + length,
     },
   )
+  
   if (skeletonRefPos === 1) {
     // 骨架参考位置为右侧（上侧）
     start = new FP.Joint(
       'start',
       {
-        x: start_ref.x,
-        y: start_ref.y + weight / 2,
+        x: start_ref.x - weight / 2,
+        y: start_ref.y,
       },
     )
     end = new FP.Joint(
       'end',
       {
-        x: end_ref.x,
-        y: end_ref.y + weight / 2,
+        x: end_ref.x - weight / 2,
+        y: end_ref.y,
       },
     )
   } else if (skeletonRefPos === 2) {
@@ -132,15 +133,15 @@ const updateGlyphByParams = (params, glyph) => {
     start = new FP.Joint(
       'start',
       {
-        x: start_ref.x,
-        y: start_ref.y - weight / 2,
+        x: start_ref.x + weight / 2,
+        y: start_ref.y,
       },
     )
     end = new FP.Joint(
       'end',
       {
-        x: end_ref.x,
-        y: end_ref.y - weight / 2,
+        x: end_ref.x + weight / 2,
+        y: end_ref.y,
       },
     )
   } else {
@@ -160,13 +161,14 @@ const updateGlyphByParams = (params, glyph) => {
       },
     )
   }
+  
   glyph.addJoint(start_ref)
   glyph.addJoint(end_ref)
   glyph.addRefLine(refline(start_ref, end_ref, 'ref'))
   
   glyph.addJoint(start)
   glyph.addJoint(end)
-
+  
   const skeleton = {
     start,
     end,
@@ -182,7 +184,7 @@ const updateGlyphByParams = (params, glyph) => {
 const computeParamsByJoints = (jointsMap, glyph) => {
   const { start, end } = jointsMap
   const length_range = glyph.getParamRange('长度')
-  const length = range(end.x - start.x, length_range)
+  const length = range(end.y - start.y, length_range)
   return {
     length,
     skeletonRefPos: glyph.getParam('参考位置'),
@@ -190,7 +192,7 @@ const computeParamsByJoints = (jointsMap, glyph) => {
   }
 }
 
-const updateSkeletonListener_before_bind_heng = (glyph: CustomGlyph) => {
+const updateSkeletonListener_before_bind_shu = (glyph: CustomGlyph) => {
   const getJointsMap = (data) => {
     const { draggingJoint, deltaX, deltaY } = data
     const jointsMap = Object.assign({}, glyph.tempData)
@@ -217,8 +219,8 @@ const updateSkeletonListener_before_bind_heng = (glyph: CustomGlyph) => {
       }
       case 'end': {
         jointsMap['end'] = {
-          x: glyph.tempData['end'].x + deltaX,
-          y: glyph.tempData['end'].y,
+          x: glyph.tempData['end'].x,
+          y: glyph.tempData['end'].y + deltaY,
         }
         break
       }
@@ -265,15 +267,15 @@ const updateSkeletonListener_before_bind_heng = (glyph: CustomGlyph) => {
   }
 }
 
-const updateSkeletonListener_after_bind_heng = (glyph: CustomGlyph) => {
+const updateSkeletonListener_after_bind_shu = (glyph: CustomGlyph) => {
   const getJointsMap = (data) => {
     const { draggingJoint, deltaX, deltaY } = data
     const jointsMap = Object.assign({}, glyph.tempData)
     switch (draggingJoint.name) {
       case 'end': {
         jointsMap['end'] = {
-          x: glyph.tempData['end'].x + deltaX,
-          y: glyph.tempData['end'].y,
+          x: glyph.tempData['end'].x,
+          y: glyph.tempData['end'].y + deltaY,
         }
         break
       }
@@ -319,8 +321,8 @@ const updateSkeletonListener_after_bind_heng = (glyph: CustomGlyph) => {
 }
 
 export {
-  instanceBasicGlyph_heng,
-  bindSkeletonGlyph_heng,
-  updateSkeletonListener_after_bind_heng,
-  updateSkeletonListener_before_bind_heng,
+  instanceBasicGlyph_shu,
+  bindSkeletonGlyph_shu,
+  updateSkeletonListener_after_bind_shu,
+  updateSkeletonListener_before_bind_shu,
 }

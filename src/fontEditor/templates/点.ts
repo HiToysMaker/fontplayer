@@ -5,27 +5,20 @@ import { FP } from "../programming/FPUtils";
 import { applySkeletonTransformation, glyphSkeletonBind } from "../../features/glyphSkeletonBind";
 import { updateSkeletonTransformation } from "./strokeFnMap";
 import { minSegment, maxSegment } from "../stores/global";
-// 横的骨架转骨骼函数
-export const skeletonToBones_heng = (skeleton: any): any[] => {
+
+// 点的骨架转骨骼函数
+export const skeletonToBones_dian = (skeleton: any): any[] => {
   const bones: any[] = [];
-  const { start, end } = skeleton;
+  const { start, bend, end } = skeleton;
   
-  // 直线段
-  const totalLength = Math.sqrt((end.x - start.x) ** 2 + (end.y - start.y) ** 2);
-  const segments = maxSegment//Math.max(minSegment, Math.ceil(totalLength / 20));
-  
+  // 贝塞尔曲线段
+  const segments = maxSegment;
   for (let i = 0; i < segments; i++) {
     const t1 = i / segments;
     const t2 = (i + 1) / segments;
     
-    const p1 = {
-      x: start.x + (end.x - start.x) * t1,
-      y: start.y + (end.y - start.y) * t1
-    };
-    const p2 = {
-      x: start.x + (end.x - start.x) * t2,
-      y: start.y + (end.y - start.y) * t2
-    };
+    const p1 = quadraticBezierPoint(start, bend, end, t1);
+    const p2 = quadraticBezierPoint(start, bend, end, t2);
     
     const bone: any = {
       id: `segment_${i}`,
@@ -66,10 +59,13 @@ const quadraticBezierPoint = (p0: any, p1: any, p2: any, t: number) => {
 
 
 
-const instanceBasicGlyph_heng = (plainGlyph: ICustomGlyph) => {
+const instanceBasicGlyph_dian = (plainGlyph: ICustomGlyph) => {
   const glyph = new CustomGlyph(plainGlyph)
   const params = {
-    length: glyph.getParam('长度'),
+    horizonalSpan: glyph.getParam('水平延伸'),
+    verticalSpan: glyph.getParam('竖直延伸'),
+    bendCursor: glyph.getParam('弯曲游标'),
+    bendDegree: Number(glyph.getParam('弯曲度')) + 10 * Number(glyph.getParam('弯曲程度') || 1),
     skeletonRefPos: glyph.getParam('参考位置'),
     weight: glyph.getParam('字重') || 40,
   }
@@ -79,100 +75,78 @@ const instanceBasicGlyph_heng = (plainGlyph: ICustomGlyph) => {
   return
 }
 
-const bindSkeletonGlyph_heng = (plainGlyph: ICustomGlyph) => {
+const bindSkeletonGlyph_dian = (plainGlyph: ICustomGlyph) => {
   if (!plainGlyph._o) {
-    instanceBasicGlyph_heng(plainGlyph)
+    instanceBasicGlyph_dian(plainGlyph)
   }
   glyphSkeletonBind(plainGlyph._o)
 }
 
+const distance = (p1, p2) => {
+  return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y))
+}
+
+const getBend = (start, end, bendCursor, bendDegree) => {
+  const horizonalSpan = Math.abs(end.x - start.x)
+  const verticalSpan = Math.abs(end.y - start.y)
+  const cursor_x = start.x + bendCursor * horizonalSpan
+  const cursor_y = start.y + bendCursor * verticalSpan
+  const angle = Math.atan2(verticalSpan, horizonalSpan)
+  
+  const bend = {
+    x: cursor_x + bendDegree * Math.sin(angle),
+    y: cursor_y + bendDegree * Math.cos(angle),
+  }
+
+  return bend
+}
+
 const updateGlyphByParams = (params, glyph) => {
-  const { length, skeletonRefPos, weight } = params
+  const { horizonalSpan, verticalSpan, bendCursor, bendDegree, skeletonRefPos, weight } = params
 
   const { ox : _ox, oy : _oy } = glyph._glyph.skeleton
 
   const ox = 500
   const oy = 500
-  const x0 = 250 + _ox || 0
-  const y0 = 500 + _oy || 0
+  const x0 = 450 + _ox || 0
+  const y0 = 425 + _oy || 0
 
-  let start, end
-  const start_ref = new FP.Joint(
-    'start_ref',
+  const start = new FP.Joint(
+    'start',
     {
       x: x0,
       y: y0,
     },
   )
-  const end_ref = new FP.Joint(
-    'end_ref',
+  const end = new FP.Joint(
+    'end',
     {
-      x: start_ref.x + length,
-      y: start_ref.y,
+      x: start.x + horizonalSpan,
+      y: start.y + verticalSpan,
     },
   )
-  if (skeletonRefPos === 1) {
-    // 骨架参考位置为右侧（上侧）
-    start = new FP.Joint(
-      'start',
-      {
-        x: start_ref.x,
-        y: start_ref.y + weight / 2,
-      },
-    )
-    end = new FP.Joint(
-      'end',
-      {
-        x: end_ref.x,
-        y: end_ref.y + weight / 2,
-      },
-    )
-  } else if (skeletonRefPos === 2) {
-    // 骨架参考位置为左侧（下侧）
-    start = new FP.Joint(
-      'start',
-      {
-        x: start_ref.x,
-        y: start_ref.y - weight / 2,
-      },
-    )
-    end = new FP.Joint(
-      'end',
-      {
-        x: end_ref.x,
-        y: end_ref.y - weight / 2,
-      },
-    )
-  } else {
-    // 默认骨架参考位置，即骨架参考位置为中间实际绘制的骨架位置
-    start = new FP.Joint(
-      'start',
-      {
-        x: start_ref.x,
-        y: start_ref.y,
-      },
-    )
-    end = new FP.Joint(
-      'end',
-      {
-        x: end_ref.x,
-        y: end_ref.y,
-      },
-    )
-  }
-  glyph.addJoint(start_ref)
-  glyph.addJoint(end_ref)
-  glyph.addRefLine(refline(start_ref, end_ref, 'ref'))
+  
+  const length = distance(start, end)
+  const cursor_x = start.x + bendCursor * horizonalSpan
+  const cursor_y = start.y + bendCursor * verticalSpan
+  const angle = Math.atan2(verticalSpan, horizonalSpan)
+  
+  const bend = new FP.Joint(
+    'bend',
+    {
+      x: cursor_x + bendDegree * Math.sin(angle),
+      y: cursor_y - bendDegree * Math.cos(angle),
+    },
+  )
+  
+  const skeleton = { start, bend, end }
   
   glyph.addJoint(start)
   glyph.addJoint(end)
-
-  const skeleton = {
-    start,
-    end,
-  }
+  glyph.addJoint(bend)
   
-  glyph.addRefLine(refline(start, end))
+  glyph.addRefLine(refline(start, bend))
+  glyph.addRefLine(refline(bend, end))
 
   glyph.getSkeleton = () => {
     return skeleton
@@ -180,33 +154,40 @@ const updateGlyphByParams = (params, glyph) => {
 }
 
 const computeParamsByJoints = (jointsMap, glyph) => {
-  const { start, end } = jointsMap
-  const length_range = glyph.getParamRange('长度')
-  const length = range(end.x - start.x, length_range)
+  const { start, end, bend } = jointsMap
+  const horizonal_span_range = glyph.getParamRange('水平延伸')
+  const vertical_span_range = glyph.getParamRange('竖直延伸')
+  const bend_cursor_range = glyph.getParamRange('弯曲游标')
+  const bend_degree_range = glyph.getParamRange('弯曲度')
+  const horizonalSpan = range(end.x - start.x, horizonal_span_range)
+  const verticalSpan = range(end.y - start.y, vertical_span_range)
+  const data = FP.distanceAndFootPoint(start, end, bend)
+  const bendCursor = range(data.percentageFromA, bend_cursor_range)
+  const bendDegree = range(data.distance, bend_degree_range)
   return {
-    length,
+    horizonalSpan,
+    verticalSpan,
+    bendCursor,
+    bendDegree,
     skeletonRefPos: glyph.getParam('参考位置'),
     weight: glyph.getParam('字重') || 40,
   }
 }
 
-const updateSkeletonListener_before_bind_heng = (glyph: CustomGlyph) => {
+const updateSkeletonListener_before_bind_dian = (glyph: CustomGlyph) => {
   const getJointsMap = (data) => {
     const { draggingJoint, deltaX, deltaY } = data
     const jointsMap = Object.assign({}, glyph.tempData)
     switch (draggingJoint.name) {
       case 'start': {
-        // 拖拽第一个joint，整体移动骨架
         const deltaX = data.deltaX
         const deltaY = data.deltaY
         
-        // 更新骨架的ox, oy
         if (glyph._glyph.skeleton) {
           glyph._glyph.skeleton.ox = (glyph.tempData.ox || 0) + deltaX
           glyph._glyph.skeleton.oy = (glyph.tempData.oy || 0) + deltaY
         }
         
-        // 更新所有joint的位置
         Object.keys(jointsMap).forEach(key => {
           jointsMap[key] = {
             x: glyph.tempData[key].x + deltaX,
@@ -215,10 +196,22 @@ const updateSkeletonListener_before_bind_heng = (glyph: CustomGlyph) => {
         })
         break
       }
+      case 'bend': {
+        jointsMap['bend'] = {
+          x: glyph.tempData['bend'].x + deltaX,
+          y: glyph.tempData['bend'].y + deltaY,
+        }
+        break
+      }
       case 'end': {
         jointsMap['end'] = {
           x: glyph.tempData['end'].x + deltaX,
-          y: glyph.tempData['end'].y,
+          y: glyph.tempData['end'].y + deltaY,
+        }
+        const newBend = getBend(jointsMap['start'], jointsMap['end'], glyph.tempData.bendCursor, glyph.tempData.bendDegree)
+        jointsMap['bend'] = {
+          x: newBend.x,
+          y: newBend.y,
         }
         break
       }
@@ -227,11 +220,12 @@ const updateSkeletonListener_before_bind_heng = (glyph: CustomGlyph) => {
   }
 
   glyph.onSkeletonDragStart = (data) => {
-    // joint数据格式：{x, y, name}
     const { draggingJoint } = data
     glyph.tempData = {}
     glyph.tempData.ox = glyph._glyph.skeleton.ox
     glyph.tempData.oy = glyph._glyph.skeleton.oy
+    glyph.tempData.bendCursor = glyph.getParam('弯曲游标')
+    glyph.tempData.bendDegree = Number(glyph.getParam('弯曲度')) + 10 * Number(glyph.getParam('弯曲程度') || 1)
     glyph.getJoints().map((joint) => {
       const _joint = {
         name: joint.name,
@@ -245,35 +239,46 @@ const updateSkeletonListener_before_bind_heng = (glyph: CustomGlyph) => {
   glyph.onSkeletonDrag = (data) => {
     if (!glyph.tempData) return
     glyph.clear()
-    // joint数据格式：{x, y, name}
     const jointsMap = getJointsMap(data)
     const _params = computeParamsByJoints(jointsMap, glyph)
     updateGlyphByParams(_params, glyph)
-    //updateSkeletonTransformation(glyph)
   }
   
   glyph.onSkeletonDragEnd = (data) => {
     if (!glyph.tempData) return
     glyph.clear()
-    // joint数据格式：{x, y, name}
     const jointsMap = getJointsMap(data)
     const _params = computeParamsByJoints(jointsMap, glyph)
     updateGlyphByParams(_params, glyph)
-    //updateSkeletonTransformation(glyph)
-    glyph.setParam('长度', _params.length)
+    glyph.setParam('水平延伸', _params.horizonalSpan)
+    glyph.setParam('竖直延伸', _params.verticalSpan)
+    glyph.setParam('弯曲游标', _params.bendCursor)
+    glyph.setParam('弯曲度', _params.bendDegree - 10 * Number(glyph.getParam('弯曲程度') || 1))
     glyph.tempData = null
   }
 }
 
-const updateSkeletonListener_after_bind_heng = (glyph: CustomGlyph) => {
+const updateSkeletonListener_after_bind_dian = (glyph: CustomGlyph) => {
   const getJointsMap = (data) => {
     const { draggingJoint, deltaX, deltaY } = data
     const jointsMap = Object.assign({}, glyph.tempData)
     switch (draggingJoint.name) {
+      case 'bend': {
+        jointsMap['bend'] = {
+          x: glyph.tempData['bend'].x + deltaX,
+          y: glyph.tempData['bend'].y + deltaY,
+        }
+        break
+      }
       case 'end': {
         jointsMap['end'] = {
           x: glyph.tempData['end'].x + deltaX,
-          y: glyph.tempData['end'].y,
+          y: glyph.tempData['end'].y + deltaY,
+        }
+        const newBend = getBend(jointsMap['start'], jointsMap['end'], glyph.tempData.bendCursor, glyph.tempData.bendDegree)
+        jointsMap['bend'] = {
+          x: newBend.x,
+          y: newBend.y,
         }
         break
       }
@@ -282,9 +287,10 @@ const updateSkeletonListener_after_bind_heng = (glyph: CustomGlyph) => {
   }
 
   glyph.onSkeletonDragStart = (data) => {
-    // joint数据格式：{x, y, name}
     const { draggingJoint } = data
     glyph.tempData = {}
+    glyph.tempData.bendCursor = glyph.getParam('弯曲游标')
+    glyph.tempData.bendDegree = Number(glyph.getParam('弯曲度')) + 10 * Number(glyph.getParam('弯曲程度') || 1)
     glyph.getJoints().map((joint) => {
       const _joint = {
         name: joint.name,
@@ -298,7 +304,6 @@ const updateSkeletonListener_after_bind_heng = (glyph: CustomGlyph) => {
   glyph.onSkeletonDrag = (data) => {
     if (!glyph.tempData) return
     glyph.clear()
-    // joint数据格式：{x, y, name}
     const jointsMap = getJointsMap(data)
     const _params = computeParamsByJoints(jointsMap, glyph)
     updateGlyphByParams(_params, glyph)
@@ -308,19 +313,21 @@ const updateSkeletonListener_after_bind_heng = (glyph: CustomGlyph) => {
   glyph.onSkeletonDragEnd = (data) => {
     if (!glyph.tempData) return
     glyph.clear()
-    // joint数据格式：{x, y, name}
     const jointsMap = getJointsMap(data)
     const _params = computeParamsByJoints(jointsMap, glyph)
     updateGlyphByParams(_params, glyph)
     updateSkeletonTransformation(glyph)
-    glyph.setParam('长度', _params.length)
+    glyph.setParam('水平延伸', _params.horizonalSpan)
+    glyph.setParam('竖直延伸', _params.verticalSpan)
+    glyph.setParam('弯曲游标', _params.bendCursor)
+    glyph.setParam('弯曲度', _params.bendDegree - 10 * Number(glyph.getParam('弯曲程度') || 1))
     glyph.tempData = null
   }
 }
 
 export {
-  instanceBasicGlyph_heng,
-  bindSkeletonGlyph_heng,
-  updateSkeletonListener_after_bind_heng,
-  updateSkeletonListener_before_bind_heng,
+  instanceBasicGlyph_dian,
+  bindSkeletonGlyph_dian,
+  updateSkeletonListener_after_bind_dian,
+  updateSkeletonListener_before_bind_dian,
 }
