@@ -809,7 +809,7 @@ function multiplyMatrices(matrix1: number[], matrix2: number[]): number[] {
 }
 
 // 阶段三：变形计算 - 根据骨架变化计算新的控制点位置
-export function calculateTransformedPoints(glyph: CustomGlyph, newSkeleton: any): Array<{ x: number; y: number }> {
+export function calculateTransformedPoints(glyph: CustomGlyph, newSkeleton: any, weightedOriginalPoints?: Array<{ x: number; y: number }>): Array<{ x: number; y: number }> {
   const bindData = (glyph as any)._glyph.skeleton?.skeletonBindData;
   
   if (!bindData) {
@@ -817,7 +817,8 @@ export function calculateTransformedPoints(glyph: CustomGlyph, newSkeleton: any)
     return [];
   }
   
-  const { bones, pointsBonesMap, originalPoints } = bindData;
+  const { bones, pointsBonesMap, originalPoints: _originalPoints } = bindData;
+  let originalPoints = weightedOriginalPoints || _originalPoints
   
   // 验证绑定数据
   if (!bones || !pointsBonesMap || !originalPoints) {
@@ -1172,16 +1173,16 @@ export function applySkeletonTransformation(glyph: CustomGlyph, newSkeleton: any
   }
   
   const penComponent = penComponents[0];
-  
-  let transformedPoints = calculateTransformedPoints(glyph, newSkeleton);
+
+  const { originalPoints } = glyph._glyph.skeleton.skeletonBindData
+  const weightedOriginalPoints = R.clone(originalPoints)
 
   // 更新字重
   const weight = glyph.getParam('字重') as number
   const originWeight = glyph._glyph.skeleton.originWeight
   if (weight && weight !== originWeight) {
     const d = (weight - originWeight) / 2
-    const points = transformedPoints
-    const newPoints = R.clone(transformedPoints)
+    const points = originalPoints
     for (let i = 0; i < points.length - 1; i+=3) {
       const bezier = [points[i], points[i+1], points[i+2], points[i+3]]
       const angle1 = Math.atan2(bezier[1].y - bezier[0].y, bezier[1].x - bezier[0].x)
@@ -1190,17 +1191,18 @@ export function applySkeletonTransformation(glyph: CustomGlyph, newSkeleton: any
       const p2 = { x: bezier[1].x - Math.sin(angle1) * d, y: bezier[1].y + Math.cos(angle1) * d }
       const p3 = { x: bezier[2].x - Math.sin(angle2) * d, y: bezier[2].y + Math.cos(angle2) * d }
       const p4 = { x: bezier[3].x - Math.sin(angle2) * d, y: bezier[3].y + Math.cos(angle2) * d }
-      newPoints[i].x = p1.x
-      newPoints[i].y = p1.y
-      newPoints[i+1].x = p2.x
-      newPoints[i+1].y = p2.y
-      newPoints[i+2].x = p3.x
-      newPoints[i+2].y = p3.y
-      newPoints[i+3].x = p4.x
-      newPoints[i+3].y = p4.y
+      weightedOriginalPoints[i].x = p1.x
+      weightedOriginalPoints[i].y = p1.y
+      weightedOriginalPoints[i+1].x = p2.x
+      weightedOriginalPoints[i+1].y = p2.y
+      weightedOriginalPoints[i+2].x = p3.x
+      weightedOriginalPoints[i+2].y = p3.y
+      weightedOriginalPoints[i+3].x = p4.x
+      weightedOriginalPoints[i+3].y = p4.y
     };
-    transformedPoints = newPoints
   }
+  
+  let transformedPoints = calculateTransformedPoints(glyph, newSkeleton, weightedOriginalPoints);
   
   if (transformedPoints.length === (penComponent.value as unknown as IPenComponent).points.length) {
     // 更新控制点位置
