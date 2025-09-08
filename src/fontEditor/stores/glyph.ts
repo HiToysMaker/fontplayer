@@ -1342,7 +1342,7 @@ const addComponentForGlyph = (glyphUUID: string, component: Component) => {
 	// } else {
 	// 	setTool('select')
 	// }
-	setSelectionForCurrentGlyph(component.uuid)
+	// setSelectionForCurrentGlyph(component.uuid)
 }
 
 /**
@@ -1435,9 +1435,11 @@ const executeScript = (targetGlyph) => {
 		window.constantsMap = constantsMap
 		try {
 			const script = getScript(targetGlyph)
-			//const fn = new Function(`${targetGlyph.script}\nscript_${targetGlyph.uuid.replaceAll('-', '_')} (glyph, constantsMap, FP)`)
-			const fn = new Function(`${script}\nscript_${targetGlyph.uuid.replaceAll('-', '_')} (glyph, constantsMap, FP)`)
-			fn()
+			if (script) {
+				//const fn = new Function(`${targetGlyph.script}\nscript_${targetGlyph.uuid.replaceAll('-', '_')} (glyph, constantsMap, FP)`)
+				const fn = new Function(`${script}\nscript_${targetGlyph.uuid.replaceAll('-', '_')} (glyph, constantsMap, FP)`)
+				fn()
+			}
 		} catch (e) {
 			console.error(e)
 		}

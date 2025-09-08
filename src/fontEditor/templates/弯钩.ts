@@ -124,16 +124,12 @@ const distance = (p1, p2) => {
   return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y))
 }
 
-const getBend = (start, end, bendCursor, bendDegree) => {
-  const horizonalSpan = Math.abs(end.x - start.x)
+const getBend = (start, end, wan_bendDegree) => {
+  // 改变end的情况下，不会改变弯曲度和弯曲游标，所以依据现有参数计算新的bend
   const verticalSpan = Math.abs(end.y - start.y)
-  const cursor_x = start.x + bendCursor * horizonalSpan
-  const cursor_y = start.y + bendCursor * verticalSpan
-  const angle = Math.atan2(verticalSpan, horizonalSpan)
-  
   const bend = {
-    x: cursor_x + bendDegree * Math.sin(angle),
-    y: cursor_y + bendDegree * Math.cos(angle),
+    x: start.x + wan_bendDegree,
+    y: start.y + verticalSpan / 2,
   }
 
   return bend
@@ -280,7 +276,7 @@ const updateSkeletonListener_before_bind_wan_gou = (glyph: CustomGlyph) => {
           x: glyph.tempData['gou_end'].x,
           y: glyph.tempData['gou_end'].y + deltaY,
         }
-        const newBend = getBend(jointsMap['wan_start'], jointsMap['wan_end'], glyph.tempData.bendCursor, glyph.tempData.bendDegree)
+        const newBend = getBend(jointsMap['wan_start'], jointsMap['wan_end'], glyph.tempData.wan_bendDegree)
         jointsMap['wan_bend'] = {
           x: newBend.x,
           y: newBend.y,
@@ -300,7 +296,7 @@ const updateSkeletonListener_before_bind_wan_gou = (glyph: CustomGlyph) => {
           x: glyph.tempData['gou_end'].x,
           y: glyph.tempData['gou_end'].y + deltaY,
         }
-        const newBend = getBend(jointsMap['wan_start'], jointsMap['wan_end'], glyph.tempData.bendCursor, glyph.tempData.bendDegree)
+        const newBend = getBend(jointsMap['wan_start'], jointsMap['wan_end'], glyph.tempData.wan_bendDegree)
         jointsMap['wan_bend'] = {
           x: newBend.x,
           y: newBend.y,
@@ -323,7 +319,6 @@ const updateSkeletonListener_before_bind_wan_gou = (glyph: CustomGlyph) => {
     glyph.tempData = {}
     glyph.tempData.ox = glyph._glyph.skeleton.ox
     glyph.tempData.oy = glyph._glyph.skeleton.oy
-    glyph.tempData.wan_bendCursor = glyph.getParam('弯-弯曲游标')
     glyph.tempData.wan_bendDegree = Number(glyph.getParam('弯-弯曲度')) + 30 * Number(glyph.getParam('弯曲程度') || 1)
     glyph.getJoints().map((joint) => {
       const _joint = {
@@ -382,7 +377,7 @@ const updateSkeletonListener_after_bind_wan_gou = (glyph: CustomGlyph) => {
           x: glyph.tempData['gou_end'].x,
           y: glyph.tempData['gou_end'].y + deltaY,
         }
-        const newBend = getBend(jointsMap['wan_start'], jointsMap['wan_end'], glyph.tempData.bendCursor, glyph.tempData.bendDegree)
+        const newBend = getBend(jointsMap['wan_start'], jointsMap['wan_end'], glyph.tempData.wan_bendDegree)
         jointsMap['wan_bend'] = {
           x: newBend.x,
           y: newBend.y,
@@ -402,7 +397,7 @@ const updateSkeletonListener_after_bind_wan_gou = (glyph: CustomGlyph) => {
           x: glyph.tempData['gou_end'].x,
           y: glyph.tempData['gou_end'].y + deltaY,
         }
-        const newBend = getBend(jointsMap['wan_start'], jointsMap['wan_end'], glyph.tempData.bendCursor, glyph.tempData.bendDegree)
+        const newBend = getBend(jointsMap['wan_start'], jointsMap['wan_end'], glyph.tempData.wan_bendDegree)
         jointsMap['wan_bend'] = {
           x: newBend.x,
           y: newBend.y,
@@ -423,7 +418,6 @@ const updateSkeletonListener_after_bind_wan_gou = (glyph: CustomGlyph) => {
   glyph.onSkeletonDragStart = (data) => {
     const { draggingJoint } = data
     glyph.tempData = {}
-    glyph.tempData.wan_bendCursor = glyph.getParam('弯-弯曲游标')
     glyph.tempData.wan_bendDegree = Number(glyph.getParam('弯-弯曲度')) + 30 * Number(glyph.getParam('弯曲程度') || 1)
     glyph.getJoints().map((joint) => {
       const _joint = {

@@ -28,6 +28,10 @@
   const { t, tm } = useI18n()
   import { Edit, Check } from '@element-plus/icons-vue'
 
+  onMounted(() => {
+    console.log('GlyphParamsPanel mounted', editGlyph.value)
+  })
+
   const enableStyleTagEdit = ref(false)
   const onChangeSkeleton = (value: string) => {
     // 设置骨架
@@ -405,8 +409,13 @@
         </el-form>
       </div>
     </div>
-    <div class="title" v-if="editGlyph.skeleton || onSkeletonSelect || onSkeletonBind">骨架绑定</div>
-    <div class="skeleton-wrap">
+    <div class="title"
+      v-if="!editGlyph.skeleton && (!editGlyph._o?.getSkeleton || !editGlyph._o?.getSkeleton()) || editGlyph.skeleton || onSkeletonSelect || onSkeletonBind"
+    >骨架绑定</div>
+    <div
+      class="skeleton-wrap"
+      v-if="!editGlyph.skeleton && (!editGlyph._o?.getSkeleton || !editGlyph._o?.getSkeleton()) || editGlyph.skeleton || onSkeletonSelect || onSkeletonBind"
+    >
       <el-button
         v-if="!editGlyph.skeleton && (!editGlyph._o?.getSkeleton || !editGlyph._o?.getSkeleton())"
         @pointerdown="onSkeletonSelect = true"
@@ -440,7 +449,7 @@
           @change="handleChangeSkeletonOY"
         />
       </el-form-item>
-      <el-form-item :label-width="0" class="dynamic-weight-form-item">
+      <el-form-item :label-width="0" class="dynamic-weight-form-item" v-if="onSkeletonBind && !onSkeletonSelect && editGlyph.skeleton">
         <el-checkbox v-model="editGlyph.skeleton.dynamicWeight">
           动态调整字重
         </el-checkbox>
@@ -811,7 +820,6 @@
 <style scoped>
   .layout-wrap {
     padding: 10px;
-    padding-bottom: 0;
     .add-layout-button, .set-layout-button, .el-select {
       width: 100%;
     }
@@ -934,6 +942,9 @@
   .skeleton-wrap {
     padding: 10px;
     padding-bottom: 0;
+    .el-checkbox {
+      margin-left: 0;
+    }
     .el-button {
       width: 100%;
       margin-left: 0;

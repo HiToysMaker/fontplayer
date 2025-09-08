@@ -4,7 +4,7 @@ import * as R from 'ramda'
 import { renderPreview2 } from '../canvas/canvas'
 import { componentsToContours } from '../../features/font'
 import { CustomGlyph } from '../programming/CustomGlyph'
-import { getGlyphByUUID, ParameterType, scripts_map, constants as globalConstants, constantsMap as globalConstantsMap, stroke_glyphs } from './glyph'
+import { executeScript as executeScript_glyph, getGlyphByUUID, ParameterType, scripts_map, constants as globalConstants, constantsMap as globalConstantsMap, stroke_glyphs } from './glyph'
 import { ConstantsMap } from '../programming/ConstantsMap'
 import { emitter } from '../Event/bus'
 import { loading, loaded, total } from './global'
@@ -270,7 +270,7 @@ const renderStrokePreview = (uuid?: string) => {
         if (!canvas) return
         const glyph = strokeMap.get(stroke.uuid)
         if (!glyph._o) {
-          executeScript(glyph)
+          executeScript_glyph(glyph)
         }
         const contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(glyph._o.components, {
           unitsPerEm: 1000,
@@ -288,7 +288,7 @@ const renderStrokePreview = (uuid?: string) => {
       if (!canvas) return
       const glyph = strokeMap.get(uuid)
       if (!glyph._o) {
-        executeScript(glyph)
+        executeScript_glyph(glyph)
       }
       const contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(glyph._o.components, {
         unitsPerEm: 1000,
@@ -331,7 +331,7 @@ const replaceStrokeForCharacter = (characterFile, stroke) => {
         parameter.value = originParameter.value
       }
       component.value = glyph
-      executeScript(glyph)
+      executeScript_glyph(glyph)
     }
   }
 }
@@ -366,7 +366,7 @@ const updatePreviewList_strokeReplace = () => {
       unitsPerEm: selectedFile.value.fontSettings.unitsPerEm,
       descender: selectedFile.value.fontSettings.descender,
       advanceWidth: selectedFile.value.fontSettings.advanceWidth,
-      advancedEdit: true,
+      advancedEdit: false,
     }, { x: 0, y: 0 }, false, true, true)
     // 渲染字符
     renderPreview2(canvas, contours)
@@ -389,7 +389,7 @@ const updateCharactersAndPreview_strokeReplace = () => {
       unitsPerEm: selectedFile.value.fontSettings.unitsPerEm,
       descender: selectedFile.value.fontSettings.descender,
       advanceWidth: selectedFile.value.fontSettings.advanceWidth,
-      advancedEdit: true,
+      advancedEdit: false,
     }, { x: 0, y: 0 }, false, true, true)
     // 渲染字符
     renderPreview2(canvas, contours)
@@ -459,6 +459,7 @@ const getStrokeListByStyle = (style) => {
 }
 
 const switchStyle = (characterFile, style) => {
+  if (!style) return
   // 替换全局变量
   for (let i = 0; i < style.constants.length; i++) {
     for (let j = 0; j < constants.value.length; j++) {
@@ -499,7 +500,7 @@ const switchStyle = (characterFile, style) => {
           }
         }
         component.value = glyph
-        executeScript(glyph)
+        executeScript_glyph(glyph)
       }
     }
   }
@@ -527,7 +528,7 @@ const updatePreviewList_styleSwitch = () => {
       unitsPerEm: selectedFile.value.fontSettings.unitsPerEm,
       descender: selectedFile.value.fontSettings.descender,
       advanceWidth: selectedFile.value.fontSettings.advanceWidth,
-      advancedEdit: true,
+      advancedEdit: false,
     }, { x: 0, y: 0 }, false, true, true)
     // 渲染字符
     renderPreview2(canvas, contours)
@@ -550,7 +551,7 @@ const updateCharactersAndPreview_styleSwitch = () => {
       unitsPerEm: selectedFile.value.fontSettings.unitsPerEm,
       descender: selectedFile.value.fontSettings.descender,
       advanceWidth: selectedFile.value.fontSettings.advanceWidth,
-      advancedEdit: true,
+      advancedEdit: false,
     }, { x: 0, y: 0 }, false, true, true)
 
     // 渲染字符

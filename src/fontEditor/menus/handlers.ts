@@ -75,13 +75,14 @@ import {
   clearContoursComponent,
   clearCurvesComponent,
   prevEditStatus,
+  curvesComponents,
 } from '../stores/font'
 import { reversePixels, toBlackWhiteBitMap } from '../../features/image'
 import { getBound, transformPoints } from '../../utils/math'
 import { fitCurve } from '../../features/fitCurve'
 import type { IPoint as IPenPoint, IPoint } from '../stores/pen'
 import { render } from '../canvas/canvas'
-import { ICustomGlyph, IGlyphComponent, IParameter, ParameterType, addComponentForCurrentGlyph, addGlyph, addGlyphTemplate, clearGlyphRenderList, comp_glyphs, constantGlyphMap, constants, constantsMap, editGlyph, executeScript, getGlyphByName, getGlyphByUUID, getParentInfo, glyphs, orderedListWithItemsForCurrentGlyph, radical_glyphs, stroke_glyphs } from '../stores/glyph'
+import { ICustomGlyph, IGlyphComponent, IParameter, ParameterType, addComponentForCurrentGlyph, addComponentsForGlyph, addGlyph, addGlyphTemplate, clearGlyphRenderList, comp_glyphs, constantGlyphMap, constants, constantsMap, editGlyph, executeScript, getGlyphByName, getGlyphByUUID, getParentInfo, glyphs, orderedListWithItemsForCurrentGlyph, radical_glyphs, stroke_glyphs } from '../stores/glyph'
 import { ParametersMap } from '../programming/ParametersMap'
 import { Joint } from '../programming/Joint'
 import router from '../../router'
@@ -99,12 +100,20 @@ import { writeTextFile, writeFile, readFile, readTextFile } from '@tauri-apps/pl
 import { ENV } from '../stores/system'
 import { OpType, saveState, StoreType, undo as _undo, redo as _redo } from '../stores/edit'
 import { getEnName, name_data } from '../stores/settings'
-import { strokes as hei_strokes } from '../templates/strokes_1'
+import { strokes as hei_strokes, strokes } from '../templates/strokes_1'
 import { i18n } from '../../i18n'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { strokeFnMap } from '../templates/strokeFnMap'
 
 interface IPlainGlyphOptions {
   clearScript: boolean;
+}
+
+const plainCompnent = (comp: any) => {
+  if (comp._o) {
+    delete comp._o
+  }
+  return comp
 }
 
 const plainGlyph = (glyph: ICustomGlyph, options: IPlainGlyphOptions = { clearScript: false }) => {
@@ -129,6 +138,8 @@ const plainGlyph = (glyph: ICustomGlyph, options: IPlainGlyphOptions = { clearSc
         //_component.value = plainGlyph(component.value)
         // 对于被引用的字形组件，需要清除脚本以减少数据大小
         _component.value = plainGlyph(component.value, { clearScript: true })
+      } else {
+        _component.value = plainCompnent(component.value)
       }
       return _component
     }),
@@ -332,6 +343,8 @@ const plainCharacter = (character: ICharacterFile) => {
         //_component.value = plainGlyph(component.value)
         // 对于被引用的字形组件，需要清除脚本以减少数据大小
         _component.value = plainGlyph(component.value, { clearScript: true })
+      } else {
+        _component.value = plainCompnent(component.value)
       }
       return _component
     }),
@@ -2740,6 +2753,152 @@ const importTemplate1 = async () => {
   }
 }
 
+const importTemplate3 = async () => {
+  const uuids = []
+  // 新建32个笔画
+  for (let i = 0; i < hei_strokes.length; i++) {
+    const stroke = hei_strokes[i]
+    const { name } = stroke
+
+    const uuid = genUUID()
+    const glyph = {
+      uuid,
+      type: 'system',
+      name,
+      components: [],
+      groups: [],
+      orderedList: [],
+      selectedComponentsUUIDs: [],
+      view: {
+        zoom: 100,
+        translateX: 0,
+        translateY: 0,
+      },
+      parameters: new ParametersMap([]),
+      joints: [],
+      style: '测试手绘风格',
+      script: '',
+    }
+    uuids.push({
+      uuid,
+      name,
+    })
+    addGlyph(glyph, Status.StrokeGlyphList)
+    addGlyphTemplate(glyph, Status.StrokeGlyphList)
+  }
+
+  // 识别手绘图片
+  for (let i = 0; i < uuids.length; i++) {
+    const { uuid, name } = uuids[i]
+    // 识别手绘笔画图片，并生成笔画字形
+    try {
+      const response = await fetch(`/strokes/${name}.png`);
+      const blob = await response.blob();
+      
+      // 转换为 Image 对象用于 Canvas 渲染
+      await new Promise((resolve, reject) => {
+        const img = new Image();
+        const data = URL.createObjectURL(blob);
+        img.onload = () => {
+          maxError.value = 9
+          thumbnail(data, img, 1000)
+          const components = []
+          for (let i = 0; i < curvesComponents.value.length; i++) {
+            const component = curvesComponents.value[i]
+            const points = (component.value as unknown as IPenComponent).points
+            let totalLength = 0
+            let lastPoint = points[0]
+            for (let j = 1; j < points.length; j++) {
+              const point = points[j]
+              totalLength += Math.sqrt(Math.pow(point.x - lastPoint.x, 2) + Math.pow(point.y - lastPoint.y, 2))
+              lastPoint = point
+            }
+            if (totalLength > 200) {
+              components.push(component)
+            }
+          }
+          addComponentsForGlyph(uuid, components)
+          maxError.value = 2
+          resolve(img);
+        }
+        img.onerror = reject;
+        img.src = data;
+      });
+    } catch (error) {
+      console.error('Failed to fetch font image:', error);
+      throw error;
+    }
+
+    emitter.emit('renderStrokeGlyphPreviewCanvasByUUID', uuid)
+  }
+
+  for (let i = 0; i < uuids.length; i++) {
+    const { uuid, name } = uuids[i]
+    const strokeGlyph = getGlyphByUUID(uuid)
+    // 绑定骨架
+    const type = name
+    const skeleton = {
+      type,
+      ox: 0,
+      oy: 0,
+      dynamicWeight: false,
+    }
+    strokeGlyph.skeleton = skeleton
+
+    // 根据骨架设置字形参数
+    const stroke = strokes.find((stroke) => stroke.name === type)
+    if (stroke) {
+      const parameters = strokeGlyph.parameters.parameters
+      for (let j = 0; j < stroke.params.length; j++) {
+        const param = stroke.params[j]
+        parameters.push({
+          uuid: genUUID(),
+          name: param.name,
+          type: ParameterType.Number,
+          value: param.default,
+          min: param.min || 0,
+          max: param.max || 1000,
+        })
+      }
+      parameters.push({
+        uuid: genUUID(),
+        name: '参考位置',
+        type: ParameterType.Enum,
+        value: 0,
+        options: [
+          {
+            value: 0,
+            label: '默认',
+          },
+          {
+            value: 1,
+            label: '右侧（上侧）',
+          },
+          {
+            value: 2,
+            label: '左侧（下侧）',
+          }
+        ]
+      })
+      // 添加弯曲程度参数
+      parameters.push({
+        uuid: genUUID(),
+        name: '弯曲程度',
+        type: ParameterType.Number,
+        value: 1,
+        min: 0,
+        max: 2,
+      })
+    }
+    const strokeFn = strokeFnMap[type]
+    strokeFn && strokeFn.instanceBasicGlyph(strokeGlyph)
+    strokeFn.bindSkeletonGlyph(strokeGlyph)
+    strokeFn.updateSkeletonListenerAfterBind(strokeGlyph._o)
+  }
+
+  // emitter.emit('renderStrokeGlyphPreviewCanvas')
+}
+
 const parseLayout = (info) => {
   const { char, layout, data } = info
   if (layout === '左右') {
@@ -3720,6 +3879,7 @@ const tauri_handlers: IHandlerMap = {
   'language-settings': languageSettings,
   'template-1': importTemplate1,
   'template-2': importTemplate2,
+  'template-3': importTemplate3,
   'remove_overlap': removeOverlap,
 }
 
@@ -3753,6 +3913,7 @@ const web_handlers: IHandlerMap = {
   'language-settings': languageSettings,
   'template-1': importTemplate1,
   'template-2': importTemplate2,
+  'template-3': importTemplate3,
   'remove_overlap': removeOverlap,
 }
 

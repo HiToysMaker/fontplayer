@@ -536,8 +536,8 @@ const updateSkeletonListener_before_bind_heng_pie_wan_gou = (glyph: CustomGlyph)
     glyph.tempData = {}
     glyph.tempData.ox = glyph._glyph.skeleton.ox
     glyph.tempData.oy = glyph._glyph.skeleton.oy
-    glyph.tempData.bendCursor = glyph.getParam('弯曲游标')
-    glyph.tempData.bendDegree = Number(glyph.getParam('弯曲度')) + 30 * Number(glyph.getParam('弯曲程度') || 1)
+    glyph.tempData.bendCursor = glyph.getParam('弯钩-弯曲游标')
+    glyph.tempData.bendDegree = Number(glyph.getParam('弯钩-弯曲度')) + 30 * Number(glyph.getParam('弯曲程度') || 1)
     glyph.getJoints().map((joint) => {
       const _joint = {
         name: joint.name,

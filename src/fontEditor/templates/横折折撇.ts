@@ -258,16 +258,12 @@ const distance = (p1, p2) => {
   return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y))
 }
 
-const getBend = (start, end, bendCursor, bendDegree) => {
-  const horizonalSpan = Math.abs(end.x - start.x)
+const getBend = (start, end, pie_bendCursor) => {
   const verticalSpan = Math.abs(end.y - start.y)
-  const cursor_x = start.x + bendCursor * horizonalSpan
-  const cursor_y = start.y + bendCursor * verticalSpan
-  const angle = Math.atan2(verticalSpan, horizonalSpan)
-  
+
   const bend = {
-    x: cursor_x + bendDegree * Math.sin(angle),
-    y: cursor_y + bendDegree * Math.cos(angle),
+    x: start.x,
+    y: start.y + pie_bendCursor * verticalSpan,
   }
 
   return bend
@@ -676,7 +672,7 @@ const updateSkeletonListener_before_bind_heng_zhe_zhe_pie = (glyph: CustomGlyph)
           x: glyph.tempData['pie_end'].x + deltaX,
           y: glyph.tempData['pie_end'].y + deltaY,
         }
-        const newBend = getBend(jointsMap['pie_start'], jointsMap['pie_end'], glyph.tempData.pie_bendCursor, glyph.tempData.pie_bendDegree)
+        const newBend = getBend(jointsMap['pie_start'], jointsMap['pie_end'], glyph.tempData.pie_bendCursor)
         jointsMap['pie_bend'] = {
           x: newBend.x,
           y: newBend.y,
@@ -693,7 +689,6 @@ const updateSkeletonListener_before_bind_heng_zhe_zhe_pie = (glyph: CustomGlyph)
     glyph.tempData.ox = glyph._glyph.skeleton.ox
     glyph.tempData.oy = glyph._glyph.skeleton.oy
     glyph.tempData.pie_bendCursor = glyph.getParam('撇-弯曲游标')
-    glyph.tempData.pie_bendDegree = Number(glyph.getParam('撇-弯曲度')) + 30 * Number(glyph.getParam('弯曲程度') || 1)
     glyph.getJoints().map((joint) => {
       const _joint = {
         name: joint.name,
@@ -908,7 +903,7 @@ const updateSkeletonListener_after_bind_heng_zhe_zhe_pie = (glyph: CustomGlyph) 
           x: glyph.tempData['pie_end'].x + deltaX,
           y: glyph.tempData['pie_end'].y + deltaY,
         }
-        const newBend = getBend(jointsMap['pie_start'], jointsMap['pie_end'], glyph.tempData.pie_bendCursor, glyph.tempData.pie_bendDegree)
+        const newBend = getBend(jointsMap['pie_start'], jointsMap['pie_end'], glyph.tempData.pie_bendCursor)
         jointsMap['pie_bend'] = {
           x: newBend.x,
           y: newBend.y,
@@ -923,7 +918,6 @@ const updateSkeletonListener_after_bind_heng_zhe_zhe_pie = (glyph: CustomGlyph) 
     const { draggingJoint } = data
     glyph.tempData = {}
     glyph.tempData.pie_bendCursor = glyph.getParam('撇-弯曲游标')
-    glyph.tempData.pie_bendDegree = Number(glyph.getParam('撇-弯曲度')) + 30 * Number(glyph.getParam('弯曲程度') || 1)
     glyph.getJoints().map((joint) => {
       const _joint = {
         name: joint.name,

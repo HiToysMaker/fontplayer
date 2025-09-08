@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { styles, selectedStyle, sampleCharacters, isEditingSample, updatePreviewList_styleSwitch, updateSampleCharactersList, updateCharactersList_styleSwitch, onStrokeReplacement, updateCharactersAndPreview_styleSwitch, selectedStyleUUID } from '../../stores/advancedEdit'
 import { ParameterType } from '../../stores/glyph'
 import { genUUID } from '../../../utils/string'
@@ -98,7 +98,7 @@ onMounted(() => {
     {
       uuid: genUUID(),
       name: '测试手绘风格',
-      strokeStyle: '测试手绘1',
+      strokeStyle: '测试手绘风格',
       constants: [],
       parameters: [
         {
@@ -113,6 +113,11 @@ onMounted(() => {
   ]
   updateSampleCharactersList()
   updatePreviewList_styleSwitch()
+})
+
+onUnmounted(() => {
+  styles.value = []
+  selectedStyleUUID.value = 'default'
 })
 
 // 功能函数（留空）

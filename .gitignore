@@ -31,3 +31,5 @@ crates/*/pkg
 crates/*/target
 
 docs
+
+public/strokes
