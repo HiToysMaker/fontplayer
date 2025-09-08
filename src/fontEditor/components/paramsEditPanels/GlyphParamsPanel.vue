@@ -26,7 +26,9 @@
   import { initWeightSelector, renderBoneAndWeight } from '../../tools/weightSetting'
   import { calculateGlyphWeight } from '../../../features/glyphWeight'
   const { t, tm } = useI18n()
+  import { Edit, Check } from '@element-plus/icons-vue'
 
+  const enableStyleTagEdit = ref(false)
   const onChangeSkeleton = (value: string) => {
     // 设置骨架
     const type = value
@@ -359,6 +361,18 @@
 
 <template>
   <div class="glyph-edit-panel">
+    <div class="title">风格标签</div>
+    <div class="style-tag-wrap">
+      <el-input
+        v-model="editGlyph.style"
+        :disabled="!enableStyleTagEdit"
+      >
+        <template #append>
+          <el-icon v-if="!enableStyleTagEdit" @pointerdown="enableStyleTagEdit = true"><Edit /></el-icon>
+          <el-icon v-else @pointerdown="enableStyleTagEdit = false"><Check /></el-icon>
+        </template>
+      </el-input>
+    </div>
     <div class="title">{{ t('panels.paramsPanel.layout.title') }}</div>
     <div class="layout-wrap">
       <el-button class="add-layout-button" v-show="!editGlyph.layout && !onLayoutSelect" @pointerdown="onLayoutSelect = true">{{ t('panels.paramsPanel.layout.add') }}</el-button>
@@ -391,7 +405,7 @@
         </el-form>
       </div>
     </div>
-    <div class="title">骨架绑定</div>
+    <div class="title" v-if="editGlyph.skeleton || onSkeletonSelect || onSkeletonBind">骨架绑定</div>
     <div class="skeleton-wrap">
       <el-button
         v-if="!editGlyph.skeleton && (!editGlyph._o?.getSkeleton || !editGlyph._o?.getSkeleton())"
@@ -425,6 +439,11 @@
           :precision="1"
           @change="handleChangeSkeletonOY"
         />
+      </el-form-item>
+      <el-form-item :label-width="0" class="dynamic-weight-form-item">
+        <el-checkbox v-model="editGlyph.skeleton.dynamicWeight">
+          动态调整字重
+        </el-checkbox>
       </el-form-item>
       <el-button
         v-if="onSkeletonBind && !onSkeletonSelect && editGlyph.skeleton && !editGlyph.skeleton?.skeletonBindData"
@@ -792,6 +811,7 @@
 <style scoped>
   .layout-wrap {
     padding: 10px;
+    padding-bottom: 0;
     .add-layout-button, .set-layout-button, .el-select {
       width: 100%;
     }
@@ -828,14 +848,15 @@
       width: 150px;
     }
   }
-
+  .style-tag-wrap {
+    padding: 10px;
+  }
   .title {
     height: 36px;
     line-height: 36px;
     padding: 0 10px;
     border-bottom: 1px solid #dcdfe6;
   }
-
   .el-form {
     margin: 10px 0;
   }

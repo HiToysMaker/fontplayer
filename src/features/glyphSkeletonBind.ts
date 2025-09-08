@@ -1178,28 +1178,30 @@ export function applySkeletonTransformation(glyph: CustomGlyph, newSkeleton: any
   const weightedOriginalPoints = R.clone(originalPoints)
 
   // 更新字重
-  const weight = glyph.getParam('字重') as number
-  const originWeight = glyph._glyph.skeleton.originWeight
-  if (weight && weight !== originWeight) {
-    const d = (weight - originWeight) / 2
-    const points = originalPoints
-    for (let i = 0; i < points.length - 1; i+=3) {
-      const bezier = [points[i], points[i+1], points[i+2], points[i+3]]
-      const angle1 = Math.atan2(bezier[1].y - bezier[0].y, bezier[1].x - bezier[0].x)
-      const angle2 = Math.atan2(bezier[3].y - bezier[2].y, bezier[3].x - bezier[2].x)
-      const p1 = { x: bezier[0].x - Math.sin(angle1) * d, y: bezier[0].y + Math.cos(angle1) * d }
-      const p2 = { x: bezier[1].x - Math.sin(angle1) * d, y: bezier[1].y + Math.cos(angle1) * d }
-      const p3 = { x: bezier[2].x - Math.sin(angle2) * d, y: bezier[2].y + Math.cos(angle2) * d }
-      const p4 = { x: bezier[3].x - Math.sin(angle2) * d, y: bezier[3].y + Math.cos(angle2) * d }
-      weightedOriginalPoints[i].x = p1.x
-      weightedOriginalPoints[i].y = p1.y
-      weightedOriginalPoints[i+1].x = p2.x
-      weightedOriginalPoints[i+1].y = p2.y
-      weightedOriginalPoints[i+2].x = p3.x
-      weightedOriginalPoints[i+2].y = p3.y
-      weightedOriginalPoints[i+3].x = p4.x
-      weightedOriginalPoints[i+3].y = p4.y
-    };
+  if (glyph._glyph?.skeleton?.dynamicWeight) {
+    const weight = glyph.getParam('字重') as number
+    const originWeight = glyph._glyph.skeleton.originWeight
+    if (weight && weight !== originWeight) {
+      const d = (weight - originWeight) / 2
+      const points = originalPoints
+      for (let i = 0; i < points.length - 1; i+=3) {
+        const bezier = [points[i], points[i+1], points[i+2], points[i+3]]
+        const angle1 = Math.atan2(bezier[1].y - bezier[0].y, bezier[1].x - bezier[0].x)
+        const angle2 = Math.atan2(bezier[3].y - bezier[2].y, bezier[3].x - bezier[2].x)
+        const p1 = { x: bezier[0].x - Math.sin(angle1) * d, y: bezier[0].y + Math.cos(angle1) * d }
+        const p2 = { x: bezier[1].x - Math.sin(angle1) * d, y: bezier[1].y + Math.cos(angle1) * d }
+        const p3 = { x: bezier[2].x - Math.sin(angle2) * d, y: bezier[2].y + Math.cos(angle2) * d }
+        const p4 = { x: bezier[3].x - Math.sin(angle2) * d, y: bezier[3].y + Math.cos(angle2) * d }
+        weightedOriginalPoints[i].x = p1.x
+        weightedOriginalPoints[i].y = p1.y
+        weightedOriginalPoints[i+1].x = p2.x
+        weightedOriginalPoints[i+1].y = p2.y
+        weightedOriginalPoints[i+2].x = p3.x
+        weightedOriginalPoints[i+2].y = p3.y
+        weightedOriginalPoints[i+3].x = p4.x
+        weightedOriginalPoints[i+3].y = p4.y
+      };
+    }
   }
   
   let transformedPoints = calculateTransformedPoints(glyph, newSkeleton, weightedOriginalPoints);

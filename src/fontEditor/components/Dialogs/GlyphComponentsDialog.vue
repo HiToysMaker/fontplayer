@@ -25,6 +25,7 @@
 	import { emitter } from '../../Event/bus'
   import { renderPreview2 } from '../../canvas/canvas'
   import { loaded, loading, setTool, tool, total } from '../../stores/global'
+  import { onStrokeReplacement, setReplacementStroke } from '../../stores/advancedEdit'
   const { tm, t } = useI18n()
 
 	const selectedTab = ref(Status.StrokeGlyphList)
@@ -292,11 +293,18 @@
 	}
 	
 	const handleConfirm = () => {
-		selected_glyphs.value.map(glyph => {
-			addGlyph(glyph)
-		})
-    selected_glyphs.value = []
-		glyphComponentsDialogVisible2.value = false
+    // 如果onStrokeReplacement为true，则设置替换笔画
+    if (onStrokeReplacement.value) {
+      setReplacementStroke(selected_glyphs.value[0].uuid)
+      onStrokeReplacement.value = false
+      glyphComponentsDialogVisible2.value = false
+    } else {
+      selected_glyphs.value.map(glyph => {
+        addGlyph(glyph)
+      })
+      selected_glyphs.value = []
+      glyphComponentsDialogVisible2.value = false
+    }
 	}
 
 

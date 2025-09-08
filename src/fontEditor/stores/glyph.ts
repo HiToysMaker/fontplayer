@@ -18,6 +18,7 @@ import { copiedGlyphUUID, editedGlyphUUID, glyphComponentsDialogVisible2, setAdd
 import { enableMultiSelect } from './files'
 import { strokeFnMap, updateSkeletonTransformation } from '../templates/strokeFnMap'
 import { updateGlyphWeight } from '../../features/glyphWeight'
+import { onStrokeReplacement, setReplacementStroke } from './advancedEdit'
 
 // 字形组件数据结构
 // custom component data struct
@@ -55,6 +56,7 @@ export interface ICustomGlyph {
 	script_reference?: string;
 	parent_reference?: ParentInfo;
 	skeleton?: ISkeleton | null;
+	style?: string;
 }
 
 interface ISkeleton {
@@ -64,6 +66,7 @@ interface ISkeleton {
 	skeletonBindData?: any;
 	onSkeletonBind?: boolean;
 	originWeight?: number;
+	dynamicWeight?: boolean;
 }
 
 const skeletonOptions = [
@@ -1670,32 +1673,38 @@ const multi_glyph_selection: Ref<Boolean> = ref(false)
 // 添加选中字形
 // add selected glyph
 const addSelectedGlyph = (glyph: ICustomGlyph) => {
-	const _glyph = R.clone(glyph)
-	//_glyph.parent = editStatus.value === Status.Edit ? editCharacterFile.value : editGlyph.value
-	_glyph.parent_reference = getParentInfo(editStatus.value === Status.Edit ? editCharacterFile.value : editGlyph.value)
-	_glyph.script = null
-	_glyph.script_reference = _glyph.uuid
-	const component: IGlyphComponent = {
-		uuid: genUUID(),
-		type: 'glyph',
-		name: glyph.name + Date.now().toString().slice(9),
-		lock: false,
-		visible: true,
-		value: _glyph,
-		ox: selectedFile.value.width / 2 - 1000 / 2,
-		oy: selectedFile.value.height / 2 - 1000 / 2,
-		usedInCharacter: true,
+	if (onStrokeReplacement.value) {
+		setReplacementStroke(glyph.uuid)
+		onStrokeReplacement.value = false
+		glyphComponentsDialogVisible2.value = false
+	} else {
+		const _glyph = R.clone(glyph)
+		//_glyph.parent = editStatus.value === Status.Edit ? editCharacterFile.value : editGlyph.value
+		_glyph.parent_reference = getParentInfo(editStatus.value === Status.Edit ? editCharacterFile.value : editGlyph.value)
+		_glyph.script = null
+		_glyph.script_reference = _glyph.uuid
+		const component: IGlyphComponent = {
+			uuid: genUUID(),
+			type: 'glyph',
+			name: glyph.name + Date.now().toString().slice(9),
+			lock: false,
+			visible: true,
+			value: _glyph,
+			ox: selectedFile.value.width / 2 - 1000 / 2,
+			oy: selectedFile.value.height / 2 - 1000 / 2,
+			usedInCharacter: true,
+		}
+		executeScript(component.value)
+		if (editStatus.value === Status.Edit) {
+			addComponentForCurrentCharacterFile(component)
+		} else if (editStatus.value === Status.Glyph) {
+			addComponentForCurrentGlyph(component)
+		}
+		if (tool.value !== 'glyphDragger') {
+			setTool('glyphDragger')
+		}
+		glyphComponentsDialogVisible2.value = false
 	}
-	executeScript(component.value)
-	if (editStatus.value === Status.Edit) {
-		addComponentForCurrentCharacterFile(component)
-	} else if (editStatus.value === Status.Glyph) {
-		addComponentForCurrentGlyph(component)
-	}
-	if (tool.value !== 'glyphDragger') {
-		setTool('glyphDragger')
-	}
-	glyphComponentsDialogVisible2.value = false
 }
 
 // 选择字形

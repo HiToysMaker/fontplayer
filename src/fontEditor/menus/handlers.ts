@@ -150,6 +150,8 @@ const plainGlyph = (glyph: ICustomGlyph, options: IPlainGlyphOptions = { clearSc
     //@ts-ignore
     reflines: glyph.reflines ? R.clone(glyph.reflines) : [],
     script: clearScript ? null : glyph.script,
+    skeleton: glyph.skeleton ? R.clone(glyph.skeleton) : null,
+    style: glyph.style,
   }
 
   if (clearScript) {
@@ -2498,6 +2500,7 @@ const importTemplate2 = async () => {
       },
       parameters: new ParametersMap(parameters),
       joints: [],
+      style: '字玩标准黑体',
       script: `function script_${uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t${stroke_script}\n}`,
     }
     addGlyph(glyph, Status.StrokeGlyphList)

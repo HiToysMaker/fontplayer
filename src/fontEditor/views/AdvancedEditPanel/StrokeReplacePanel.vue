@@ -1,16 +1,17 @@
 <script lang="ts" setup>
-import { onMounted, ref, watch } from 'vue'
-import { IConstant, ParameterType, getConstant, constantsMap } from '../../stores/glyph'
-import { loading, loaded, total } from '../../stores/global'
-import { useI18n } from 'vue-i18n'
-import { constants, sampleCharacters, isEditingSample, updatePreviewList, updateSampleCharactersList, updateCharactersAndPreview, updateCharactersList } from '../../stores/advancedEdit'
-import { glyphs, constants as globalConstants } from '../../stores/glyph'
-import * as R from 'ramda'
+import { nextTick, onMounted } from 'vue'
+import { strokeList, selectedStroke, sampleCharacters, isEditingSample, updatePreviewList_strokeReplace, updateSampleCharactersList, updateCharactersList_strokeReplace, onStrokeReplacement, selectedStrokeUUID, getStrokeList, renderStrokePreview } from '../../stores/advancedEdit'
+import { glyphComponentsDialogVisible2 } from '../../stores/dialogs'
 
-onMounted(() => {
-  constants.value = R.clone(globalConstants.value)
+onMounted(async () => {
+  getStrokeList()
   updateSampleCharactersList()
-  updatePreviewList()
+  updatePreviewList_strokeReplace()
+  await nextTick()
+  for (let i = 0; i < strokeList.value.length; i++) {
+    const stroke = strokeList.value[i]
+    renderStrokePreview(stroke.uuid)
+  }
 })
 
 // 功能函数（留空）
@@ -19,31 +20,30 @@ const handleToggleEditSample = () => {
   isEditingSample.value = !isEditingSample.value
   if (!isEditingSample.value) {
     updateSampleCharactersList()
-    updatePreviewList()
+    updatePreviewList_strokeReplace()
   }
 }
 
 const handleUpdateAllCharacters = () => {
   // TODO: 实现一键更新全部字符功能
-  updateCharactersList()
+  updateCharactersList_strokeReplace()
 }
 
-const handleChangeParameter = (parameter, value, setValue = false) => {
-  if (setValue) {
-    parameter.value = value
-  }
+const handleSelectStroke = async(stroke) => {
+  selectedStrokeUUID.value = stroke.uuid
+  await nextTick()
+  renderStrokePreview(stroke.uuid)
 }
 
-watch(constants, () => {
-  updateCharactersAndPreview()
-}, {
-  deep: true,
-})
+const handleSetReplacementStroke = () => {
+  onStrokeReplacement.value = true
+  glyphComponentsDialogVisible2.value = true
+}
 </script>
 
 <template>
   <div class="wrap">
-    <div class="global-params-panel">
+    <div class="advanced-edit-params-panel">
       <div class="left">
         <div class="sample-characters-section">
           <h3>样例字符</h3>
@@ -66,7 +66,7 @@ watch(constants, () => {
             {{ isEditingSample ? '确认' : '编辑预览样例字符' }}
           </el-button>
         </div>
-        
+
         <div class="update-section">
           <el-button 
             type="danger" 
@@ -83,46 +83,24 @@ watch(constants, () => {
       </div>
       <div class="right">
         <el-scrollbar>
-          <div class="parameters-wrap">
-            <div class="title">全局变量</div>
-            <el-form
-              class="parameters-form"
-              label-width="80px"
-            >
-              <el-form-item :label="parameter.name" v-for="parameter in constants">
-                <div class="param-wrapper" v-if="parameter.type === ParameterType.Number">
-                  <el-input-number
-                    :model-value="parameter.value"
-                    :step="parameter.max <= 10 ? 0.01 : 1"
-                    :min="parameter.min"
-                    :max="parameter.max"
-                    :precision="parameter.max <= 10 ? 2 : 0"
-                    @change="(value) => handleChangeParameter(parameter, value, true)"
-                  />
-                  <el-slider
-                    :step="parameter.max <= 10 ? 0.01 : 1"
-                    :min="parameter.min"
-                    :max="parameter.max"
-                    :precision="parameter.max <= 10 ? 2 : 0"
-                    @input="(value) => handleChangeParameter(parameter, value, false)"
-                    v-model="parameter.value" v-show="parameter.type === ParameterType.Number"
-                  />
+          <div class="title">笔画列表</div>
+          <div class="stroke-list">
+            <div class="stroke-item" v-for="stroke in strokeList" :key="stroke.uuid" @click="handleSelectStroke(stroke)">
+              <div class="stroke-preview">
+                <canvas v-if="!stroke.replaced" :class="`stroke-preview-${stroke.uuid}`" width="100" height="100"></canvas>
+                <canvas v-else="stroke.replaced" :class="`stroke-preview-${stroke.replacement.uuid}`" width="100" height="100"></canvas>
+              </div>
+              <div class="stroke-info">
+                <div class="stroke-name">{{ stroke.name }}</div>
+                <div class="stroke-style">{{ stroke.style }}</div>
+                <div class="replacement-setting-btn" v-if="!stroke.replaced">
+                  <el-button @click="handleSetReplacementStroke" size="small" type="primary">设置替换笔画</el-button>
                 </div>
-                <div class="param-wrapper" v-else-if="parameter.type === ParameterType.Enum">
-                  <el-select
-                    v-model="parameter.value" class="enum-param-select" placeholder="Select"
-                    @change="(value) => handleChangeParameter(parameter, value, false)"
-                  >
-                    <el-option
-                      v-for="option in parameter.options"
-                      :key="option.value"
-                      :label="option.label"
-                      :value="option.value"
-                    />
-                  </el-select>
+                <div class="replacement-setting-btn" v-if="stroke.replaced">
+                  <el-button @click="handleSetReplacementStroke" size="small" type="primary">修改替换笔画</el-button>
                 </div>
-              </el-form-item>
-            </el-form>
+              </div>
+            </div>
           </div>
         </el-scrollbar>
       </div>
@@ -139,7 +117,7 @@ watch(constants, () => {
   align-items: center;
   background-color: var(--dark-3);
 }
-.global-params-panel {
+.advanced-edit-params-panel {
   width: 100%;
   height: 100%;
   display: flex;
@@ -201,6 +179,7 @@ watch(constants, () => {
     justify-content: center;
     align-items: flex-end;
     flex-direction: column;
+    height: calc(100% - 50px);
     .parameters-wrap {
       width: 100%;
     }
@@ -210,6 +189,33 @@ watch(constants, () => {
     .title {
       background-color: var(--primary-0);
       color: var(--light-0);
+    }
+    .stroke-list {
+      .stroke-item {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+        border-bottom: 1px solid var(--light-5);
+        padding: 10px;
+        box-sizing: border-box;
+        .stroke-preview {
+          flex: 0 0 100px;
+          height: 100px;
+        }
+        .stroke-info {
+          height: 100px;
+          flex: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          color: var(--light-0);
+          .replacement-setting-btn {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+          }
+        }
+      }
     }
     .el-form-item {
       flex: 0 0 50px;
