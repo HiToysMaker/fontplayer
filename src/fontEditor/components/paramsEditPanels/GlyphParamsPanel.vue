@@ -28,10 +28,6 @@
   const { t, tm } = useI18n()
   import { Edit, Check } from '@element-plus/icons-vue'
 
-  onMounted(() => {
-    console.log('GlyphParamsPanel mounted', editGlyph.value)
-  })
-
   const enableStyleTagEdit = ref(false)
   const onChangeSkeleton = (value: string) => {
     // 设置骨架

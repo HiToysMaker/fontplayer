@@ -53,8 +53,14 @@ export const skeletonToBones_heng_pie_wan_gou = (skeleton: any): any[] => {
     const t1 = i / pieSegments;
     const t2 = (i + 1) / pieSegments;
     
-    const p1 = quadraticBezierPoint(pie_start, pie_bend, pie_end, t1);
-    const p2 = quadraticBezierPoint(pie_start, pie_bend, pie_end, t2);
+    const p1 = {
+      x: pie_start.x + (pie_end.x - pie_start.x) * t1,
+      y: pie_start.y + (pie_end.y - pie_start.y) * t1
+    };
+    const p2 = {
+      x: pie_start.x + (pie_end.x - pie_start.x) * t2,
+      y: pie_start.y + (pie_end.y - pie_start.y) * t2
+    };
     
     const bone: any = {
       id: `pie_segment_${i}`,

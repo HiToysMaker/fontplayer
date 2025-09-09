@@ -158,10 +158,17 @@ function detectSkeletonType(skeleton: any): SkeletonType {
   } else if (jointNames.includes('heng1_start') && jointNames.includes('heng1_end') && jointNames.includes('heng2_start') && jointNames.includes('heng2_end') && jointNames.includes('zhe1_start') && jointNames.includes('zhe1_end') && jointNames.includes('zhe2_start') && jointNames.includes('zhe2_end')) {
     // 复合笔画：二横折类
     return 'er_heng_zhe';
-  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('wan_start') && jointNames.includes('wan_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
+  } else if (
+    jointNames.includes('heng_start') && jointNames.includes('heng_end') &&
+    jointNames.includes('zhe_start') && jointNames.includes('zhe_end') &&
+    jointNames.includes('wan_start') && jointNames.includes('wan_end') &&
+    jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
     // 复合笔画：横折弯钩类
     return 'heng_zhe_wan_gou';
-  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('zhe_start') && jointNames.includes('zhe_end') &&jointNames.includes('wan_start') && jointNames.includes('wan_end')) {
+  } else if (
+    jointNames.includes('heng_start') && jointNames.includes('heng_end') &&
+    jointNames.includes('zhe_start') && jointNames.includes('zhe_end') &&
+    jointNames.includes('wan_start') && jointNames.includes('wan_end')) {
     // 复合笔画：横折弯类
     return 'heng_zhe_wan';
   } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('zhe_start') && jointNames.includes('zhe_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
@@ -173,13 +180,13 @@ function detectSkeletonType(skeleton: any): SkeletonType {
   } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('zhe_start') && jointNames.includes('zhe_end') && jointNames.includes('pie_start') && jointNames.includes('pie_end')) {
     // 复合笔画：横折撇类
     return 'heng_zhe_pie';
-  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('pie_start') && jointNames.includes('pie_end') && jointNames.includes('wan_start') && jointNames.includes('wan_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
+  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('pie_start') && jointNames.includes('pie_end') && jointNames.includes('wangou_start') && jointNames.includes('wangou_end')) {
     // 复合笔画：横撇弯钩类
     return 'heng_pie_wan_gou';
-  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('pie_start') && jointNames.includes('pie_end') && jointNames.includes('wan_start') && jointNames.includes('wan_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
+  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('wan_start') && jointNames.includes('wan_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
     // 复合笔画：横弯钩类
     return 'heng_wan_gou';
-  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('pie_start') && jointNames.includes('pie_end')) {
+  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('pie_start') &&jointNames.includes('pie_bend') && jointNames.includes('pie_end')) {
     // 复合笔画：横撇类
     return 'heng_pie';
   } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
