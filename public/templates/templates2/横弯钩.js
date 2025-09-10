@@ -551,81 +551,155 @@ const getComponents = (skeleton) => {
   const pen = new FP.PenComponent()
   pen.beginPath()
 
-  // 绘制右侧（外侧）侧轮廓
+  // 按逆时针方向绘制轮廓
+  // 绘制左侧（内侧）轮廓
   if (start_style_type === 0) {
     // 无起笔样式
-    pen.moveTo(out_heng_start.x, out_corner_heng_wan.y)
+    pen.moveTo(in_heng_start.x, in_heng_start.y)
   } else if (start_style_type === 1) {
     // 起笔上下凸起长方形
-    pen.moveTo(out_heng_start.x, out_corner_heng_wan.y - start_style.start_style_decorator_height)
-    pen.lineTo(out_heng_start.x + start_style.start_style_decorator_width, out_corner_heng_wan.y - start_style.start_style_decorator_height)
-    pen.lineTo(out_heng_start.x + start_style.start_style_decorator_width, out_corner_heng_wan.y)
+    pen.moveTo(in_heng_start.x, in_heng_start.y + start_style.start_style_decorator_height)
+    pen.lineTo(in_heng_start.x + start_style.start_style_decorator_width, in_heng_start.y + start_style.start_style_decorator_height)
+    pen.lineTo(in_heng_start.x + start_style.start_style_decorator_width, in_heng_start.y)
   } else if (start_style_type === 2) {
     // 起笔上下凸起长方形，长方形内侧转角为圆角
-    pen.moveTo(out_heng_start.x, out_corner_heng_wan.y - start_style.start_style_decorator_height)
-    pen.lineTo(out_heng_start.x + start_style.start_style_decorator_width, out_corner_heng_wan.y - start_style.start_style_decorator_height)
+    pen.moveTo(in_heng_start.x, in_heng_start.y + start_style.start_style_decorator_height)
+    pen.lineTo(in_heng_start.x + start_style.start_style_decorator_width, in_heng_start.y + start_style.start_style_decorator_height)
     pen.quadraticBezierTo(
-      out_heng_start.x + start_style.start_style_decorator_width,
-      out_corner_heng_wan.y,
-      out_heng_start.x + start_style.start_style_decorator_width + start_style.start_style_decorator_radius,
-      out_corner_heng_wan.y,
+      in_heng_start.x + start_style.start_style_decorator_width,
+      in_heng_start.y,
+      in_heng_start.x + start_style.start_style_decorator_width + start_style.start_style_decorator_radius,
+      in_heng_start.y,
     )
   }
-  pen.lineTo(out_corner_heng_wan.x, out_corner_heng_wan.y)
-  pen.lineTo(out_wan_curves_final[0].start.x, out_wan_curves_final[0].start.y)
-  for (let i = 0; i < out_wan_curves_final.length; i++) {
-    const curve = out_wan_curves_final[i]
+  pen.lineTo(in_wan_curves_final[0].start.x, in_wan_curves_final[0].start.y)
+  for (let i = 0; i < in_wan_curves_final.length; i++) {
+    const curve = in_wan_curves_final[i]
     pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
   }
-  // 绘制外侧圆角
-  pen.quadraticBezierTo(out_radius_control.x, out_radius_control.y, out_radius_end.x, out_radius_end.y)
-  pen.lineTo(out_gou_end.x, out_gou_end.y)
-
-  // 绘制轮廓连接线
+  pen.quadraticBezierTo(in_radius_control.x, in_radius_control.y, in_radius_end.x, in_radius_end.y)
   pen.lineTo(in_gou_end.x, in_gou_end.y)
 
-  // 绘制左侧（内侧）侧轮廓
-  // 绘制内侧圆角
-  pen.lineTo(in_radius_end.x, in_radius_end.y)
-  pen.quadraticBezierTo(in_radius_control.x, in_radius_control.y, in_radius_start.x, in_radius_start.y)
-  for (let i = in_wan_curves_final.length - 1; i >= 0; i--) {
-    const curve = in_wan_curves_final[i]
+  // 绘制轮廓连接线
+  pen.lineTo(out_gou_end.x, out_gou_end.y)
+
+  // 绘制右侧（外侧）轮廓
+  pen.lineTo(out_radius_end.x, out_radius_end.y)
+  pen.quadraticBezierTo(out_radius_control.x, out_radius_control.y, out_radius_start.x, out_radius_start.y)
+  for (let i = out_wan_curves_final.length - 1; i >= 0; i--) {
+    const curve = out_wan_curves_final[i]
     pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
   }
+  pen.lineTo(out_corner_heng_wan.x, out_corner_heng_wan.y)
   if (start_style_type === 0) {
     // 无起笔样式
-    pen.lineTo(in_heng_start.x, in_wan_curves_final[0].start.y)
+    pen.lineTo(out_heng_start.x, out_heng_start.y)
   } else if (start_style_type === 1) {
     // 起笔上下凸起长方形
-    pen.lineTo(in_heng_start.x + start_style.start_style_decorator_width, in_wan_curves_final[0].start.y)
-    pen.lineTo(in_heng_start.x + start_style.start_style_decorator_width, in_wan_curves_final[0].start.y + start_style.start_style_decorator_height)
-    pen.lineTo(in_heng_start.x, in_wan_curves_final[0].start.y + start_style.start_style_decorator_height)
+    pen.lineTo(out_heng_start.x + start_style.start_style_decorator_width, out_heng_start.y)
+    pen.lineTo(out_heng_start.x + start_style.start_style_decorator_width, out_heng_start.y - start_style.start_style_decorator_height)
+    pen.lineTo(out_heng_start.x, out_heng_start.y - start_style.start_style_decorator_height)
   } else if (start_style_type === 2) {
     // 起笔上下凸起长方形，长方形内侧转角为圆角
-    pen.lineTo(
-      in_heng_start.x + start_style.start_style_decorator_width + start_style.start_style_decorator_radius,
-      in_wan_curves_final[0].start.y,
-    )
+    pen.lineTo(out_heng_start.x + start_style.start_style_decorator_width + start_style.start_style_decorator_radius, out_heng_start.y)
     pen.quadraticBezierTo(
-      in_heng_start.x + start_style.start_style_decorator_width,
-      in_wan_curves_final[0].start.y,
-      in_heng_start.x + start_style.start_style_decorator_width,
-      in_wan_curves_final[0].start.y + start_style.start_style_decorator_height,
+      out_heng_start.x + start_style.start_style_decorator_width,
+      out_heng_start.y,
+      out_heng_start.x + start_style.start_style_decorator_width,
+      out_heng_start.y - start_style.start_style_decorator_height,
     )
-    pen.lineTo(in_heng_start.x, in_wan_curves_final[0].start.y + start_style.start_style_decorator_height)
+    pen.lineTo(out_heng_start.x, out_heng_start.y - start_style.start_style_decorator_height)
   }
 
   // 绘制轮廓连接线
   if (start_style_type === 0) {
     // 无起笔样式
-    pen.lineTo(out_heng_start.x, out_corner_heng_wan.y)
+    pen.lineTo(in_heng_start.x, in_heng_start.y)
   } else if (start_style_type === 1) {
     // 起笔上下凸起长方形
-    pen.lineTo(out_heng_start.x, out_corner_heng_wan.y - start_style.start_style_decorator_height)
+    pen.lineTo(in_heng_start.x, in_heng_start.y + start_style.start_style_decorator_height)
   } else if (start_style_type === 2) {
     // 起笔上下凸起长方形，长方形内侧转角为圆角
-    pen.lineTo(out_heng_start.x, out_corner_heng_wan.y - start_style.start_style_decorator_height)
+    pen.lineTo(in_heng_start.x, in_heng_start.y + start_style.start_style_decorator_height)
   }
+
+
+  // // 按顺时针方向绘制轮廓
+  // // 绘制右侧（外侧）侧轮廓
+  // if (start_style_type === 0) {
+  //   // 无起笔样式
+  //   pen.moveTo(out_heng_start.x, out_corner_heng_wan.y)
+  // } else if (start_style_type === 1) {
+  //   // 起笔上下凸起长方形
+  //   pen.moveTo(out_heng_start.x, out_corner_heng_wan.y - start_style.start_style_decorator_height)
+  //   pen.lineTo(out_heng_start.x + start_style.start_style_decorator_width, out_corner_heng_wan.y - start_style.start_style_decorator_height)
+  //   pen.lineTo(out_heng_start.x + start_style.start_style_decorator_width, out_corner_heng_wan.y)
+  // } else if (start_style_type === 2) {
+  //   // 起笔上下凸起长方形，长方形内侧转角为圆角
+  //   pen.moveTo(out_heng_start.x, out_corner_heng_wan.y - start_style.start_style_decorator_height)
+  //   pen.lineTo(out_heng_start.x + start_style.start_style_decorator_width, out_corner_heng_wan.y - start_style.start_style_decorator_height)
+  //   pen.quadraticBezierTo(
+  //     out_heng_start.x + start_style.start_style_decorator_width,
+  //     out_corner_heng_wan.y,
+  //     out_heng_start.x + start_style.start_style_decorator_width + start_style.start_style_decorator_radius,
+  //     out_corner_heng_wan.y,
+  //   )
+  // }
+  // pen.lineTo(out_corner_heng_wan.x, out_corner_heng_wan.y)
+  // pen.lineTo(out_wan_curves_final[0].start.x, out_wan_curves_final[0].start.y)
+  // for (let i = 0; i < out_wan_curves_final.length; i++) {
+  //   const curve = out_wan_curves_final[i]
+  //   pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
+  // }
+  // // 绘制外侧圆角
+  // pen.quadraticBezierTo(out_radius_control.x, out_radius_control.y, out_radius_end.x, out_radius_end.y)
+  // pen.lineTo(out_gou_end.x, out_gou_end.y)
+
+  // // 绘制轮廓连接线
+  // pen.lineTo(in_gou_end.x, in_gou_end.y)
+
+  // // 绘制左侧（内侧）侧轮廓
+  // // 绘制内侧圆角
+  // pen.lineTo(in_radius_end.x, in_radius_end.y)
+  // pen.quadraticBezierTo(in_radius_control.x, in_radius_control.y, in_radius_start.x, in_radius_start.y)
+  // for (let i = in_wan_curves_final.length - 1; i >= 0; i--) {
+  //   const curve = in_wan_curves_final[i]
+  //   pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
+  // }
+  // if (start_style_type === 0) {
+  //   // 无起笔样式
+  //   pen.lineTo(in_heng_start.x, in_wan_curves_final[0].start.y)
+  // } else if (start_style_type === 1) {
+  //   // 起笔上下凸起长方形
+  //   pen.lineTo(in_heng_start.x + start_style.start_style_decorator_width, in_wan_curves_final[0].start.y)
+  //   pen.lineTo(in_heng_start.x + start_style.start_style_decorator_width, in_wan_curves_final[0].start.y + start_style.start_style_decorator_height)
+  //   pen.lineTo(in_heng_start.x, in_wan_curves_final[0].start.y + start_style.start_style_decorator_height)
+  // } else if (start_style_type === 2) {
+  //   // 起笔上下凸起长方形，长方形内侧转角为圆角
+  //   pen.lineTo(
+  //     in_heng_start.x + start_style.start_style_decorator_width + start_style.start_style_decorator_radius,
+  //     in_wan_curves_final[0].start.y,
+  //   )
+  //   pen.quadraticBezierTo(
+  //     in_heng_start.x + start_style.start_style_decorator_width,
+  //     in_wan_curves_final[0].start.y,
+  //     in_heng_start.x + start_style.start_style_decorator_width,
+  //     in_wan_curves_final[0].start.y + start_style.start_style_decorator_height,
+  //   )
+  //   pen.lineTo(in_heng_start.x, in_wan_curves_final[0].start.y + start_style.start_style_decorator_height)
+  // }
+
+  // // 绘制轮廓连接线
+  // if (start_style_type === 0) {
+  //   // 无起笔样式
+  //   pen.lineTo(out_heng_start.x, out_corner_heng_wan.y)
+  // } else if (start_style_type === 1) {
+  //   // 起笔上下凸起长方形
+  //   pen.lineTo(out_heng_start.x, out_corner_heng_wan.y - start_style.start_style_decorator_height)
+  // } else if (start_style_type === 2) {
+  //   // 起笔上下凸起长方形，长方形内侧转角为圆角
+  //   pen.lineTo(out_heng_start.x, out_corner_heng_wan.y - start_style.start_style_decorator_height)
+  // }
 
   pen.closePath()
   return [pen]

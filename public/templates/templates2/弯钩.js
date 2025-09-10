@@ -343,30 +343,58 @@ const getComponents = (skeleton) => {
   const pen = new FP.PenComponent()
   pen.beginPath()
 
-  // 绘制右侧（外侧）侧轮廓
-  pen.moveTo(out_wan_curves_final[0].start.x, out_wan_curves_final[0].start.y)
-  for (let i = 0; i < out_wan_curves_final.length; i++) {
-    const curve = out_wan_curves_final[i]
+  // 按逆时针方向绘制轮廓
+  // 绘制左侧（内侧）侧轮廓
+  pen.moveTo(in_wan_curves_final[0].start.x, in_wan_curves_final[0].start.y)
+  for (let i = 0; i < in_wan_curves_final.length; i++) {
+    const curve = in_wan_curves_final[i]
     pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
   }
-  // 绘制外侧圆角
-  pen.quadraticBezierTo(out_radius_control.x, out_radius_control.y, out_radius_end.x, out_radius_end.y)
-  pen.lineTo(out_gou_end.x, out_gou_end.y)
-
-  // 绘制轮廓连接线
+  // 绘制内侧圆角
+  pen.quadraticBezierTo(in_radius_control.x, in_radius_control.y, in_radius_end.x, in_radius_end.y)
   pen.lineTo(in_gou_end.x, in_gou_end.y)
 
-  // 绘制左侧（内侧）侧轮廓
-  // 绘制内侧圆角
-  pen.lineTo(in_radius_end.x, in_radius_end.y)
-  pen.quadraticBezierTo(in_radius_control.x, in_radius_control.y, in_radius_start.x, in_radius_start.y)
-  for (let i = in_wan_curves_final.length - 1; i >= 0; i--) {
-    const curve = in_wan_curves_final[i]
+  // 绘制轮廓连接线
+  pen.lineTo(out_gou_end.x, out_gou_end.y)
+
+  // 绘制右侧（外侧）侧轮廓
+  pen.lineTo(out_radius_end.x, out_radius_end.y)
+  // 绘制外侧圆角
+  pen.quadraticBezierTo(out_radius_control.x, out_radius_control.y, out_radius_start.x, out_radius_start.y)
+  for (let i = out_wan_curves_final.length - 1; i >= 0; i--) {
+    const curve = out_wan_curves_final[i]
     pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
   }
 
   // 绘制轮廓连接线
-  pen.lineTo(out_wan_curves[0].start.x, out_wan_curves[0].start.y)
+  pen.lineTo(in_wan_curves_final[0].start.x, in_wan_curves_final[0].start.y)
+
+
+  // // 按顺时针方向绘制轮廓
+  // // 绘制右侧（外侧）侧轮廓
+  // pen.moveTo(out_wan_curves_final[0].start.x, out_wan_curves_final[0].start.y)
+  // for (let i = 0; i < out_wan_curves_final.length; i++) {
+  //   const curve = out_wan_curves_final[i]
+  //   pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
+  // }
+  // // 绘制外侧圆角
+  // pen.quadraticBezierTo(out_radius_control.x, out_radius_control.y, out_radius_end.x, out_radius_end.y)
+  // pen.lineTo(out_gou_end.x, out_gou_end.y)
+
+  // // 绘制轮廓连接线
+  // pen.lineTo(in_gou_end.x, in_gou_end.y)
+
+  // // 绘制左侧（内侧）侧轮廓
+  // // 绘制内侧圆角
+  // pen.lineTo(in_radius_end.x, in_radius_end.y)
+  // pen.quadraticBezierTo(in_radius_control.x, in_radius_control.y, in_radius_start.x, in_radius_start.y)
+  // for (let i = in_wan_curves_final.length - 1; i >= 0; i--) {
+  //   const curve = in_wan_curves_final[i]
+  //   pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
+  // }
+
+  // // 绘制轮廓连接线
+  // pen.lineTo(out_wan_curves[0].start.x, out_wan_curves[0].start.y)
 
   pen.closePath()
   return [ pen ]

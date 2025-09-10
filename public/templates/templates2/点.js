@@ -219,24 +219,42 @@ const getComponents = (skeleton, global_params) => {
   const pen = new FP.PenComponent()
   pen.beginPath()
 
-  // 绘制右侧（外侧）轮廓
-  pen.moveTo(out_dian_curves[0].start.x, out_dian_curves[0].start.y)
-  for (let i = 0; i < out_dian_curves.length; i++) {
-    const curve = out_dian_curves[i]
+  // 按逆时针方向绘制轮廓
+  // 绘制左侧（内侧）轮廓
+  pen.moveTo(in_dian_curves[0].start.x, in_dian_curves[0].start.y)
+  for (let i = 0; i < in_dian_curves.length; i++) {
+    const curve = in_dian_curves[i]
     pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
   }
-
   // 绘制轮廓连接线
-  pen.lineTo(in_dian_curves[in_dian_curves.length - 1].end.x, in_dian_curves[in_dian_curves.length - 1].end.y)
-
-  // 绘制左侧（内侧）轮廓
-  for (let i = in_dian_curves.length - 1; i >= 0; i--) {
-    const curve = in_dian_curves[i]
+  pen.lineTo(out_dian_curves[out_dian_curves.length - 1].end.x, out_dian_curves[out_dian_curves.length - 1].end.y)
+  // 绘制右侧（外侧）轮廓
+  for (let i = out_dian_curves.length - 1; i >= 0; i--) {
+    const curve = out_dian_curves[i]
     pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
   }
-
   // 绘制轮廓连接线
-  pen.lineTo(out_dian_curves[0].start.x, out_dian_curves[0].start.y)
+  pen.lineTo(in_dian_curves[0].start.x, in_dian_curves[0].start.y)
+
+  // // 按顺时针方向绘制轮廓
+  // // 绘制右侧（外侧）轮廓
+  // pen.moveTo(out_dian_curves[0].start.x, out_dian_curves[0].start.y)
+  // for (let i = 0; i < out_dian_curves.length; i++) {
+  //   const curve = out_dian_curves[i]
+  //   pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
+  // }
+
+  // // 绘制轮廓连接线
+  // pen.lineTo(in_dian_curves[in_dian_curves.length - 1].end.x, in_dian_curves[in_dian_curves.length - 1].end.y)
+
+  // // 绘制左侧（内侧）轮廓
+  // for (let i = in_dian_curves.length - 1; i >= 0; i--) {
+  //   const curve = in_dian_curves[i]
+  //   pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
+  // }
+
+  // // 绘制轮廓连接线
+  // pen.lineTo(out_dian_curves[0].start.x, out_dian_curves[0].start.y)
 
   pen.closePath()
   return [ pen ]

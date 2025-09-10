@@ -380,34 +380,65 @@ const getComponents = (skeleton) => {
   const pen = new FP.PenComponent()
   pen.beginPath()
 
-  // 绘制横的右侧（内侧）轮廓
-  pen.moveTo(in_pie_curves_final[0].start.x, in_pie_curves_final[0].start.y)
-  for (let i = 0; i < in_pie_curves_final.length; i++) {
-    const curve = in_pie_curves_final[i]
+  // 按逆时针方向绘制轮廓
+  // 绘制撇的左侧（外侧）轮廓
+  pen.moveTo(out_pie_curves[0].start.x, out_pie_curves[0].start.y)
+  for (let i = 0; i < out_pie_curves.length; i++) {
+    const curve = out_pie_curves[i]
     pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
-  }
-  for (let i = 0; i < in_dian_curves_final.length; i++) {
-    const curve = in_dian_curves_final[i]
-    pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
-  }
-
-  // 绘制轮廓连接线
-  pen.lineTo(out_dian_curves[out_dian_curves.length - 1].end.x, out_dian_curves[out_dian_curves.length - 1].end.y)
-
-  // 绘制横的左侧（外侧）轮廓
-  for (let i = out_dian_curves.length - 1; i >= 0; i--) {
-    const curve = out_dian_curves[i]
-    pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
   }
   pen.lineTo(out_corner_pie_dian.x, out_corner_pie_dian.y)
-  pen.lineTo(out_pie_curves[out_pie_curves.length - 1].end.x, out_pie_curves[out_pie_curves.length - 1].end.y)
-  for (let i = out_pie_curves.length - 1; i >= 0; i--) {
-    const curve = out_pie_curves[i]
+  for (let i = 0; i < out_dian_curves.length; i++) {
+    const curve = out_dian_curves[i]
+    pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
+  }
+
+  // 绘制轮廓连接线
+  pen.lineTo(in_dian_curves_final[in_dian_curves_final.length - 1].end.x, in_dian_curves_final[in_dian_curves_final.length - 1].end.y)
+
+  // 绘制撇的右侧（内侧）轮廓
+  for (let i = in_dian_curves_final.length - 1; i >= 0; i--) {
+    const curve = in_dian_curves_final[i]
+    pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
+  }
+  for (let i = in_pie_curves_final.length - 1; i >= 0; i--) {
+    const curve = in_pie_curves_final[i]
     pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
   }
 
   // 绘制轮廓连接线
-  pen.lineTo(in_pie_curves[0].start.x, in_pie_curves[0].start.y)
+  pen.lineTo(out_pie_curves[0].start.x, out_pie_curves[0].start.y)
+
+
+  // // 按顺时针方向绘制轮廓
+  // // 绘制横的右侧（内侧）轮廓
+  // pen.moveTo(in_pie_curves_final[0].start.x, in_pie_curves_final[0].start.y)
+  // for (let i = 0; i < in_pie_curves_final.length; i++) {
+  //   const curve = in_pie_curves_final[i]
+  //   pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
+  // }
+  // for (let i = 0; i < in_dian_curves_final.length; i++) {
+  //   const curve = in_dian_curves_final[i]
+  //   pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
+  // }
+
+  // // 绘制轮廓连接线
+  // pen.lineTo(out_dian_curves[out_dian_curves.length - 1].end.x, out_dian_curves[out_dian_curves.length - 1].end.y)
+
+  // // 绘制横的左侧（外侧）轮廓
+  // for (let i = out_dian_curves.length - 1; i >= 0; i--) {
+  //   const curve = out_dian_curves[i]
+  //   pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
+  // }
+  // pen.lineTo(out_corner_pie_dian.x, out_corner_pie_dian.y)
+  // pen.lineTo(out_pie_curves[out_pie_curves.length - 1].end.x, out_pie_curves[out_pie_curves.length - 1].end.y)
+  // for (let i = out_pie_curves.length - 1; i >= 0; i--) {
+  //   const curve = out_pie_curves[i]
+  //   pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
+  // }
+
+  // // 绘制轮廓连接线
+  // pen.lineTo(in_pie_curves[0].start.x, in_pie_curves[0].start.y)
 
   pen.closePath()
   return [ pen ]
