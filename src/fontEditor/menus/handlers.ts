@@ -368,6 +368,7 @@ const plainCharacter = (character: ICharacterFile) => {
 }
 
 const instanceGlyph = (plainGlyph, options) => {
+  // plainGlyph.style = '字玩标准黑体'
   plainGlyph.parameters = new ParametersMap(plainGlyph.parameters)
   plainGlyph.joints = plainGlyph.joints.map((joint) => {
     return new Joint(joint.name, { x: joint.x, y: joint.y })
@@ -389,11 +390,12 @@ const instanceGlyph = (plainGlyph, options) => {
 
   if (options && options?.updateContoursAndPreview) {
     // 工程文件中通常不包含预览和轮廓数据缓存，这里补全预览和轮廓数据缓存
+    // executeScript(plainGlyph)
     componentsToContours(orderedListWithItemsForCharacterFile(plainGlyph), {
       unitsPerEm: options.unitsPerEm,
       descender: options.descender,
       advanceWidth: options.advanceWidth,
-    }, { x: 0, y: 0 }, false, false, false)
+    }, { x: 0, y: 0 }, false, false, true)
   }
 
   return plainGlyph
@@ -406,7 +408,12 @@ const instanceCharacter = (plainCharacter, options?) => {
   plainCharacter.components = plainCharacter.components.length ? plainCharacter.components.map((component) => {
     if (component.type === 'glyph') {
       //@ts-ignore
-      component.value = instanceGlyph(component.value, false)
+      component.value = instanceGlyph(component.value, {
+        unitsPerEm: 1000,
+        descender: -200,
+        advanceWidth: 1000,
+        updateContoursAndPreview: options?.updateContoursAndPreview,
+      })
       //component.value.parent = plainCharacter
       component.value.parent_reference = getParentInfo(plainCharacter)
       // component.value._o.getJoints().map((joint) => {
@@ -658,6 +665,13 @@ const __openFile = async (data) => {
   total.value = data.file.characterList.length * 1 + visibleCount.value + (data.glyphs.length + data.stroke_glyphs.length + data.radical_glyphs.length + data.comp_glyphs.length) * 3
   loaded.value = 0
   loading.value = true
+
+  // for (let i = 0; i < data.stroke_glyphs.length; i++) {
+  //   const stroke_script_res = await fetch(`templates/templates2/${data.stroke_glyphs[i].name}.js`)
+  //   const stroke_script = await stroke_script_res.text()
+  //   data.stroke_glyphs[i].script = `function script_${data.stroke_glyphs[i].uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t${stroke_script}\n}`
+  //   data.stroke_glyphs[i].style = '字玩标准黑体'
+  // }
 
   // 处理字形数据的异步函数
   const processGlyphs = async (plainGlyphs, status) => {

@@ -229,23 +229,23 @@ const getComponents = (skeleton) => {
 
   // 按逆时针方向绘制轮廓
   // 绘制左侧（内侧）轮廓
-  pen.moveTo(in_na_curves[0].start.x, in_na_curves[0].start.y)
-  for (let i = 0; i < in_na_curves.length; i++) {
-    const curve = in_na_curves[i]
+  pen.moveTo(out_na_curves[0].start.x, out_na_curves[0].start.y)
+  for (let i = 0; i < out_na_curves.length; i++) {
+    const curve = out_na_curves[i]
     pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
   }
 
   // 绘制轮廓连接线
-  pen.lineTo(out_na_curves[out_na_curves.length - 1].end.x, out_na_curves[out_na_curves.length - 1].end.y)
+  pen.lineTo(in_na_curves[in_na_curves.length - 1].end.x, in_na_curves[in_na_curves.length - 1].end.y)
 
   // 绘制右侧（外侧）轮廓
-  for (let i = out_na_curves.length - 1; i >= 0; i--) {
-    const curve = out_na_curves[i]
+  for (let i = in_na_curves.length - 1; i >= 0; i--) {
+    const curve = in_na_curves[i]
     pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
   }
 
   // 绘制轮廓连接线
-  pen.lineTo(in_na_curves[0].start.x, in_na_curves[0].start.y)
+  pen.lineTo(out_na_curves[0].start.x, out_na_curves[0].start.y)
 
 
   // // 按顺时针方向绘制轮廓
