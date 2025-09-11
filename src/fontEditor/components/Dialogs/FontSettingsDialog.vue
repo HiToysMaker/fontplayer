@@ -130,6 +130,7 @@
         <el-input-number
           v-model="unitsPerEm"
           :precision="0"
+          disabled="true"
         />
       </el-form-item>
       <el-form-item label="ascender">
@@ -137,6 +138,7 @@
           v-model="ascender"
           :precision="0"
           @change="onAscenderChange"
+          disabled="true"
         />
       </el-form-item>
       <el-form-item label="descender">
@@ -144,6 +146,7 @@
           v-model="descender"
           :precision="0"
           @change="onDescenderChange"
+          disabled="true"
         />
       </el-form-item>
     </el-form>
