@@ -52,6 +52,8 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 	let lastY = -1
 	let mousedown = false
 	const onMouseDown = (e: MouseEvent) => {
+		document.addEventListener('mouseup', onMouseUp)
+		canvas.addEventListener('keydown', onKeyDown)
 		if (glyph) {
 			mousedown = true
 			for (let i = orderedListWithItemsForCurrentGlyph.value.length - 1; i >=0; i--) {
@@ -169,8 +171,6 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 			lastY = _y
 			setSelectionForCurrentCharacterFile('')
 		}
-		document.addEventListener('mouseup', onMouseUp)
-		canvas.addEventListener('keydown', onKeyDown)
 	}
 
 	const onMouseMove = (e: MouseEvent) => {
@@ -302,6 +302,7 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 	const onMouseUp = (e: MouseEvent) => {
 		const comp = glyph ? selectedComponent_glyph.value : selectedComponent.value
 		if (!comp || !comp.visible) return
+
 		modifyComponentValue()
 		mousedown = false
 		selectControl.value = 'null'
@@ -370,6 +371,7 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 
 	canvas?.addEventListener('mousedown', onMouseDown)
 	document.addEventListener('mousemove', onMouseMove)
+	//document.addEventListener('mouseup', onMouseUp)
 	const closeSelect = () => {
 		canvas?.removeEventListener('mousedown', onMouseDown)
 		document.removeEventListener('mousemove', onMouseMove)
