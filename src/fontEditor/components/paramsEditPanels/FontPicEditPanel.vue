@@ -351,25 +351,25 @@
         const points = (contourComponent.value as unknown as IPenComponent).points
         const beziers: Array<any> = fitCurve(points, maxError.value)
         let penPoints: Array<IPenPoint> = []
+        if (!beziers.length) return
+        penPoints.push({
+          uuid: genUUID(),
+          x: beziers[0][0].x,
+          y: beziers[0][0].y,
+          type: 'anchor',
+          origin: null,
+          isShow: true,
+        })
         beziers.map((bezier: Array<{ x: number, y: number }>, index) => {
-          const uuid1 = genUUID()
           const uuid2 = genUUID()
           const uuid3 = genUUID()
           const uuid4 = genUUID()
-          penPoints.push({
-            uuid: uuid1,
-            x: bezier[0].x,
-            y: bezier[0].y,
-            type: 'anchor',
-            origin: null,
-            isShow: true,
-          })
           penPoints.push({
             uuid: uuid2,
             x: bezier[1].x,
             y: bezier[1].y,
             type: 'control',
-            origin: uuid1,
+            origin: penPoints[penPoints.length - 1].uuid,
             isShow: false,
           })
           penPoints.push({
@@ -380,16 +380,14 @@
             origin: uuid4,
             isShow: false,
           })
-          if (index >= beziers.length - 1) {
-            penPoints.push({
-              uuid: uuid4,
-              x: bezier[3].x,
-              y: bezier[3].y,
-              type: 'anchor',
-              origin: null,
-              isShow: true,
-            })
-          }
+          penPoints.push({
+            uuid: uuid4,
+            x: bezier[3].x,
+            y: bezier[3].y,
+            type: 'anchor',
+            origin: null,
+            isShow: true,
+          })
         })
         const { x: penX, y: penY, w: penW, h: penH } = getBound(penPoints)
         const curveComponent = R.clone(contourComponent)
