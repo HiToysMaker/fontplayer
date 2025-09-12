@@ -2814,7 +2814,7 @@ const importTemplate3 = async () => {
         const img = new Image();
         const data = URL.createObjectURL(blob);
         img.onload = () => {
-          maxError.value = 9
+          maxError.value = 5
           thumbnail(data, img, 1000)
           const components = []
           for (let i = 0; i < curvesComponents.value.length; i++) {

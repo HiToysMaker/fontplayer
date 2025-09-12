@@ -94,6 +94,11 @@
   }
 
   const bindSkeleton = () => {
+    if (!editGlyph.value.components.length) {
+      // 如果字形没有组件，直接返回
+      onSkeletonDragging.value = false
+      return
+    }
     const { type } = editGlyph.value.skeleton
     const strokeFn = strokeFnMap[type]
     if (strokeFn) {
@@ -117,10 +122,41 @@
           editGlyph.value.parameters.parameters.splice(index, 1)
         }
       })
+      editGlyph.value._o.getSkeleton = null
+      editGlyph.value._o.onSkeletonDragStart = null
+      editGlyph.value._o.onSkeletonDrag = null
+      editGlyph.value._o.onSkeletonDragEnd = null
+
+      editGlyph.value._o._joints = []
+      editGlyph.value._o._reflines = []
+
+      // 删除对应参数
+      const parameters = editGlyph.value.parameters.parameters
+      for (let j = 0; j < stroke.params.length; j++) {
+        const param = stroke.params[j]
+        const index = parameters.findIndex((p) => p.name === param.name)
+        if (index !== -1) {
+          parameters.splice(index, 1)
+        }
+      }
+      const otherParams = ['参考位置', '弯曲程度']
+      for (let j = 0; j < otherParams.length; j++) {
+        const param = otherParams[j]
+        const index = parameters.findIndex((p) => p.name === param)
+        if (index !== -1) {
+          parameters.splice(index, 1)
+        }
+      }
+
+      emitter.emit('renderGlyph')
     }
   }
 
   const modifySkeleton = () => {
+    const { type } = editGlyph.value.skeleton
+    const strokeFn = strokeFnMap[type]
+    strokeFn && strokeFn.instanceBasicGlyph(editGlyph.value)
+    strokeFn && strokeFn.updateSkeletonListenerBeforeBind(editGlyph.value._o)
     onSkeletonSelect.value = false
     editGlyph.value.skeleton.onSkeletonBind = true
     onSkeletonDragging.value = true
@@ -451,7 +487,7 @@
         </el-checkbox>
       </el-form-item>
       <el-button
-        v-if="onSkeletonBind && !onSkeletonSelect && editGlyph.skeleton && !editGlyph.skeleton?.skeletonBindData"
+        v-if="onSkeletonBind && !onSkeletonSelect && editGlyph.skeleton"
         @pointerdown="bindSkeleton"
       >绑定骨架</el-button>
       <el-button
