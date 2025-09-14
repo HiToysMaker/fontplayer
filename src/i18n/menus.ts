@@ -50,8 +50,9 @@ const menus = {
 		templates: {
 			templates: '模板',
 			test1: '测试模板1',
-			test2: '黑体笔画模板',
-			test3: '测试手绘模板',
+			test2: '字玩标准黑体（仅笔画）',
+			test3: '测试手绘模板（仅笔画）',
+			test4: 'test style 1',
 		},
 		tools: {
 			remove_overlap: '去除重叠',
@@ -107,9 +108,10 @@ const menus = {
 		},
 		templates: {
 			templates: 'Templates',
-			test1: 'TestTemplate1',
-			test2: 'Black Stroke Template',
-			test3: 'Test Custom Strokes',
+			test1: 'template 1',
+			test2: 'template 2',
+			test3: 'template 3',
+			test4: 'template 4',
 		},
 		tools: {
 			remove_overlap: 'remove_overlap',
