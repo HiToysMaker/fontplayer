@@ -2911,6 +2911,9 @@ const importTemplate1 = async () => {
 }
 
 const importTemplate3 = async () => {
+  loaded.value = 0
+  total.value = hei_strokes.length
+  loading.value = true
   const uuids = []
   // 新建32个笔画
   for (let i = 0; i < hei_strokes.length; i++) {
@@ -2986,7 +2989,13 @@ const importTemplate3 = async () => {
       throw error;
     }
 
-    emitter.emit('renderStrokeGlyphPreviewCanvasByUUID', uuid)
+    loaded.value++
+    if (loaded.value >= total.value) {
+      loading.value = false
+      loaded.value = 0
+      total.value = 0
+    }
+    // emitter.emit('renderStrokeGlyphPreviewCanvasByUUID', uuid)
   }
 
   for (let i = 0; i < uuids.length; i++) {
@@ -3051,7 +3060,10 @@ const importTemplate3 = async () => {
     strokeFn && strokeFn.instanceBasicGlyph(strokeGlyph)
     strokeFn.bindSkeletonGlyph(strokeGlyph)
     strokeFn.updateSkeletonListenerAfterBind(strokeGlyph._o)
+    emitter.emit('renderStrokeGlyphPreviewCanvasByUUID', uuid)
   }
+
+  loading.value = false
 
   // emitter.emit('renderStrokeGlyphPreviewCanvas')
 }

@@ -52,9 +52,10 @@
 			})
       opstatus = true
     }
-	}, {
-		deep: true,
 	})
+	// }, {
+	// 	deep: true,
+	// })
 
 	const _selectedComponent: ComputedRef<any> = computed(() => {
 		let comp = selectedComponent.value

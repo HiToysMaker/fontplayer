@@ -122,7 +122,8 @@
 			const timer = setTimeout(async () => {
 				await nextTick()
 				renderGlyphPreviewCanvasByUUID(uuid)
-			}, 1000)
+				emitter.emit('renderStrokeGlyphSelectionByUUID', uuid)
+			}, 100)
 			timerMap.set(uuid, timer)
 		})
 

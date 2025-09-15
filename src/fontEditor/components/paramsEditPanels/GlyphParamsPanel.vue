@@ -255,9 +255,10 @@
 			})
       opstatus = true
     }
-	}, {
-		deep: true,
-	})
+  })
+	// }, {
+	// 	deep: true,
+	// })
 
 	const handleChangeParameter = (parameter: IParameter | IParameter2, value: number) => {
     parameter.value = value
@@ -270,7 +271,7 @@
       editGlyph.value.param_script[parameter.name] = script
     }
     executeScript(editGlyph.value)
-    emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
+    emitter.emit('renderGlyphPreviewCanvasByUUIDOnEditing', editGlyph.value.uuid)
     emitter.emit('renderGlyph')
   }
 

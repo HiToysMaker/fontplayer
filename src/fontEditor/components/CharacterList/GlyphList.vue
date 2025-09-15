@@ -123,18 +123,19 @@
 				const timer = setTimeout(async () => {
 					await nextTick()
 					renderGlyphPreviewCanvasByUUID(uuid)
-				}, 1000)
+					emitter.emit('renderGlyphSelectionByUUID', uuid)
+				}, 100)
 				timerMap.set(uuid, timer)
-				emitter.emit('renderGlyphSelectionByUUID', uuid)
+				// emitter.emit('renderGlyphSelectionByUUID', uuid)
 			} else if (type === Status.StrokeGlyphList) {
 				emitter.emit('renderStrokeGlyphPreviewCanvasByUUID', uuid)
-				emitter.emit('renderStrokeGlyphSelectionByUUID', uuid)
+				// emitter.emit('renderStrokeGlyphSelectionByUUID', uuid)
 			} else if (type === Status.RadicalGlyphList) {
 				emitter.emit('renderRadicalGlyphPreviewCanvasByUUID', uuid)
-				emitter.emit('renderRadicalGlyphSelectionByUUID', uuid)
+				//emitter.emit('renderRadicalGlyphSelectionByUUID', uuid)
 			} else if (type === Status.CompGlyphList) {
 				emitter.emit('renderCompGlyphPreviewCanvasByUUID', uuid)
-				emitter.emit('renderCompGlyphSelectionByUUID', uuid)
+				//emitter.emit('renderCompGlyphSelectionByUUID', uuid)
 			}
 		})
 

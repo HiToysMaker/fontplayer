@@ -62,7 +62,7 @@
     const timer = setTimeout(async () => {
       await nextTick()
       renderGlyphPreviewCanvasByUUID(uuid, Status.GlyphList)
-    }, 1000)
+    }, 100)
     timerMap.set(uuid, timer)
 	})
 
@@ -74,7 +74,7 @@
     const timer = setTimeout(async () => {
       await nextTick()
       renderGlyphPreviewCanvasByUUID(uuid, Status.StrokeGlyphList)
-    }, 1000)
+    }, 100)
     timerMap.set(uuid, timer)
 	})
 
@@ -86,7 +86,7 @@
     const timer = setTimeout(async () => {
       await nextTick()
       renderGlyphPreviewCanvasByUUID(uuid, Status.RadicalGlyphList)
-    }, 1000)
+    }, 100)
     timerMap.set(uuid, timer)
 	})
 
@@ -98,7 +98,7 @@
     const timer = setTimeout(async () => {
       await nextTick()
       renderGlyphPreviewCanvasByUUID(uuid, Status.CompGlyphList)
-    }, 1000)
+    }, 100)
     timerMap.set(uuid, timer)
 	})
 
@@ -110,7 +110,7 @@
     const timer = setTimeout(async () => {
       await nextTick()
       renderGlyphPreviewCanvasByUUID(uuid, Status.GlyphList, true)
-    }, 1000)
+    }, 100)
     timerMap.set(uuid, timer)
 	})
 
@@ -122,7 +122,7 @@
     const timer = setTimeout(async () => {
       await nextTick()
       renderGlyphPreviewCanvasByUUID(uuid, Status.StrokeGlyphList, true)
-    }, 1000)
+    }, 100)
     timerMap.set(uuid, timer)
 	})
 
@@ -134,7 +134,7 @@
     const timer = setTimeout(async () => {
       await nextTick()
       renderGlyphPreviewCanvasByUUID(uuid, Status.RadicalGlyphList, true)
-    }, 1000)
+    }, 100)
     timerMap.set(uuid, timer)
 	})
 
