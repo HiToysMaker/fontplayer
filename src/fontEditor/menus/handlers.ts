@@ -662,7 +662,7 @@ const addLoaded = () => {
 }
 
 const __openFile = async (data) => {
-  total.value = data.file.characterList.length * 1 + visibleCount.value + (data.glyphs.length + data.stroke_glyphs.length + data.radical_glyphs.length + data.comp_glyphs.length) * 3
+  total.value = data.file.characterList.length * 1 + Math.min(visibleCount.value, data.file.characterList.length) + (data.glyphs.length + data.stroke_glyphs.length + data.radical_glyphs.length + data.comp_glyphs.length) * 3
   loaded.value = 0
   loading.value = true
 
@@ -1066,7 +1066,7 @@ const importFont = () => {
     const font = parse(await buffer)
 
     loaded.value = 0
-    total.value = font.characters.length * 2 + visibleCount.value
+    total.value = font.characters.length * 2 + Math.min(visibleCount.value, font.characters.length)
     loading.value = true
     await new Promise<void>((resolve) => {
       requestAnimationFrame(() => {
@@ -2234,7 +2234,7 @@ const _syncData = async () => {
   }
 
   loaded.value = 0
-  total.value = file ? file.characterList.length * 1 + visibleCount.value : 0 + (plainGlyphs.length + plainGlyphs_stroke.length + plainGlyphs_radical.length + plainGlyphs_comp.length) * 3
+  total.value = file ? file.characterList.length * 1 + Math.min(visibleCount.value, file.characterList.length) : 0 + (plainGlyphs.length + plainGlyphs_stroke.length + plainGlyphs_radical.length + plainGlyphs_comp.length) * 3
   if (total.value === 0) {
     const { locale } = i18n.global
     if (locale === 'zh') {

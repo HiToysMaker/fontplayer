@@ -104,7 +104,7 @@ const updateCharactersAndPreview = () => {
 }
 
 const updateCharactersList = () => {
-  total.value = selectedFile.value.characterList.length + visibleCount.value
+  total.value = selectedFile.value.characterList.length + Math.min(visibleCount.value, selectedFile.value.characterList.length)
   loaded.value = 0
   loading.value = true
   globalConstants.value = R.clone(constants.value)
@@ -328,7 +328,15 @@ const replaceStrokeForCharacter = (characterFile, stroke) => {
       for (let j = 0; j < glyph.parameters.parameters.length; j++) {
         const parameter = glyph.parameters.parameters[j]
         const originParameter = component.value.parameters.parameters.find(_parameter => _parameter.name === parameter.name)
-        parameter.value = originParameter.value
+        if (originParameter.type !== ParameterType.Constant && originParameter.type !== ParameterType.AdvancedEditConstant) {
+          parameter.value = originParameter.value
+        } else if (originParameter.type === ParameterType.AdvancedEditConstant) {
+          parameter.type = ParameterType.AdvancedEditConstant
+          parameter.value = originParameter.value
+        } else if (originParameter.type === ParameterType.Constant) {
+          parameter.type = ParameterType.Constant
+          parameter.value = originParameter.value
+        }
       }
       component.value = glyph
       executeScript_glyph(glyph)
@@ -397,7 +405,7 @@ const updateCharactersAndPreview_strokeReplace = () => {
 }
 
 const updateCharactersList_strokeReplace = () => {
-  total.value = selectedFile.value.characterList.length + visibleCount.value
+  total.value = selectedFile.value.characterList.length + Math.min(visibleCount.value, selectedFile.value.characterList.length)
   loaded.value = 0
   loading.value = true
   globalConstants.value = R.clone(constants.value)
@@ -458,6 +466,18 @@ const getStrokeListByStyle = (style) => {
   return strokeList
 }
 
+const switchStyle_init = (style) => {
+  // 替换全局变量
+  for (let i = 0; i < style.constants.length; i++) {
+    for (let j = 0; j < constants.value.length; j++) {
+      const constant = constants.value[j]
+      if (constant.name === style.constants[i].name) {
+        constant.value = style.constants[i].value
+      }
+    }
+  }
+}
+
 const switchStyle = (characterFile, style) => {
   if (!style) return
   // 替换全局变量
@@ -496,6 +516,44 @@ const switchStyle = (characterFile, style) => {
             }
           } else if (originParameter && originParameter.type === ParameterType.AdvancedEditConstant) {
             parameter.type = ParameterType.AdvancedEditConstant
+            parameter.value = originParameter.value
+          }
+        }
+        component.value = glyph
+        executeScript_glyph(glyph)
+      }
+    }
+  }
+}
+
+const switchStyle2 = (characterFile, style) => {
+  // 替换笔画
+  const strokeList = getStrokeListByStyle(style)
+  for (let i = 0; i < strokeList.length; i++) {
+    const strokeGlyph = strokeList[i]
+    const strokeName = strokeGlyph.name
+    for (let i = 0; i < characterFile.components.length; i++) {
+      const component = characterFile.components[i]
+      if (component.type === 'glyph' && component.value.name === strokeName) {
+        const glyph = R.clone(strokeGlyph)
+        for (let j = 0; j < glyph.parameters.parameters.length; j++) {
+          const parameter = glyph.parameters.parameters[j]
+          const originParameter = component.value.parameters.parameters.find(_parameter => _parameter.name === parameter.name)
+          if (originParameter && originParameter.type !== ParameterType.Constant) {
+            // 替换参数
+            let parameterReplaced = false
+            for (let i = 0; i < style.parameters.length; i++) {
+              const parameter = component.value.parameters.parameters[j]
+              if (parameter.name === style.parameters[i].name) {
+                parameter.value = style.parameters[i].value
+                parameterReplaced = true
+              }
+            }
+            if (!parameterReplaced) {
+              parameter.value = originParameter.value
+            }
+          } else if (originParameter && originParameter.type === ParameterType.Constant) {
+            parameter.type = ParameterType.Constant
             parameter.value = originParameter.value
           }
         }
@@ -561,8 +619,11 @@ const updateCharactersAndPreview_styleSwitch = () => {
 
 const updateCharactersList_styleSwitch = () => {
   const style = styles.value.find(style => style.uuid === selectedStyleUUID.value)
+
+  // 初始化全局变量
+  switchStyle_init(style)
   
-  total.value = selectedFile.value.characterList.length + visibleCount.value
+  total.value = selectedFile.value.characterList.length + Math.min(visibleCount.value, selectedFile.value.characterList.length)
   loaded.value = 0
   loading.value = true
   globalConstants.value = R.clone(constants.value)
@@ -574,7 +635,7 @@ const updateCharactersList_styleSwitch = () => {
     loaded.value++
     const character = selectedFile.value.characterList[i]
 
-    switchStyle(character, style)
+    switchStyle2(character, style)
 
     const contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(orderedListWithItemsForCharacterFile(character), {
       unitsPerEm: selectedFile.value.fontSettings.unitsPerEm,

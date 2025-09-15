@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { nextTick, onMounted } from 'vue'
-import { strokeList, selectedStroke, sampleCharacters, isEditingSample, updatePreviewList_strokeReplace, updateSampleCharactersList, updateCharactersList_strokeReplace, onStrokeReplacement, selectedStrokeUUID, getStrokeList, renderStrokePreview } from '../../stores/advancedEdit'
+import { nextTick, onMounted, onUnmounted } from 'vue'
+import { strokeList, selectedStroke, sampleCharacters, isEditingSample, updatePreviewList_strokeReplace, updateSampleCharactersList, updateCharactersList_strokeReplace, onStrokeReplacement, selectedStrokeUUID, getStrokeList, renderStrokePreview, strokeMap } from '../../stores/advancedEdit'
 import { glyphComponentsDialogVisible2 } from '../../stores/dialogs'
 
 onMounted(async () => {
@@ -12,6 +12,11 @@ onMounted(async () => {
     const stroke = strokeList.value[i]
     renderStrokePreview(stroke.uuid)
   }
+})
+
+onUnmounted(() => {
+  strokeList.value.length = 0
+  strokeMap.clear()
 })
 
 // 功能函数（留空）
