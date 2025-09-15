@@ -129,7 +129,7 @@ const updateGlyphByParams = (params, glyph) => {
   const ox = 500
   const oy = 500
   const x0 = 250 + _ox || 0
-  const y0 = 500 + _ox || 0
+  const y0 = 500 + _oy || 0
 
   // 横
   let heng_start, heng_end
@@ -321,8 +321,6 @@ const updateSkeletonListener_before_bind_heng_gou = (glyph: CustomGlyph) => {
     glyph.tempData = {}
     glyph.tempData.ox = glyph._glyph.skeleton.ox
     glyph.tempData.oy = glyph._glyph.skeleton.oy
-    glyph.tempData.bendCursor = glyph.getParam('弯曲游标')
-    glyph.tempData.bendDegree = Number(glyph.getParam('弯曲度')) + 30 * Number(glyph.getParam('弯曲程度') || 1)
     glyph.getJoints().map((joint) => {
       const _joint = {
         name: joint.name,
@@ -403,8 +401,6 @@ const updateSkeletonListener_after_bind_heng_gou = (glyph: CustomGlyph) => {
   glyph.onSkeletonDragStart = (data) => {
     const { draggingJoint } = data
     glyph.tempData = {}
-    glyph.tempData.bendCursor = glyph.getParam('弯曲游标')
-    glyph.tempData.bendDegree = Number(glyph.getParam('弯曲度')) + 30 * Number(glyph.getParam('弯曲程度') || 1)
     glyph.getJoints().map((joint) => {
       const _joint = {
         name: joint.name,

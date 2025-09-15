@@ -58,7 +58,7 @@ watch(constants, () => {
               show-word-limit
             />
           </el-form-item>
-          <el-button 
+          <el-button
             :type="isEditingSample ? 'success' : 'primary'"
             @click="handleToggleEditSample"
             style="width: 100%; margin-bottom: 20px;"

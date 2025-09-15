@@ -161,7 +161,7 @@
         <div>{{loadingMsg || t('panels.paramsPanel.loadingMsg') }}</div>
       </div>
       <div v-show="loading && total != 0" class="loading-text">
-        <el-progress :text-inside="true" :stroke-width="20" :percentage="Math.round(loaded / total * 100)" />
+        <el-progress :text-inside="true" :stroke-width="20" :percentage="Math.round(loaded / total * 100) >= 100 ? 100 : Math.round(loaded / total * 100)" />
         <div>{{ loadingMsg? loadingMsg + `进度：${Math.round(loaded / total * 100)}%` : t('panels.paramsPanel.loadedMsg', { percent: Math.round(loaded / total * 100)}) }}</div>
       </div>
       <div class="side-bar-wrap" :style="{

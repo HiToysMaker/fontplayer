@@ -586,6 +586,75 @@ const distanceAndFootPoint = (A, B, C) => {
 	};
 }
 
+const turnLeft = (start, end, length) => {
+	const angle = Math.atan2(start.y - end.y, end.x - start.x)
+	const turn_control = {
+		x: end.x - length * Math.sin(angle),
+		y: end.y - length * Math.cos(angle),
+	}
+	return turn_control
+}
+
+const turnRight = (start, end, length) => {
+	const angle = Math.atan2(start.y - end.y, end.x - start.x)
+	const turn_control = {
+		x: end.x + length * Math.sin(angle),
+		y: end.y + length * Math.cos(angle),
+	}
+	return turn_control
+}
+
+const goStraight = (start, end, length) => {
+	const angle = Math.atan2(start.y - end.y, end.x - start.x)
+	const go_straight = {
+		x: end.x + length * Math.cos(angle),
+		y: end.y - length * Math.sin(angle),
+	}
+	return go_straight
+}
+
+const turnAngle = (start, end, angle, length) => {
+	const angle1 = Math.atan2(start.y - end.y, end.x - start.x)
+	// 往左为负，往右为正
+	const andle2 = angle1 + angle
+	const point = {
+		x: start.x + length * Math.cos(angle),
+		y: start.y - length * Math.sin(angle),
+	}
+	return point
+}
+
+const getPointOnLine = (start, end, length) => {
+	const angle = Math.atan2(start.y - end.y, end.x - start.x)
+	const point = {
+		x: start.x + length * Math.cos(angle),
+		y: start.y - length * Math.sin(angle),
+	}
+	return point
+}
+
+const getPointOnLineByPercentage = (start, end, percentage) => {
+	const point = {
+		x: start.x + percentage * (end.x - start.x),
+		y: start.y + percentage * (end.y - start.y),
+	}
+	return point
+}
+
+const isPointOnLineSegment = (point, lineStart, lineEnd) => {
+	const { x, y } = point;
+	const { x: x1, y: y1 } = lineStart;
+	const { x: x2, y: y2 } = lineEnd;
+	
+	// 计算点到线段两端点的距离
+	const distToStart = Math.sqrt((x - x1) ** 2 + (y - y1) ** 2);
+	const distToEnd = Math.sqrt((x - x2) ** 2 + (y - y2) ** 2);
+	const segmentLength = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+	
+	// 如果点到两端点距离之和等于线段长度，说明点在线段上
+	return Math.abs(distToStart + distToEnd - segmentLength) < 1e-10;
+}
+
 const FP = {
 	EllipseComponent,
 	PenComponent,
@@ -604,6 +673,13 @@ const FP = {
 	getCurvesPoints,
 	getTurnAngles,
 	distanceAndFootPoint,
+	turnLeft,
+	turnRight,
+	goStraight,
+	turnAngle,
+	getPointOnLine,
+	getPointOnLineByPercentage,
+	isPointOnLineSegment,
 }
 
 const suggestion_items = [

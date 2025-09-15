@@ -5,6 +5,8 @@ import ConditionFilterPanel from './ConditionFilterPanel.vue'
 import ScriptsPanel from './ScriptsPanel.vue'
 import { setEditStatus, Status } from '../../stores/font'
 import { Grid } from '@element-plus/icons-vue'
+import StrokeReplacePanel from './StrokeReplacePanel.vue'
+import StyleSwitchPanel from './StyleSwitchPanel.vue'
 
 const toList = () => {
   setEditStatus(Status.CharacterList)
@@ -20,6 +22,18 @@ const toList = () => {
           :type="activePanel === PanelType.GlobalVariables ? 'primary' : 'default'">
           <el-icon><Tools /></el-icon>
           全局变量
+        </el-button>
+        <el-button
+          @pointerdown="() => setActivePanel(PanelType.StrokeReplace)"
+          :type="activePanel === PanelType.StrokeReplace ? 'primary' : 'default'">
+          <el-icon><Tools /></el-icon>
+          笔画替换
+        </el-button>
+        <el-button
+          @pointerdown="() => setActivePanel(PanelType.StyleSwitch)"
+          :type="activePanel === PanelType.StyleSwitch ? 'primary' : 'default'">
+          <el-icon><Tools /></el-icon>
+          风格切换
         </el-button>
         <el-button
           @pointerdown="() => setActivePanel(PanelType.ConditionFilter)"
@@ -43,6 +57,8 @@ const toList = () => {
       <global-params-panel v-if="activePanel === PanelType.GlobalVariables"></global-params-panel>
       <condition-filter-panel v-if="activePanel === PanelType.ConditionFilter"></condition-filter-panel>
       <scripts-panel v-if="activePanel === PanelType.Script"></scripts-panel>
+      <stroke-replace-panel v-if="activePanel === PanelType.StrokeReplace"></stroke-replace-panel>
+      <style-switch-panel v-if="activePanel === PanelType.StyleSwitch"></style-switch-panel>
     </main>
   </div>
 </template>

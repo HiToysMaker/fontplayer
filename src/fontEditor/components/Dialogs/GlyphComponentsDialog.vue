@@ -25,6 +25,7 @@
 	import { emitter } from '../../Event/bus'
   import { renderPreview2 } from '../../canvas/canvas'
   import { loaded, loading, setTool, tool, total } from '../../stores/global'
+  import { onStrokeReplacement, setReplacementStroke } from '../../stores/advancedEdit'
   const { tm, t } = useI18n()
 
 	const selectedTab = ref(Status.StrokeGlyphList)
@@ -61,7 +62,7 @@
     const timer = setTimeout(async () => {
       await nextTick()
       renderGlyphPreviewCanvasByUUID(uuid, Status.GlyphList)
-    }, 1000)
+    }, 100)
     timerMap.set(uuid, timer)
 	})
 
@@ -73,7 +74,7 @@
     const timer = setTimeout(async () => {
       await nextTick()
       renderGlyphPreviewCanvasByUUID(uuid, Status.StrokeGlyphList)
-    }, 1000)
+    }, 100)
     timerMap.set(uuid, timer)
 	})
 
@@ -85,7 +86,7 @@
     const timer = setTimeout(async () => {
       await nextTick()
       renderGlyphPreviewCanvasByUUID(uuid, Status.RadicalGlyphList)
-    }, 1000)
+    }, 100)
     timerMap.set(uuid, timer)
 	})
 
@@ -97,7 +98,7 @@
     const timer = setTimeout(async () => {
       await nextTick()
       renderGlyphPreviewCanvasByUUID(uuid, Status.CompGlyphList)
-    }, 1000)
+    }, 100)
     timerMap.set(uuid, timer)
 	})
 
@@ -109,7 +110,7 @@
     const timer = setTimeout(async () => {
       await nextTick()
       renderGlyphPreviewCanvasByUUID(uuid, Status.GlyphList, true)
-    }, 1000)
+    }, 100)
     timerMap.set(uuid, timer)
 	})
 
@@ -121,7 +122,7 @@
     const timer = setTimeout(async () => {
       await nextTick()
       renderGlyphPreviewCanvasByUUID(uuid, Status.StrokeGlyphList, true)
-    }, 1000)
+    }, 100)
     timerMap.set(uuid, timer)
 	})
 
@@ -133,7 +134,7 @@
     const timer = setTimeout(async () => {
       await nextTick()
       renderGlyphPreviewCanvasByUUID(uuid, Status.RadicalGlyphList, true)
-    }, 1000)
+    }, 100)
     timerMap.set(uuid, timer)
 	})
 
@@ -292,11 +293,18 @@
 	}
 	
 	const handleConfirm = () => {
-		selected_glyphs.value.map(glyph => {
-			addGlyph(glyph)
-		})
-    selected_glyphs.value = []
-		glyphComponentsDialogVisible2.value = false
+    // 如果onStrokeReplacement为true，则设置替换笔画
+    if (onStrokeReplacement.value) {
+      setReplacementStroke(selected_glyphs.value[0].uuid)
+      onStrokeReplacement.value = false
+      glyphComponentsDialogVisible2.value = false
+    } else {
+      selected_glyphs.value.map(glyph => {
+        addGlyph(glyph)
+      })
+      selected_glyphs.value = []
+      glyphComponentsDialogVisible2.value = false
+    }
 	}
 
 

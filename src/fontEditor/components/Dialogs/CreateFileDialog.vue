@@ -18,6 +18,7 @@
   import { importTemplate2, instanceCharacter } from '../../menus/handlers'
   import { emitter } from '../../Event/bus'
   import { strokes as hei_strokes } from '../../templates/strokes_1'
+  import { constants, constantsMap, IConstant, ParameterType } from '../../stores/glyph'
   const { tm, t } = useI18n()
 
   const name: Ref<string> = ref('untitled')
@@ -215,11 +216,95 @@
     }
   }
 
+  const updateGlobalConstant = () => {
+    constants.value = [
+      {
+        uuid: genUUID(),
+        name: '起笔风格',
+        type: ParameterType.Enum,
+        value: 2,
+        options: [
+          {
+            value: 0,
+            label: '无起笔样式',
+          },
+          {
+            value: 1,
+            label: '凸笔起笔',
+          },
+          {
+            value: 2,
+            label: '凸笔圆角起笔',
+          }
+        ]
+      },
+      {
+        uuid: genUUID(),
+        name: '起笔数值',
+        type: ParameterType.Number,
+        value: 1,
+        min: 0,
+        max: 2,
+      },
+      {
+        uuid: genUUID(),
+        name: '转角风格',
+        type: ParameterType.Enum,
+        value: 1,
+        options: [
+          {
+            value: 0,
+            label: '默认转角样式',
+          },
+          {
+            value: 1,
+            label: '转角圆滑凸起',
+          }
+        ]
+      },
+      {
+        uuid: genUUID(),
+        name: '转角数值',
+        type: ParameterType.Number,
+        value: 1,
+        min: 1,
+        max: 2,
+      },
+      {
+        uuid: genUUID(),
+        name: '字重变化',
+        type: ParameterType.Number,
+        value: 0,
+        min: 0,
+        max: 2,
+      },
+      {
+        uuid: genUUID(),
+        name: '弯曲程度',
+        type: ParameterType.Number,
+        value: 1,
+        min: 0,
+        max: 2,
+      },
+      {
+        uuid: genUUID(),
+        name: '字重',
+        type: ParameterType.Number,
+        value: 50,
+        min: 40,
+        max: 100,
+      },
+    ]
+    constantsMap.update(constants.value)
+  }
+
   const importDefaultTemplate = async () => {
+    updateGlobalConstant()
     await importTemplate2()
     const res = base ? await fetch(base + `/templates/playground.json`) : await fetch(`templates/playground.json`)
     const data = JSON.parse(await res.text())
     const file = data.file
+
     clearCharacterRenderList()
     
     // 保存当前的.notdef字符（如果存在）
@@ -238,6 +323,21 @@
     for (let i = 0; i < file.characterList.length; i++) {
       loaded.value += 1
       const character = file.characterList[i]
+
+      // 将相应参数改成全局变量
+      for (let j = 0; j < character.components.length; j++) {
+        const component = character.components[j]
+        if (component.type === 'glyph') {
+          const glyph = component.value
+          glyph.parameters.forEach(parameter => {
+            const constant = constants.value.find(constant => constant.name === parameter.name)
+            if (constant) {
+              parameter.type = ParameterType.Constant
+              parameter.value = constant.uuid
+            }
+          })
+        }
+      }
       const characterFile = instanceCharacter(character)
       addCharacterForCurrentFile(characterFile)
       addCharacterTemplate(generateCharacterTemplate(characterFile))
@@ -286,6 +386,7 @@
         <el-input-number
           v-model="unitsPerEm"
           :precision="0"
+          disabled="true"
         />
       </el-form-item>
       <el-form-item label="ascender">
@@ -293,6 +394,7 @@
           v-model="ascender"
           :precision="0"
           @change="onAscenderChange"
+          disabled="true"
         />
       </el-form-item>
       <el-form-item label="descender">
@@ -300,6 +402,7 @@
           v-model="descender"
           :precision="0"
           @change="onDescenderChange"
+          disabled="true"
         />
       </el-form-item>
       <el-form-item :label-width="0" class="use-default-template-form-item">

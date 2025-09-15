@@ -26,7 +26,9 @@
   import { initWeightSelector, renderBoneAndWeight } from '../../tools/weightSetting'
   import { calculateGlyphWeight } from '../../../features/glyphWeight'
   const { t, tm } = useI18n()
+  import { Edit, Check } from '@element-plus/icons-vue'
 
+  const enableStyleTagEdit = ref(false)
   const onChangeSkeleton = (value: string) => {
     // 设置骨架
     const type = value
@@ -92,6 +94,11 @@
   }
 
   const bindSkeleton = () => {
+    if (!editGlyph.value.components.length) {
+      // 如果字形没有组件，直接返回
+      onSkeletonDragging.value = false
+      return
+    }
     const { type } = editGlyph.value.skeleton
     const strokeFn = strokeFnMap[type]
     if (strokeFn) {
@@ -115,10 +122,41 @@
           editGlyph.value.parameters.parameters.splice(index, 1)
         }
       })
+      editGlyph.value._o.getSkeleton = null
+      editGlyph.value._o.onSkeletonDragStart = null
+      editGlyph.value._o.onSkeletonDrag = null
+      editGlyph.value._o.onSkeletonDragEnd = null
+
+      editGlyph.value._o._joints = []
+      editGlyph.value._o._reflines = []
+
+      // 删除对应参数
+      const parameters = editGlyph.value.parameters.parameters
+      for (let j = 0; j < stroke.params.length; j++) {
+        const param = stroke.params[j]
+        const index = parameters.findIndex((p) => p.name === param.name)
+        if (index !== -1) {
+          parameters.splice(index, 1)
+        }
+      }
+      const otherParams = ['参考位置', '弯曲程度']
+      for (let j = 0; j < otherParams.length; j++) {
+        const param = otherParams[j]
+        const index = parameters.findIndex((p) => p.name === param)
+        if (index !== -1) {
+          parameters.splice(index, 1)
+        }
+      }
+
+      emitter.emit('renderGlyph')
     }
   }
 
   const modifySkeleton = () => {
+    const { type } = editGlyph.value.skeleton
+    const strokeFn = strokeFnMap[type]
+    strokeFn && strokeFn.instanceBasicGlyph(editGlyph.value)
+    strokeFn && strokeFn.updateSkeletonListenerBeforeBind(editGlyph.value._o)
     onSkeletonSelect.value = false
     editGlyph.value.skeleton.onSkeletonBind = true
     onSkeletonDragging.value = true
@@ -217,9 +255,10 @@
 			})
       opstatus = true
     }
-	}, {
-		deep: true,
-	})
+  })
+	// }, {
+	// 	deep: true,
+	// })
 
 	const handleChangeParameter = (parameter: IParameter | IParameter2, value: number) => {
     parameter.value = value
@@ -232,7 +271,7 @@
       editGlyph.value.param_script[parameter.name] = script
     }
     executeScript(editGlyph.value)
-    emitter.emit('renderGlyphPreviewCanvasByUUID', editGlyph.value.uuid)
+    emitter.emit('renderGlyphPreviewCanvasByUUIDOnEditing', editGlyph.value.uuid)
     emitter.emit('renderGlyph')
   }
 
@@ -359,6 +398,18 @@
 
 <template>
   <div class="glyph-edit-panel">
+    <div class="title">风格标签</div>
+    <div class="style-tag-wrap">
+      <el-input
+        v-model="editGlyph.style"
+        :disabled="!enableStyleTagEdit"
+      >
+        <template #append>
+          <el-icon v-if="!enableStyleTagEdit" @pointerdown="enableStyleTagEdit = true"><Edit /></el-icon>
+          <el-icon v-else @pointerdown="enableStyleTagEdit = false"><Check /></el-icon>
+        </template>
+      </el-input>
+    </div>
     <div class="title">{{ t('panels.paramsPanel.layout.title') }}</div>
     <div class="layout-wrap">
       <el-button class="add-layout-button" v-show="!editGlyph.layout && !onLayoutSelect" @pointerdown="onLayoutSelect = true">{{ t('panels.paramsPanel.layout.add') }}</el-button>
@@ -391,8 +442,13 @@
         </el-form>
       </div>
     </div>
-    <div class="title">骨架绑定</div>
-    <div class="skeleton-wrap">
+    <div class="title"
+      v-if="!editGlyph.skeleton && (!editGlyph._o?.getSkeleton || !editGlyph._o?.getSkeleton()) || editGlyph.skeleton || onSkeletonSelect || onSkeletonBind"
+    >骨架绑定</div>
+    <div
+      class="skeleton-wrap"
+      v-if="!editGlyph.skeleton && (!editGlyph._o?.getSkeleton || !editGlyph._o?.getSkeleton()) || editGlyph.skeleton || onSkeletonSelect || onSkeletonBind"
+    >
       <el-button
         v-if="!editGlyph.skeleton && (!editGlyph._o?.getSkeleton || !editGlyph._o?.getSkeleton())"
         @pointerdown="onSkeletonSelect = true"
@@ -426,8 +482,13 @@
           @change="handleChangeSkeletonOY"
         />
       </el-form-item>
+      <el-form-item :label-width="0" class="dynamic-weight-form-item" v-if="onSkeletonBind && !onSkeletonSelect && editGlyph.skeleton">
+        <el-checkbox v-model="editGlyph.skeleton.dynamicWeight">
+          动态调整字重
+        </el-checkbox>
+      </el-form-item>
       <el-button
-        v-if="onSkeletonBind && !onSkeletonSelect && editGlyph.skeleton && !editGlyph.skeleton?.skeletonBindData"
+        v-if="onSkeletonBind && !onSkeletonSelect && editGlyph.skeleton"
         @pointerdown="bindSkeleton"
       >绑定骨架</el-button>
       <el-button
@@ -828,14 +889,15 @@
       width: 150px;
     }
   }
-
+  .style-tag-wrap {
+    padding: 10px;
+  }
   .title {
     height: 36px;
     line-height: 36px;
     padding: 0 10px;
     border-bottom: 1px solid #dcdfe6;
   }
-
   .el-form {
     margin: 10px 0;
   }
@@ -913,6 +975,9 @@
   .skeleton-wrap {
     padding: 10px;
     padding-bottom: 0;
+    .el-checkbox {
+      margin-left: 0;
+    }
     .el-button {
       width: 100%;
       margin-left: 0;

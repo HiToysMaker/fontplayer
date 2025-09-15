@@ -101,9 +101,10 @@
 			})
       opstatus = true
     }
-	}, {
-		deep: true,
 	})
+	// }, {
+	// 	deep: true,
+	// })
 
   const handleChangeOX = (ox: number) => {
 		if (editCharacterFile.value.selectedComponentsTree && editCharacterFile.value.selectedComponentsTree.length) {

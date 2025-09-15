@@ -158,10 +158,17 @@ function detectSkeletonType(skeleton: any): SkeletonType {
   } else if (jointNames.includes('heng1_start') && jointNames.includes('heng1_end') && jointNames.includes('heng2_start') && jointNames.includes('heng2_end') && jointNames.includes('zhe1_start') && jointNames.includes('zhe1_end') && jointNames.includes('zhe2_start') && jointNames.includes('zhe2_end')) {
     // 复合笔画：二横折类
     return 'er_heng_zhe';
-  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('wan_start') && jointNames.includes('wan_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
+  } else if (
+    jointNames.includes('heng_start') && jointNames.includes('heng_end') &&
+    jointNames.includes('zhe_start') && jointNames.includes('zhe_end') &&
+    jointNames.includes('wan_start') && jointNames.includes('wan_end') &&
+    jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
     // 复合笔画：横折弯钩类
     return 'heng_zhe_wan_gou';
-  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('wan_start') && jointNames.includes('wan_end')) {
+  } else if (
+    jointNames.includes('heng_start') && jointNames.includes('heng_end') &&
+    jointNames.includes('zhe_start') && jointNames.includes('zhe_end') &&
+    jointNames.includes('wan_start') && jointNames.includes('wan_end')) {
     // 复合笔画：横折弯类
     return 'heng_zhe_wan';
   } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('zhe_start') && jointNames.includes('zhe_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
@@ -173,13 +180,13 @@ function detectSkeletonType(skeleton: any): SkeletonType {
   } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('zhe_start') && jointNames.includes('zhe_end') && jointNames.includes('pie_start') && jointNames.includes('pie_end')) {
     // 复合笔画：横折撇类
     return 'heng_zhe_pie';
-  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('pie_start') && jointNames.includes('pie_end') && jointNames.includes('wan_start') && jointNames.includes('wan_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
+  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('pie_start') && jointNames.includes('pie_end') && jointNames.includes('wangou_start') && jointNames.includes('wangou_end')) {
     // 复合笔画：横撇弯钩类
     return 'heng_pie_wan_gou';
   } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('wan_start') && jointNames.includes('wan_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
     // 复合笔画：横弯钩类
     return 'heng_wan_gou';
-  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('pie_start') && jointNames.includes('pie_end')) {
+  } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('pie_start') &&jointNames.includes('pie_bend') && jointNames.includes('pie_end')) {
     // 复合笔画：横撇类
     return 'heng_pie';
   } else if (jointNames.includes('heng_start') && jointNames.includes('heng_end') && jointNames.includes('gou_start') && jointNames.includes('gou_end')) {
@@ -809,7 +816,7 @@ function multiplyMatrices(matrix1: number[], matrix2: number[]): number[] {
 }
 
 // 阶段三：变形计算 - 根据骨架变化计算新的控制点位置
-export function calculateTransformedPoints(glyph: CustomGlyph, newSkeleton: any): Array<{ x: number; y: number }> {
+export function calculateTransformedPoints(glyph: CustomGlyph, newSkeleton: any, weightedOriginalPoints?: Array<{ x: number; y: number }>): Array<{ x: number; y: number }> {
   const bindData = (glyph as any)._glyph.skeleton?.skeletonBindData;
   
   if (!bindData) {
@@ -817,7 +824,8 @@ export function calculateTransformedPoints(glyph: CustomGlyph, newSkeleton: any)
     return [];
   }
   
-  const { bones, pointsBonesMap, originalPoints } = bindData;
+  const { bones, pointsBonesMap, originalPoints: _originalPoints } = bindData;
+  let originalPoints = weightedOriginalPoints || _originalPoints
   
   // 验证绑定数据
   if (!bones || !pointsBonesMap || !originalPoints) {
@@ -1172,35 +1180,38 @@ export function applySkeletonTransformation(glyph: CustomGlyph, newSkeleton: any
   }
   
   const penComponent = penComponents[0];
-  
-  let transformedPoints = calculateTransformedPoints(glyph, newSkeleton);
+
+  const { originalPoints } = glyph._glyph.skeleton.skeletonBindData
+  const weightedOriginalPoints = R.clone(originalPoints)
 
   // 更新字重
-  const weight = glyph.getParam('字重') as number
-  const originWeight = glyph._glyph.skeleton.originWeight
-  if (weight && weight !== originWeight) {
-    const d = (weight - originWeight) / 2
-    const points = transformedPoints
-    const newPoints = R.clone(transformedPoints)
-    for (let i = 0; i < points.length - 1; i+=3) {
-      const bezier = [points[i], points[i+1], points[i+2], points[i+3]]
-      const angle1 = Math.atan2(bezier[1].y - bezier[0].y, bezier[1].x - bezier[0].x)
-      const angle2 = Math.atan2(bezier[3].y - bezier[2].y, bezier[3].x - bezier[2].x)
-      const p1 = { x: bezier[0].x - Math.sin(angle1) * d, y: bezier[0].y + Math.cos(angle1) * d }
-      const p2 = { x: bezier[1].x - Math.sin(angle1) * d, y: bezier[1].y + Math.cos(angle1) * d }
-      const p3 = { x: bezier[2].x - Math.sin(angle2) * d, y: bezier[2].y + Math.cos(angle2) * d }
-      const p4 = { x: bezier[3].x - Math.sin(angle2) * d, y: bezier[3].y + Math.cos(angle2) * d }
-      newPoints[i].x = p1.x
-      newPoints[i].y = p1.y
-      newPoints[i+1].x = p2.x
-      newPoints[i+1].y = p2.y
-      newPoints[i+2].x = p3.x
-      newPoints[i+2].y = p3.y
-      newPoints[i+3].x = p4.x
-      newPoints[i+3].y = p4.y
-    };
-    transformedPoints = newPoints
+  if (glyph._glyph?.skeleton?.dynamicWeight) {
+    const weight = glyph.getParam('字重') as number
+    const originWeight = glyph._glyph.skeleton.originWeight
+    if (weight && weight !== originWeight) {
+      const d = (weight - originWeight) / 2
+      const points = originalPoints
+      for (let i = 0; i < points.length - 1; i+=3) {
+        const bezier = [points[i], points[i+1], points[i+2], points[i+3]]
+        const angle1 = Math.atan2(bezier[1].y - bezier[0].y, bezier[1].x - bezier[0].x)
+        const angle2 = Math.atan2(bezier[3].y - bezier[2].y, bezier[3].x - bezier[2].x)
+        const p1 = { x: bezier[0].x - Math.sin(angle1) * d, y: bezier[0].y + Math.cos(angle1) * d }
+        const p2 = { x: bezier[1].x - Math.sin(angle1) * d, y: bezier[1].y + Math.cos(angle1) * d }
+        const p3 = { x: bezier[2].x - Math.sin(angle2) * d, y: bezier[2].y + Math.cos(angle2) * d }
+        const p4 = { x: bezier[3].x - Math.sin(angle2) * d, y: bezier[3].y + Math.cos(angle2) * d }
+        weightedOriginalPoints[i].x = p1.x
+        weightedOriginalPoints[i].y = p1.y
+        weightedOriginalPoints[i+1].x = p2.x
+        weightedOriginalPoints[i+1].y = p2.y
+        weightedOriginalPoints[i+2].x = p3.x
+        weightedOriginalPoints[i+2].y = p3.y
+        weightedOriginalPoints[i+3].x = p4.x
+        weightedOriginalPoints[i+3].y = p4.y
+      };
+    }
   }
+  
+  let transformedPoints = calculateTransformedPoints(glyph, newSkeleton, weightedOriginalPoints);
   
   if (transformedPoints.length === (penComponent.value as unknown as IPenComponent).points.length) {
     // 更新控制点位置
