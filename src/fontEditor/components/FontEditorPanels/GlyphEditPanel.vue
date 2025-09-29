@@ -64,6 +64,7 @@
   import { renderJoints, renderRefLines } from '../../programming/Joint'
   import { initSkeletonDragger, renderSkeletonSelector } from '../../tools/skeletonDragger'
   import { onSkeletonBind, onSkeletonDragging } from '../../stores/skeletonDragger'
+  import { componentsToContours } from '../../../features/font'
 
   const mounted: Ref<boolean> = ref(false)
   let closeTool: Function | null = null
@@ -93,6 +94,11 @@
     initTool()
     render()
     emitter.on('renderGlyph', () => {
+      componentsToContours(orderedListWithItemsForCurrentGlyph.value, {
+        unitsPerEm: 1000,
+        descender: -200,
+        advanceWidth: 1000,
+      }, { x: 0, y: 0 }, false, false, true)
       render()
       renderRefComponents()
     })

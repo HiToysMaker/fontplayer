@@ -37,7 +37,7 @@ const menus = {
 			svg: '导出SVG',
 		},
 		char: {
-			char: '字符与图标',
+			char: '字符',
 			character: '添加字符',
 			icon: '添加图标',
 		},
@@ -58,6 +58,7 @@ const menus = {
 		},
 		tools: {
 			remove_overlap: '去除重叠',
+			tools: '工具',
 		},
   },
   en: {
@@ -98,7 +99,7 @@ const menus = {
 			svg: 'Export SVG',
 		},
 		char: {
-			char: 'Char And Icon',
+			char: 'Char',
 			character: 'Add Character',
 			icon: 'Add Icon',
 		},
@@ -119,6 +120,7 @@ const menus = {
 		},
 		tools: {
 			remove_overlap: 'remove_overlap',
+			tools: 'Tools',
 		},
   },
 }

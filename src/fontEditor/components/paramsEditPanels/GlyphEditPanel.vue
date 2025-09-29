@@ -628,6 +628,19 @@
 									@change="(value) => handleChangeParameter(getConstant(parameter.value), value)"
 								/>
 							</div>
+							<div v-else-if="getConstant(parameter.value).type === ParameterType.Enum">
+								<el-select
+									:model-value="getConstant(parameter.value).value" class="enum-param-select" placeholder="Select"
+									@change="(value) => handleChangeParameter(getConstant(parameter.value), value)"
+								>
+									<el-option
+										v-for="option in getConstant(parameter.value).options"
+										:key="option.value"
+										:label="option.label"
+										:value="option.value"
+									/>
+								</el-select>
+							</div>
 							<div v-else-if="getConstant(parameter.value).type === ParameterType.RingController">
 								<el-select v-model="controlType" class="control-type-select" :placeholder="tm('programming.controlType')">
 									<el-option

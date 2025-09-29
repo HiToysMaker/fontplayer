@@ -111,9 +111,12 @@
       >
         <el-sub-menu :index="menu.key" v-for="menu in _menus">
           <template #title>
-            <el-icon>
-              <component :is="web_menu_icons[menu.key]"></component>
-            </el-icon>
+            <div class="menu-icon-item">
+              <el-icon class="menu-icon-item-icon">
+                <component :is="web_menu_icons[menu.key]"></component>
+              </el-icon>
+              <div class="menu-icon-item-label">{{ menu.label }}</div>
+            </div>
 					</template>
           <el-menu-item
 						:index="subMenu.key"
@@ -131,5 +134,22 @@
 <style scoped>
   .top-bar, .top-bar-row {
     width: 100%;
+  }
+  .menu-icon-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    background-color: var(--dark-2);
+    border-radius: 0 20px 0 20px;
+    .menu-icon-item-icon {
+      flex: 0 0 32px;
+    }
+    .menu-icon-item-label {
+      flex: auto;
+      line-height: 18px;
+    }
   }
 </style>

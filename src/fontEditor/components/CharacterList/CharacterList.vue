@@ -902,7 +902,7 @@
 		height: 100%;
 		position: relative;
 		padding: 10px;
-		background-color: var(--dark-0);
+		background-color: var(--dark-1);
 		.list {
 			width: 100%;
 			display: grid;
