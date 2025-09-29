@@ -282,7 +282,7 @@ const getComponents = (skeleton) => {
   pen.quadraticBezierTo(start_p15.x, start_p15.y, start_p16.x, start_p16.y)
 
   // 绘制左侧轮廓
-  for (let i = end_left_data.final_curves.length - 1; i >= 0; i--) {
+  for (let i = 0; i < end_left_data.final_curves.length; i++) {
     const curve = end_left_data.final_curves[i]
     pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
   }
@@ -291,7 +291,7 @@ const getComponents = (skeleton) => {
   pen.bezierTo(end_p1.x, end_p1.y, end_p2.x, end_p2.y, end_p3.x, end_p3.y)
 
   // 绘制右侧轮廓
-  for (let i = 0; i < end_right_data.final_curves.length; i++) {
+  for (let i = end_right_data.final_curves.length - 1; i >= 0; i--) {
     const curve = end_right_data.final_curves[i]
     pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
   }

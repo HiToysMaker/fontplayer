@@ -407,7 +407,6 @@ const getComponents = (skeleton) => {
   const turn_angle_2 = FP.degreeToRadius(15)
   const end_length = 30
   const _wan_weight = weight / stress_ratio * 1.5
-  turn_style_value *= turn_style_value//serif_size
 
   // out指右侧（外侧）轮廓线
   // in指左侧（内侧）轮廓线

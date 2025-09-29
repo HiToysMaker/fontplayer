@@ -456,7 +456,6 @@ const getComponents = (skeleton) => {
   const turn_angle_2 = FP.degreeToRadius(15)
   const end_length = 100
   const _tiao_weight = weight * 1.2
-  turn_style_value *= turn_style_value//serif_size
 
   // out指左侧（外侧）轮廓线
   // in指右侧（内侧）轮廓线

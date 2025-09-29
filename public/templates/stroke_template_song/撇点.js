@@ -422,12 +422,19 @@ const getComponents = (skeleton) => {
   const dian_p6 = FP.turnRight(dian_p0, dian_p0_vector, dian_diameter / 2)
   const dian_p7 = FP.turnLeft(dian_p0_vector, dian_p0, dian_diameter / 2)
   const dian_p4 = out_corner_pie_dian
-  const dian_p4_vector_left = FP.turnAngleFromStart(dian_p4, dian_bend, FP.degreeToRadius(-5), 100)
+  let dian_p4_vector_left = FP.turnAngleFromStart(dian_p4, dian_bend, FP.degreeToRadius(-5), 100)
   const dian_p4_vector_right = FP.turnAngleFromStart(dian_p4, dian_bend, FP.degreeToRadius(15), 100)
-  const { corner: dian_p3 } = FP.getIntersection(
+  let { corner: dian_p3 } = FP.getIntersection(
     { type: 'line', start: dian_p1, end: dian_p2 },
     { type: 'line', start: dian_p4, end: dian_p4_vector_left },
   )
+  if ((dian_p3.x > dian_p2.x && dian_p3.y > dian_p2.y) || (dian_p3.x < dian_p4.x && dian_p3.y < dian_p4.y)) {
+    dian_p4_vector_left = FP.turnAngleFromStart(dian_p4, dian_bend, FP.degreeToRadius(-30), 100)
+    dian_p3 = FP.getIntersection(
+      { type: 'line', start: dian_p1, end: dian_p2 },
+      { type: 'line', start: dian_p4, end: dian_p4_vector_left },
+    ).corner
+  }
   const { corner: dian_p5 } = FP.getIntersection(
     { type: 'line', start: dian_p7, end: dian_p6 },
     { type: 'line', start: dian_p4, end: dian_p4_vector_right },

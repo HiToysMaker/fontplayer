@@ -357,12 +357,7 @@ const getComponents = (skeleton) => {
     dian_end,
   } = skeleton
 
-  // 竖横比，竖的厚度比横的厚度
-  const stress_ratio = 3
-  const serif_size = 2.0
-  const radius = 10
-  const start_length = 30
-  const end_length = 100
+  const radius = 5
   const _weight = weight * 1.2
   const dian_diameter = Math.min(FP.distance(dian_bend, dian_end), _weight)
 
@@ -379,35 +374,45 @@ const getComponents = (skeleton) => {
     unticlockwise: true,
   })
 
-  const start_right_data = FP.getRadiusPointsOnCurve(
+  const startTopAngle = FP.degreeToRadius(-45)
+  const startRightAngle = FP.degreeToRadius(-(40 + 5 * start_style_value))
+  const startLeftAngle = FP.degreeToRadius(25 + 5 * start_style_value)
+  const start_length = Math.min(35, FP.distance(pie_start, pie_end) * 0.5)
+
+  const start_right_data_1 = FP.getRadiusPointsOnCurve(
     FP.getCurvesPoints(in_pie_curves),
-    start_length * start_style_value,
+    start_length,
+  )
+  const start_right_data_2 = FP.getRadiusPointsOnCurve(
+    FP.getCurvesPoints(start_right_data_1.final_curves),
+    start_length,
   )
   const start_left_data = FP.getRadiusPointsOnCurve(
     FP.getCurvesPoints(out_pie_curves),
-    start_length * start_style_value * 0.5,
+    start_length,
   )
-  const start_p0 = start_right_data.point
-  const start_p3 = start_left_data.point
-  const start_right_vector_end = FP.turnAngleFromEnd(start_right_data.tangent.end, start_p0, FP.degreeToRadius(-45), start_length)
-  const start_left_vector_end = FP.turnAngleFromEnd(start_left_data.tangent.end, start_p3, FP.degreeToRadius(10), start_length)
-  const start_top_vector_end = FP.turnAngleFromStart(pie_start, in_pie_curves[0].start, FP.degreeToRadius(-15), start_length)
-  const { corner: start_p1 } = FP.getIntersection(
-    { type: 'line', start: start_p0, end: start_right_vector_end },
-    { type: 'line', start: pie_start, end: start_top_vector_end },
-  )
+  const start_p0 = start_right_data_2.point
+  const start_p1 = start_right_data_1.point
+  const start_p1_p2_vector = FP.turnAngleFromEnd(start_p0, start_p1, startRightAngle, 100)
+  const start_p5 = start_left_data.point
+  const start_p4 = out_pie_curves[0].start
+  const start_p4_p3_vector = FP.turnAngleFromEnd(start_p5, start_p4, startLeftAngle, 100)
+  const start_p2_p3_vector = FP.turnAngleFromStart(pie_start, start_p4, startTopAngle, 100)
   const { corner: start_p2 } = FP.getIntersection(
-    { type: 'line', start: start_p3, end: start_left_vector_end },
-    { type: 'line', start: pie_start, end: start_top_vector_end },
+    { type: 'line', start: start_p1, end: start_p1_p2_vector },
+    { type: 'line', start: pie_start, end: start_p2_p3_vector }
   )
-  const start_p1_radius_before = FP.getPointOnLine(start_p1, start_p0, radius)
-  const start_p1_radius_after = FP.getPointOnLine(start_p1, start_p2, radius)
+  const { corner: start_p3 } = FP.getIntersection(
+    { type: 'line', start: start_p4, end: start_p4_p3_vector },
+    { type: 'line', start: pie_start, end: start_p2_p3_vector }
+  )
   const start_p2_radius_before = FP.getPointOnLine(start_p2, start_p1, radius)
   const start_p2_radius_after = FP.getPointOnLine(start_p2, start_p3, radius)
-
+  const start_p4_radius_before = FP.getPointOnLine(start_p4, start_p3, radius)
+  const start_p4_radius_after = FP.getPointOnLine(start_p4, start_p5, radius)
 
   const { corner: in_corner_pie_dian, corner_index: in_corner_index_pie_dian } = FP.getIntersection(
-    { type: 'curve', points: FP.getCurvesPoints(start_right_data.final_curves) },
+    { type: 'curve', points: FP.getCurvesPoints(start_right_data_2.final_curves) },
     { type: 'line', start: FP.goStraight(in_dian_curves[0].control1, in_dian_curves[0].start, 500), end: in_dian_curves[0].control1 }
   )
   const { corner: out_corner_pie_dian } = FP.getIntersection(
@@ -441,11 +446,12 @@ const getComponents = (skeleton) => {
   if (start_style_type === 1) {
     // 绘制起笔衬线
     pen.moveTo(start_p0.x, start_p0.y)
-    pen.lineTo(start_p1_radius_before.x, start_p1_radius_before.y)
-    pen.quadraticBezierTo(start_p1.x, start_p1.y, start_p1_radius_after.x, start_p1_radius_after.y)
-    pen.lineTo(start_p2_radius_before.x, start_p2_radius_before.y)
+    pen.quadraticBezierTo(start_p1.x, start_p1.y, start_p2_radius_before.x, start_p2_radius_before.y)
     pen.quadraticBezierTo(start_p2.x, start_p2.y, start_p2_radius_after.x, start_p2_radius_after.y)
     pen.lineTo(start_p3.x, start_p3.y)
+    pen.lineTo(start_p4_radius_before.x, start_p4_radius_before.y)
+    pen.quadraticBezierTo(start_p4.x, start_p4.y, start_p4_radius_after.x, start_p4_radius_after.y)
+    pen.lineTo(start_p5.x, start_p5.y)
 
     for (let i = 0; i < start_left_data.final_curves.length; i++) {
       const curve = start_left_data.final_curves[i]
@@ -459,8 +465,8 @@ const getComponents = (skeleton) => {
     pen.quadraticBezierTo(dian_p7.x, dian_p7.y, dian_p6.x, dian_p6.y)
     pen.quadraticBezierTo(dian_p5.x, dian_p5.y, in_corner_pie_dian.x, in_corner_pie_dian.y)
 
-    for (let i = start_right_data.final_curves.length - 1; i >= 0; i--) {
-      const curve = start_right_data.final_curves[i]
+    for (let i = start_right_data_2.final_curves.length - 1; i >= 0; i--) {
+      const curve = start_right_data_2.final_curves[i]
       pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
     }
 

@@ -500,21 +500,16 @@ const getComponents = (skeleton) => {
     gou_end,
   } = skeleton
 
-  // 竖横比，竖的厚度比横的厚度
-  const stress_ratio = 3
-  const serif_size = 2.0
-  const radius = 10
+  const radius = 5
   const start_length = 30
   const turn_angle_1 = FP.degreeToRadius(10)
   const turn_angle_2 = FP.degreeToRadius(15)
-  const end_length = 30
-  turn_style_value *= turn_style_value//serif_size
-  const _weight = weight / stress_ratio
+  const end_length = 10
 
   // out指右侧（外侧）轮廓线
   // in指左侧（内侧）轮廓线
   const { out_shu_start, out_shu_end, in_shu_start, in_shu_end } = FP.getLineContours('shu', { shu_start, shu_end }, weight)
-  const { out_zhe1_start, out_zhe1_end, in_zhe1_start, in_zhe1_end } = FP.getLineContours('zhe1', { zhe1_start, zhe1_end }, _weight)
+  const { out_zhe1_start, out_zhe1_end, in_zhe1_start, in_zhe1_end } = FP.getLineContours('zhe1', { zhe1_start, zhe1_end }, weight)
   const { out_zhe2_start, out_zhe2_end, in_zhe2_start, in_zhe2_end } = FP.getLineContours('zhe2', { zhe2_start, zhe2_end }, weight)
   const { out_gou_start, out_gou_end, in_gou_start, in_gou_end } = FP.getLineContours('gou', { gou_start, gou_end }, weight)
   const { corner: in_corner_shu_zhe1 } = FP.getIntersection(
@@ -560,19 +555,13 @@ const getComponents = (skeleton) => {
   if (out_radius_zhe1_zhe2 >= out_radius_min_length_zhe1_zhe2) {
     out_radius_zhe1_zhe2 = out_radius_min_length_zhe1_zhe2
   }
-  const in_radius_start_zhe1_zhe2= {
-    x: in_corner_zhe1_zhe2.x - in_radius_zhe1_zhe2,
-    y: in_corner_zhe1_zhe2.y,
-  }
+  const in_radius_start_zhe1_zhe2= FP.getPointOnLine(in_corner_zhe1_zhe2, in_zhe1_start, in_radius_zhe1_zhe2)
   const in_radius_end_zhe1_zhe2 = getRadiusPoint({
     start: in_corner_zhe1_zhe2,
     end: in_corner_zhe2_gou,
     radius: in_radius_zhe1_zhe2,
   })
-  const out_radius_start_zhe1_zhe2 = {
-    x: out_corner_zhe1_zhe2.x - out_radius_zhe1_zhe2,
-    y: out_corner_zhe1_zhe2.y,
-  }
+  const out_radius_start_zhe1_zhe2 = FP.getPointOnLine(out_corner_zhe1_zhe2, out_zhe1_start, out_radius_zhe1_zhe2)
   const out_radius_end_zhe1_zhe2 = getRadiusPoint({
     start: out_corner_zhe1_zhe2,
     end: out_corner_zhe2_gou,
@@ -709,6 +698,11 @@ const getComponents = (skeleton) => {
     { type: 'line', start: end_p2, end: end_p2_p1_vector },
   )
 
+  const in_radius_start_zhe1_zhe2_joint = new FP.Joint('in_radius_start_zhe1_zhe2_joint', in_radius_start_zhe1_zhe2)
+  const in_radius_end_zhe1_zhe2_joint = new FP.Joint('in_radius_end_zhe1_zhe2', in_radius_end_zhe1_zhe2)
+  glyph.addJoint(in_radius_end_zhe1_zhe2_joint)
+  glyph.addJoint(in_radius_start_zhe1_zhe2_joint)
+
   // 创建钢笔组件
   const pen = new FP.PenComponent()
   pen.beginPath()
@@ -738,7 +732,8 @@ const getComponents = (skeleton) => {
   pen.lineTo(in_gou_end.x, in_gou_end.y)
 
   // 绘制钩
-  pen.bezierTo(end_p1.x, end_p1.y, end_p0.x, end_p0.y, out_radius_end_zhe2_gou.x, out_radius_end_zhe2_gou.y)
+  pen.quadraticBezierTo(end_p1.x, end_p1.y, end_p0.x, end_p0.y)
+  pen.lineTo(out_radius_end_zhe2_gou.x, out_radius_end_zhe2_gou.y)
   pen.quadraticBezierTo(out_corner_zhe2_gou.x, out_corner_zhe2_gou.y, out_radius_start_zhe2_gou.x, out_radius_start_zhe2_gou.y)
 
   // 绘制转角样式

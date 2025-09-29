@@ -307,20 +307,14 @@ const getComponents = (skeleton, global_params) => {
     gou_end,
   } = skeleton
 
-  // 竖横比，竖的厚度比横的厚度
-  const stress_ratio = 3
-  const serif_size = 2.0
-  const radius = 10
-  const _heng_weight = weight / stress_ratio
-  const turn_angle_1 = FP.degreeToRadius(10)
-  const turn_angle_2 = FP.degreeToRadius(10)
-  const end_length = 100
+  const radius = 5
+  const turn_angle_1 = FP.degreeToRadius(5)
+  const turn_angle_2 = FP.degreeToRadius(5)
   const _gou_weight = weight * 1.35
-  turn_style_value *= turn_style_value//serif_size
 
   // out指右侧（外侧）轮廓线
   // in指左侧（内侧）轮廓线
-  const { out_heng_start, out_heng_end, in_heng_start, in_heng_end } = FP.getLineContours('heng', { heng_start, heng_end }, _heng_weight)
+  const { out_heng_start, out_heng_end, in_heng_start, in_heng_end } = FP.getLineContours('heng', { heng_start, heng_end }, weight)
   const { out_gou_start, out_gou_end, in_gou_start, in_gou_end } = FP.getLineContours('gou', { gou_start, gou_end }, _gou_weight)
   const { corner: in_corner_heng_gou } = FP.getIntersection(
     { type: 'line', start: in_heng_start, end: in_heng_end },
@@ -339,6 +333,31 @@ const getComponents = (skeleton, global_params) => {
     { type: 'line', start: out_heng_start, end: out_heng_end },
     { type: 'line', start: in_gou_start, end: in_gou_end },
   )
+
+  const topAngle = FP.degreeToRadius(-(5 + 5 * start_style_value))
+  const bottomAngle = FP.degreeToRadius(25 + 5 * start_style_value)
+  const leftAngle = FP.degreeToRadius(20)
+  const start_length = Math.min(50, FP.distance(heng_start, heng_end) * 0.5)
+
+  const start_p0 = FP.getPointOnLine(out_heng_start, out_heng_end, start_length * 2)
+  const start_p1 = FP.getPointOnLine(out_heng_start, out_heng_end, start_length)
+  const start_p1_p2_vector = FP.turnAngleFromEnd(start_p0, start_p1, topAngle, 100)
+  const start_p5 = FP.getPointOnLine(in_heng_start, in_heng_end, start_length * 1.3)
+  const start_p4 = FP.getPointOnLine(in_heng_start, in_heng_end, start_length * 0.65)
+  const start_p4_p3_vector = FP.turnAngleFromEnd(start_p5, start_p4, bottomAngle, 100)
+  const start_p2_p3_vector = FP.turnAngleFromStart(out_heng_start, heng_start, leftAngle, 100)
+  const { corner: start_p2 } = FP.getIntersection(
+    { type: 'line', start: start_p1, end: start_p1_p2_vector },
+    { type: 'line', start: heng_start, end: start_p2_p3_vector }
+  )
+  const { corner: start_p3 } = FP.getIntersection(
+    { type: 'line', start: start_p4, end: start_p4_p3_vector },
+    { type: 'line', start: heng_start, end: start_p2_p3_vector }
+  )
+  const start_p2_radius_before = FP.getPointOnLine(start_p2, start_p1, radius)
+  const start_p2_radius_after = FP.getPointOnLine(start_p2, start_p3, radius)
+  const start_p3_radius_before = FP.getPointOnLine(start_p3, start_p2, radius)
+  const start_p3_radius_after = FP.getPointOnLine(start_p3, start_p4, radius)
 
   const end_p0 = in_corner_heng_gou
   const end_p1 = in_gou_end
@@ -361,7 +380,17 @@ const getComponents = (skeleton, global_params) => {
   pen.beginPath()
 
   // 按逆时针方向绘制轮廓
-  pen.moveTo(in_heng_start.x, in_heng_start.y)
+  if (start_style_type === 1) {
+    pen.moveTo(start_p0.x, start_p0.y)
+    pen.quadraticBezierTo(start_p1.x, start_p1.y, start_p2_radius_before.x, start_p2_radius_before.y)
+    pen.quadraticBezierTo(start_p2.x, start_p2.y, start_p2_radius_after.x, start_p2_radius_after.y)
+    pen.lineTo(start_p3_radius_before.x, start_p3_radius_before.y)
+    pen.quadraticBezierTo(start_p3.x, start_p3.y, start_p3_radius_after.x, start_p3_radius_after.y)
+    pen.quadraticBezierTo(start_p4.x, start_p4.y, start_p5.x, start_p5.y)
+  } else if (start_style_type === 0) {
+    pen.moveTo(out_heng1_start.x, out_heng1_start.y)
+    pen.lineTo(in_heng1_start.x, in_heng1_start.y)
+  }
 
   // 绘制钩
   pen.lineTo(end_p0.x, end_p0.y)
@@ -372,11 +401,11 @@ const getComponents = (skeleton, global_params) => {
   pen.quadraticBezierTo(end_p4.x, end_p4.y, end_p4_radius_after.x, end_p4_radius_after.y)
   pen.lineTo(end_p5.x, end_p5.y)
 
-  // 绘制外侧横
-  pen.lineTo(out_heng_start.x, out_heng_start.y)
-
-  // 绘制轮廓连接线
-  pen.lineTo(in_heng_start.x, in_heng_start.y)
+  if (start_style_type === 1) {
+    pen.lineTo(start_p0.x, start_p0.y)
+  } else if (start_style_type === 0) {
+    pen.lineTo(out_heng_start.x, out_heng_start.y)
+  }
 
   pen.closePath()
   return [ pen ]

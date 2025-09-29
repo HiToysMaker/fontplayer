@@ -606,7 +606,7 @@ const getComponents = (skeleton) => {
 
   let turn_data_heng_zhe1 = {}
   let turn_data_zhe2_pie = {}
-  if (turn_style_type === 1) {
+  {
     // 计算转角风格1（凸起，圆滑连接）所需要的数据
     {
       const turn_length = 20 * turn_style_value
@@ -769,7 +769,7 @@ const getComponents = (skeleton) => {
     end_left_data.final_curves[end_left_data.final_curves.length - 1].start.x,
     end_left_data.final_curves[end_left_data.final_curves.length - 1].start.y,
   )
-  for (let i = end_left_data.final_curves.length - 1; i >= 0; i--) {
+  for (let i = 0; i < end_left_data.final_curves.length; i++) {
     const curve = end_left_data.final_curves[i]
     pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
   }
@@ -782,7 +782,7 @@ const getComponents = (skeleton) => {
   pen.quadraticBezierTo(end_p7.x, end_p7.y, end_p8.x, end_p8.y)
   pen.quadraticBezierTo(end_p9.x, end_p9.y, end_p10.x, end_p10.y)
 
-  for (let i = 0; i < end_right_data.final_curves.length; i++) {
+  for (let i = end_right_data.final_curves.length - 1; i >= 0; i--) {
     const curve = end_right_data.final_curves[i]
     pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
   }

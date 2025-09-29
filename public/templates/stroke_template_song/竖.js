@@ -247,7 +247,7 @@ const getComponents = (skeleton) => {
 
   const start_p0 = FP.getPointOnLine(in_shu_start, in_shu_end, start_length * serif_size)
   const start_p3 = FP.getPointOnLine(out_shu_start, out_shu_end, start_length * serif_size * 0.5)
-  const start_right_vector_end = FP.turnAngleFromEnd(in_shu_end, start_p0, FP.degreeToRadius(-45), start_length)
+  const start_right_vector_end = FP.turnAngleFromEnd(in_shu_end, start_p0, FP.degreeToRadius(-(15 + 30 * start_style_value * 0.5)), start_length)
   const start_left_vector_end = FP.turnAngleFromEnd(out_shu_end, start_p3, FP.degreeToRadius(10), start_length)
   const start_top_vector_end = FP.turnAngleFromStart(start, in_shu_start, FP.degreeToRadius(-15), start_length)
   const { corner: start_p1 } = FP.getIntersection(
@@ -258,6 +258,24 @@ const getComponents = (skeleton) => {
     { type: 'line', start: start_p3, end: start_left_vector_end },
     { type: 'line', start: start, end: start_top_vector_end },
   )
+  // const start_p1 = start_right_vector_end
+  // const start_p2 = start_left_vector_end
+  const start_p1_joint = new FP.Joint(
+    'start_p1_joint',
+    {
+      x: start_p1.x,
+      y: start_p1.y,
+    },
+  )
+  const start_p2_joint = new FP.Joint(
+    'start_p2_joint',
+    {
+      x: start_p2.x,
+      y: start_p2.y,
+    },
+  )
+  glyph.addJoint(start_p1_joint)
+  glyph.addJoint(start_p2_joint)
   const start_p1_radius_before = FP.getPointOnLine(start_p1, start_p0, radius)
   const start_p1_radius_after = FP.getPointOnLine(start_p1, start_p2, radius)
   const start_p2_radius_before = FP.getPointOnLine(start_p2, start_p1, radius)

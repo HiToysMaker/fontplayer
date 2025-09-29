@@ -497,7 +497,6 @@ const getComponents = (skeleton) => {
   const turn_angle_1 = FP.degreeToRadius(10)
   const turn_angle_2 = FP.degreeToRadius(15)
   const end_length = 30
-  turn_style_value *= turn_style_value//serif_size
   const _weight = weight / stress_ratio
 
   // out指右侧（外侧）轮廓线
@@ -652,7 +651,7 @@ const getComponents = (skeleton) => {
 
   const start_p0 = FP.getPointOnLine(out_shu_start, out_shu_end, start_length * start_style_value)
   const start_p3 = FP.getPointOnLine(in_shu_start, in_shu_end, start_length * start_style_value * 0.5)
-  const start_right_vector_end = FP.turnAngleFromEnd(out_shu_end, start_p0, FP.degreeToRadius(-45), start_length)
+  const start_right_vector_end = FP.turnAngleFromEnd(out_shu_end, start_p0, FP.degreeToRadius(-(15 + 30 * start_style_value * 0.5)), start_length)
   const start_left_vector_end = FP.turnAngleFromEnd(in_shu_end, start_p3, FP.degreeToRadius(10), start_length)
   const start_top_vector_end = FP.turnAngleFromStart(shu_start, out_shu_start, FP.degreeToRadius(-15), start_length)
   const { corner: start_p1 } = FP.getIntersection(

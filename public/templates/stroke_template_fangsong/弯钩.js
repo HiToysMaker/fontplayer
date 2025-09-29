@@ -286,7 +286,7 @@ const getComponents = (skeleton) => {
   const serif_size = 2.0
   const radius = 10
   const start_length = 30
-  const end_length = 30
+  const end_length = 10
 
   // out指右侧（外侧）轮廓线
   // in指左侧（内侧）轮廓线
@@ -354,7 +354,7 @@ const getComponents = (skeleton) => {
   const end_p0 = FP.goStraight(out_radius_control, out_radius_end, d)
   const end_p0_p1_vector = FP.turnRight(out_radius_end, end_p0, 100)
   const end_p2 = in_gou_end
-  const end_p2_p1_vector = FP.turnAngleFromStart(in_gou_end, in_radius_end, FP.degreeToRadius(-15), 100)
+  const end_p2_p1_vector = FP.turnAngleFromStart(in_gou_end, in_radius_end, FP.degreeToRadius(-5), 100)
   const { corner: end_p1 } = FP.getIntersection(
     { type: 'line', start: end_p0, end: end_p0_p1_vector },
     { type: 'line', start: end_p2, end: end_p2_p1_vector },
@@ -376,7 +376,8 @@ const getComponents = (skeleton) => {
   pen.lineTo(in_gou_end.x, in_gou_end.y)
 
   // 绘制钩
-  pen.bezierTo(end_p1.x, end_p1.y, end_p0.x, end_p0.y, out_radius_end.x, out_radius_end.y)
+  pen.quadraticBezierTo(end_p1.x, end_p1.y, end_p0.x, end_p0.y)
+  pen.lineTo(out_radius_end.x, out_radius_end.y)
   pen.quadraticBezierTo(out_radius_control.x, out_radius_control.y, out_radius_start.x, out_radius_start.y)
 
   for (let i = out_wan_curves_final.length - 1; i >= 0; i--) {

@@ -310,7 +310,7 @@ const getComponents = (skeleton) => {
   const serif_size = 2.0
   const radius = 10
   const start_length = 30
-  const end_length = 100
+  const end_length = 30
 
   // out指左侧（外侧）轮廓线
   // in指右侧（内侧）轮廓线
@@ -321,12 +321,65 @@ const getComponents = (skeleton) => {
     unticlockwise: true,
   })
 
+  const { corner: in_corner_xie_gou, corner_index: in_corner_index_xie_gou } = FP.getIntersection(
+    { type: 'curve', points: in_xie_points },
+    { type: 'line', start: in_gou_start, end: in_gou_end },
+  )
+  const { corner: out_corner_xie_gou } = FP.getIntersection(
+    { type: 'line', start: out_xie_curves[out_xie_curves.length - 1].control2, end: out_xie_curves[out_xie_curves.length - 1].end },
+    { type: 'line', start: out_gou_start, end: out_gou_end },
+  )
+  let { curves: in_xie_curves_final } = FP.fitCurvesByPoints(in_xie_points.slice(0, in_corner_index_xie_gou))
+
+  // 计算弯钩拐角处内外圆角相关的点与数据
+  let in_radius = 30 * bending_degree
+  let out_radius = 30 * bending_degree
+  // 如果in_radius超出钩或弯的长度，取钩或弯的最小长度
+  const in_radius_min_length = Math.min(
+    getDistance(in_corner_index_xie_gou, in_gou_end),
+    getDistance(in_corner_index_xie_gou, in_xie_curves_final[0].start),
+  )
+  const out_radius_min_length = Math.min(
+    getDistance(gou_start, gou_end),
+    getDistance(out_xie_curves[0].start, out_xie_curves[out_xie_curves.length - 1].end),
+  )
+  if (in_radius >= in_radius_min_length) {
+    in_radius = in_radius_min_length
+  }
+  if (out_radius >= out_radius_min_length) {
+    out_radius = out_radius_min_length
+  }
+  const in_radius_data = FP.getRadiusPointsOnCurve(FP.getCurvesPoints(in_xie_curves_final), in_radius, true)
+  const in_radius_control = FP.getIntersection(
+    { type: 'line', start: in_radius_data.tangent.start, end: in_radius_data.tangent.end },
+    { type: 'line', start: in_gou_start, end: in_gou_end },
+  ).corner
+  const in_radius_start = in_radius_data.point
+  const in_radius_end = getRadiusPoint({
+    start: in_radius_control,
+    end: in_gou_end,
+    radius: in_radius,
+  })
+  const out_radius_data = FP.getRadiusPointsOnCurve(FP.getCurvesPoints(out_xie_curves), out_radius, true)
+  const out_radius_control = FP.getIntersection(
+    { type: 'line', start: out_radius_data.tangent.start, end: out_radius_data.tangent.end },
+    { type: 'line', start: out_gou_start, end: out_gou_end },
+  ).corner
+  const out_radius_start = out_radius_data.point
+  const out_radius_end = getRadiusPoint({
+    start: out_radius_control,
+    end: out_gou_end,
+    radius: out_radius,
+  })
+  in_xie_curves_final = in_radius_data.final_curves
+  const out_xie_curves_final = out_radius_data.final_curves
+
   const start_right_data = FP.getRadiusPointsOnCurve(
-    FP.getCurvesPoints(in_xie_curves),
+    FP.getCurvesPoints(in_xie_curves_final),
     start_length * start_style_value,
   )
   const start_left_data = FP.getRadiusPointsOnCurve(
-    FP.getCurvesPoints(out_xie_curves),
+    FP.getCurvesPoints(out_xie_curves_final),
     start_length * start_style_value * 0.5,
   )
   const start_p0 = start_right_data.point
@@ -350,48 +403,16 @@ const getComponents = (skeleton) => {
   let out_xie_curves_final_1 = start_left_data.final_curves
   let in_xie_curves_final_1 = start_right_data.final_curves
 
-  const p0 = out_xie_curves_final_1[out_xie_curves_final_1.length - 1].end
-  const p3 = gou_end
-  const p1 = FP.goStraight(
-    out_xie_curves_final_1[out_xie_curves_final_1.length - 1].control2,
-    out_xie_curves_final_1[out_xie_curves_final_1.length - 1].end, end_length,
+  const gou_length = FP.distance(gou_start, gou_end)
+  const d = Math.min(gou_length, end_length)
+  const end_p0 = FP.goStraight(out_radius_control, out_radius_end, d)
+  const end_p0_p1_vector = FP.turnLeft(out_radius_end, end_p0, 100)
+  const end_p2 = in_gou_end
+  const end_p2_p1_vector = FP.turnAngleFromStart(in_gou_end, in_radius_end, FP.degreeToRadius(15), 100)
+  const { corner: end_p1 } = FP.getIntersection(
+    { type: 'line', start: end_p0, end: end_p0_p1_vector },
+    { type: 'line', start: end_p2, end: end_p2_p1_vector },
   )
-  const p1_p2_vector = FP.turnAngleFromStart(p1, p0, FP.degreeToRadius(-30), end_length)
-  const p3_p2_vector = FP.turnAngleFromStart(gou_end, gou_start, FP.degreeToRadius(10), end_length)
-  const p3_p4_vector = FP.turnAngleFromStart(gou_end, gou_start, FP.degreeToRadius(-10), 500)
-  const { corner: p2 } = FP.getIntersection(
-    { type: 'line', start: p1, end: p1_p2_vector },
-    { type: 'line', start: p3, end: p3_p2_vector },
-  )
-  let { corner: p4, corner_index: p4_index } = FP.getIntersection(
-    { type: 'line', start: p3, end: p3_p4_vector },
-    { type: 'curve', points: FP.getCurvesPoints(in_xie_curves_final_1) },
-  )
-  let p4_radius_before = p4
-  let p4_radius_after = p4
-  let in_xie_curves_final_3 = in_xie_curves_final_1
-  let in_xie_curves_final_2 = in_xie_curves_final_1
-  if (!p4) {
-    // 曲线和直线没有交点
-    const data = FP.getIntersection(
-      { type: 'line', start: p3, end: p3_p4_vector },
-      { type: 'line', start: in_xie_curves_final_1[in_xie_curves_final_1.length - 1].control2, end: in_xie_curves_final_1[in_xie_curves_final_1.length - 1].end },
-    )
-    p4 = data.corner
-    p4_radius_before = FP.getPointOnLine(p4, p3, radius)
-    if (FP.distance(p4, in_xie_curves_final_1[in_xie_curves_final_1.length - 1].end) < radius) {
-      p4_radius_after = in_xie_curves_final_1[in_xie_curves_final_1.length - 1].end
-    } else {
-      p4_radius_after = FP.getPointOnLine(p4, in_xie_curves_final_1[in_xie_curves_final_1.length - 1].end, radius)
-    } 
-  } else {
-    const { curves } = FP.fitCurvesByPoints(FP.getCurvesPoints(in_xie_curves_final_1).slice(0, p4_index + 1))
-    in_xie_curves_final_2 = curves
-    p4_radius_before = FP.getPointOnLine(p4, p3, radius)
-    const data = FP.getRadiusPointsOnCurve(FP.getCurvesPoints(in_xie_curves_final_2), radius, true)
-    p4_radius_after = data.point
-    in_xie_curves_final_3 = data.final_curves
-  }
 
   // 创建钢笔组件
   const pen = new FP.PenComponent()
@@ -406,17 +427,22 @@ const getComponents = (skeleton) => {
   pen.quadraticBezierTo(start_p2.x, start_p2.y, start_p2_radius_after.x, start_p2_radius_after.y)
   pen.lineTo(start_p3.x, start_p3.y)
 
-  for (let i = 0; i < out_xie_curves.length; i++) {
-    const curve = out_xie_curves[i]
+  for (let i = 0; i < out_xie_curves_final_1.length; i++) {
+    const curve = out_xie_curves_final_1[i]
     pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
   }
-  pen.bezierTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y)
-  pen.lineTo(p4_radius_before.x, p4_radius_before.y)
-  pen.quadraticBezierTo(p4.x, p4.y, p4_radius_after.x, p4_radius_after.y)
 
-  pen.lineTo(in_xie_curves_final_3[in_xie_curves_final_3.length - 1].end.x, in_xie_curves_final_3[in_xie_curves_final_3.length - 1].end.y)
-  for (let i = in_xie_curves_final_2.length - 1; i >= 0; i--) {
-    const curve = in_xie_curves_final_3[i]
+  // 绘制外侧圆角
+  pen.quadraticBezierTo(out_radius_control.x, out_radius_control.y, out_radius_end.x, out_radius_end.y)
+
+  // 绘制钩
+  pen.bezierTo(end_p0.x, end_p0.y, end_p1.x, end_p1.y, in_gou_end.x, in_gou_end.y)
+  pen.lineTo(in_radius_end.x, in_radius_end.y)
+  pen.quadraticBezierTo(in_radius_control.x, in_radius_control.y, in_radius_start.x, in_radius_start.y)
+
+  pen.lineTo(in_xie_curves_final_1[in_xie_curves_final_1.length - 1].end.x, in_xie_curves_final_1[in_xie_curves_final_1.length - 1].end.y)
+  for (let i = in_xie_curves_final_1.length - 1; i >= 0; i--) {
+    const curve = in_xie_curves_final_1[i]
     pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
   }
 

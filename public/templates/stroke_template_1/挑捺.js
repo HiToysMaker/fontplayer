@@ -361,7 +361,7 @@ const getComponents = (skeleton) => {
 
   pen.lineTo(out_corner_tiao_na.x, out_corner_tiao_na.y)
 
-  for (let i = end_left_data.final_curves.length - 1; i >= 0; i--) {
+  for (let i = 0; i < end_left_data.final_curves.length; i++) {
     const curve = end_left_data.final_curves[i]
     pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
   }
@@ -371,7 +371,7 @@ const getComponents = (skeleton) => {
   pen.quadraticBezierTo(end_p5.x, end_p5.y, end_p6.x, end_p6.y)
   pen.bezierTo(end_p5.x, end_p5.y, end_p7.x, end_p7.y, end_p8.x, end_p8.y)
 
-  for (let i = 0; i < end_right_data.final_curves.length; i++) {
+  for (let i = end_right_data.final_curves.length - 1; i >= 0; i--) {
     const curve = end_right_data.final_curves[i]
     pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
   }

@@ -322,13 +322,6 @@ const getComponents = (skeleton) => {
     gou_end,
   } = skeleton
 
-  // 竖横比，竖的厚度比横的厚度
-  const stress_ratio = 3
-  const serif_size = 2.0
-  const radius = 10
-  const start_length = 30
-  const end_length = 30
-
   // out指右侧（外侧）轮廓线
   // in指左侧（内侧）轮廓线
   const { out_shu_start, out_shu_end, in_shu_start, in_shu_end } = FP.getLineContours('shu', { shu_start, shu_end }, weight)
@@ -344,7 +337,7 @@ const getComponents = (skeleton) => {
 
   // 计算竖钩拐角处内外圆角相关的点与数据
   let in_radius = 30 * bending_degree
-  let out_radius = 30 * bending_degree
+  let out_radius = 10 * bending_degree
   // 如果in_radius超出钩或竖的长度，取钩或竖的最小长度
   const in_radius_min_length = Math.min(
     getDistance(in_corner_shu_gou, in_gou_end),
@@ -379,30 +372,40 @@ const getComponents = (skeleton) => {
     radius: out_radius,
   })
 
-  const start_p0 = FP.getPointOnLine(out_shu_start, out_shu_end, start_length * start_style_value)
-  const start_p3 = FP.getPointOnLine(in_shu_start, in_shu_end, start_length * start_style_value * 0.5)
-  const start_right_vector_end = FP.turnAngleFromEnd(out_shu_end, start_p0, FP.degreeToRadius(-45), start_length)
-  const start_left_vector_end = FP.turnAngleFromEnd(in_shu_end, start_p3, FP.degreeToRadius(10), start_length)
-  const start_top_vector_end = FP.turnAngleFromStart(shu_start, out_shu_start, FP.degreeToRadius(-15), start_length)
-  const { corner: start_p1 } = FP.getIntersection(
-    { type: 'line', start: start_p0, end: start_right_vector_end },
-    { type: 'line', start: shu_start, end: start_top_vector_end },
-  )
+  const radius = 5
+  const startTopAngle = FP.degreeToRadius(-45)
+  const startRightAngle = FP.degreeToRadius(-(40 + 5 * start_style_value))
+  const startLeftAngle = FP.degreeToRadius(25 + 5 * start_style_value)
+  const start_length = Math.min(35, FP.distance(shu_start, shu_end) * 0.5)
+
+  const start_p0 = FP.getPointOnLine(out_shu_start, out_shu_end, start_length * 2)
+  const start_p1 = FP.getPointOnLine(out_shu_start, out_shu_end, start_length)
+  const start_p1_p2_vector = FP.turnAngleFromEnd(start_p0, start_p1, startRightAngle, 100)
+  const start_p5 = FP.getPointOnLine(in_shu_start, in_shu_end, start_length)
+  const start_p4 = in_shu_start
+  const start_p4_p3_vector = FP.turnAngleFromEnd(start_p5, start_p4, startLeftAngle, 100)
+  const start_p2_p3_vector = FP.turnAngleFromStart(shu_start, in_shu_start, startTopAngle, 100)
   const { corner: start_p2 } = FP.getIntersection(
-    { type: 'line', start: start_p3, end: start_left_vector_end },
-    { type: 'line', start: shu_start, end: start_top_vector_end },
+    { type: 'line', start: start_p1, end: start_p1_p2_vector },
+    { type: 'line', start: shu_start, end: start_p2_p3_vector }
   )
-  const start_p1_radius_before = FP.getPointOnLine(start_p1, start_p0, radius)
-  const start_p1_radius_after = FP.getPointOnLine(start_p1, start_p2, radius)
+  const { corner: start_p3 } = FP.getIntersection(
+    { type: 'line', start: start_p4, end: start_p4_p3_vector },
+    { type: 'line', start: shu_start, end: start_p2_p3_vector }
+  )
   const start_p2_radius_before = FP.getPointOnLine(start_p2, start_p1, radius)
   const start_p2_radius_after = FP.getPointOnLine(start_p2, start_p3, radius)
+  const start_p4_radius_before = FP.getPointOnLine(start_p4, start_p3, radius)
+  const start_p4_radius_after = FP.getPointOnLine(start_p4, start_p5, radius)
+  
+  const end_length = 10
 
   const gou_length = FP.distance(gou_start, gou_end)
   const d = Math.min(gou_length, end_length)
   const end_p0 = FP.goStraight(out_corner_shu_gou, out_radius_end, d)
   const end_p0_p1_vector = FP.turnRight(out_radius_end, end_p0, 100)
   const end_p2 = in_gou_end
-  const end_p2_p1_vector = FP.turnAngleFromStart(in_gou_end, in_radius_end, FP.degreeToRadius(-15), 100)
+  const end_p2_p1_vector = FP.turnAngleFromStart(in_gou_end, in_radius_end, FP.degreeToRadius(-8), 100)
   const { corner: end_p1 } = FP.getIntersection(
     { type: 'line', start: end_p0, end: end_p0_p1_vector },
     { type: 'line', start: end_p2, end: end_p2_p1_vector },
@@ -416,11 +419,12 @@ const getComponents = (skeleton) => {
   if (start_style_type === 1) {
     // 绘制起笔衬线
     pen.moveTo(start_p0.x, start_p0.y)
-    pen.lineTo(start_p1_radius_before.x, start_p1_radius_before.y)
-    pen.quadraticBezierTo(start_p1.x, start_p1.y, start_p1_radius_after.x, start_p1_radius_after.y)
-    pen.lineTo(start_p2_radius_before.x, start_p2_radius_before.y)
+    pen.quadraticBezierTo(start_p1.x, start_p1.y, start_p2_radius_before.x, start_p2_radius_before.y)
     pen.quadraticBezierTo(start_p2.x, start_p2.y, start_p2_radius_after.x, start_p2_radius_after.y)
     pen.lineTo(start_p3.x, start_p3.y)
+    pen.lineTo(start_p4_radius_before.x, start_p4_radius_before.y)
+    pen.quadraticBezierTo(start_p4.x, start_p4.y, start_p4_radius_after.x, start_p4_radius_after.y)
+    pen.lineTo(start_p5.x, start_p5.y)
   } else if (start_style_type === 0) {
     pen.moveTo(out_shu_start.x, out_shu_start.y)
     pen.lineTo(in_shu_start.x, in_shu_start.y)
@@ -432,7 +436,8 @@ const getComponents = (skeleton) => {
   // 绘制内侧钩
   pen.lineTo(in_gou_end.x, in_gou_end.y)
 
-  pen.bezierTo(end_p1.x, end_p1.y, end_p0.x, end_p0.y, out_radius_end.x, out_radius_end.y)
+  pen.quadraticBezierTo(end_p1.x, end_p1.y, end_p0.x, end_p0.y)
+  pen.lineTo(out_radius_end.x, out_radius_end.y)
   pen.quadraticBezierTo(out_corner_shu_gou.x, out_corner_shu_gou.y, out_radius_start.x, out_radius_start.y)
 
   if (start_style_type === 1) {

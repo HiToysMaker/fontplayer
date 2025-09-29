@@ -611,7 +611,7 @@ const getComponents = (skeleton, global_params) => {
 
   let turn_data_heng1_zhe1 = {}
   let turn_data_heng2_zhe2
-  if (turn_style_type === 1) {
+  {
     // 计算转角风格1（凸起，圆滑连接）所需要的数据
     {
       const turn_length = 20 * turn_style_value

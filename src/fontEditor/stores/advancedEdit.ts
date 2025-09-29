@@ -9,7 +9,15 @@ import { ConstantsMap } from '../programming/ConstantsMap'
 import { emitter } from '../Event/bus'
 import { loading, loaded, total } from './global'
 import { genUUID } from '../../utils/string'
-
+import paper from 'paper'
+import type {
+  ILine,
+  ICubicBezierCurve,
+  IQuadraticBezierCurve,
+} from '../../fontManager'
+import { PathType } from '../../fontManager'
+import { genPenComponent } from '../tools/pen'
+import { getBezierBoundingBox, testIntersect } from '../../utils/bezier'
 export const activePanel = ref('globalVariables')
 
 const constants = ref([])
@@ -603,9 +611,19 @@ const updateCharactersAndPreview_styleSwitch = () => {
     if (!canvas) return
 
     switchStyle(character, style)
+
+    if (style.name === '字玩标准宋体') {
+      test_process_character(character)
+    }
+  
     sampleCharactersList.value.push(character)
 
-    const contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(orderedListWithItemsForCharacterFile(character), {
+    let components = orderedListWithItemsForCharacterFile(character)
+    if (character.final_components) {
+      components = character.final_components
+    }
+
+    const contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(components, {
       unitsPerEm: selectedFile.value.fontSettings.unitsPerEm,
       descender: selectedFile.value.fontSettings.descender,
       advanceWidth: selectedFile.value.fontSettings.advanceWidth,
@@ -637,6 +655,15 @@ const updateCharactersList_styleSwitch = () => {
 
     switchStyle2(character, style)
 
+    if (style.name === '字玩标准宋体') {
+      test_process_character(character)
+    }
+
+    let components = orderedListWithItemsForCharacterFile(character)
+    if (character.final_components) {
+      components = character.final_components
+    }
+
     const contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(orderedListWithItemsForCharacterFile(character), {
       unitsPerEm: selectedFile.value.fontSettings.unitsPerEm,
       descender: selectedFile.value.fontSettings.descender,
@@ -665,6 +692,326 @@ const updateCharactersList_styleSwitch = () => {
   // loading.value = false
   // loaded.value = 0
   // total.value = 0
+}
+
+const getParam = (param) => {
+  if (param.type === ParameterType.Constant) {
+    return globalConstants.value.find(constant => constant.uuid === param.value).value
+  } else if (param.type === ParameterType.AdvancedEditConstant) {
+    return constants.value.find(constant => constant.uuid === param.value).value
+  } else {
+    return param.value
+  }
+}
+
+const addParam = (glyph, name, value, type) => {
+  const _param = glyph.parameters.parameters.find(param => param.name === name)
+  if (_param) {
+    _param.value = value
+    return
+  }
+  const param = {
+    uuid: genUUID(),
+    name,
+    value,
+    type,
+  }
+  glyph.parameters.parameters.push(param)
+}
+
+const test_process_characters = (characters) => {
+  for (let i = 0; i < characters.length; i++) {
+    const characterFile = characters[i]
+    test_process_character(characterFile)
+  }
+}
+
+const getPaperCurvesPoints = (curves) => {
+  if (!curves.length) return []
+  const points = []
+  points.push({
+    uuid: genUUID(),
+    type: 'anchor',
+    x: curves[0].points[0].x,
+    y: curves[0].points[0].y,
+    origin: null,
+    isShow: true,
+  })
+  for (let i = 0; i < curves.length; i++) {
+    const curve = curves[i]
+    const uuid2 = genUUID()
+    const uuid3 = genUUID()
+    const uuid4 = genUUID()
+    points.push({
+      uuid: uuid2,
+      type: 'control',
+      x: curve.points[1].x,
+      y: curve.points[1].y,
+      origin: points[points.length - 1].uuid,
+      isShow: true,
+    })
+    points.push({
+      uuid: uuid3,
+      type: 'control',
+      x: curve.points[2].x,
+      y: curve.points[2].y,
+      origin: uuid4,
+      isShow: true,
+    })
+    points.push({
+      uuid: uuid4,
+      type: 'anchor',
+      x: curve.points[3].x,
+      y: curve.points[3].y,
+      origin: null,
+      isShow: true,
+    })
+  }
+  return points
+}
+
+const test_process_character = (characterFile) => {
+  constants.value.find(constant => constant.name === '起笔风格').value = 1
+  constants.value.find(constant => constant.name === '起笔数值').value = 2
+  constants.value.find(constant => constant.name === '转角风格').value = 1
+  constants.value.find(constant => constant.name === '转角数值').value = 2
+  globalConstants.value.find(constant => constant.name === '起笔风格').value = 1
+  globalConstants.value.find(constant => constant.name === '起笔数值').value = 2
+  globalConstants.value.find(constant => constant.name === '转角风格').value = 1
+  globalConstants.value.find(constant => constant.name === '转角数值').value = 2
+  for (let j = 0; j < characterFile.components.length; j++) {
+    const component = characterFile.components[j]
+    if (component.type === 'glyph') {
+      const glyph = component.value
+      glyph.parameters.parameters.forEach(parameter => {
+        if (parameter.name === '起笔风格') {
+          const value = getParam(parameter)
+          if (value === 0) {
+            // 无起笔样式，则添加无收笔衬线参数
+            addParam(glyph, '收笔风格', 0, ParameterType.Enum)
+          }
+        }
+      })
+    }
+  }
+
+  const pathsList = []
+
+  for (let i = 0; i < characterFile.components.length; i++) {
+    const component = characterFile.components[i]
+    if (component.type === 'glyph') {
+      executeScript_glyph(component.value)
+      if (!component.value._o.components[0] || !component.value._o.components[0].points) {
+        continue
+      }
+      const points = component.value._o.components[0].points.map((point) => {
+        const { ox, oy } = component
+        return {
+          x: ox + point.x,
+          y: oy + point.y,
+        }
+      })
+      pathsList[i] = {
+        points,
+        paths: [createOptimizedPath(points)],
+      }
+    }
+  }
+
+  for (let i = 0; i < characterFile.components.length; i++) {
+    const component = characterFile.components[i]
+    if (component.type !== 'glyph') {
+      continue
+    }
+    const _points1 = pathsList[i].points
+    let globalMark = false
+    let localMark = false
+    let result_points = []
+    for (let j = 0; j < characterFile.components.length; j++) {
+      const _component = characterFile.components[j]
+      if (component.type !== 'glyph' || _component.uuid === component.uuid) {
+        continue
+      }
+      const _points2 = pathsList[j].points
+      if (testIntersect(_points1, _points2)) {
+        // 两组件相交，减去第二个组件
+        const path1 = createOptimizedPath(_points1)
+        const path2 = pathsList[j].paths.reduce((acc, path) => acc.unite(path), new paper.Path())
+        const result = path1.subtract(path2)
+        if (result.children && result.children.length >= 2) {
+          // 遍历children，如果boundBox大于一定值，则添加到final_components中
+          for (let j = 0; j < result.children.length; j++) {
+            const child = result.children[j] as paper.Path
+            const points = getPaperCurvesPoints(child.curves)
+            const boundingBox = getBezierBoundingBox(points)
+            const threshold = 80
+            if (
+              boundingBox.maxX - boundingBox.minX < threshold &&
+              boundingBox.maxY - boundingBox.minY < threshold
+            ) {
+              localMark = true
+            } else {
+              result_points.push(points)
+            }
+          }
+          if (localMark) {
+            localMark = false
+            globalMark = true
+            pathsList[i].paths = result_points.map((points) => createOptimizedPath(points))
+            for (let j = 0; j < result_points.length; j++) {
+              if (!characterFile.final_components) {
+                characterFile.final_components = []
+              }
+              characterFile.final_components.push(genPenComponent(result_points[j].reverse(), true))
+            }
+            result_points = []
+          }
+          break
+        }
+      }
+    }
+    if (!globalMark) {
+      if (!characterFile.final_components) {
+        characterFile.final_components = []
+      }
+      characterFile.final_components.push(genPenComponent(_points1, true))
+    }
+  }
+
+  // 绘制pie subtract na测试轮廓
+  // console.log('test_process_character', characterFile.character.text)
+  // if (characterFile.character.text === '入') {
+  //   const pie_points = characterFile.components[0].value._o.components[0].points.map((point) => {
+  //     const { ox, oy} = characterFile.components[0]
+  //     return {
+  //       x: ox + point.x,
+  //       y: oy + point.y,
+  //     }
+  //   })
+  //   const na_points = characterFile.components[1].value._o.components[0].points.map((point) => {
+  //     const { ox, oy} = characterFile.components[1]
+  //     return {
+  //       x: ox + point.x,
+  //       y: oy + point.y,
+  //     }
+  //   })
+  //   console.log('pie_points', pie_points)
+  //   console.log('na_points', na_points)
+  //   // 使用paper.js将pie减去na
+  //   const pie_path = createOptimizedPath(pie_points)
+  //   const na_path = createOptimizedPath(na_points)
+  //   const result = pie_path.subtract(na_path)
+  //   const canvas: HTMLCanvasElement = document.getElementById('advanced-edit-canvas') as HTMLCanvasElement
+  //   const ctx = canvas.getContext('2d')
+    
+  //   if (!ctx) return
+    
+  //   // 清空canvas
+  //   ctx.clearRect(0, 0, canvas.width, canvas.height)
+    
+  //   // 设置canvas背景色和坐标系统
+  //   ctx.fillStyle = '#f0f0f0'
+  //   ctx.fillRect(0, 0, canvas.width, canvas.height)
+    
+  //   // 绘制两个path的轮廓
+  //   if (result.children && result.children.length >= 2) {
+  //     // 绘制第一个path (红色)
+  //     ctx.strokeStyle = 'red'
+  //     ctx.lineWidth = 2
+  //     ctx.beginPath()
+      
+  //     const firstPath = result.children[0] as paper.Path
+  //     console.log('第一个path segments数量:', firstPath.segments.length)
+  //     console.log('第一个path bounds:', firstPath.bounds)
+      
+  //     if (firstPath.curves && firstPath.curves.length > 0) {
+  //       for (let i = 0; i < firstPath.curves.length; i++) {
+  //         const curve = firstPath.curves[i]
+  //         if (i === 0) {
+  //           ctx.moveTo(curve.points[0].x, curve.points[0].y)
+  //         }
+  //         ctx.bezierCurveTo(curve.points[1].x, curve.points[1].y, curve.points[2].x, curve.points[2].y, curve.points[3].x, curve.points[3].y)
+  //       }
+  //     }
+  //     ctx.closePath()
+  //     ctx.stroke()
+      
+  //     // 绘制第二个path (绿色)
+  //     ctx.strokeStyle = 'green'
+  //     ctx.lineWidth = 2
+  //     ctx.beginPath()
+      
+  //     const secondPath = result.children[1] as paper.Path
+  //     console.log('第二个path segments数量:', secondPath.segments.length)
+  //     console.log('第二个path bounds:', secondPath.bounds)
+      
+  //     if (secondPath.curves && secondPath.curves.length > 0) {
+  //       for (let i = 0; i < secondPath.curves.length; i++) {
+  //         const curve = secondPath.curves[i]
+  //         if (i === 0) {
+  //           ctx.moveTo(curve.points[0].x, curve.points[0].y)
+  //         }
+  //         ctx.bezierCurveTo(curve.points[1].x, curve.points[1].y, curve.points[2].x, curve.points[2].y, curve.points[3].x, curve.points[3].y)
+  //       }
+  //     }
+  //     ctx.closePath()
+  //     ctx.stroke()
+      
+  //     console.log('第一个path (红色):', firstPath)
+  //     console.log('第二个path (绿色):', secondPath)
+  //   }
+
+
+    // ctx.strokeStyle = 'blue'
+    // ctx.lineWidth = 2
+    // ctx.beginPath()
+    // for (let i = 0; i < pie_path.curves.length; i++) {
+    //   const curve = pie_path.curves[i]
+    //   if (i === 0) {
+    //     ctx.moveTo(curve.points[0].x, curve.points[0].y)
+    //   }
+    //   ctx.bezierCurveTo(curve.points[1].x, curve.points[1].y, curve.points[2].x, curve.points[2].y, curve.points[3].x, curve.points[3].y)
+    // }
+    // ctx.closePath()
+    // ctx.stroke()
+    // ctx.strokeStyle = 'blue'
+    // ctx.lineWidth = 2
+    // ctx.beginPath()
+    // for (let i = 0; i < na_path.curves.length; i++) {
+    //   const curve = na_path.curves[i]
+    //   if (i === 0) {
+    //     ctx.moveTo(curve.points[0].x, curve.points[0].y)
+    //   }
+    //   ctx.bezierCurveTo(curve.points[1].x, curve.points[1].y, curve.points[2].x, curve.points[2].y, curve.points[3].x, curve.points[3].y)
+    // }
+    // ctx.closePath()
+    // ctx.stroke()
+
+
+    // console.log('subtract result', result, pie_path, na_path)
+    // debugger
+  // }
+}
+
+// 优化后的路径创建函数
+const createOptimizedPath = (points: Array<IPoint>): paper.Path => {
+  const path = new paper.Path()
+  
+  if (points.length === 0) return path
+  
+  // 移动到起始点
+  const startPoint = new paper.Point(points[0].x, points[0].y)
+  path.moveTo(startPoint)
+
+  for (let j = 0; j < points.length - 1; j += 3) {
+    const control1 = new paper.Point(points[j + 1].x, points[j + 1].y)
+    const control2 = new paper.Point(points[j + 2].x, points[j + 2].y)
+    const endPoint = new paper.Point(points[j + 3].x, points[j + 3].y)
+    path.cubicCurveTo(control1, control2, endPoint)
+  }
+
+  path.closePath()
+  return path
 }
 
 export {

@@ -215,12 +215,7 @@ const getComponents = (skeleton) => {
   // 根据骨架计算轮廓关键点
   const { start, bend, end } = skeleton
 
-  // 竖横比，竖的厚度比横的厚度
-  const stress_ratio = 3
-  const serif_size = start_style_value//2.0
-  const radius = 10
-  const start_length = 30
-  const end_length = 100
+  const radius = 5
   const _weight = weight * 1.2
 
   // out指左侧（外侧）轮廓线
@@ -231,10 +226,10 @@ const getComponents = (skeleton) => {
     weightsVariationPower: weights_variation_power,
   })
 
-  const p0 = FP.turnRight(end, start, _weight * 0.5)
-  const p1 = FP.turnLeft(end, start, _weight * 0.5)
-  const p2 = FP.turnLeft(end, start, _weight * 0.5 + 10 * serif_size)
-  const p3_vector = FP.turnAngleFromStart(p2, p0, FP.degreeToRadius(-45), 100)
+  const p1 = FP.turnRight(end, start, _weight * 0.5)
+  const p0 = FP.turnLeft(end, start, _weight * 0.5)
+  const p2 = FP.turnRight(end, start, _weight * 0.5 + 15 * start_style_value)
+  const p3_vector = FP.turnAngleFromStart(p2, p0, FP.degreeToRadius(45), 100)
   const { corner: p3 } = FP.getIntersection(
     { type: 'line', start: p2, end: p3_vector },
     { type: 'line', start: p1, end: end },
@@ -252,13 +247,20 @@ const getComponents = (skeleton) => {
   pen.beginPath()
 
   // 按逆时针方向绘制轮廓
-  pen.moveTo(p0.x, p0.y)
-  pen.lineTo(p1.x, p1.y)
-  pen.lineTo(p2_radius_before.x, p2_radius_before.y)
-  pen.quadraticBezierTo(p2.x, p2.y, p2_radius_after.x, p2_radius_after.y)
-  pen.lineTo(p3.x, p3.y)
-  pen.lineTo(p4.x, p4.y)
-  pen.lineTo(p0.x, p0.y)
+  if (start_style_type === 1) {
+    pen.moveTo(p4.x, p4.y)
+    pen.lineTo(p3.x, p3.y)
+    pen.lineTo(p2_radius_after.x, p2_radius_after.y)
+    pen.quadraticBezierTo(p2.x, p2.y, p2_radius_before.x, p2_radius_before.y)
+    pen.lineTo(p1.x, p1.y)
+    pen.lineTo(p0.x, p0.y)
+    pen.lineTo(p4.x, p4.y)
+  } else if (start_style_type === 0) {
+    pen.moveTo(p4.x, p4.y)
+    pen.lineTo(p1.x, p1.y)
+    pen.lineTo(p0.x, p0.y)
+    pen.lineTo(p4.x, p4.y)
+  }
 
   pen.closePath()
   return [ pen ]

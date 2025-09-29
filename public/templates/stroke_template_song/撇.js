@@ -241,13 +241,21 @@ const getComponents = (skeleton) => {
   )
   const start_p0 = start_right_data.point
   const start_p3 = start_left_data.point
-  const start_right_vector_end = FP.turnAngleFromEnd(start_right_data.tangent.end, start_p0, FP.degreeToRadius(-45), start_length)
+  let start_right_vector_end = FP.turnAngleFromEnd(start_right_data.tangent.end, start_p0, FP.degreeToRadius(-(15 + 30 * start_style_value * 0.5)), start_length)
   const start_left_vector_end = FP.turnAngleFromEnd(start_left_data.tangent.end, start_p3, FP.degreeToRadius(10), start_length)
   const start_top_vector_end = FP.turnAngleFromStart(start, out_pie_curves[0].start, FP.degreeToRadius(-15), start_length)
-  const { corner: start_p1 } = FP.getIntersection(
+  let { corner: start_p1 } = FP.getIntersection(
     { type: 'line', start: start_p0, end: start_right_vector_end },
     { type: 'line', start: start, end: start_top_vector_end },
   )
+  const threshold = weight * 1.5
+  if (FP.distance(start_p1, start_p0) > threshold) {
+    start_right_vector_end = FP.turnAngleFromEnd(start_right_data.tangent.end, start_p0, FP.degreeToRadius(-(5 + 5 * start_style_value * 0.5)), start_length)
+    start_p1 = FP.getIntersection(
+      { type: 'line', start: start_p0, end: start_right_vector_end },
+      { type: 'line', start: start, end: start_top_vector_end },
+    ).corner
+  }
   const { corner: start_p2 } = FP.getIntersection(
     { type: 'line', start: start_p3, end: start_left_vector_end },
     { type: 'line', start: start, end: start_top_vector_end },

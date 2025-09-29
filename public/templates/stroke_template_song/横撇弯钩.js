@@ -474,7 +474,6 @@ const getComponents = (skeleton) => {
   const turn_angle_1 = FP.degreeToRadius(10)
   const turn_angle_2 = FP.degreeToRadius(15)
   const end_length = 100
-  turn_style_value *= turn_style_value//serif_size
 
   // out指右侧（外侧）轮廓线
   // in指左侧（内侧）轮廓线

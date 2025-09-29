@@ -394,11 +394,6 @@ const getComponents = (skeleton) => {
   )
   const { curves: out_pie_curves_final } = FP.fitCurvesByPoints(out_pie_points.slice(0, out_corner_index_pie_tiao[0]))
   const { curves: in_pie_curves_final } = FP.fitCurvesByPoints(in_pie_points.slice(0, in_corner_index_pie_tiao[0]))
-  let in_tiao_curves_final_1 = []
-  if (out_corner_index_pie_tiao[1]) {
-    let { curves } = FP.fitCurvesByPoints(in_tiao_points.slice(0, out_corner_index_pie_tiao[1]))
-    in_tiao_curves_final_1 = curves
-  }
   const { curves: in_tiao_curves_final_2 } = FP.fitCurvesByPoints(in_tiao_points.slice(in_corner_index_pie_tiao[1]))
 
   const start_right_data = FP.getRadiusPointsOnCurve(

@@ -494,7 +494,7 @@ const getComponents = (skeleton) => {
   }
 
   let turn_data = {}
-  if (turn_style_type === 1) {
+  {
     // 计算转角风格1（凸起，圆滑连接）所需要的数据
     const turn_length = 20 * turn_style_value
     const { inner_angle, mid_angle, angle1, angle2 } = FP.getTurnAngles(out_heng_start, out_corner_heng_pie, out_pie_end)
@@ -650,7 +650,7 @@ const getComponents = (skeleton) => {
   pen.lineTo(in_corner_heng_pie.x, in_corner_heng_pie.y)
   pen.lineTo(in_corner_pie_wangou.x, in_corner_pie_wangou.y)
 
-  for (let i = end_left_data.final_curves.length - 1; i >= 0; i--) {
+  for (let i = 0; i < end_left_data.final_curves.length; i++) {
     const curve = end_left_data.final_curves[i]
     pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
   }
@@ -663,7 +663,7 @@ const getComponents = (skeleton) => {
   pen.quadraticBezierTo(end_p3.x, end_p3.y, end_p2.x, end_p2.y)
   pen.quadraticBezierTo(end_p1.x, end_p1.y, end_p0.x, end_p0.y)
 
-  for (let i = 0; i < end_right_data.final_curves.length; i++) {
+  for (let i = end_right_data.final_curves.length - 1; i >= 0; i--) {
     const curve = end_right_data.final_curves[i]
     pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
   }

@@ -15,9 +15,19 @@ interface IGetContoursOption {
 	weightsVariation?: string;
 	weightsVariationPower?: number;
 	weightsVariationDir?: string;
+	startWeight?: number;
+	endWeight?: number;
+	weightsVariationFnType?: string;
 }
 
 const getLineContours = (name, skeleton, weight, options: IGetContoursOption) => {
+	let { startWeight, endWeight } = options || {}
+	if (!startWeight) {
+		startWeight = weight
+	}
+	if (!endWeight) {
+		endWeight = weight
+	}
 	let unticlockwise = false
 	let skeletonPos = 'center'
 	if (options && options.unticlockwise) {
@@ -37,54 +47,54 @@ const getLineContours = (name, skeleton, weight, options: IGetContoursOption) =>
 
 	if (skeletonPos === 'center' && !unticlockwise) {
 		contours[`out_${name}_start`] = {
-			x: start.x + weight / 2 * Math.sin(angle),
-			y: start.y - weight / 2 * Math.cos(angle),
+			x: start.x + startWeight / 2 * Math.sin(angle),
+			y: start.y - startWeight / 2 * Math.cos(angle),
 		}
 		contours[`in_${name}_start`] = {
-			x: start.x - weight / 2 * Math.sin(angle),
-			y: start.y + weight / 2 * Math.cos(angle),
+			x: start.x - startWeight / 2 * Math.sin(angle),
+			y: start.y + startWeight / 2 * Math.cos(angle),
 		}
 		contours[`out_${name}_end`] = {
-			x: end.x + weight / 2 * Math.sin(angle),
-			y: end.y - weight / 2 * Math.cos(angle),
+			x: end.x + endWeight / 2 * Math.sin(angle),
+			y: end.y - endWeight / 2 * Math.cos(angle),
 		}
 		contours[`in_${name}_end`] = {
-			x: end.x - weight / 2 * Math.sin(angle),
-			y: end.y + weight / 2 * Math.cos(angle),
+			x: end.x - endWeight / 2 * Math.sin(angle),
+			y: end.y + endWeight / 2 * Math.cos(angle),
 		}
 	}
 
 	else if (skeletonPos === 'center' && unticlockwise) {
 		contours[`out_${name}_start`] = {
-			x: start.x - weight / 2 * Math.sin(angle),
-			y: start.y + weight / 2 * Math.cos(angle),
+			x: start.x - startWeight / 2 * Math.sin(angle),
+			y: start.y + startWeight / 2 * Math.cos(angle),
 		}
 		contours[`in_${name}_start`] = {
-			x: start.x + weight / 2 * Math.sin(angle),
-			y: start.y - weight / 2 * Math.cos(angle),
+			x: start.x + startWeight / 2 * Math.sin(angle),
+			y: start.y - startWeight / 2 * Math.cos(angle),
 		}
 		contours[`out_${name}_end`] = {
-			x: end.x - weight / 2 * Math.sin(angle),
-			y: end.y + weight / 2 * Math.cos(angle),
+			x: end.x - endWeight / 2 * Math.sin(angle),
+			y: end.y + endWeight / 2 * Math.cos(angle),
 		}
 		contours[`in_${name}_end`] = {
-			x: end.x + weight / 2 * Math.sin(angle),
-			y: end.y - weight / 2 * Math.cos(angle),
+			x: end.x + endWeight / 2 * Math.sin(angle),
+			y: end.y - endWeight / 2 * Math.cos(angle),
 		}
 	}
 
 	else if (skeletonPos === 'inner' && !unticlockwise) {
 		contours[`out_${name}_start`] = {
-			x: start.x + weight * Math.sin(angle),
-			y: start.y - weight * Math.cos(angle),
+			x: start.x + startWeight * Math.sin(angle),
+			y: start.y - startWeight * Math.cos(angle),
 		}
 		contours[`in_${name}_start`] = {
 			x: start.x,
 			y: start.y,
 		}
 		contours[`out_${name}_end`] = {
-			x: end.x + weight * Math.sin(angle),
-			y: end.y - weight * Math.cos(angle),
+			x: end.x + endWeight * Math.sin(angle),
+			y: end.y - endWeight * Math.cos(angle),
 		}
 		contours[`in_${name}_end`] = {
 			x: end.x,
@@ -95,7 +105,57 @@ const getLineContours = (name, skeleton, weight, options: IGetContoursOption) =>
 	return contours
 }
 
+const bezierFn = (x: number) : number => {
+	const bezier = [
+		{ x: 0, y: 0 },
+		{ x: 0, y: 0.75 },
+		{ x: 0.25, y: 1 },
+		{ x: 1, y: 1 },
+	]
+	return bezierCurve.q(bezier, x).y
+}
+
+const bezier1Fn = (x: number) : number => {
+	const bezier = [
+		{ x: 0, y: 0.3 },
+		{ x: 0.15, y: 1.0 },
+		{ x: 0.85, y: 1.0 },
+		{ x: 1, y: 0.3 },
+	]
+	return bezierCurve.q(bezier, x).y
+}
+
+const getBezierFn = (type: string) => {
+  if (type === 'bezier1') {
+		return bezier1Fn
+	}
+	return bezierFn
+}
+
 const getCurveContours = (name, skeleton, weight, options: IGetContoursOption) => {
+	let { startWeight, endWeight } = options || {}
+	if (!startWeight) {
+		if (options && options.weightsVariation) {
+			if (options.weightsVariationDir === 'reverse') {
+				startWeight = weight
+			} else {
+				startWeight = 0
+			}
+		} else {
+			startWeight = weight
+		}
+	}
+	if (!endWeight) {
+		if (options && options.weightsVariation) {
+			if (options.weightsVariationDir === 'reverse') {
+				endWeight = 0
+			} else {
+				endWeight = weight
+			}
+		} else {
+			endWeight = weight
+		}
+	}
 	let unticlockwise = false
 	let skeletonPos = 'center'
 	if (options && options.unticlockwise) {
@@ -133,11 +193,11 @@ const getCurveContours = (name, skeleton, weight, options: IGetContoursOption) =
 				// 字重变化方向为由收尾到起始方向
 				const j = n - i
 				const f = j / n
-				weights.push(weight * f)
+				weights.push(endWeight + (startWeight - endWeight) * f)
 			} else {
 				// 字重变化为由起始到收尾方向
 				const f = i / n
-				weights.push(weight * f)
+				weights.push(startWeight + (endWeight - startWeight) * f)
 			}
 		} else if (options.weightsVariation === 'pow') {
 			// 字重变化为幂变化，options.weightsVariationPower取值范围为[0, 2]
@@ -145,11 +205,40 @@ const getCurveContours = (name, skeleton, weight, options: IGetContoursOption) =
 				// 字重变化方向为由收尾到起始方向
 				const j = n - i
 				const f = Math.pow(j / n, options.weightsVariationPower)
-				weights.push(weight * f)
+				weights.push(endWeight + (startWeight - endWeight) * f)
 			} else {
 				// 字重变化为由起始到收尾方向
 				const f = Math.pow(i / n, options.weightsVariationPower)
-				weights.push(weight * f)
+				weights.push(startWeight + (endWeight - startWeight) * f)
+			}
+		} else if (options.weightsVariation === 'log') {
+			// 字重变化为幂变化，options.weightsVariationPower取值范围为[0, 2]
+			if (options.weightsVariationDir === 'reverse') {
+				// 字重变化方向为由收尾到起始方向
+				const j = n - i
+				//const f = Math.pow(j / n, options.weightsVariationPower)
+				const f = Math.pow(Math.log(j / n + 1) / Math.log(2), options.weightsVariationPower)
+				weights.push(endWeight + (startWeight - endWeight) * f)
+			} else {
+				// 字重变化为由起始到收尾方向
+				//const f = Math.pow(i / n, options.weightsVariationPower)
+				const f = Math.pow(Math.log(i / n + 1) / Math.log(2), options.weightsVariationPower)
+				weights.push(startWeight + (endWeight - startWeight) * f)
+			}
+		} else if (options.weightsVariation === 'bezier') {
+			const fn = getBezierFn(options.weightsVariationFnType)
+			// 字重变化为幂变化，options.weightsVariationPower取值范围为[0, 2]
+			if (options.weightsVariationDir === 'reverse') {
+				// 字重变化方向为由收尾到起始方向
+				const j = n - i
+				//const f = Math.pow(j / n, options.weightsVariationPower)
+				const f = fn(j / n)
+				weights.push(endWeight + (startWeight - endWeight) * f)
+			} else {
+				// 字重变化为由起始到收尾方向
+				//const f = Math.pow(i / n, options.weightsVariationPower)
+				const f = fn(i / n)
+				weights.push(startWeight + (endWeight - startWeight) * f)
 			}
 		}
 	}
@@ -624,6 +713,32 @@ const turnAngle = (start, end, angle, length) => {
 	return point
 }
 
+const turnAngleFromStart = (start, end, angle, length) => {
+	const angle1 = Math.atan2(start.y - end.y, end.x - start.x)
+	// 逆时针为正，顺时针为负
+	const angle2 = angle1 + angle
+	const point = {
+		x: start.x + length * Math.cos(angle2),
+		y: start.y - length * Math.sin(angle2),
+	}
+	return point
+}
+
+const turnAngleFromEnd = (start, end, angle, length) => {
+	const angle1 = Math.atan2(start.y - end.y, end.x - start.x)
+	// 逆时针为正，顺时针为负
+	const angle2 = angle1 + angle
+	const point = {
+		x: end.x + length * Math.cos(angle2),
+		y: end.y - length * Math.sin(angle2),
+	}
+	return point
+}
+
+const degreeToRadius = (degree) => {
+	return Math.PI * degree / 180
+}
+
 const getPointOnLine = (start, end, length) => {
 	const angle = Math.atan2(start.y - end.y, end.x - start.x)
 	const point = {
@@ -680,6 +795,9 @@ const FP = {
 	getPointOnLine,
 	getPointOnLineByPercentage,
 	isPointOnLineSegment,
+	turnAngleFromStart,
+	turnAngleFromEnd,
+	degreeToRadius,
 }
 
 const suggestion_items = [

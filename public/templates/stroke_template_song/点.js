@@ -233,12 +233,19 @@ const getComponents = (skeleton, global_params) => {
   const p6 = FP.turnRight(p0, p0_vector, dian_diameter / 2)
   const p7 = FP.turnLeft(p0_vector, p0, dian_diameter / 2)
   const p4 = start
-  const p4_vector_left = FP.turnAngleFromStart(p4, bend, FP.degreeToRadius(-5), 100)
-  const p4_vector_right = FP.turnAngleFromStart(p4, bend, FP.degreeToRadius(15), 100)
-  const { corner: p3 } = FP.getIntersection(
+  let p4_vector_left = FP.turnAngleFromStart(p4, bend, FP.degreeToRadius(-5), 100)
+  let p4_vector_right = FP.turnAngleFromStart(p4, bend, FP.degreeToRadius(15), 100)
+  let { corner: p3 } = FP.getIntersection(
     { type: 'line', start: p1, end: p2 },
     { type: 'line', start: p4, end: p4_vector_left },
   )
+  if ((p3.x > p2.x && p3.y > p2.y) || (p3.x < p4.x && p3.y < p4.y)) {
+    p4_vector_left = FP.turnAngleFromStart(p4, bend, FP.degreeToRadius(-30), 100)
+    p3 = FP.getIntersection(
+      { type: 'line', start: p1, end: p2 },
+      { type: 'line', start: p4, end: p4_vector_left },
+    ).corner
+  }
   const { corner: p5 } = FP.getIntersection(
     { type: 'line', start: p7, end: p6 },
     { type: 'line', start: p4, end: p4_vector_right },
