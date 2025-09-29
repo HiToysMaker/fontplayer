@@ -5,11 +5,11 @@ const y0 = 250
 const params = {
   heng_horizontalSpan: glyph.getParam('横-水平延伸'),
   heng_verticalSpan: glyph.getParam('横-竖直延伸'),
-  wan_horizonalSpan: glyph.getParam('弯-水平延伸'),
+  wan_horizontalSpan: glyph.getParam('弯-水平延伸'),
   wan_verticalSpan: glyph.getParam('弯-竖直延伸'),
   wan_bendCursor: glyph.getParam('弯-弯曲游标'),
   wan_bendDegree: glyph.getParam('弯-弯曲度'),
-  gou_horizonalSpan: glyph.getParam('钩-水平延伸'),
+  gou_horizontalSpan: glyph.getParam('钩-水平延伸'),
   gou_verticalSpan: glyph.getParam('钩-竖直延伸'),
   skeletonRefPos: glyph.getParam('参考位置'),
 }
@@ -158,11 +158,11 @@ const getJointsMap = (data) => {
 const getBend = (start, end) => {
   // 改变end的情况下，不会改变弯曲度和弯曲游标，所以依据现有参数计算新的bend
   const { wan_bendCursor: bendCursor, wan_bendDegree: bendDegree } = params
-  const horizonalSpan = Math.abs(end.x - start.x)
+  const horizontalSpan = Math.abs(end.x - start.x)
   const verticalSpan = Math.abs(end.y - start.y)
-  const cursor_x = start.x + bendCursor * horizonalSpan
+  const cursor_x = start.x + bendCursor * horizontalSpan
   const cursor_y = start.y + bendCursor * verticalSpan
-  const angle = Math.atan2(verticalSpan, horizonalSpan)
+  const angle = Math.atan2(verticalSpan, horizontalSpan)
   
   const bend = {
     x: cursor_x - bendDegree * Math.sin(angle),
@@ -204,11 +204,11 @@ glyph.onSkeletonDragEnd = (data) => {
   updateGlyphByParams(_params, global_params)
   glyph.setParam('横-水平延伸', _params.heng_horizontalSpan)
   glyph.setParam('横-竖直延伸', _params.heng_verticalSpan)
-  glyph.setParam('弯-水平延伸', _params.wan_horizonalSpan)
+  glyph.setParam('弯-水平延伸', _params.wan_horizontalSpan)
   glyph.setParam('弯-竖直延伸', _params.wan_verticalSpan)
   glyph.setParam('弯-弯曲游标', _params.wan_bendCursor)
   glyph.setParam('弯-弯曲度', _params.wan_bendDegree - 30 * global_params.bending_degree)
-  glyph.setParam('钩-水平延伸', _params.gou_horizonalSpan)
+  glyph.setParam('钩-水平延伸', _params.gou_horizontalSpan)
   glyph.setParam('钩-竖直延伸', _params.gou_verticalSpan)
   glyph.tempData = null
 }
@@ -226,29 +226,29 @@ const computeParamsByJoints = (jointsMap) => {
   const { heng_start, heng_end, wan_start, wan_end, wan_bend, gou_start, gou_end } = jointsMap
   const heng_horizontalSpan_range = glyph.getParamRange('横-水平延伸')
   const heng_verticalSpan_range = glyph.getParamRange('横-竖直延伸')
-  const wan_horizonal_span_range = glyph.getParamRange('弯-水平延伸')
+  const wan_horizontal_span_range = glyph.getParamRange('弯-水平延伸')
   const wan_vertical_span_range = glyph.getParamRange('弯-竖直延伸')
   const wan_bend_cursor_range = glyph.getParamRange('弯-弯曲游标')
   const wan_bend_degree_range = glyph.getParamRange('弯-弯曲度')
-  const gou_horizonal_span_range = glyph.getParamRange('钩-水平延伸')
+  const gou_horizontal_span_range = glyph.getParamRange('钩-水平延伸')
   const gou_vertical_span_range = glyph.getParamRange('钩-竖直延伸')
   const heng_horizontalSpan = range(heng_end.x - heng_start.x, heng_horizontalSpan_range)
   const heng_verticalSpan = range(heng_start.y - heng_end.y, heng_verticalSpan_range)
-  const wan_horizonalSpan = range(wan_end.x - wan_start.x, wan_horizonal_span_range)
+  const wan_horizontalSpan = range(wan_end.x - wan_start.x, wan_horizontal_span_range)
   const wan_verticalSpan = range(wan_end.y - wan_start.y, wan_vertical_span_range)
   const wan_data = FP.distanceAndFootPoint(wan_start, wan_end, wan_bend)
   const wan_bendCursor = range(wan_data.percentageFromA, wan_bend_cursor_range)
   const wan_bendDegree = range(wan_data.distance, wan_bend_degree_range)
-  const gou_horizonalSpan = range(gou_end.x - gou_start.x, gou_horizonal_span_range)
+  const gou_horizontalSpan = range(gou_end.x - gou_start.x, gou_horizontal_span_range)
   const gou_verticalSpan = range(gou_start.y - gou_end.y, gou_vertical_span_range)
   return {
     heng_horizontalSpan,
     heng_verticalSpan,
-    wan_horizonalSpan,
+    wan_horizontalSpan,
     wan_verticalSpan,
     wan_bendCursor,
     wan_bendDegree,
-    gou_horizonalSpan,
+    gou_horizontalSpan,
     gou_verticalSpan,
     skeletonRefPos: glyph.getParam('参考位置'),
   }
@@ -258,11 +258,11 @@ const updateGlyphByParams = (params, global_params) => {
   const {
     heng_horizontalSpan,
     heng_verticalSpan,
-    wan_horizonalSpan,
+    wan_horizontalSpan,
     wan_verticalSpan,
     wan_bendCursor,
     wan_bendDegree,
-    gou_horizonalSpan,
+    gou_horizontalSpan,
     gou_verticalSpan,
     skeletonRefPos,
   } = params
@@ -348,14 +348,14 @@ const updateGlyphByParams = (params, global_params) => {
   const wan_end = new FP.Joint(
     'wan_end',
     {
-      x: wan_start.x + wan_horizonalSpan,
+      x: wan_start.x + wan_horizontalSpan,
       y: wan_start.y + wan_verticalSpan,
     },
   )
   const wan_length = distance(wan_start, wan_end)
-  const wan_cursor_x = wan_start.x + wan_bendCursor * wan_horizonalSpan
+  const wan_cursor_x = wan_start.x + wan_bendCursor * wan_horizontalSpan
   const wan_cursor_y = wan_start.y + wan_bendCursor * wan_verticalSpan
-  const wan_angle = Math.atan2(wan_verticalSpan, wan_horizonalSpan)
+  const wan_angle = Math.atan2(wan_verticalSpan, wan_horizontalSpan)
 
   const wan_bend = new FP.Joint(
     'wan_bend',
@@ -369,14 +369,14 @@ const updateGlyphByParams = (params, global_params) => {
   const gou_start = new FP.Joint(
     'gou_start',
     {
-      x: wan_start.x + wan_horizonalSpan,
+      x: wan_start.x + wan_horizontalSpan,
       y: wan_start.y + wan_verticalSpan,
     },
   )
   const gou_end = new FP.Joint(
     'gou_end',
     {
-      x: gou_start.x + gou_horizonalSpan,
+      x: gou_start.x + gou_horizontalSpan,
       y: gou_start.y - gou_verticalSpan,
     },
   )
@@ -647,8 +647,8 @@ const getComponents = (skeleton) => {
     pen.quadraticBezierTo(start_p3.x, start_p3.y, start_p3_radius_after.x, start_p3_radius_after.y)
     pen.quadraticBezierTo(start_p4.x, start_p4.y, start_p5.x, start_p5.y)
   } else if (start_style_type === 0) {
-    pen.moveTo(out_heng1_start.x, out_heng1_start.y)
-    pen.lineTo(in_heng1_start.x, in_heng1_start.y)
+    pen.moveTo(out_heng_start.x, out_heng_start.y)
+    pen.lineTo(in_heng_start.x, in_heng_start.y)
   }
   pen.lineTo(in_wan_curves_final[0].start.x, in_wan_curves_final[0].start.y)
   for (let i = 0; i < in_wan_curves_final.length; i++) {

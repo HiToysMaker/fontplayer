@@ -18,6 +18,7 @@ import type {
 import { PathType } from '../../fontManager'
 import { genPenComponent } from '../tools/pen'
 import { getBezierBoundingBox, testIntersect } from '../../utils/bezier'
+import { kai_strokes } from '../templates/strokes_1'
 export const activePanel = ref('globalVariables')
 
 const constants = ref([])
@@ -513,7 +514,7 @@ const switchStyle = (characterFile, style) => {
             // 替换参数
             let parameterReplaced = false
             for (let i = 0; i < style.parameters.length; i++) {
-              const parameter = component.value.parameters.parameters[j]
+              //const parameter = component.value.parameters.parameters[j]
               if (parameter.name === style.parameters[i].name) {
                 parameter.value = style.parameters[i].value
                 parameterReplaced = true
@@ -551,7 +552,6 @@ const switchStyle2 = (characterFile, style) => {
             // 替换参数
             let parameterReplaced = false
             for (let i = 0; i < style.parameters.length; i++) {
-              const parameter = component.value.parameters.parameters[j]
               if (parameter.name === style.parameters[i].name) {
                 parameter.value = style.parameters[i].value
                 parameterReplaced = true
@@ -604,16 +604,27 @@ const updatePreviewList_styleSwitch = () => {
 const updateCharactersAndPreview_styleSwitch = () => {
   sampleCharactersList.value = []
   const style = styles.value.find(style => style.uuid === selectedStyleUUID.value)
+
+  if (style.name === '字玩标准宋体') {
+    process_characters_song()
+  } else if (style.name === '字玩标准仿宋') {
+    process_characters_fangsong()
+  }
+
   for (let i = 0; i < originSampleCharactersList.value.length; i++) {
     const character = R.clone(originSampleCharactersList.value[i])
     // 获取字符预览canvas
     const canvas: HTMLCanvasElement = document.getElementById(`advanced-edit-preview-canvas-${character.uuid}`) as HTMLCanvasElement
     if (!canvas) return
 
+    if (style.name === '字玩标准仿宋') {
+      process_character_fangsong(character)
+    }
+
     switchStyle(character, style)
 
     if (style.name === '字玩标准宋体') {
-      test_process_character(character)
+      process_character_song(character)
     }
   
     sampleCharactersList.value.push(character)
@@ -640,6 +651,12 @@ const updateCharactersList_styleSwitch = () => {
 
   // 初始化全局变量
   switchStyle_init(style)
+
+  if (style.name === '字玩标准宋体') {
+    process_characters_song()
+  } else if (style.name === '字玩标准仿宋') {
+    process_characters_fangsong()
+  }
   
   total.value = selectedFile.value.characterList.length + Math.min(visibleCount.value, selectedFile.value.characterList.length)
   loaded.value = 0
@@ -653,10 +670,14 @@ const updateCharactersList_styleSwitch = () => {
     loaded.value++
     const character = selectedFile.value.characterList[i]
 
+    if (style.name === '字玩标准仿宋') {
+      process_character_fangsong(character)
+    }
+
     switchStyle2(character, style)
 
     if (style.name === '字玩标准宋体') {
-      test_process_character(character)
+      process_character_song(character)
     }
 
     let components = orderedListWithItemsForCharacterFile(character)
@@ -710,13 +731,14 @@ const addParam = (glyph, name, value, type) => {
     _param.value = value
     return
   }
-  const param = {
+  const param: any = {
     uuid: genUUID(),
     name,
     value,
     type,
   }
   glyph.parameters.parameters.push(param)
+  return param
 }
 
 const test_process_characters = (characters) => {
@@ -768,6 +790,81 @@ const getPaperCurvesPoints = (curves) => {
     })
   }
   return points
+}
+
+const process_characters_song = () => {
+  constants.value.find(constant => constant.name === '起笔风格').value = 1
+  constants.value.find(constant => constant.name === '起笔数值').value = 2
+  constants.value.find(constant => constant.name === '转角风格').value = 1
+  constants.value.find(constant => constant.name === '转角数值').value = 2
+  globalConstants.value.find(constant => constant.name === '起笔风格').value = 1
+  globalConstants.value.find(constant => constant.name === '起笔数值').value = 2
+  globalConstants.value.find(constant => constant.name === '转角风格').value = 1
+  globalConstants.value.find(constant => constant.name === '转角数值').value = 2
+}
+
+const process_character_song = (characterFile) => {
+  for (let j = 0; j < characterFile.components.length; j++) {
+    const component = characterFile.components[j]
+    if (component.type === 'glyph') {
+      const glyph = component.value
+      glyph.parameters.parameters.forEach(parameter => {
+        if (parameter.name === '起笔风格') {
+          const value = getParam(parameter)
+          if (value === 0) {
+            // 无起笔样式，则添加无收笔衬线参数
+            const __param = addParam(glyph, '收笔风格', 0, ParameterType.Enum)
+          }
+        }
+      })
+    }
+  }
+}
+
+
+const process_characters_fangsong = () => {
+  constants.value.find(constant => constant.name === '起笔风格').value = 1
+  constants.value.find(constant => constant.name === '起笔数值').value = 2
+  constants.value.find(constant => constant.name === '转角风格').value = 1
+  constants.value.find(constant => constant.name === '转角数值').value = 2
+  globalConstants.value.find(constant => constant.name === '起笔风格').value = 1
+  globalConstants.value.find(constant => constant.name === '起笔数值').value = 2
+  globalConstants.value.find(constant => constant.name === '转角风格').value = 1
+  globalConstants.value.find(constant => constant.name === '转角数值').value = 2
+}
+
+const process_character_fangsong = (characterFile) => {
+  for (let j = 0; j < characterFile.components.length; j++) {
+    const component = characterFile.components[j]
+    if (component.type === 'glyph') {
+      const glyph = component.value
+      glyph.parameters.parameters.forEach(parameter => {
+        if (parameter.name === '起笔风格') {
+          const value = getParam(parameter)
+          if (value === 0) {
+            // 无起笔样式，则添加无收笔衬线参数
+            addParam(glyph, '收笔风格', 0, ParameterType.Enum)
+          }
+        }
+      })
+      const stroke = kai_strokes.find(stroke => stroke.name === glyph.name)
+      if (stroke) {
+        stroke.params.map((param) => {
+          const _param = glyph.parameters.parameters.find(parameter => parameter.name === param.name)
+          if (param.originParam) {
+            const __param = glyph.parameters.parameters.find(parameter => parameter.name === param.originParam)
+            __param.name = param.name
+            __param.min = param.min
+            __param.max = param.max
+          } else if (!_param) {
+            const __param = addParam(glyph, param.name, param.default, ParameterType.Number)
+            __param.min = param.min
+            __param.max = param.max
+          }
+        })
+      }
+    }
+  }
 }
 
 const test_process_character = (characterFile) => {

@@ -4,10 +4,10 @@ const x0 = 390
 const y0 = 185
 const params = {
   heng_length: glyph.getParam('横-长度'),
-  zhe1_horizonalSpan: glyph.getParam('折1-水平延伸'),
+  zhe1_horizontalSpan: glyph.getParam('折1-水平延伸'),
   zhe1_verticalSpan: glyph.getParam('折1-竖直延伸'),
   zhe2_length: glyph.getParam('折2-长度'),
-  pie_horizonalSpan: glyph.getParam('撇-水平延伸'),
+  pie_horizontalSpan: glyph.getParam('撇-水平延伸'),
   pie_verticalSpan: glyph.getParam('撇-竖直延伸'),
   pie_bendCursor: glyph.getParam('撇-弯曲游标'),
   skeletonRefPos: glyph.getParam('参考位置'),
@@ -271,10 +271,10 @@ glyph.onSkeletonDragEnd = (data) => {
   const _params = computeParamsByJoints(jointsMap)
   updateGlyphByParams(_params, global_params)
   glyph.setParam('横-长度', _params.heng_length)
-  glyph.setParam('折1-水平延伸', _params.zhe1_horizonalSpan)
+  glyph.setParam('折1-水平延伸', _params.zhe1_horizontalSpan)
   glyph.setParam('折1-竖直延伸', _params.zhe1_verticalSpan)
   glyph.setParam('折2-长度', _params.zhe2_length)
-  glyph.setParam('撇-水平延伸', _params.pie_horizonalSpan)
+  glyph.setParam('撇-水平延伸', _params.pie_horizontalSpan)
   glyph.setParam('撇-竖直延伸', _params.pie_verticalSpan)
   glyph.setParam('撇-弯曲游标', _params.pie_bendCursor)
   glyph.tempData = null
@@ -292,25 +292,25 @@ const range = (value, range) => {
 const computeParamsByJoints = (jointsMap) => {
   const { heng_start, heng_end, zhe1_start, zhe1_end, zhe2_start, zhe2_end, pie_start, pie_bend, pie_end } = jointsMap
   const heng_length_range = glyph.getParamRange('横-长度')
-  const zhe1_horizonal_span_range = glyph.getParamRange('折1-水平延伸')
+  const zhe1_horizontal_span_range = glyph.getParamRange('折1-水平延伸')
   const zhe1_vertical_span_range = glyph.getParamRange('折1-竖直延伸')
   const zhe2_length_range = glyph.getParamRange('折2-长度')
-  const pie_horizonal_span_range = glyph.getParamRange('撇-水平延伸')
+  const pie_horizontal_span_range = glyph.getParamRange('撇-水平延伸')
   const pie_vertical_span_range = glyph.getParamRange('撇-竖直延伸')
   const pie_bend_cursor_range = glyph.getParamRange('撇-弯曲游标')
   const heng_length = range(heng_end.x - heng_start.x, heng_length_range)
-  const zhe1_horizonalSpan = range(zhe1_start.x - zhe1_end.x, zhe1_horizonal_span_range)
+  const zhe1_horizontalSpan = range(zhe1_start.x - zhe1_end.x, zhe1_horizontal_span_range)
   const zhe1_verticalSpan = range(zhe1_end.y - zhe1_start.y, zhe1_vertical_span_range)
   const zhe2_length = range(zhe2_end.x - zhe2_start.x, zhe2_length_range)
-  const pie_horizonalSpan = range(pie_start.x - pie_end.x, pie_horizonal_span_range)
+  const pie_horizontalSpan = range(pie_start.x - pie_end.x, pie_horizontal_span_range)
   const pie_verticalSpan = range(pie_end.y - pie_start.y, pie_vertical_span_range)
   const pie_bendCursor = range((pie_bend.y - pie_start.y) / pie_verticalSpan, pie_bend_cursor_range)
   return {
     heng_length,
-    zhe1_horizonalSpan,
+    zhe1_horizontalSpan,
     zhe1_verticalSpan,
     zhe2_length,
-    pie_horizonalSpan,
+    pie_horizontalSpan,
     pie_verticalSpan,
     pie_bendCursor,
     skeletonRefPos: glyph.getParam('参考位置'),
@@ -320,10 +320,10 @@ const computeParamsByJoints = (jointsMap) => {
 const updateGlyphByParams = (params, global_params) => {
   const {
     heng_length,
-    zhe1_horizonalSpan,
+    zhe1_horizontalSpan,
     zhe1_verticalSpan,
     zhe2_length,
-    pie_horizonalSpan,
+    pie_horizontalSpan,
     pie_verticalSpan,
     pie_bendCursor,
     skeletonRefPos,
@@ -410,7 +410,7 @@ const updateGlyphByParams = (params, global_params) => {
   const zhe1_end = new FP.Joint(
     'zhe1_end',
     {
-      x: zhe1_start.x - zhe1_horizonalSpan,
+      x: zhe1_start.x - zhe1_horizontalSpan,
       y: zhe1_start.y + zhe1_verticalSpan,
     },
   )
@@ -419,7 +419,7 @@ const updateGlyphByParams = (params, global_params) => {
   const zhe2_start = new FP.Joint(
     'zhe2_start',
     {
-      x: zhe1_start.x - zhe1_horizonalSpan,
+      x: zhe1_start.x - zhe1_horizontalSpan,
       y: zhe1_start.y + zhe1_verticalSpan,
     },
   )
@@ -442,7 +442,7 @@ const updateGlyphByParams = (params, global_params) => {
   const pie_end = new FP.Joint(
     'pie_end',
     {
-      x: pie_start.x - pie_horizonalSpan,
+      x: pie_start.x - pie_horizontalSpan,
       y: pie_start.y + pie_verticalSpan,
     },
   )

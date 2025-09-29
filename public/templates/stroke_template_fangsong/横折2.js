@@ -555,8 +555,8 @@ const getComponents = (skeleton) => {
     pen.quadraticBezierTo(start_p3.x, start_p3.y, start_p3_radius_after.x, start_p3_radius_after.y)
     pen.quadraticBezierTo(start_p4.x, start_p4.y, start_p5.x, start_p5.y)
   } else if (start_style_type === 0) {
-    pen.lineTo(out_heng1_start.x, out_heng1_start.y)
-    pen.lineTo(in_heng1_start.x, in_heng1_start.y)
+    pen.lineTo(out_heng_start.x, out_heng_start.y)
+    pen.lineTo(in_heng_start.x, in_heng_start.y)
   }
   pen.lineTo(in_corner_heng_zhe.x, in_corner_heng_zhe.y)
 

@@ -5,7 +5,7 @@ const y0 = 245
 const params = {
   heng_horizontalSpan: glyph.getParam('横-水平延伸'),
   heng_verticalSpan: glyph.getParam('横-竖直延伸'),
-  pie_horizonalSpan: glyph.getParam('撇-水平延伸'),
+  pie_horizontalSpan: glyph.getParam('撇-水平延伸'),
   pie_verticalSpan: glyph.getParam('撇-竖直延伸'),
   pie_bendCursor: glyph.getParam('撇-弯曲游标'),
   skeletonRefPos: glyph.getParam('参考位置'),
@@ -146,7 +146,7 @@ glyph.onSkeletonDragEnd = (data) => {
   updateGlyphByParams(_params, global_params)
   glyph.setParam('横-水平延伸', _params.heng_horizontalSpan)
   glyph.setParam('横-竖直延伸', _params.heng_verticalSpan)
-  glyph.setParam('撇-水平延伸', _params.pie_horizonalSpan)
+  glyph.setParam('撇-水平延伸', _params.pie_horizontalSpan)
   glyph.setParam('撇-竖直延伸', _params.pie_verticalSpan)
   glyph.setParam('撇-弯曲游标', _params.pie_bendCursor)
   glyph.tempData = null
@@ -165,18 +165,18 @@ const computeParamsByJoints = (jointsMap) => {
   const { heng_start, heng_end, pie_start, pie_bend, pie_end } = jointsMap
   const heng_horizontalSpan_range = glyph.getParamRange('横-水平延伸')
   const heng_verticalSpan_range = glyph.getParamRange('横-竖直延伸')
-  const pie_horizonal_span_range = glyph.getParamRange('撇-水平延伸')
+  const pie_horizontal_span_range = glyph.getParamRange('撇-水平延伸')
   const pie_vertical_span_range = glyph.getParamRange('撇-竖直延伸')
   const pie_bend_cursor_range = glyph.getParamRange('撇-弯曲游标')
   const heng_horizontalSpan = range(heng_end.x - heng_start.x, heng_horizontalSpan_range)
   const heng_verticalSpan = range(heng_start.y - heng_end.y, heng_verticalSpan_range)
-  const pie_horizonalSpan = range(pie_start.x - pie_end.x, pie_horizonal_span_range)
+  const pie_horizontalSpan = range(pie_start.x - pie_end.x, pie_horizontal_span_range)
   const pie_verticalSpan = range(pie_end.y - pie_start.y, pie_vertical_span_range)
   const pie_bendCursor = range((pie_bend.y - pie_start.y) / pie_verticalSpan, pie_bend_cursor_range)
   return {
     heng_horizontalSpan,
     heng_verticalSpan,
-    pie_horizonalSpan,
+    pie_horizontalSpan,
     pie_verticalSpan,
     pie_bendCursor,
     skeletonRefPos: glyph.getParam('参考位置'),
@@ -187,7 +187,7 @@ const updateGlyphByParams = (params, global_params) => {
   const {
     heng_horizontalSpan,
     heng_verticalSpan,
-    pie_horizonalSpan,
+    pie_horizontalSpan,
     pie_verticalSpan,
     pie_bendCursor,
     skeletonRefPos,
@@ -274,7 +274,7 @@ const updateGlyphByParams = (params, global_params) => {
   const pie_end = new FP.Joint(
     'pie_end',
     {
-      x: pie_start.x - pie_horizonalSpan,
+      x: pie_start.x - pie_horizontalSpan,
       y: pie_start.y + pie_verticalSpan,
     },
   )
@@ -491,8 +491,8 @@ const getComponents = (skeleton) => {
     pen.quadraticBezierTo(start_p3.x, start_p3.y, start_p3_radius_after.x, start_p3_radius_after.y)
     pen.quadraticBezierTo(start_p4.x, start_p4.y, start_p5.x, start_p5.y)
   } else if (start_style_type === 0) {
-    pen.moveTo(out_heng1_start.x, out_heng1_start.y)
-    pen.lineTo(in_heng1_start.x, in_heng1_start.y)
+    pen.moveTo(out_heng_start.x, out_heng_start.y)
+    pen.lineTo(in_heng_start.x, in_heng_start.y)
   }
 
   pen.lineTo(in_corner_heng_pie.x, in_corner_heng_pie.y)

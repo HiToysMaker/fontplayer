@@ -5,7 +5,7 @@ const y0 = 500
 const params = {
   heng_horizontalSpan: glyph.getParam('横-水平延伸'),
   heng_verticalSpan: glyph.getParam('横-竖直延伸'),
-  gou_horizonalSpan: glyph.getParam('钩-水平延伸'),
+  gou_horizontalSpan: glyph.getParam('钩-水平延伸'),
   gou_verticalSpan: glyph.getParam('钩-竖直延伸'),
   skeletonRefPos: glyph.getParam('参考位置'),
 }
@@ -112,7 +112,7 @@ glyph.onSkeletonDragEnd = (data) => {
   updateGlyphByParams(_params, global_params)
   glyph.setParam('横-水平延伸', _params.heng_horizontalSpan)
   glyph.setParam('横-竖直延伸', _params.heng_verticalSpan)
-  glyph.setParam('钩-水平延伸', _params.gou_horizonalSpan)
+  glyph.setParam('钩-水平延伸', _params.gou_horizontalSpan)
   glyph.setParam('钩-竖直延伸', _params.gou_verticalSpan)
   glyph.tempData = null
 }
@@ -130,16 +130,16 @@ const computeParamsByJoints = (jointsMap) => {
   const { heng_start, heng_end, gou_start, gou_end } = jointsMap
   const heng_horizontalSpan_range = glyph.getParamRange('横-水平延伸')
   const heng_verticalSpan_range = glyph.getParamRange('横-竖直延伸')
-  const gou_horizonal_span_range = glyph.getParamRange('钩-水平延伸')
+  const gou_horizontal_span_range = glyph.getParamRange('钩-水平延伸')
   const gou_vertical_span_range = glyph.getParamRange('钩-竖直延伸')
   const heng_horizontalSpan = range(heng_end.x - heng_start.x, heng_horizontalSpan_range)
   const heng_verticalSpan = range(heng_start.y - heng_end.y, heng_verticalSpan_range)
-  const gou_horizonalSpan = range(gou_start.x - gou_end.x, gou_horizonal_span_range)
+  const gou_horizontalSpan = range(gou_start.x - gou_end.x, gou_horizontal_span_range)
   const gou_verticalSpan = range(gou_end.y - gou_start.y, gou_vertical_span_range)
   return {
     heng_horizontalSpan,
     heng_verticalSpan,
-    gou_horizonalSpan,
+    gou_horizontalSpan,
     gou_verticalSpan,
     skeletonRefPos: glyph.getParam('参考位置'),
   }
@@ -149,7 +149,7 @@ const updateGlyphByParams = (params, global_params) => {
   const {
     heng_horizontalSpan,
     heng_verticalSpan,
-    gou_horizonalSpan,
+    gou_horizontalSpan,
     gou_verticalSpan,
     skeletonRefPos,
   } = params
@@ -235,7 +235,7 @@ const updateGlyphByParams = (params, global_params) => {
   const gou_end = new FP.Joint(
     'gou_end',
     {
-      x: gou_start.x - gou_horizonalSpan,
+      x: gou_start.x - gou_horizontalSpan,
       y: gou_start.y + gou_verticalSpan,
     },
   )
@@ -388,8 +388,8 @@ const getComponents = (skeleton, global_params) => {
     pen.quadraticBezierTo(start_p3.x, start_p3.y, start_p3_radius_after.x, start_p3_radius_after.y)
     pen.quadraticBezierTo(start_p4.x, start_p4.y, start_p5.x, start_p5.y)
   } else if (start_style_type === 0) {
-    pen.moveTo(out_heng1_start.x, out_heng1_start.y)
-    pen.lineTo(in_heng1_start.x, in_heng1_start.y)
+    pen.moveTo(out_heng_start.x, out_heng_start.y)
+    pen.lineTo(in_heng_start.x, in_heng_start.y)
   }
 
   // 绘制钩

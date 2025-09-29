@@ -5,7 +5,7 @@ const y0 = 345
 const params = {
   heng_horizontalSpan: glyph.getParam('横-水平延伸'),
   heng_verticalSpan: glyph.getParam('横-竖直延伸'),
-  zhe_horizonalSpan: glyph.getParam('折-水平延伸'),
+  zhe_horizontalSpan: glyph.getParam('折-水平延伸'),
   zhe_verticalSpan: glyph.getParam('折-竖直延伸'),
   wan_length: glyph.getParam('弯-长度'),
   skeletonRefPos: glyph.getParam('参考位置'),
@@ -161,7 +161,7 @@ glyph.onSkeletonDragEnd = (data) => {
   updateGlyphByParams(_params, global_params)
   glyph.setParam('横-水平延伸', _params.heng_horizontalSpan)
   glyph.setParam('横-竖直延伸', _params.heng_verticalSpan)
-  glyph.setParam('折-水平延伸', _params.zhe_horizonalSpan)
+  glyph.setParam('折-水平延伸', _params.zhe_horizontalSpan)
   glyph.setParam('折-竖直延伸', _params.zhe_verticalSpan)
   glyph.setParam('弯-长度', _params.wan_length)
   glyph.tempData = null
@@ -180,18 +180,18 @@ const computeParamsByJoints = (jointsMap) => {
   const { heng_start, heng_end, zhe_start, zhe_end, wan_start, wan_end } = jointsMap
   const heng_horizontalSpan_range = glyph.getParamRange('横-水平延伸')
   const heng_verticalSpan_range = glyph.getParamRange('横-竖直延伸')
-  const zhe_horizonal_span_range = glyph.getParamRange('折-水平延伸')
+  const zhe_horizontal_span_range = glyph.getParamRange('折-水平延伸')
   const zhe_vertical_span_range = glyph.getParamRange('折-竖直延伸')
   const wan_length_range = glyph.getParamRange('弯-长度')
   const heng_horizontalSpan = range(heng_end.x - heng_start.x, heng_horizontalSpan_range)
   const heng_verticalSpan = range(heng_start.y - heng_end.y, heng_verticalSpan_range)
-  const zhe_horizonalSpan = range(zhe_start.x - zhe_end.x, zhe_horizonal_span_range)
+  const zhe_horizontalSpan = range(zhe_start.x - zhe_end.x, zhe_horizontal_span_range)
   const zhe_verticalSpan = range(zhe_end.y - zhe_start.y, zhe_vertical_span_range)
   const wan_length = range(wan_end.x - wan_start.x, wan_length_range)
   return {
     heng_horizontalSpan,
     heng_verticalSpan,
-    zhe_horizonalSpan,
+    zhe_horizontalSpan,
     zhe_verticalSpan,
     wan_length,
     skeletonRefPos: glyph.getParam('参考位置'),
@@ -202,7 +202,7 @@ const updateGlyphByParams = (params, global_params) => {
   const {
     heng_horizontalSpan,
     heng_verticalSpan,
-    zhe_horizonalSpan,
+    zhe_horizontalSpan,
     zhe_verticalSpan,
     wan_length,
     skeletonRefPos,
@@ -289,7 +289,7 @@ const updateGlyphByParams = (params, global_params) => {
   const zhe_end = new FP.Joint(
     'zhe_end',
     {
-      x: zhe_start.x - zhe_horizonalSpan,
+      x: zhe_start.x - zhe_horizontalSpan,
       y: zhe_start.y + zhe_verticalSpan,
     },
   )
@@ -298,7 +298,7 @@ const updateGlyphByParams = (params, global_params) => {
   const wan_start = new FP.Joint(
     'wan_start',
     {
-      x: zhe_start.x - zhe_horizonalSpan,
+      x: zhe_start.x - zhe_horizontalSpan,
       y: zhe_start.y + zhe_verticalSpan,
     },
   )
@@ -609,8 +609,8 @@ const getComponents = (skeleton) => {
     pen.quadraticBezierTo(start_p3.x, start_p3.y, start_p3_radius_after.x, start_p3_radius_after.y)
     pen.quadraticBezierTo(start_p4.x, start_p4.y, start_p5.x, start_p5.y)
   } else if (start_style_type === 0) {
-    pen.moveTo(out_heng1_start.x, out_heng1_start.y)
-    pen.lineTo(in_heng1_start.x, in_heng1_start.y)
+    pen.moveTo(out_heng_start.x, out_heng_start.y)
+    pen.lineTo(in_heng_start.x, in_heng_start.y)
   }
   pen.lineTo(in_corner_heng_zhe.x, in_corner_heng_zhe.y)
 

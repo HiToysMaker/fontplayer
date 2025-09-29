@@ -14,7 +14,7 @@ const global_params = {
 const params = {
   wan_length: glyph.getParam('弯-长度'),
   wan_bendDegree: glyph.getParam('弯-弯曲度') + 30 * global_params.bending_degree,
-  gou_horizonalSpan: glyph.getParam('钩-水平延伸'),
+  gou_horizontalSpan: glyph.getParam('钩-水平延伸'),
   gou_verticalSpan: glyph.getParam('钩-竖直延伸'),
 }
 
@@ -136,7 +136,7 @@ glyph.onSkeletonDragEnd = (data) => {
   updateGlyphByParams(_params, global_params)
   glyph.setParam('弯-长度', _params.wan_length)
   glyph.setParam('弯-弯曲度', _params.wan_bendDegree - 30 * global_params.bending_degree)
-  glyph.setParam('钩-水平延伸', _params.gou_horizonalSpan)
+  glyph.setParam('钩-水平延伸', _params.gou_horizontalSpan)
   glyph.setParam('钩-竖直延伸', _params.gou_verticalSpan)
   glyph.tempData = null
 }
@@ -154,16 +154,16 @@ const computeParamsByJoints = (jointsMap) => {
   const { wan_start, wan_end, wan_bend, gou_start, gou_end } = jointsMap
   const wan_length_range = glyph.getParamRange('弯-长度')
   const wan_bend_degree_range = glyph.getParamRange('弯-弯曲度')
-  const gou_horizonal_span_range = glyph.getParamRange('钩-水平延伸')
+  const gou_horizontal_span_range = glyph.getParamRange('钩-水平延伸')
   const gou_vertical_span_range = glyph.getParamRange('钩-竖直延伸')
   const wan_length = range(wan_end.y - wan_start.y, wan_length_range)
   const wan_bendDegree = range(wan_bend.x - wan_start.x, wan_bend_degree_range)
-  const gou_horizonalSpan = range(gou_start.x - gou_end.x, gou_horizonal_span_range)
+  const gou_horizontalSpan = range(gou_start.x - gou_end.x, gou_horizontal_span_range)
   const gou_verticalSpan = range(gou_end.y - gou_start.y, gou_vertical_span_range)
   return {
     wan_length,
     wan_bendDegree,
-    gou_horizonalSpan,
+    gou_horizontalSpan,
     gou_verticalSpan,
   }
 }
@@ -172,7 +172,7 @@ const updateGlyphByParams = (params, global_params) => {
   const {
     wan_length,
     wan_bendDegree,
-    gou_horizonalSpan,
+    gou_horizontalSpan,
     gou_verticalSpan,
   } = params
 
@@ -210,7 +210,7 @@ const updateGlyphByParams = (params, global_params) => {
   const gou_end = new FP.Joint(
     'gou_end',
     {
-      x: gou_start.x - gou_horizonalSpan,
+      x: gou_start.x - gou_horizontalSpan,
       y: gou_start.y + gou_verticalSpan,
     },
   )

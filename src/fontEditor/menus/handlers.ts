@@ -2670,7 +2670,7 @@ const importTemplate4 = async () => {
       },
       parameters: new ParametersMap(parameters),
       joints: [],
-      style: 'test style 1',
+      style: '字玩腾云体',
       script: `function script_${uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t${stroke_script}\n}`,
     }
     addGlyph(glyph, Status.StrokeGlyphList)

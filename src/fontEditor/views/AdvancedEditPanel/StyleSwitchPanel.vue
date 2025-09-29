@@ -112,8 +112,8 @@ onMounted(() => {
     },
     {
       uuid: genUUID(),
-      name: 'test style 1',
-      strokeStyle: 'test style 1',
+      name: '字玩腾云体',
+      strokeStyle: '字玩腾云体',
       constants: [],
       parameters: [
         {
@@ -134,6 +134,21 @@ onMounted(() => {
         {
           name: '字重',
           value: 50,
+          min: 40,
+          max: 100,
+          type: ParameterType.Number,
+        },
+      ],
+    },
+    {
+      uuid: genUUID(),
+      name: '字玩标准仿宋',
+      strokeStyle: '字玩标准仿宋',
+      constants: [],
+      parameters: [
+        {
+          name: '字重',
+          value: 30,
           min: 40,
           max: 100,
           type: ParameterType.Number,

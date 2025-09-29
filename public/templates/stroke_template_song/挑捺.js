@@ -12,9 +12,9 @@ const global_params = {
   weight: glyph.getParam('字重') || 40,
 }
 const params = {
-  tiao_horizonalSpan: glyph.getParam('挑-水平延伸'),
+  tiao_horizontalSpan: glyph.getParam('挑-水平延伸'),
   tiao_verticalSpan: glyph.getParam('挑-竖直延伸'),
-  na_horizonalSpan: glyph.getParam('捺-水平延伸'),
+  na_horizontalSpan: glyph.getParam('捺-水平延伸'),
   na_verticalSpan: glyph.getParam('捺-竖直延伸'),
   na_bendCursor: glyph.getParam('捺-弯曲游标'),
   na_bendDegree: glyph.getParam('捺-弯曲度') + 30 * global_params.bending_degree,
@@ -100,11 +100,11 @@ const getJointsMap = (data) => {
 const getBend = (start, end) => {
   // 改变end的情况下，不会改变弯曲度和弯曲游标，所以依据现有参数计算新的bend
   const { na_bendCursor: bendCursor, na_bendDegree: bendDegree } = params
-  const horizonalSpan = Math.abs(end.x - start.x)
+  const horizontalSpan = Math.abs(end.x - start.x)
   const verticalSpan = Math.abs(end.y - start.y)
-  const cursor_x = start.x + bendCursor * horizonalSpan
+  const cursor_x = start.x + bendCursor * horizontalSpan
   const cursor_y = start.y + bendCursor * verticalSpan
-  const angle = Math.atan2(verticalSpan, horizonalSpan)
+  const angle = Math.atan2(verticalSpan, horizontalSpan)
   
   const bend = {
     x: cursor_x - bendDegree * Math.sin(angle),
@@ -144,9 +144,9 @@ glyph.onSkeletonDragEnd = (data) => {
   const jointsMap = getJointsMap(data)
   const _params = computeParamsByJoints(jointsMap)
   updateGlyphByParams(_params, global_params)
-  glyph.setParam('挑-水平延伸', _params.tiao_horizonalSpan)
+  glyph.setParam('挑-水平延伸', _params.tiao_horizontalSpan)
   glyph.setParam('挑-竖直延伸', _params.tiao_verticalSpan)
-  glyph.setParam('捺-水平延伸', _params.na_horizonalSpan)
+  glyph.setParam('捺-水平延伸', _params.na_horizontalSpan)
   glyph.setParam('捺-竖直延伸', _params.na_verticalSpan)
   glyph.setParam('捺-弯曲游标', _params.na_bendCursor)
   glyph.setParam('捺-弯曲度', _params.na_bendDegree - 30 * global_params.bending_degree)
@@ -164,23 +164,23 @@ const range = (value, range) => {
 
 const computeParamsByJoints = (jointsMap) => {
   const { tiao_start, tiao_end, na_start, na_end, na_bend } = jointsMap
-  const tiao_horizonal_span_range = glyph.getParamRange('挑-水平延伸')
+  const tiao_horizontal_span_range = glyph.getParamRange('挑-水平延伸')
   const tiao_vertical_span_range = glyph.getParamRange('挑-竖直延伸')
-  const na_horizonal_span_range = glyph.getParamRange('捺-水平延伸')
+  const na_horizontal_span_range = glyph.getParamRange('捺-水平延伸')
   const na_vertical_span_range = glyph.getParamRange('捺-竖直延伸')
   const na_bend_cursor_range = glyph.getParamRange('捺-弯曲游标')
   const na_bend_degree_range = glyph.getParamRange('捺-弯曲度')
-  const tiao_horizonalSpan = range(tiao_end.x - tiao_start.x, tiao_horizonal_span_range)
+  const tiao_horizontalSpan = range(tiao_end.x - tiao_start.x, tiao_horizontal_span_range)
   const tiao_verticalSpan = range(tiao_start.y - tiao_end.y, tiao_vertical_span_range)
-  const na_horizonalSpan = range(na_end.x - na_start.x, na_horizonal_span_range)
+  const na_horizontalSpan = range(na_end.x - na_start.x, na_horizontal_span_range)
   const na_verticalSpan = range(na_end.y - na_start.y, na_vertical_span_range)
   const data = FP.distanceAndFootPoint(na_start, na_end, na_bend)
   const na_bendCursor = range(data.percentageFromA, na_bend_cursor_range)
   const na_bendDegree = range(data.distance, na_bend_degree_range)
   return {
-    tiao_horizonalSpan,
+    tiao_horizontalSpan,
     tiao_verticalSpan,
-    na_horizonalSpan,
+    na_horizontalSpan,
     na_verticalSpan,
     na_bendCursor,
     na_bendDegree,
@@ -189,9 +189,9 @@ const computeParamsByJoints = (jointsMap) => {
 
 const updateGlyphByParams = (params, global_params) => {
   const {
-    tiao_horizonalSpan,
+    tiao_horizontalSpan,
     tiao_verticalSpan,
-    na_horizonalSpan,
+    na_horizontalSpan,
     na_verticalSpan,
     na_bendCursor,
     na_bendDegree,
@@ -208,7 +208,7 @@ const updateGlyphByParams = (params, global_params) => {
   const tiao_end = new FP.Joint(
     'tiao_end',
     {
-      x: tiao_start.x + tiao_horizonalSpan,
+      x: tiao_start.x + tiao_horizontalSpan,
       y: tiao_start.y - tiao_verticalSpan,
     },
   )
@@ -217,14 +217,14 @@ const updateGlyphByParams = (params, global_params) => {
   const na_start = new FP.Joint(
     'na_start',
     {
-      x: tiao_start.x + tiao_horizonalSpan,
+      x: tiao_start.x + tiao_horizontalSpan,
       y: tiao_start.y - tiao_verticalSpan,
     },
   )
   const na_end = new FP.Joint(
     'na_end',
     {
-      x: na_start.x + na_horizonalSpan,
+      x: na_start.x + na_horizontalSpan,
       y: na_start.y + na_verticalSpan,
     },
   )
@@ -232,7 +232,7 @@ const updateGlyphByParams = (params, global_params) => {
   const na_bend = new FP.Joint(
     'na_bend',
     {
-      x: na_start.x + na_horizonalSpan * na_bendCursor,
+      x: na_start.x + na_horizontalSpan * na_bendCursor,
       y: na_start.y + na_bendDegree,
     },
   )

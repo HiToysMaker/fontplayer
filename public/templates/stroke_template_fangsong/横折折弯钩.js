@@ -5,13 +5,13 @@ const y0 = 255
 const params = {
   heng_horizontalSpan: glyph.getParam('横-水平延伸'),
   heng_verticalSpan: glyph.getParam('横-竖直延伸'),
-  zhe1_horizonalSpan: glyph.getParam('折1-水平延伸'),
+  zhe1_horizontalSpan: glyph.getParam('折1-水平延伸'),
   zhe1_verticalSpan: glyph.getParam('折1-竖直延伸'),
-  zhe2_horizonalSpan: glyph.getParam('折2-水平延伸'),
+  zhe2_horizontalSpan: glyph.getParam('折2-水平延伸'),
   zhe2_verticalSpan: glyph.getParam('折2-竖直延伸'),
-  wan_horizonalSpan: glyph.getParam('弯-水平延伸'),
+  wan_horizontalSpan: glyph.getParam('弯-水平延伸'),
   wan_verticalSpan: glyph.getParam('弯-竖直延伸'),
-  gou_horizonalSpan: glyph.getParam('钩-水平延伸'),
+  gou_horizontalSpan: glyph.getParam('钩-水平延伸'),
   gou_verticalSpan: glyph.getParam('钩-竖直延伸'),
   skeletonRefPos: glyph.getParam('参考位置'),
 }
@@ -304,13 +304,13 @@ glyph.onSkeletonDragEnd = (data) => {
   updateGlyphByParams(_params, global_params)
   glyph.setParam('横-水平延伸', _params.heng_horizontalSpan)
   glyph.setParam('横-竖直延伸', _params.heng_verticalSpan)
-  glyph.setParam('折1-水平延伸', _params.zhe1_horizonalSpan)
+  glyph.setParam('折1-水平延伸', _params.zhe1_horizontalSpan)
   glyph.setParam('折1-竖直延伸', _params.zhe1_verticalSpan)
-  glyph.setParam('折2-水平延伸', _params.zhe2_horizonalSpan)
+  glyph.setParam('折2-水平延伸', _params.zhe2_horizontalSpan)
   glyph.setParam('折2-竖直延伸', _params.zhe2_verticalSpan)
-  glyph.setParam('弯-水平延伸', _params.wan_horizonalSpan)
+  glyph.setParam('弯-水平延伸', _params.wan_horizontalSpan)
   glyph.setParam('弯-竖直延伸', _params.wan_verticalSpan)
-  glyph.setParam('钩-水平延伸', _params.gou_horizonalSpan)
+  glyph.setParam('钩-水平延伸', _params.gou_horizontalSpan)
   glyph.setParam('钩-竖直延伸', _params.gou_verticalSpan)
   glyph.tempData = null
 }
@@ -328,34 +328,34 @@ const computeParamsByJoints = (jointsMap) => {
   const { heng_start, heng_end, zhe1_start, zhe1_end, zhe2_start, zhe2_end, wan_start, wan_end, gou_start, gou_end } = jointsMap
   const heng_horizontal_span_range = glyph.getParamRange('横-水平延伸')
   const heng_vertical_span_range = glyph.getParamRange('横-竖直延伸')
-  const zhe1_horizonal_span_range = glyph.getParamRange('折1-水平延伸')
+  const zhe1_horizontal_span_range = glyph.getParamRange('折1-水平延伸')
   const zhe1_vertical_span_range = glyph.getParamRange('折1-竖直延伸')
-  const zhe2_horizonal_span_range = glyph.getParamRange('折2-水平延伸')
+  const zhe2_horizontal_span_range = glyph.getParamRange('折2-水平延伸')
   const zhe2_vertical_span_range = glyph.getParamRange('折2-竖直延伸')
-  const wan_horizonal_span_range = glyph.getParamRange('弯-水平延伸')
+  const wan_horizontal_span_range = glyph.getParamRange('弯-水平延伸')
   const wan_vertical_span_range = glyph.getParamRange('弯-竖直延伸')
-  const gou_horizonal_span_range = glyph.getParamRange('钩-水平延伸')
+  const gou_horizontal_span_range = glyph.getParamRange('钩-水平延伸')
   const gou_vertical_span_range = glyph.getParamRange('钩-竖直延伸')
   const heng_horizontalSpan = range(heng_end.x - heng_start.x, heng_horizontal_span_range)
   const heng_verticalSpan = range(heng_start.y - heng_end.y, heng_vertical_span_range)
-  const zhe1_horizonalSpan = range(zhe1_start.x - zhe1_end.x, zhe1_horizonal_span_range)
+  const zhe1_horizontalSpan = range(zhe1_start.x - zhe1_end.x, zhe1_horizontal_span_range)
   const zhe1_verticalSpan = range(zhe1_end.y - zhe1_start.y, zhe1_vertical_span_range)
-  const zhe2_horizonalSpan = range(zhe2_end.x - zhe2_start.x, zhe2_horizonal_span_range)
+  const zhe2_horizontalSpan = range(zhe2_end.x - zhe2_start.x, zhe2_horizontal_span_range)
   const zhe2_verticalSpan = range(zhe2_start.y - zhe2_end.y, zhe2_vertical_span_range)
-  const wan_horizonalSpan = range(wan_start.x - wan_end.x, wan_horizonal_span_range)
+  const wan_horizontalSpan = range(wan_start.x - wan_end.x, wan_horizontal_span_range)
   const wan_verticalSpan = range(wan_end.y - wan_start.y, wan_vertical_span_range)
-  const gou_horizonalSpan = range(gou_start.x - gou_end.x, gou_horizonal_span_range)
+  const gou_horizontalSpan = range(gou_start.x - gou_end.x, gou_horizontal_span_range)
   const gou_verticalSpan = range(gou_end.y - gou_start.y, gou_vertical_span_range)
   return {
     heng_horizontalSpan,
     heng_verticalSpan,
-    zhe1_horizonalSpan,
+    zhe1_horizontalSpan,
     zhe1_verticalSpan,
-    zhe2_horizonalSpan,
+    zhe2_horizontalSpan,
     zhe2_verticalSpan,
-    wan_horizonalSpan,
+    wan_horizontalSpan,
     wan_verticalSpan,
-    gou_horizonalSpan,
+    gou_horizontalSpan,
     gou_verticalSpan,
     skeletonRefPos: glyph.getParam('参考位置'),
   }
@@ -365,13 +365,13 @@ const updateGlyphByParams = (params, global_params) => {
   const {
     heng_horizontalSpan,
     heng_verticalSpan,
-    zhe1_horizonalSpan,
+    zhe1_horizontalSpan,
     zhe1_verticalSpan,
-    zhe2_horizonalSpan,
+    zhe2_horizontalSpan,
     zhe2_verticalSpan,
-    wan_horizonalSpan,
+    wan_horizontalSpan,
     wan_verticalSpan,
-    gou_horizonalSpan,
+    gou_horizontalSpan,
     gou_verticalSpan,
     skeletonRefPos,
   } = params
@@ -457,7 +457,7 @@ const updateGlyphByParams = (params, global_params) => {
   const zhe1_end = new FP.Joint(
     'zhe1_end',
     {
-      x: zhe1_start.x - zhe1_horizonalSpan,
+      x: zhe1_start.x - zhe1_horizontalSpan,
       y: zhe1_start.y + zhe1_verticalSpan,
     },
   )
@@ -466,14 +466,14 @@ const updateGlyphByParams = (params, global_params) => {
   const zhe2_start = new FP.Joint(
     'zhe2_start',
     {
-      x: zhe1_start.x - zhe1_horizonalSpan,
+      x: zhe1_start.x - zhe1_horizontalSpan,
       y: zhe1_start.y + zhe1_verticalSpan,
     },
   )
   const zhe2_end = new FP.Joint(
     'zhe2_end',
     {
-      x: zhe2_start.x + zhe2_horizonalSpan,
+      x: zhe2_start.x + zhe2_horizontalSpan,
       y: zhe2_start.y - zhe2_verticalSpan,
     },
   )
@@ -489,7 +489,7 @@ const updateGlyphByParams = (params, global_params) => {
   const wan_end = new FP.Joint(
     'wan_end',
     {
-      x: wan_start.x - wan_horizonalSpan,
+      x: wan_start.x - wan_horizontalSpan,
       y: wan_start.y + wan_verticalSpan,
     },
   )
@@ -498,14 +498,14 @@ const updateGlyphByParams = (params, global_params) => {
   const gou_start = new FP.Joint(
     'gou_start',
     {
-      x: wan_start.x - wan_horizonalSpan,
+      x: wan_start.x - wan_horizontalSpan,
       y: wan_start.y + wan_verticalSpan,
     },
   )
   const gou_end = new FP.Joint(
     'gou_end',
     {
-      x: gou_start.x - gou_horizonalSpan,
+      x: gou_start.x - gou_horizontalSpan,
       y: gou_start.y + gou_verticalSpan,
     },
   )
@@ -930,8 +930,8 @@ const getComponents = (skeleton) => {
     pen.quadraticBezierTo(start_p3.x, start_p3.y, start_p3_radius_after.x, start_p3_radius_after.y)
     pen.quadraticBezierTo(start_p4.x, start_p4.y, start_p5.x, start_p5.y)
   } else if (start_style_type === 0) {
-    pen.moveTo(out_heng1_start.x, out_heng1_start.y)
-    pen.lineTo(in_heng1_start.x, in_heng1_start.y)
+    pen.moveTo(out_heng_start.x, out_heng_start.y)
+    pen.lineTo(in_heng_start.x, in_heng_start.y)
   }
   // 绘制内侧横折1弯圆角
   pen.lineTo(in_radius_start_heng_zhe1.x, in_radius_start_heng_zhe1.y)

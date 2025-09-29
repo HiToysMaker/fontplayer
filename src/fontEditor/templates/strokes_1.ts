@@ -1271,6 +1271,7 @@ const kai_strokes = [
         default: 500,
         min: 50,
         max: 1000,
+        originParam: '长度',
       },
       {
         name: '竖直延伸',
@@ -1295,6 +1296,7 @@ const kai_strokes = [
         default: 500,
         min: 50,
         max: 1000,
+        originParam: '长度',
       },
       {
         name: '水平延伸',
@@ -1583,6 +1585,7 @@ const kai_strokes = [
         default: 500,
         min: 0,
         max: 1000,
+        originParam: '横-长度',
       },
       {
         name: '横-竖直延伸',
@@ -1625,6 +1628,7 @@ const kai_strokes = [
         default: 220,
         min: 0,
         max: 1000,
+        originParam: '横-长度',
       },
       {
         name: '横-竖直延伸',
@@ -1649,6 +1653,7 @@ const kai_strokes = [
         default: 150,
         min: 0,
         max: 1000,
+        originParam: '折2-长度',
       },
       {
         name: '折2-竖直延伸',
@@ -1811,6 +1816,7 @@ const kai_strokes = [
         default: 500,
         min: 0,
         max: 1000,
+        originParam: '竖-长度',
       },
       {
         name: '竖-水平延伸',
@@ -1847,6 +1853,7 @@ const kai_strokes = [
         default: 150,
         min: 0,
         max: 1000,
+        originParam: '横-长度',
       },
       {
         name: '横-竖直延伸',
@@ -1865,6 +1872,7 @@ const kai_strokes = [
         default: 500,
         min: 0,
         max: 1000,
+        originParam: '折-长度',
       },
       {
         name: '挑-水平延伸',
@@ -1895,6 +1903,7 @@ const kai_strokes = [
         default: 500,
         min: 0,
         max: 1000,
+        originParam: '竖-长度',
       },
       {
         name: '竖-水平延伸',
@@ -1931,6 +1940,7 @@ const kai_strokes = [
         default: 500,
         min: 0,
         max: 1000,
+        originParam: '横-长度',
       },
       {
         name: '横-竖直延伸',
@@ -2051,6 +2061,7 @@ const kai_strokes = [
         default: 500,
         min: 0,
         max: 1000,
+        originParam: '竖-长度',
       },
       {
         name: '竖-水平延伸',
@@ -2093,6 +2104,7 @@ const kai_strokes = [
         default: 200,
         min: 0,
         max: 1000,
+        originParam: '竖-长度',
       },
       {
         name: '竖-水平延伸',
@@ -2105,6 +2117,7 @@ const kai_strokes = [
         default: 500,
         min: 0,
         max: 1000,
+        originParam: '折1-长度',
       },
       {
         name: '折1-竖直延伸',
@@ -2153,6 +2166,7 @@ const kai_strokes = [
         default: 500,
         min: 0,
         max: 1000,
+        originParam: '横-长度',
       },
       {
         name: '横-竖直延伸',
@@ -2201,6 +2215,7 @@ const kai_strokes = [
         default: 300,
         min: 0,
         max: 1000,
+        originParam: '横-长度',
       },
       {
         name: '横-竖直延伸',
@@ -2261,6 +2276,7 @@ const kai_strokes = [
         default: 300,
         min: 0,
         max: 1000,
+        originParam: '横-长度',
       },
       {
         name: '横-竖直延伸',
@@ -2327,6 +2343,7 @@ const kai_strokes = [
         default: 260,
         min: 0,
         max: 1000,
+        originParam: '横-长度',
       },
       {
         name: '横-竖直延伸',
@@ -2381,6 +2398,7 @@ const kai_strokes = [
         default: 350,
         min: 0,
         max: 1000,
+        originParam: '横-长度',
       },
       {
         name: '横-竖直延伸',
@@ -2405,6 +2423,7 @@ const kai_strokes = [
         default: 200,
         min: 0,
         max: 1000,
+        originParam: '折2-长度',
       },
       {
         name: '折2-竖直延伸',
@@ -2453,6 +2472,7 @@ const kai_strokes = [
         default: 500,
         min: 0,
         max: 1000,
+        originParam: '横-长度',
       },
       {
         name: '横-竖直延伸',
@@ -2462,9 +2482,9 @@ const kai_strokes = [
       },
       {
         name: '折-水平延伸',
-        default: 100,
-        min: 0,
-        max: 1000,
+        default: 10,
+        min: -200,
+        max: 200,
       },
       {
         name: '折-竖直延伸',
@@ -2489,6 +2509,7 @@ const kai_strokes = [
         default: 500,
         min: 0,
         max: 1000,
+        originParam: '横-长度',
       },
       {
         name: '横-竖直延伸',
@@ -2501,6 +2522,7 @@ const kai_strokes = [
         default: 300,
         min: 0,
         max: 1000,
+        originParam: '折-长度',
       },
       {
         name: '字重',
@@ -2519,6 +2541,7 @@ const kai_strokes = [
         default: 300,
         min: 0,
         max: 1000,
+        originParam: '横1-长度',
       },
       {
         name: '横1-竖直延伸',
@@ -2543,6 +2566,7 @@ const kai_strokes = [
         default: 200,
         min: 0,
         max: 1000,
+        originParam: '横2-长度',
       },
       {
         name: '横2-竖直延伸',
@@ -2591,6 +2615,7 @@ const kai_strokes = [
         default: 500,
         min: 0,
         max: 1000,
+        originParam: '折-长度',
       },
       {
         name: '折-竖直延伸',
@@ -2615,6 +2640,7 @@ const kai_strokes = [
         default: 300,
         min: 0,
         max: 1000,
+        originParam: '竖-长度',
       },
       {
         name: '竖-水平延伸',
@@ -2645,6 +2671,7 @@ const kai_strokes = [
         default: 200,
         min: 0,
         max: 1000,
+        originParam: '横-长度',
       },
       {
         name: '横-竖直延伸',

@@ -13,12 +13,12 @@ const global_params = {
 }
 const params = {
   heng_length: glyph.getParam('横-长度'),
-  zhe_horizonalSpan: glyph.getParam('折-水平延伸'),
+  zhe_horizontalSpan: glyph.getParam('折-水平延伸'),
   zhe_verticalSpan: glyph.getParam('折-竖直延伸'),
   zhe_bendCursor: glyph.getParam('折-弯曲游标'),
   zhe_bendDegree: glyph.getParam('折-弯曲度') + 30 * global_params.bending_degree,
   wan_length: glyph.getParam('弯-长度'),
-  gou_horizonalSpan: glyph.getParam('钩-水平延伸'),
+  gou_horizontalSpan: glyph.getParam('钩-水平延伸'),
   gou_verticalSpan: glyph.getParam('钩-竖直延伸'),
 }
 
@@ -219,11 +219,11 @@ const getJointsMap = (data) => {
 const getBend = (start, end) => {
   // 改变end的情况下，不会改变弯曲度和弯曲游标，所以依据现有参数计算新的bend
   const { zhe_bendCursor: bendCursor, zhe_bendDegree: bendDegree } = params
-  const horizonalSpan = Math.abs(end.x - start.x)
+  const horizontalSpan = Math.abs(end.x - start.x)
   const verticalSpan = Math.abs(end.y - start.y)
-  const cursor_x = start.x - bendCursor * horizonalSpan
+  const cursor_x = start.x - bendCursor * horizontalSpan
   const cursor_y = start.y + bendCursor * verticalSpan
-  const angle = Math.atan2(verticalSpan, horizonalSpan)
+  const angle = Math.atan2(verticalSpan, horizontalSpan)
   
   const bend = {
     x: cursor_x - bendDegree * Math.sin(angle),
@@ -264,12 +264,12 @@ glyph.onSkeletonDragEnd = (data) => {
   const _params = computeParamsByJoints(jointsMap)
   updateGlyphByParams(_params, global_params)
   glyph.setParam('横-长度', _params.heng_length)
-  glyph.setParam('折-水平延伸', _params.zhe_horizonalSpan)
+  glyph.setParam('折-水平延伸', _params.zhe_horizontalSpan)
   glyph.setParam('折-竖直延伸', _params.zhe_verticalSpan)
   glyph.setParam('折-弯曲游标', _params.zhe_bendCursor)
   glyph.setParam('折-弯曲度', _params.zhe_bendDegree - 30 * global_params.bending_degree)
   glyph.setParam('弯-长度', _params.wan_length)
-  glyph.setParam('钩-水平延伸', _params.gou_horizonalSpan)
+  glyph.setParam('钩-水平延伸', _params.gou_horizontalSpan)
   glyph.setParam('钩-竖直延伸', _params.gou_verticalSpan)
   glyph.tempData = null
 }
@@ -286,31 +286,31 @@ const range = (value, range) => {
 const computeParamsByJoints = (jointsMap) => {
   const { heng_start, heng_end, zhe_start, zhe_end, zhe_bend, wan_start, wan_end, gou_start, gou_end } = jointsMap
   const heng_length_range = glyph.getParamRange('横-长度')
-  const zhe_horizonal_span_range = glyph.getParamRange('折-水平延伸')
+  const zhe_horizontal_span_range = glyph.getParamRange('折-水平延伸')
   const zhe_vertical_span_range = glyph.getParamRange('折-竖直延伸')
   const zhe_bend_cursor_range = glyph.getParamRange('折-弯曲游标')
   const zhe_bend_degree_range = glyph.getParamRange('折-弯曲度')
   const wan_length_range = glyph.getParamRange('弯-长度')
-  const gou_horizonal_span_range = glyph.getParamRange('钩-水平延伸')
+  const gou_horizontal_span_range = glyph.getParamRange('钩-水平延伸')
   const gou_vertical_span_range = glyph.getParamRange('钩-竖直延伸')
   const heng_length = range(heng_end.x - heng_start.x, heng_length_range)
-  const zhe_horizonalSpan = range(zhe_start.x - zhe_end.x, zhe_horizonal_span_range)
+  const zhe_horizontalSpan = range(zhe_start.x - zhe_end.x, zhe_horizontal_span_range)
   const zhe_verticalSpan = range(zhe_end.y - zhe_start.y, zhe_vertical_span_range)
   const zhe_data = FP.distanceAndFootPoint(zhe_start, zhe_end, zhe_bend)
   const zhe_bendCursor = range(zhe_data.percentageFromA, zhe_bend_cursor_range)
   const zhe_bendDegree = range(zhe_data.distance, zhe_bend_degree_range)
   const wan_length = range(wan_end.x - wan_start.x, wan_length_range)
-  const gou_horizonalSpan = range(gou_end.x - gou_start.x, gou_horizonal_span_range)
+  const gou_horizontalSpan = range(gou_end.x - gou_start.x, gou_horizontal_span_range)
   const gou_verticalSpan = range(gou_start.y - gou_end.y, gou_vertical_span_range)
   return {
     heng_length,
-    zhe_horizonalSpan,
+    zhe_horizontalSpan,
     zhe_verticalSpan,
     zhe_bendCursor,
     zhe_bendDegree,
     wan_length,
     gou_verticalSpan,
-    gou_horizonalSpan,
+    gou_horizontalSpan,
     skeletonRefPos: glyph.getParam('参考位置'),
   }
 }
@@ -318,12 +318,12 @@ const computeParamsByJoints = (jointsMap) => {
 const updateGlyphByParams = (params, global_params) => {
   const {
     heng_length,
-    zhe_horizonalSpan,
+    zhe_horizontalSpan,
     zhe_verticalSpan,
     zhe_bendCursor,
     zhe_bendDegree,
     wan_length,
-    gou_horizonalSpan,
+    gou_horizontalSpan,
     gou_verticalSpan,
   } = params
 
@@ -354,15 +354,15 @@ const updateGlyphByParams = (params, global_params) => {
   const zhe_end = new FP.Joint(
     'zhe_end',
     {
-      x: zhe_start.x - zhe_horizonalSpan,
+      x: zhe_start.x - zhe_horizontalSpan,
       y: zhe_start.y + zhe_verticalSpan,
     },
   )
 
   const zhe_length = distance(zhe_start, zhe_end)
-  const zhe_cursor_x = zhe_start.x - zhe_bendCursor * zhe_horizonalSpan
+  const zhe_cursor_x = zhe_start.x - zhe_bendCursor * zhe_horizontalSpan
   const zhe_cursor_y = zhe_start.y + zhe_bendCursor * zhe_verticalSpan
-  const zhe_angle = Math.atan2(zhe_verticalSpan, zhe_horizonalSpan)
+  const zhe_angle = Math.atan2(zhe_verticalSpan, zhe_horizontalSpan)
 
   const zhe_bend = new FP.Joint(
     'zhe_bend',
@@ -376,7 +376,7 @@ const updateGlyphByParams = (params, global_params) => {
   const wan_start = new FP.Joint(
     'wan_start',
     {
-      x: zhe_start.x - zhe_horizonalSpan,
+      x: zhe_start.x - zhe_horizontalSpan,
       y: zhe_start.y + zhe_verticalSpan,
     },
   )
@@ -399,7 +399,7 @@ const updateGlyphByParams = (params, global_params) => {
   const gou_end = new FP.Joint(
     'gou_end',
     {
-      x: gou_start.x + gou_horizonalSpan,
+      x: gou_start.x + gou_horizontalSpan,
       y: gou_start.y - gou_verticalSpan,
     },
   )

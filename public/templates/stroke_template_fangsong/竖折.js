@@ -3,9 +3,9 @@ const oy = 500
 const x0 = 250
 const y0 = 250
 const params = {
-  shu_horizonalSpan: glyph.getParam('竖-水平延伸'),
+  shu_horizontalSpan: glyph.getParam('竖-水平延伸'),
   shu_verticalSpan: glyph.getParam('竖-竖直延伸'),
-  zhe_horizonalSpan: glyph.getParam('折-水平延伸'),
+  zhe_horizontalSpan: glyph.getParam('折-水平延伸'),
   zhe_verticalSpan: glyph.getParam('折-竖直延伸'),
   skeletonRefPos: glyph.getParam('参考位置'),
 }
@@ -112,9 +112,9 @@ glyph.onSkeletonDragEnd = (data) => {
   const jointsMap = getJointsMap(data)
   const _params = computeParamsByJoints(jointsMap)
   updateGlyphByParams(_params, global_params)
-  glyph.setParam('竖-水平延伸', _params.shu_horizonalSpan)
+  glyph.setParam('竖-水平延伸', _params.shu_horizontalSpan)
   glyph.setParam('竖-竖直延伸', _params.shu_verticalSpan)
-  glyph.setParam('折-水平延伸', _params.zhe_horizonalSpan)
+  glyph.setParam('折-水平延伸', _params.zhe_horizontalSpan)
   glyph.setParam('折-竖直延伸', _params.zhe_verticalSpan)
   glyph.tempData = null
 }
@@ -130,18 +130,18 @@ const range = (value, range) => {
 
 const computeParamsByJoints = (jointsMap) => {
   const { shu_start, shu_end, zhe_start, zhe_end } = jointsMap
-  const shu_horizonal_span_range = glyph.getParamRange('竖-水平延伸')
+  const shu_horizontal_span_range = glyph.getParamRange('竖-水平延伸')
   const shu_vertical_span_range = glyph.getParamRange('竖-竖直延伸')
-  const zhe_horizonal_span_range = glyph.getParamRange('折-水平延伸')
+  const zhe_horizontal_span_range = glyph.getParamRange('折-水平延伸')
   const zhe_vertical_span_range = glyph.getParamRange('折-竖直延伸')
-  const shu_horizonalSpan = range(shu_end.x - shu_start.x, shu_horizonal_span_range)
+  const shu_horizontalSpan = range(shu_end.x - shu_start.x, shu_horizontal_span_range)
   const shu_verticalSpan = range(shu_end.y - shu_start.y, shu_vertical_span_range)
-  const zhe_horizonalSpan = range(zhe_end.x - zhe_start.x, zhe_horizonal_span_range)
+  const zhe_horizontalSpan = range(zhe_end.x - zhe_start.x, zhe_horizontal_span_range)
   const zhe_verticalSpan = range(zhe_end.y - zhe_start.y, zhe_vertical_span_range)
   return {
-    shu_horizonalSpan,
+    shu_horizontalSpan,
     shu_verticalSpan,
-    zhe_horizonalSpan,
+    zhe_horizontalSpan,
     zhe_verticalSpan,
     skeletonRefPos: glyph.getParam('参考位置'),
   }
@@ -149,9 +149,9 @@ const computeParamsByJoints = (jointsMap) => {
 
 const updateGlyphByParams = (params, global_params) => {
   const {
-    shu_horizonalSpan,
+    shu_horizontalSpan,
     shu_verticalSpan,
-    zhe_horizonalSpan,
+    zhe_horizontalSpan,
     zhe_verticalSpan,
     skeletonRefPos,
   } = params
@@ -168,7 +168,7 @@ const updateGlyphByParams = (params, global_params) => {
   const shu_end = new FP.Joint(
     'shu_end',
     {
-      x: shu_start.x + shu_horizonalSpan,
+      x: shu_start.x + shu_horizontalSpan,
       y: shu_start.y + shu_verticalSpan,
     },
   )
@@ -178,14 +178,14 @@ const updateGlyphByParams = (params, global_params) => {
   const zhe_start_ref = new FP.Joint(
     'zhe_start_ref',
     {
-      x: shu_start.x + shu_horizonalSpan,
+      x: shu_start.x + shu_horizontalSpan,
       y: shu_start.y + shu_verticalSpan,
     },
   )
   const zhe_end_ref = new FP.Joint(
     'zhe_end_ref',
     {
-      x: zhe_start_ref.x + zhe_horizonalSpan,
+      x: zhe_start_ref.x + zhe_horizontalSpan,
       y: zhe_start_ref.y - zhe_verticalSpan,
     },
   )
