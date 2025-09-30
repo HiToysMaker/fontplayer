@@ -332,8 +332,12 @@
           glyph.parameters.forEach(parameter => {
             const constant = constants.value.find(constant => constant.name === parameter.name)
             if (constant) {
-              parameter.type = ParameterType.Constant
-              parameter.value = constant.uuid
+              if (parameter.name === '起笔风格' && parameter.value === 0) {
+                // 无起笔样式，不做处理
+              } else {
+                parameter.type = ParameterType.Constant
+                parameter.value = constant.uuid
+              }
             }
           })
         }

@@ -66,6 +66,7 @@
   import { gridSettings } from '../../stores/global'
   import { scripts_map, tempScript } from '../../stores/glyph'
   import { renderJoints, renderRefLines } from '../../programming/Joint'
+  import { componentsToContours } from '../../../features/font'
 
   const mounted: Ref<boolean> = ref(false)
   let closeTool: Function | null = null
@@ -94,6 +95,11 @@
     // 监听渲染当前编辑字符事件
     // watch for render edting character
     emitter.on('renderCharacter', () => {
+      componentsToContours(orderedListWithItemsForCurrentCharacterFile.value, {
+        unitsPerEm: selectedFile.value.unitsPerEm,
+        descender: selectedFile.value.descender,
+        advanceWidth: selectedFile.value.unitsPerEm,
+      }, { x: 0, y: 0 }, false, false, true)
       render()
       renderRefComponents()
       tool.value === 'select' && renderSelectEditor(canvas.value)

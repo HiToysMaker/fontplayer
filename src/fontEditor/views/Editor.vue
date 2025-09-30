@@ -165,8 +165,8 @@
         <div>{{ loadingMsg? loadingMsg + `进度：${Math.round(loaded / total * 100)}%` : t('panels.paramsPanel.loadedMsg', { percent: Math.round(loaded / total * 100)}) }}</div>
       </div>
       <div class="side-bar-wrap" :style="{
-        flex: ENV === 'web' ? '0 0 36px': '0 0 36px',
-        borderRight: ENV === 'web' ? '1px solid var(--primary-2)': '1px solid var(--primary-2)'
+        flex: ENV === 'web' ? '0 0 80px': '0 0 80px',
+        borderRight: ENV === 'web' ? '1px solid var(--light-5)': '1px solid var(--light-5)'
       }">
         <side-bar></side-bar>
       </div>
@@ -232,7 +232,7 @@
   }
   .side-bar-wrap {
     flex: 0 0 36px;
-    background-color: var(--primary-0);
+    background-color: var(--dark-0);
     border-right: 1px solid var(--primary-2);
   }
   .main-panel {
@@ -257,7 +257,7 @@
   }
   .right-panel-wrapper {
     height: 100%;
-    flex: 0 0 250px;
+    flex: 0 0 300px;
   }
   .main-wrapper {
     height: 100%;

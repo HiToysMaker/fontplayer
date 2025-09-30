@@ -12,7 +12,7 @@ const global_params = {
   weight: glyph.getParam('字重') || 40,
 }
 const params = {
-  horizonalSpan: glyph.getParam('水平延伸'),
+  horizontalSpan: glyph.getParam('水平延伸'),
   verticalSpan: glyph.getParam('竖直延伸'),
   bendCursor: glyph.getParam('弯曲游标'),
   bendDegree: glyph.getParam('弯曲度') + 10 * global_params.bending_degree,
@@ -60,11 +60,11 @@ const getJointsMap = (data) => {
 const getBend = (start, end) => {
   // 改变撇end的情况下，不会改变弯曲度和弯曲游标，所以依据现有参数计算新的bend
   const { bendCursor, bendDegree } = params
-  const horizonalSpan = Math.abs(end.x - start.x)
+  const horizontalSpan = Math.abs(end.x - start.x)
   const verticalSpan = Math.abs(end.y - start.y)
-  const cursor_x = start.x + bendCursor * horizonalSpan
+  const cursor_x = start.x + bendCursor * horizontalSpan
   const cursor_y = start.y - bendCursor * verticalSpan
-  const angle = Math.atan2(verticalSpan, horizonalSpan)
+  const angle = Math.atan2(verticalSpan, horizontalSpan)
   
   const bend = {
     x: cursor_x + bendDegree * Math.sin(angle),
@@ -104,7 +104,7 @@ glyph.onSkeletonDragEnd = (data) => {
   const jointsMap = getJointsMap(data)
   const _params = computeParamsByJoints(jointsMap)
   updateGlyphByParams(_params, global_params)
-  glyph.setParam('水平延伸', _params.horizonalSpan)
+  glyph.setParam('水平延伸', _params.horizontalSpan)
   glyph.setParam('竖直延伸', _params.verticalSpan)
   glyph.setParam('弯曲游标', _params.bendCursor)
   glyph.setParam('弯曲度', _params.bendDegree - 10 * global_params.bending_degree)
@@ -122,17 +122,17 @@ const range = (value, range) => {
 
 const computeParamsByJoints = (jointsMap) => {
   const { start, end, bend } = jointsMap
-  const horizonal_span_range = glyph.getParamRange('水平延伸')
+  const horizontal_span_range = glyph.getParamRange('水平延伸')
   const vertical_span_range = glyph.getParamRange('竖直延伸')
   const bend_cursor_range = glyph.getParamRange('弯曲游标')
   const bend_degree_range = glyph.getParamRange('弯曲度')
-  const horizonalSpan = range(end.x - start.x, horizonal_span_range)
+  const horizontalSpan = range(end.x - start.x, horizontal_span_range)
   const verticalSpan = range(start.y - end.y, vertical_span_range)
   const data = FP.distanceAndFootPoint(start, end, bend)
   const bendCursor = range(data.percentageFromA, bend_cursor_range)
   const bendDegree = range(data.distance, bend_degree_range)
   return {
-    horizonalSpan,
+    horizontalSpan,
     verticalSpan,
     bendCursor,
     bendDegree,
@@ -141,7 +141,7 @@ const computeParamsByJoints = (jointsMap) => {
 
 const updateGlyphByParams = (params, global_params) => {
   const {
-    horizonalSpan,
+    horizontalSpan,
     verticalSpan,
     bendCursor,
     bendDegree,
@@ -157,15 +157,15 @@ const updateGlyphByParams = (params, global_params) => {
   const end = new FP.Joint(
     'end',
     {
-      x: start.x + horizonalSpan,
+      x: start.x + horizontalSpan,
       y: start.y - verticalSpan,
     },
   )
 
   const length = distance(start, end)
-  const cursor_x = start.x + bendCursor * horizonalSpan
+  const cursor_x = start.x + bendCursor * horizontalSpan
   const cursor_y = start.y - bendCursor * verticalSpan
-  const angle = Math.atan2(verticalSpan, horizonalSpan)
+  const angle = Math.atan2(verticalSpan, horizontalSpan)
 
   const bend = new FP.Joint(
     'bend',
@@ -282,7 +282,7 @@ const getComponents = (skeleton) => {
   pen.quadraticBezierTo(start_p15.x, start_p15.y, start_p16.x, start_p16.y)
 
   // 绘制左侧轮廓
-  for (let i = end_left_data.final_curves.length - 1; i >= 0; i--) {
+  for (let i = 0; i < end_left_data.final_curves.length; i++) {
     const curve = end_left_data.final_curves[i]
     pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
   }
@@ -291,7 +291,7 @@ const getComponents = (skeleton) => {
   pen.bezierTo(end_p1.x, end_p1.y, end_p2.x, end_p2.y, end_p3.x, end_p3.y)
 
   // 绘制右侧轮廓
-  for (let i = 0; i < end_right_data.final_curves.length; i++) {
+  for (let i = end_right_data.final_curves.length - 1; i >= 0; i--) {
     const curve = end_right_data.final_curves[i]
     pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
   }

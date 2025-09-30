@@ -4,7 +4,7 @@ const x0 = 300
 const y0 = 345
 const params = {
   heng_length: glyph.getParam('横-长度'),
-  zhe_horizonalSpan: glyph.getParam('折-水平延伸'),
+  zhe_horizontalSpan: glyph.getParam('折-水平延伸'),
   zhe_verticalSpan: glyph.getParam('折-竖直延伸'),
   wan_length: glyph.getParam('弯-长度'),
   skeletonRefPos: glyph.getParam('参考位置'),
@@ -157,7 +157,7 @@ glyph.onSkeletonDragEnd = (data) => {
   const _params = computeParamsByJoints(jointsMap)
   updateGlyphByParams(_params, global_params)
   glyph.setParam('横-长度', _params.heng_length)
-  glyph.setParam('折-水平延伸', _params.zhe_horizonalSpan)
+  glyph.setParam('折-水平延伸', _params.zhe_horizontalSpan)
   glyph.setParam('折-竖直延伸', _params.zhe_verticalSpan)
   glyph.setParam('弯-长度', _params.wan_length)
   glyph.tempData = null
@@ -175,16 +175,16 @@ const range = (value, range) => {
 const computeParamsByJoints = (jointsMap) => {
   const { heng_start, heng_end, zhe_start, zhe_end, wan_start, wan_end } = jointsMap
   const heng_length_range = glyph.getParamRange('横-长度')
-  const zhe_horizonal_span_range = glyph.getParamRange('折-水平延伸')
+  const zhe_horizontal_span_range = glyph.getParamRange('折-水平延伸')
   const zhe_vertical_span_range = glyph.getParamRange('折-竖直延伸')
   const wan_length_range = glyph.getParamRange('弯-长度')
   const heng_length = range(heng_end.x - heng_start.x, heng_length_range)
-  const zhe_horizonalSpan = range(zhe_start.x - zhe_end.x, zhe_horizonal_span_range)
+  const zhe_horizontalSpan = range(zhe_start.x - zhe_end.x, zhe_horizontal_span_range)
   const zhe_verticalSpan = range(zhe_end.y - zhe_start.y, zhe_vertical_span_range)
   const wan_length = range(wan_end.x - wan_start.x, wan_length_range)
   return {
     heng_length,
-    zhe_horizonalSpan,
+    zhe_horizontalSpan,
     zhe_verticalSpan,
     wan_length,
     skeletonRefPos: glyph.getParam('参考位置'),
@@ -194,7 +194,7 @@ const computeParamsByJoints = (jointsMap) => {
 const updateGlyphByParams = (params, global_params) => {
   const {
     heng_length,
-    zhe_horizonalSpan,
+    zhe_horizontalSpan,
     zhe_verticalSpan,
     wan_length,
     skeletonRefPos,
@@ -281,7 +281,7 @@ const updateGlyphByParams = (params, global_params) => {
   const zhe_end = new FP.Joint(
     'zhe_end',
     {
-      x: zhe_start.x - zhe_horizonalSpan,
+      x: zhe_start.x - zhe_horizontalSpan,
       y: zhe_start.y + zhe_verticalSpan,
     },
   )
@@ -290,7 +290,7 @@ const updateGlyphByParams = (params, global_params) => {
   const wan_start = new FP.Joint(
     'wan_start',
     {
-      x: zhe_start.x - zhe_horizonalSpan,
+      x: zhe_start.x - zhe_horizontalSpan,
       y: zhe_start.y + zhe_verticalSpan,
     },
   )
@@ -498,7 +498,7 @@ const getComponents = (skeleton) => {
   })
 
   let turn_data = {}
-  if (turn_style_type === 1) {
+  {
     // 计算转角风格1（凸起，圆滑连接）所需要的数据
     const turn_length = 20 * turn_style_value
     const { inner_angle, mid_angle, angle1, angle2 } = FP.getTurnAngles(out_heng_start, out_corner_heng_zhe, out_zhe_end)

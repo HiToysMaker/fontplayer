@@ -19,6 +19,7 @@ import { enableMultiSelect } from './files'
 import { strokeFnMap, updateSkeletonTransformation } from '../templates/strokeFnMap'
 import { updateGlyphWeight } from '../../features/glyphWeight'
 import { onStrokeReplacement, setReplacementStroke } from './advancedEdit'
+import { componentsToContours } from '../../features/font'
 
 // 字形组件数据结构
 // custom component data struct
@@ -611,6 +612,11 @@ const updateGlyphListFromEditFile = () => {
 	for (let i = 0; i < glyphs.length; i++) {
 		if (editGlyph.value.uuid === glyphs[i].uuid) {
 			glyphs[i] = R.clone(editGlyph.value)
+			componentsToContours(orderedListWithItemsForGlyph(glyphs[i]), {
+				unitsPerEm: selectedFile.value.fontSettings.unitsPerEm,
+				descender: selectedFile.value.fontSettings.descender,
+				advanceWidth: selectedFile.value.fontSettings.unitsPerEm,
+			}, { x: 0, y: 0 }, false, false, true)
 			break
 		}
 	}

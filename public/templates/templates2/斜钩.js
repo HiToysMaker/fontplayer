@@ -12,11 +12,11 @@ const global_params = {
   weight: glyph.getParam('字重') || 40,
 }
 const params = {
-  xie_horizonalSpan: glyph.getParam('斜-水平延伸'),
+  xie_horizontalSpan: glyph.getParam('斜-水平延伸'),
   xie_verticalSpan: glyph.getParam('斜-竖直延伸'),
   xie_bendCursor: glyph.getParam('斜-弯曲游标'),
   xie_bendDegree: glyph.getParam('斜-弯曲度') + 30 * global_params.bending_degree,
-  gou_horizonalSpan: glyph.getParam('钩-水平延伸'),
+  gou_horizontalSpan: glyph.getParam('钩-水平延伸'),
   gou_verticalSpan: glyph.getParam('钩-竖直延伸'),
 }
 
@@ -97,11 +97,11 @@ const getJointsMap = (data) => {
 const getBend = (start, end) => {
   // 改变end的情况下，不会改变弯曲度和弯曲游标，所以依据现有参数计算新的bend
   const { xie_bendCursor: bendCursor, xie_bendDegree: bendDegree } = params
-  const horizonalSpan = Math.abs(end.x - start.x)
+  const horizontalSpan = Math.abs(end.x - start.x)
   const verticalSpan = Math.abs(end.y - start.y)
-  const cursor_x = start.x + bendCursor * horizonalSpan
+  const cursor_x = start.x + bendCursor * horizontalSpan
   const cursor_y = start.y + bendCursor * verticalSpan
-  const angle = Math.atan2(verticalSpan, horizonalSpan)
+  const angle = Math.atan2(verticalSpan, horizontalSpan)
   
   const bend = {
     x: cursor_x - bendDegree * Math.sin(angle),
@@ -141,11 +141,11 @@ glyph.onSkeletonDragEnd = (data) => {
   const jointsMap = getJointsMap(data)
   const _params = computeParamsByJoints(jointsMap)
   updateGlyphByParams(_params, global_params)
-  glyph.setParam('斜-水平延伸', _params.xie_horizonalSpan)
+  glyph.setParam('斜-水平延伸', _params.xie_horizontalSpan)
   glyph.setParam('斜-竖直延伸', _params.xie_verticalSpan)
   glyph.setParam('斜-弯曲游标', _params.xie_bendCursor)
   glyph.setParam('斜-弯曲度', _params.xie_bendDegree - 30 * global_params.bending_degree)
-  glyph.setParam('钩-水平延伸', _params.gou_horizonalSpan)
+  glyph.setParam('钩-水平延伸', _params.gou_horizontalSpan)
   glyph.setParam('钩-竖直延伸', _params.gou_verticalSpan)
   glyph.tempData = null
 }
@@ -161,36 +161,36 @@ const range = (value, range) => {
 
 const computeParamsByJoints = (jointsMap) => {
   const { xie_start, xie_end, xie_bend, gou_start, gou_end } = jointsMap
-  const xie_horizonal_span_range = glyph.getParamRange('斜-水平延伸')
+  const xie_horizontal_span_range = glyph.getParamRange('斜-水平延伸')
   const xie_vertical_span_range = glyph.getParamRange('斜-竖直延伸')
   const xie_bend_cursor_range = glyph.getParamRange('斜-弯曲游标')
   const xie_bend_degree_range = glyph.getParamRange('斜-弯曲度')
-  const gou_horizonal_span_range = glyph.getParamRange('钩-水平延伸')
+  const gou_horizontal_span_range = glyph.getParamRange('钩-水平延伸')
   const gou_vertical_span_range = glyph.getParamRange('钩-竖直延伸')
-  const xie_horizonalSpan = range(xie_end.x - xie_start.x, xie_horizonal_span_range)
+  const xie_horizontalSpan = range(xie_end.x - xie_start.x, xie_horizontal_span_range)
   const xie_verticalSpan = range(xie_end.y - xie_start.y, xie_vertical_span_range)
   const xie_data = FP.distanceAndFootPoint(xie_start, xie_end, xie_bend)
   const xie_bendCursor = range(xie_data.percentageFromA, xie_bend_cursor_range)
   const xie_bendDegree = range(xie_data.distance, xie_bend_degree_range)
-  const gou_horizonalSpan = range(gou_end.x - gou_start.x, gou_horizonal_span_range)
+  const gou_horizontalSpan = range(gou_end.x - gou_start.x, gou_horizontal_span_range)
   const gou_verticalSpan = range(gou_start.y - gou_end.y, gou_vertical_span_range)
   return {
-    xie_horizonalSpan,
+    xie_horizontalSpan,
     xie_verticalSpan,
     xie_bendCursor,
     xie_bendDegree,
-    gou_horizonalSpan,
+    gou_horizontalSpan,
     gou_verticalSpan,
   }
 }
 
 const updateGlyphByParams = (params, global_params) => {
   const {
-    xie_horizonalSpan,
+    xie_horizontalSpan,
     xie_verticalSpan,
     xie_bendCursor,
     xie_bendDegree,
-    gou_horizonalSpan,
+    gou_horizontalSpan,
     gou_verticalSpan,
   } = params
 
@@ -205,15 +205,15 @@ const updateGlyphByParams = (params, global_params) => {
   const xie_end = new FP.Joint(
     'xie_end',
     {
-      x: xie_start.x + xie_horizonalSpan,
+      x: xie_start.x + xie_horizontalSpan,
       y: xie_start.y + xie_verticalSpan,
     },
   )
 
   const xie_length = distance(xie_start, xie_end)
-  const xie_cursor_x = xie_start.x + xie_bendCursor * xie_horizonalSpan
+  const xie_cursor_x = xie_start.x + xie_bendCursor * xie_horizontalSpan
   const xie_cursor_y = xie_start.y + xie_bendCursor * xie_verticalSpan
-  const xie_angle = Math.atan2(xie_verticalSpan, xie_horizonalSpan)
+  const xie_angle = Math.atan2(xie_verticalSpan, xie_horizontalSpan)
 
   const xie_bend = new FP.Joint(
     'xie_bend',
@@ -227,14 +227,14 @@ const updateGlyphByParams = (params, global_params) => {
   const gou_start = new FP.Joint(
     'gou_start',
     {
-      x: xie_start.x + xie_horizonalSpan,
+      x: xie_start.x + xie_horizontalSpan,
       y: xie_start.y + xie_verticalSpan,
     },
   )
   const gou_end = new FP.Joint(
     'gou_end',
     {
-      x: gou_start.x + gou_horizonalSpan,
+      x: gou_start.x + gou_horizontalSpan,
       y: gou_start.y - gou_verticalSpan,
     },
   )

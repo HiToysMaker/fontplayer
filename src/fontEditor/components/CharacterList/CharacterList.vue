@@ -452,7 +452,50 @@
 	// 优化的渲染函数 - 替换原来的renderPreviewCanvas
 	const renderPreviewCanvas = () => {
 		clearRenderCache()
+		// renderAllCharacters()
 		renderVisibleCharacters()
+	}
+
+	const renderAllCharacters = async () => {
+		const characters = selectedFile.value ? selectedFile.value.characterList : []
+		let processedCount = 0
+		for (let i = 0; i < characters.length; i++) {
+			const characterFile = characters[i]
+			try {
+				// 执行字符脚本
+				if (!characterFile._o) {
+					executeCharacterScript(characterFile)
+				}
+
+				// 渲染字符
+				const contours = componentsToContours(orderedListWithItemsForCharacterFile(characterFile), {
+					unitsPerEm: 1000,
+					descender: -200,
+					advanceWidth: 1000,
+				}, { x: 0, y: 0 }, false, true)
+
+				const canvas = getCanvas(characterFile.uuid)
+				if (!canvas) return
+				renderPreview2(canvas, contours)
+				processedCount++
+				
+				// 更新进度
+				if (loading.value) {
+					loaded.value += 1
+					if (loaded.value >= total.value) {
+						loading.value = false
+					}
+				}
+				
+			} catch (error) {
+				console.error(`Error rendering character:`, error)
+			}
+			
+			// 每渲染5个字符就让出主线程，提高响应性
+			if (processedCount % 5 === 0) {
+				await new Promise(resolve => requestAnimationFrame(resolve))
+			}
+		}
 	}
 	
 	// 强制刷新可见字符
@@ -859,7 +902,7 @@
 		height: 100%;
 		position: relative;
 		padding: 10px;
-		background-color: var(--dark-0);
+		background-color: var(--dark-1);
 		.list {
 			width: 100%;
 			display: grid;

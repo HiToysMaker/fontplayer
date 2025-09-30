@@ -96,6 +96,7 @@ export interface ICharacterFile {
 	_o?: Character;
 	objData?: any;
 	overlap_removed_contours?: any;
+	final_components?: Array<IComponent>;
 }
 
 // 字符信息
@@ -353,6 +354,11 @@ const updateCharacterListFromEditFile = () => {
 	for (let i = 0; i < characters.length; i++) {
 		if (editCharacterFileUUID.value === characters[i].uuid) {
 			characters[i] = R.clone(editCharacterFile.value)
+			componentsToContours(orderedListWithItemsForCharacterFile(characters[i]), {
+				unitsPerEm: selectedFile.value.fontSettings.unitsPerEm,
+				descender: selectedFile.value.fontSettings.descender,
+				advanceWidth: selectedFile.value.fontSettings.unitsPerEm,
+			}, { x: 0, y: 0 }, false, false, true)
 			break
 		}
 	}
@@ -1533,7 +1539,7 @@ const addCharactersWithVirtualScroll = (characterList: any[]) => {
 const visibleStartIndex = ref(0)
 const visibleEndIndex = ref(500) // 增加默认渲染字符数量
 const visibleCount = ref(500) // 增加默认渲染字符数量
-	const itemHeight = 122 // 每个字符项的实际高度：112px(内容) + 10px(gap间距)
+const itemHeight = 122 // 每个字符项的实际高度：112px(内容) + 10px(gap间距)
 
 export {
 	visibleStartIndex,

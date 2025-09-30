@@ -16,6 +16,15 @@
 .bitmap-form .el-input-number {
   width: 80px;
 }
+.el-input-number, .el-select, .el-input {
+  width: 180px !important;
+}
+.el-form-item__label {
+  width: 100px !important;
+}
+.style-tag-wrap .el-input-group {
+  width: 100% !important;
+}
 .edit-filter-select .el-input__wrapper {
   box-shadow: none;
 }
@@ -81,14 +90,23 @@
   --el-input-border-color: var(--primary-0) !important;
 
   .el-menu {
-    background-color: var(--primary-0);
+    background-color: var(--dark-0);
+    width: 100%;
+    padding: 5px;
 
     .el-sub-menu .el-sub-menu__title:hover {
-      background-color: var(--primary-2);
+      .menu-icon-item {
+        background-color: var(--dark-3);
+      }
+      /* background-color: var(--primary-2); */
+      background-color: transparent;
     }
 
 		.el-sub-menu .el-sub-menu__title {
 			color: var(--light-0);
+      padding: 0;
+      margin: 5px;
+      margin-bottom: 10px;
 		}
 
 		.el-sub-menu:hover .el-sub-menu__title {
@@ -175,6 +193,10 @@
 			border-bottom: 1px solid var(--primary-2);
 			background-color: var(--primary-0);
 			color: var(--primary-5);
+      border-radius: 20px 5px 20px 5px;
+      margin: 10px;
+      width: calc(100% - 20px);
+      box-sizing: border-box;
 		}
 	}
 	

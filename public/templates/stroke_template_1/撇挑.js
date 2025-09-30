@@ -12,11 +12,11 @@ const global_params = {
   weight: glyph.getParam('字重') || 40,
 }
 const params = {
-  pie_horizonalSpan: glyph.getParam('撇-水平延伸'),
+  pie_horizontalSpan: glyph.getParam('撇-水平延伸'),
   pie_verticalSpan: glyph.getParam('撇-竖直延伸'),
   pie_bendCursor: glyph.getParam('撇-弯曲游标'),
   pie_bendDegree: glyph.getParam('撇-弯曲度') + 10 * global_params.bending_degree,
-  tiao_horizonalSpan: glyph.getParam('挑-水平延伸'),
+  tiao_horizontalSpan: glyph.getParam('挑-水平延伸'),
   tiao_verticalSpan: glyph.getParam('挑-竖直延伸'),
   tiao_bendCursor: glyph.getParam('挑-弯曲游标'),
   tiao_bendDegree: glyph.getParam('挑-弯曲度') + 10 * global_params.bending_degree,
@@ -120,11 +120,11 @@ const getBend = (start, end, name) => {
   // 改变撇end的情况下，不会改变弯曲度和弯曲游标，所以依据现有参数计算新的bend
   if (name === 'pie') {
     let { pie_bendCursor: bendCursor, pie_bendDegree: bendDegree } = params
-    const horizonalSpan = Math.abs(end.x - start.x)
+    const horizontalSpan = Math.abs(end.x - start.x)
     const verticalSpan = Math.abs(end.y - start.y)
-    const cursor_x = start.x - bendCursor * horizonalSpan
+    const cursor_x = start.x - bendCursor * horizontalSpan
     const cursor_y = start.y + bendCursor * verticalSpan
-    const angle = Math.atan2(verticalSpan, horizonalSpan)
+    const angle = Math.atan2(verticalSpan, horizontalSpan)
     
     const bend = {
       x: cursor_x + bendDegree * Math.sin(angle),
@@ -133,11 +133,11 @@ const getBend = (start, end, name) => {
     return bend
   } else if (name === 'tiao') {
     let { tiao_bendCursor: bendCursor, tiao_bendDegree: bendDegree } = params
-    const horizonalSpan = Math.abs(end.x - start.x)
+    const horizontalSpan = Math.abs(end.x - start.x)
     const verticalSpan = Math.abs(end.y - start.y)
-    const cursor_x = start.x + bendCursor * horizonalSpan
+    const cursor_x = start.x + bendCursor * horizontalSpan
     const cursor_y = start.y - bendCursor * verticalSpan
-    const angle = Math.atan2(verticalSpan, horizonalSpan)
+    const angle = Math.atan2(verticalSpan, horizontalSpan)
     
     const bend = {
       x: cursor_x - bendDegree * Math.sin(angle),
@@ -179,11 +179,11 @@ glyph.onSkeletonDragEnd = (data) => {
   const jointsMap = getJointsMap(data)
   const _params = computeParamsByJoints(jointsMap)
   updateGlyphByParams(_params, global_params)
-  glyph.setParam('撇-水平延伸', _params.pie_horizonalSpan)
+  glyph.setParam('撇-水平延伸', _params.pie_horizontalSpan)
   glyph.setParam('撇-竖直延伸', _params.pie_verticalSpan)
   glyph.setParam('撇-弯曲游标', _params.pie_bendCursor)
   glyph.setParam('撇-弯曲度', _params.pie_bendDegree - 10 * global_params.bending_degree)
-  glyph.setParam('挑-水平延伸', _params.tiao_horizonalSpan)
+  glyph.setParam('挑-水平延伸', _params.tiao_horizontalSpan)
   glyph.setParam('挑-竖直延伸', _params.tiao_verticalSpan)
   glyph.setParam('挑-弯曲游标', _params.tiao_bendCursor)
   glyph.setParam('挑-弯曲度', _params.tiao_bendDegree - 10 * global_params.bending_degree)
@@ -201,30 +201,30 @@ const range = (value, range) => {
 
 const computeParamsByJoints = (jointsMap) => {
   const { pie_start, pie_bend, pie_end, tiao_start, tiao_bend, tiao_end } = jointsMap
-  const pie_horizonal_span_range = glyph.getParamRange('撇-水平延伸')
+  const pie_horizontal_span_range = glyph.getParamRange('撇-水平延伸')
   const pie_vertical_span_range = glyph.getParamRange('撇-竖直延伸')
   const pie_bend_cursor_range = glyph.getParamRange('撇-弯曲游标')
   const pie_bend_degree_range = glyph.getParamRange('撇-弯曲度')
-  const tiao_horizonal_span_range = glyph.getParamRange('挑-水平延伸')
+  const tiao_horizontal_span_range = glyph.getParamRange('挑-水平延伸')
   const tiao_vertical_span_range = glyph.getParamRange('挑-竖直延伸')
   const tiao_bend_cursor_range = glyph.getParamRange('挑-弯曲游标')
   const tiao_bend_degree_range = glyph.getParamRange('挑-弯曲度')
-  const pie_horizonalSpan = range(pie_start.x - pie_end.x, pie_horizonal_span_range)
+  const pie_horizontalSpan = range(pie_start.x - pie_end.x, pie_horizontal_span_range)
   const pie_verticalSpan = range(pie_end.y - pie_start.y, pie_vertical_span_range)
   const pie_data = FP.distanceAndFootPoint(pie_start, pie_end, pie_bend)
   const pie_bendCursor = range(pie_data.percentageFromA, pie_bend_cursor_range)
   const pie_bendDegree = range(pie_data.distance, pie_bend_degree_range)
-  const tiao_horizonalSpan = range(tiao_end.x - tiao_start.x, tiao_horizonal_span_range)
+  const tiao_horizontalSpan = range(tiao_end.x - tiao_start.x, tiao_horizontal_span_range)
   const tiao_verticalSpan = range(tiao_start.y - tiao_end.y, tiao_vertical_span_range)
   const tiao_data = FP.distanceAndFootPoint(tiao_start, tiao_end, tiao_bend)
   const tiao_bendCursor = range(tiao_data.percentageFromA, tiao_bend_cursor_range)
   const tiao_bendDegree = range(tiao_data.distance, tiao_bend_degree_range)
   return {
-    pie_horizonalSpan,
+    pie_horizontalSpan,
     pie_verticalSpan,
     pie_bendCursor,
     pie_bendDegree,
-    tiao_horizonalSpan,
+    tiao_horizontalSpan,
     tiao_verticalSpan,
     tiao_bendCursor,
     tiao_bendDegree,
@@ -233,11 +233,11 @@ const computeParamsByJoints = (jointsMap) => {
 
 const updateGlyphByParams = (params, global_params) => {
   const {
-    pie_horizonalSpan,
+    pie_horizontalSpan,
     pie_verticalSpan,
     pie_bendCursor,
     pie_bendDegree,
-    tiao_horizonalSpan,
+    tiao_horizontalSpan,
     tiao_verticalSpan,
     tiao_bendCursor,
     tiao_bendDegree,
@@ -254,15 +254,15 @@ const updateGlyphByParams = (params, global_params) => {
   const pie_end = new FP.Joint(
     'pie_end',
     {
-      x: pie_start.x - pie_horizonalSpan,
+      x: pie_start.x - pie_horizontalSpan,
       y: pie_start.y + pie_verticalSpan,
     },
   )
 
   const pie_length = distance(pie_start, pie_end)
-  const pie_cursor_x = pie_start.x - pie_bendCursor * pie_horizonalSpan
+  const pie_cursor_x = pie_start.x - pie_bendCursor * pie_horizontalSpan
   const pie_cursor_y = pie_start.y + pie_bendCursor * pie_verticalSpan
-  const pie_angle = Math.atan2(pie_verticalSpan, pie_horizonalSpan)
+  const pie_angle = Math.atan2(pie_verticalSpan, pie_horizontalSpan)
 
   const pie_bend = new FP.Joint(
     'pie_bend',
@@ -276,22 +276,22 @@ const updateGlyphByParams = (params, global_params) => {
   const tiao_start = new FP.Joint(
     'tiao_start',
     {
-      x: pie_start.x - pie_horizonalSpan,
+      x: pie_start.x - pie_horizontalSpan,
       y: pie_start.y + pie_verticalSpan,
     },
   )
   const tiao_end = new FP.Joint(
     'tiao_end',
     {
-      x: tiao_start.x + tiao_horizonalSpan,
+      x: tiao_start.x + tiao_horizontalSpan,
       y: tiao_start.y - tiao_verticalSpan,
     },
   )
 
   const tiao_length = distance(tiao_start, tiao_end)
-  const tiao_cursor_x = tiao_start.x + tiao_bendCursor * tiao_horizonalSpan
+  const tiao_cursor_x = tiao_start.x + tiao_bendCursor * tiao_horizontalSpan
   const tiao_cursor_y = tiao_start.y - tiao_bendCursor * tiao_verticalSpan
-  const tiao_angle = Math.atan2(tiao_verticalSpan, tiao_horizonalSpan)
+  const tiao_angle = Math.atan2(tiao_verticalSpan, tiao_horizontalSpan)
 
   const tiao_bend = new FP.Joint(
     'tiao_bend',
@@ -454,7 +454,7 @@ const getComponents = (skeleton) => {
     end_left_data.final_curves[end_left_data.final_curves.length - 1].start.x,
     end_left_data.final_curves[end_left_data.final_curves.length - 1].start.y,
   )
-  for (let i = end_left_data.final_curves.length - 1; i >= 0; i--) {
+  for (let i = 0; i < end_left_data.final_curves.length; i++) {
     const curve = end_left_data.final_curves[i]
     pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
   }
@@ -468,7 +468,7 @@ const getComponents = (skeleton) => {
   pen.quadraticBezierTo(end_p9.x, end_p9.y, end_p10.x, end_p10.y)
 
   // 绘制右侧轮廓
-  for (let i = 0; i < end_right_data.final_curves.length; i++) {
+  for (let i = end_right_data.final_curves.length - 1; i >= 0; i--) {
     const curve = end_right_data.final_curves[i]
     pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
   }

@@ -13,7 +13,7 @@ const global_params = {
 }
 const params = {
   heng_length: glyph.getParam('横-长度'),
-  pie_horizonalSpan: glyph.getParam('撇-水平延伸'),
+  pie_horizontalSpan: glyph.getParam('撇-水平延伸'),
   pie_verticalSpan: glyph.getParam('撇-竖直延伸'),
   wangou_verticalSpan: glyph.getParam('弯钩-竖直延伸'),
   wangou_bendCursor: glyph.getParam('弯钩-弯曲游标'),
@@ -202,7 +202,7 @@ glyph.onSkeletonDragEnd = (data) => {
   const _params = computeParamsByJoints(jointsMap)
   updateGlyphByParams(_params, global_params)
   glyph.setParam('横-长度', _params.heng_length)
-  glyph.setParam('撇-水平延伸', _params.pie_horizonalSpan)
+  glyph.setParam('撇-水平延伸', _params.pie_horizontalSpan)
   glyph.setParam('撇-竖直延伸', _params.pie_verticalSpan)
   glyph.setParam('弯钩-竖直延伸', _params.wangou_verticalSpan)
   glyph.setParam('弯钩-弯曲游标', _params.wangou_bendCursor)
@@ -222,20 +222,20 @@ const range = (value, range) => {
 const computeParamsByJoints = (jointsMap) => {
   const { heng_start, heng_end, pie_start, pie_end, wangou_start, wangou_bend, wangou_end } = jointsMap
   const heng_length_range = glyph.getParamRange('横-长度')
-  const pie_horizonal_span_range = glyph.getParamRange('撇-水平延伸')
+  const pie_horizontal_span_range = glyph.getParamRange('撇-水平延伸')
   const pie_vertical_span_range = glyph.getParamRange('撇-竖直延伸')
   const wangou_vertical_span_range = glyph.getParamRange('弯钩-竖直延伸')
   const wangou_bend_cursor_range = glyph.getParamRange('弯钩-弯曲游标')
   const wangou_bend_degree_range = glyph.getParamRange('弯钩-弯曲度')
   const heng_length = range(heng_end.x - heng_start.x, heng_length_range)
-  const pie_horizonalSpan = range(pie_start.x - pie_end.x, pie_horizonal_span_range)
+  const pie_horizontalSpan = range(pie_start.x - pie_end.x, pie_horizontal_span_range)
   const pie_verticalSpan = range(pie_end.y - pie_start.y, pie_vertical_span_range)
   const wangou_verticalSpan = range(wangou_end.y - wangou_start.y, wangou_vertical_span_range)
   const wangou_bendCursor = range((wangou_bend.y - wangou_start.y) / wangou_verticalSpan, wangou_bend_cursor_range)
   const wangou_bendDegree = range(wangou_bend.x - wangou_start.x, wangou_bend_degree_range)
   return {
     heng_length,
-    pie_horizonalSpan,
+    pie_horizontalSpan,
     pie_verticalSpan,
     wangou_verticalSpan,
     wangou_bendCursor,
@@ -247,7 +247,7 @@ const computeParamsByJoints = (jointsMap) => {
 const updateGlyphByParams = (params, global_params) => {
   const {
     heng_length,
-    pie_horizonalSpan,
+    pie_horizontalSpan,
     pie_verticalSpan,
     wangou_verticalSpan,
     wangou_bendCursor,
@@ -336,7 +336,7 @@ const updateGlyphByParams = (params, global_params) => {
   const pie_end = new FP.Joint(
     'pie_end',
     {
-      x: pie_start.x - pie_horizonalSpan,
+      x: pie_start.x - pie_horizontalSpan,
       y: pie_start.y + pie_verticalSpan,
     },
   )
@@ -345,7 +345,7 @@ const updateGlyphByParams = (params, global_params) => {
   const wangou_start = new FP.Joint(
     'wangou_start',
     {
-      x: pie_start.x - pie_horizonalSpan,
+      x: pie_start.x - pie_horizontalSpan,
       y: pie_start.y + pie_verticalSpan,
     },
   )
@@ -494,7 +494,7 @@ const getComponents = (skeleton) => {
   }
 
   let turn_data = {}
-  if (turn_style_type === 1) {
+  {
     // 计算转角风格1（凸起，圆滑连接）所需要的数据
     const turn_length = 20 * turn_style_value
     const { inner_angle, mid_angle, angle1, angle2 } = FP.getTurnAngles(out_heng_start, out_corner_heng_pie, out_pie_end)
@@ -650,7 +650,7 @@ const getComponents = (skeleton) => {
   pen.lineTo(in_corner_heng_pie.x, in_corner_heng_pie.y)
   pen.lineTo(in_corner_pie_wangou.x, in_corner_pie_wangou.y)
 
-  for (let i = end_left_data.final_curves.length - 1; i >= 0; i--) {
+  for (let i = 0; i < end_left_data.final_curves.length; i++) {
     const curve = end_left_data.final_curves[i]
     pen.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
   }
@@ -663,7 +663,7 @@ const getComponents = (skeleton) => {
   pen.quadraticBezierTo(end_p3.x, end_p3.y, end_p2.x, end_p2.y)
   pen.quadraticBezierTo(end_p1.x, end_p1.y, end_p0.x, end_p0.y)
 
-  for (let i = 0; i < end_right_data.final_curves.length; i++) {
+  for (let i = end_right_data.final_curves.length - 1; i >= 0; i--) {
     const curve = end_right_data.final_curves[i]
     pen.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
   }

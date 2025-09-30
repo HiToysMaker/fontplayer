@@ -109,7 +109,52 @@ onMounted(() => {
           type: ParameterType.Number,
         },
       ]
-    }
+    },
+    {
+      uuid: genUUID(),
+      name: '字玩腾云体',
+      strokeStyle: '字玩腾云体',
+      constants: [],
+      parameters: [
+        {
+          name: '字重',
+          value: 50,
+          min: 40,
+          max: 100,
+          type: ParameterType.Number,
+        },
+      ],
+    },
+    {
+      uuid: genUUID(),
+      name: '字玩标准宋体',
+      strokeStyle: '字玩标准宋体',
+      constants: [],
+      parameters: [
+        {
+          name: '字重',
+          value: 50,
+          min: 40,
+          max: 100,
+          type: ParameterType.Number,
+        },
+      ],
+    },
+    {
+      uuid: genUUID(),
+      name: '字玩标准仿宋',
+      strokeStyle: '字玩标准仿宋',
+      constants: [],
+      parameters: [
+        {
+          name: '字重',
+          value: 30,
+          min: 40,
+          max: 100,
+          type: ParameterType.Number,
+        },
+      ],
+    },
   ]
   updateSampleCharactersList()
   updatePreviewList_styleSwitch()
@@ -195,6 +240,10 @@ watch(() => selectedStyle.value?.parameters, () => {
         </div>
       </div>
       <div class="main">
+        <!-- <canvas id="advanced-edit-canvas" width="1000" height="1000" :style="{
+          width: '500px',
+          height: '500px',
+        }"></canvas> -->
         <div class="characters" id="advanced-edit-characters-list">
         </div>
       </div>

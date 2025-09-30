@@ -37,7 +37,7 @@ const menus = {
 			svg: '导出SVG',
 		},
 		char: {
-			char: '字符与图标',
+			char: '字符',
 			character: '添加字符',
 			icon: '添加图标',
 		},
@@ -52,10 +52,13 @@ const menus = {
 			test1: '测试模板1',
 			test2: '字玩标准黑体（仅笔画）',
 			test3: '测试手绘模板（仅笔画）',
-			test4: 'test style 1',
+			test4: '字玩腾云体（仅笔画）',
+			test5: '字玩标准宋体（仅笔画）',
+			test6: '字玩标准仿宋（仅笔画）',
 		},
 		tools: {
 			remove_overlap: '去除重叠',
+			tools: '工具',
 		},
   },
   en: {
@@ -96,7 +99,7 @@ const menus = {
 			svg: 'Export SVG',
 		},
 		char: {
-			char: 'Char And Icon',
+			char: 'Char',
 			character: 'Add Character',
 			icon: 'Add Icon',
 		},
@@ -112,9 +115,12 @@ const menus = {
 			test2: 'template 2',
 			test3: 'template 3',
 			test4: 'template 4',
+			test5: 'template 5',
+			test6: 'template 6',
 		},
 		tools: {
 			remove_overlap: 'remove_overlap',
+			tools: 'Tools',
 		},
   },
 }

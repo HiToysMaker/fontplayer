@@ -4,7 +4,7 @@ const x0 = 250
 const y0 = 500
 const params = {
   heng_length: glyph.getParam('横-长度'),
-  gou_horizonalSpan: glyph.getParam('钩-水平延伸'),
+  gou_horizontalSpan: glyph.getParam('钩-水平延伸'),
   gou_verticalSpan: glyph.getParam('钩-竖直延伸'),
   skeletonRefPos: glyph.getParam('参考位置'),
 }
@@ -110,7 +110,7 @@ glyph.onSkeletonDragEnd = (data) => {
   const _params = computeParamsByJoints(jointsMap)
   updateGlyphByParams(_params, global_params)
   glyph.setParam('横-长度', _params.heng_length)
-  glyph.setParam('钩-水平延伸', _params.gou_horizonalSpan)
+  glyph.setParam('钩-水平延伸', _params.gou_horizontalSpan)
   glyph.setParam('钩-竖直延伸', _params.gou_verticalSpan)
   glyph.tempData = null
 }
@@ -127,14 +127,14 @@ const range = (value, range) => {
 const computeParamsByJoints = (jointsMap) => {
   const { heng_start, heng_end, gou_start, gou_end } = jointsMap
   const heng_length_range = glyph.getParamRange('横-长度')
-  const gou_horizonal_span_range = glyph.getParamRange('钩-水平延伸')
+  const gou_horizontal_span_range = glyph.getParamRange('钩-水平延伸')
   const gou_vertical_span_range = glyph.getParamRange('钩-竖直延伸')
   const heng_length = range(heng_end.x - heng_start.x, heng_length_range)
-  const gou_horizonalSpan = range(gou_start.x - gou_end.x, gou_horizonal_span_range)
+  const gou_horizontalSpan = range(gou_start.x - gou_end.x, gou_horizontal_span_range)
   const gou_verticalSpan = range(gou_end.y - gou_start.y, gou_vertical_span_range)
   return {
     heng_length,
-    gou_horizonalSpan,
+    gou_horizontalSpan,
     gou_verticalSpan,
     skeletonRefPos: glyph.getParam('参考位置'),
   }
@@ -143,7 +143,7 @@ const computeParamsByJoints = (jointsMap) => {
 const updateGlyphByParams = (params, global_params) => {
   const {
     heng_length,
-    gou_horizonalSpan,
+    gou_horizontalSpan,
     gou_verticalSpan,
     skeletonRefPos,
   } = params
@@ -229,7 +229,7 @@ const updateGlyphByParams = (params, global_params) => {
   const gou_end = new FP.Joint(
     'gou_end',
     {
-      x: gou_start.x - gou_horizonalSpan,
+      x: gou_start.x - gou_horizontalSpan,
       y: gou_start.y + gou_verticalSpan,
     },
   )

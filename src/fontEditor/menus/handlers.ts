@@ -100,7 +100,7 @@ import { writeTextFile, writeFile, readFile, readTextFile } from '@tauri-apps/pl
 import { ENV } from '../stores/system'
 import { OpType, saveState, StoreType, undo as _undo, redo as _redo } from '../stores/edit'
 import { getEnName, name_data } from '../stores/settings'
-import { strokes as hei_strokes, strokes } from '../templates/strokes_1'
+import { strokes as hei_strokes, kai_strokes } from '../templates/strokes_1'
 import { i18n } from '../../i18n'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { strokeFnMap } from '../templates/strokeFnMap'
@@ -2670,7 +2670,345 @@ const importTemplate4 = async () => {
       },
       parameters: new ParametersMap(parameters),
       joints: [],
-      style: 'test style 1',
+      style: '字玩腾云体',
+      script: `function script_${uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t${stroke_script}\n}`,
+    }
+    addGlyph(glyph, Status.StrokeGlyphList)
+    addGlyphTemplate(glyph, Status.StrokeGlyphList)
+  }
+  emitter.emit('renderStrokeGlyphPreviewCanvas')
+}
+
+const importTemplate5 = async () => {
+  for (let i = 0; i < hei_strokes.length; i++) {
+    loaded.value += 1
+    const stroke = hei_strokes[i]
+    const { name, params } = stroke
+    const uuid = genUUID()
+    const parameters: Array<IParameter> = []
+    for (let j = 0; j < params.length; j++) {
+      const param = params[j]
+      parameters.push({
+        uuid: genUUID(),
+        name: param.name,
+        type: ParameterType.Number,
+        value: param.default,
+        min: param.min || 0,
+        max: param.max || 1000,
+      })
+    }
+    parameters.push({
+      uuid: genUUID(),
+      name: '竖横比',
+      type: ParameterType.Number,
+      value: 3,
+      min: 1,
+      max: 5,
+    })
+    // 添加Enum参数骨架参考位置
+    // 骨架参考位置用于当字重变化时，固定参考位置
+    // 如果不设置骨架参考位置，当字重变化时，很可能横竖交叠处会露出棱角，变得不规则
+    parameters.push({
+      uuid: genUUID(),
+      name: '参考位置',
+      type: ParameterType.Enum,
+      value: 0,
+      options: [
+        {
+          value: 0,
+          label: '默认',
+        },
+        {
+          value: 1,
+          label: '右侧（上侧）',
+        },
+        {
+          value: 2,
+          label: '左侧（下侧）',
+        }
+      ]
+    })
+    // 添加Enum参数起笔风格类型
+    parameters.push({
+      uuid: genUUID(),
+      name: '起笔风格',
+      type: ParameterType.Enum,
+      value: 1,
+      options: [
+        {
+          value: 0,
+          label: '无起笔样式',
+        },
+        {
+          value: 1,
+          label: '衬线起笔',
+        }
+      ]
+    })
+    // 添加起笔数值
+    parameters.push({
+      uuid: genUUID(),
+      name: '起笔数值',
+      type: ParameterType.Number,
+      value: 2,
+      min: 1,
+      max: 3,
+    })
+    // 添加Enum参数收笔风格类型
+    parameters.push({
+      uuid: genUUID(),
+      name: '收笔风格',
+      type: ParameterType.Enum,
+      value: 1,
+      options: [
+        {
+          value: 0,
+          label: '无收笔样式',
+        },
+        {
+          value: 1,
+          label: '衬线收笔',
+        },
+      ]
+    })
+    // 添加起笔数值
+    parameters.push({
+      uuid: genUUID(),
+      name: '收笔数值',
+      type: ParameterType.Number,
+      value: 2,
+      min: 1,
+      max: 3,
+    })
+    // 添加Enum参数转角风格类型
+    parameters.push({
+      uuid: genUUID(),
+      name: '转角风格',
+      type: ParameterType.Enum,
+      value: 1,
+      options: [
+        {
+          value: 0,
+          label: '默认转角样式',
+        },
+        {
+          value: 1,
+          label: '衬线转角',
+        }
+      ]
+    })
+    // 添加转角数值
+    parameters.push({
+      uuid: genUUID(),
+      name: '转角数值',
+      type: ParameterType.Number,
+      value: 2,
+      min: 1,
+      max: 3,
+    })
+    // 添加字重变化
+    parameters.push({
+      uuid: genUUID(),
+      name: '字重变化',
+      type: ParameterType.Number,
+      value: 0,
+      min: 0,
+      max: 2,
+    })
+    // 添加弯曲程度
+    parameters.push({
+      uuid: genUUID(),
+      name: '弯曲程度',
+      type: ParameterType.Number,
+      value: 1,
+      min: 0,
+      max: 2,
+    })
+    let stroke_script_res = base ? await fetch(base + `/templates/stroke_template_song/${name}.js`) : await fetch(`templates/stroke_template_song/${name}.js`)
+    let stroke_script = await stroke_script_res.text()
+
+    //const uuid = genUUID()
+    const glyph = {
+      uuid,
+      type: 'system',
+      name,
+      components: [],
+      groups: [],
+      orderedList: [],
+      selectedComponentsUUIDs: [],
+      view: {
+        zoom: 100,
+        translateX: 0,
+        translateY: 0,
+      },
+      parameters: new ParametersMap(parameters),
+      joints: [],
+      style: '字玩标准宋体',
+      script: `function script_${uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t${stroke_script}\n}`,
+    }
+    addGlyph(glyph, Status.StrokeGlyphList)
+    addGlyphTemplate(glyph, Status.StrokeGlyphList)
+  }
+  emitter.emit('renderStrokeGlyphPreviewCanvas')
+}
+
+const importTemplate6 = async () => {
+  for (let i = 0; i < kai_strokes.length; i++) {
+    loaded.value += 1
+    const stroke = kai_strokes[i]
+    const { name, params } = stroke
+    const uuid = genUUID()
+    const parameters: Array<IParameter> = []
+    for (let j = 0; j < params.length; j++) {
+      const param = params[j]
+      parameters.push({
+        uuid: genUUID(),
+        name: param.name,
+        type: ParameterType.Number,
+        value: param.name === '字重' ? 35 : param.default,
+        min: param.min || 0,
+        max: param.max || 1000,
+      })
+    }
+    // 添加Enum参数骨架参考位置
+    // 骨架参考位置用于当字重变化时，固定参考位置
+    // 如果不设置骨架参考位置，当字重变化时，很可能横竖交叠处会露出棱角，变得不规则
+    parameters.push({
+      uuid: genUUID(),
+      name: '参考位置',
+      type: ParameterType.Enum,
+      value: 0,
+      options: [
+        {
+          value: 0,
+          label: '默认',
+        },
+        {
+          value: 1,
+          label: '右侧（上侧）',
+        },
+        {
+          value: 2,
+          label: '左侧（下侧）',
+        }
+      ]
+    })
+    // 添加Enum参数起笔风格类型
+    parameters.push({
+      uuid: genUUID(),
+      name: '起笔风格',
+      type: ParameterType.Enum,
+      value: 1,
+      options: [
+        {
+          value: 0,
+          label: '无起笔样式',
+        },
+        {
+          value: 1,
+          label: '衬线起笔',
+        }
+      ]
+    })
+    // 添加起笔数值
+    parameters.push({
+      uuid: genUUID(),
+      name: '起笔数值',
+      type: ParameterType.Number,
+      value: 1,
+      min: 1,
+      max: 3,
+    })
+    // 添加Enum参数收笔风格类型
+    parameters.push({
+      uuid: genUUID(),
+      name: '收笔风格',
+      type: ParameterType.Enum,
+      value: 1,
+      options: [
+        {
+          value: 0,
+          label: '无收笔样式',
+        },
+        {
+          value: 1,
+          label: '衬线收笔',
+        },
+      ]
+    })
+    // 添加起笔数值
+    parameters.push({
+      uuid: genUUID(),
+      name: '收笔数值',
+      type: ParameterType.Number,
+      value: 1,
+      min: 1,
+      max: 3,
+    })
+    // 添加Enum参数转角风格类型
+    parameters.push({
+      uuid: genUUID(),
+      name: '转角风格',
+      type: ParameterType.Enum,
+      value: 1,
+      options: [
+        {
+          value: 0,
+          label: '默认转角样式',
+        },
+        {
+          value: 1,
+          label: '衬线转角',
+        }
+      ]
+    })
+    // 添加转角数值
+    parameters.push({
+      uuid: genUUID(),
+      name: '转角数值',
+      type: ParameterType.Number,
+      value: 1,
+      min: 1,
+      max: 3,
+    })
+    // 添加字重变化
+    parameters.push({
+      uuid: genUUID(),
+      name: '字重变化',
+      type: ParameterType.Number,
+      value: 0,
+      min: 0,
+      max: 2,
+    })
+    // 添加弯曲程度
+    parameters.push({
+      uuid: genUUID(),
+      name: '弯曲程度',
+      type: ParameterType.Number,
+      value: 1,
+      min: 0,
+      max: 2,
+    })
+    let stroke_script_res = base ? await fetch(base + `/templates/stroke_template_fangsong/${name}.js`) : await fetch(`templates/stroke_template_fangsong/${name}.js`)
+    let stroke_script = await stroke_script_res.text()
+
+    //const uuid = genUUID()
+    const glyph = {
+      uuid,
+      type: 'system',
+      name,
+      components: [],
+      groups: [],
+      orderedList: [],
+      selectedComponentsUUIDs: [],
+      view: {
+        zoom: 100,
+        translateX: 0,
+        translateY: 0,
+      },
+      parameters: new ParametersMap(parameters),
+      joints: [],
+      style: '字玩标准仿宋',
       script: `function script_${uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t${stroke_script}\n}`,
     }
     addGlyph(glyph, Status.StrokeGlyphList)
@@ -3012,7 +3350,7 @@ const importTemplate3 = async () => {
     strokeGlyph.skeleton = skeleton
 
     // 根据骨架设置字形参数
-    const stroke = strokes.find((stroke) => stroke.name === type)
+    const stroke = hei_strokes.find((stroke) => stroke.name === type)
     if (stroke) {
       const parameters = strokeGlyph.parameters.parameters
       for (let j = 0; j < stroke.params.length; j++) {
@@ -3978,6 +4316,8 @@ const createOptimizedPath = (contour: Array<ILine | IQuadraticBezierCurve | ICub
     startPoint.x = segment.end.x
     startPoint.y = segment.end.y
   }
+
+  path.closePath()
   
   return path
 }
@@ -4050,6 +4390,8 @@ const tauri_handlers: IHandlerMap = {
   'template-2': importTemplate2,
   'template-3': importTemplate3,
   'template-4': importTemplate4,
+  'template-5': importTemplate5,
+  'template-6': importTemplate6,
   'remove_overlap': removeOverlap,
 }
 
@@ -4085,6 +4427,8 @@ const web_handlers: IHandlerMap = {
   'template-2': importTemplate2,
   'template-3': importTemplate3,
   'template-4': importTemplate4,
+  'template-5': importTemplate5,
+  'template-6': importTemplate6,
   'remove_overlap': removeOverlap,
 }
 
