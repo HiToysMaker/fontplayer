@@ -188,46 +188,46 @@ const getJointsMap = (data) => {
     case 'zhe2_end': {
       jointsMap['zhe2_end'] = {
         x: glyph.tempData['zhe2_end'].x + deltaX,
-        y: glyph.tempData['zhe2_end'].y,
+        y: glyph.tempData['zhe2_end'].y + deltaY,
       }
       jointsMap['wan_start'] = {
         x: glyph.tempData['wan_start'].x + deltaX,
-        y: glyph.tempData['wan_start'].y,
+        y: glyph.tempData['wan_start'].y + deltaY,
       }
       jointsMap['wan_end'] = {
         x: glyph.tempData['wan_end'].x + deltaX,
-        y: glyph.tempData['wan_end'].y,
+        y: glyph.tempData['wan_end'].y + deltaY,
       }
       jointsMap['gou_start'] = {
         x: glyph.tempData['gou_start'].x + deltaX,
-        y: glyph.tempData['gou_start'].y,
+        y: glyph.tempData['gou_start'].y + deltaY,
       }
       jointsMap['gou_end'] = {
         x: glyph.tempData['gou_end'].x + deltaX,
-        y: glyph.tempData['gou_end'].y,
+        y: glyph.tempData['gou_end'].y + deltaY,
       }
       break
     }
     case 'wan_start': {
       jointsMap['zhe2_end'] = {
         x: glyph.tempData['zhe2_end'].x + deltaX,
-        y: glyph.tempData['zhe2_end'].y,
+        y: glyph.tempData['zhe2_end'].y + deltaY,
       }
       jointsMap['wan_start'] = {
         x: glyph.tempData['wan_start'].x + deltaX,
-        y: glyph.tempData['wan_start'].y,
+        y: glyph.tempData['wan_start'].y + deltaY,
       }
       jointsMap['wan_end'] = {
         x: glyph.tempData['wan_end'].x + deltaX,
-        y: glyph.tempData['wan_end'].y,
+        y: glyph.tempData['wan_end'].y + deltaY,
       }
       jointsMap['gou_start'] = {
         x: glyph.tempData['gou_start'].x + deltaX,
-        y: glyph.tempData['gou_start'].y,
+        y: glyph.tempData['gou_start'].y + deltaY,
       }
       jointsMap['gou_end'] = {
         x: glyph.tempData['gou_end'].x + deltaX,
-        y: glyph.tempData['gou_end'].y,
+        y: glyph.tempData['gou_end'].y + deltaY,
       }
       break
     }

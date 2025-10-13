@@ -155,6 +155,36 @@ onMounted(() => {
         },
       ],
     },
+    {
+      uuid: genUUID(),
+      name: '字玩标准楷体',
+      strokeStyle: '字玩标准楷体',
+      constants: [],
+      parameters: [
+        {
+          name: '字重',
+          value: 50,
+          min: 40,
+          max: 100,
+          type: ParameterType.Number,
+        },
+      ],
+    },
+    {
+      uuid: genUUID(),
+      name: '字玩标准隶书',
+      strokeStyle: '字玩标准隶书',
+      constants: [],
+      parameters: [
+        {
+          name: '字重',
+          value: 50,
+          min: 40,
+          max: 100,
+          type: ParameterType.Number,
+        },
+      ],
+    },
   ]
   updateSampleCharactersList()
   updatePreviewList_styleSwitch()

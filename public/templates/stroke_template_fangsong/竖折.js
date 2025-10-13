@@ -74,7 +74,7 @@ const getJointsMap = (data) => {
     case 'zhe_end': {
       jointsMap['zhe_end'] = {
         x: glyph.tempData['zhe_end'].x + deltaX,
-        y: glyph.tempData['zhe_end'].y,
+        y: glyph.tempData['zhe_end'].y + deltaY,
       }
       break
     }
@@ -137,7 +137,7 @@ const computeParamsByJoints = (jointsMap) => {
   const shu_horizontalSpan = range(shu_end.x - shu_start.x, shu_horizontal_span_range)
   const shu_verticalSpan = range(shu_end.y - shu_start.y, shu_vertical_span_range)
   const zhe_horizontalSpan = range(zhe_end.x - zhe_start.x, zhe_horizontal_span_range)
-  const zhe_verticalSpan = range(zhe_end.y - zhe_start.y, zhe_vertical_span_range)
+  const zhe_verticalSpan = range(zhe_start.y - zhe_end.y, zhe_vertical_span_range)
   return {
     shu_horizontalSpan,
     shu_verticalSpan,

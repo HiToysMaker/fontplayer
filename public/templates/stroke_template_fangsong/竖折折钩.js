@@ -698,11 +698,6 @@ const getComponents = (skeleton) => {
     { type: 'line', start: end_p2, end: end_p2_p1_vector },
   )
 
-  const in_radius_start_zhe1_zhe2_joint = new FP.Joint('in_radius_start_zhe1_zhe2_joint', in_radius_start_zhe1_zhe2)
-  const in_radius_end_zhe1_zhe2_joint = new FP.Joint('in_radius_end_zhe1_zhe2', in_radius_end_zhe1_zhe2)
-  glyph.addJoint(in_radius_end_zhe1_zhe2_joint)
-  glyph.addJoint(in_radius_start_zhe1_zhe2_joint)
-
   // 创建钢笔组件
   const pen = new FP.PenComponent()
   pen.beginPath()

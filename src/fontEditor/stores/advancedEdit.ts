@@ -18,7 +18,7 @@ import type {
 import { PathType } from '../../fontManager'
 import { genPenComponent } from '../tools/pen'
 import { getBezierBoundingBox, testIntersect } from '../../utils/bezier'
-import { kai_strokes } from '../templates/strokes_1'
+import { kai_strokes, li_strokes } from '../templates/strokes_1'
 export const activePanel = ref('globalVariables')
 
 const constants = ref([])
@@ -609,6 +609,10 @@ const updateCharactersAndPreview_styleSwitch = () => {
     process_characters_song()
   } else if (style.name === '字玩标准仿宋') {
     process_characters_fangsong()
+  } else if (style.name === '字玩标准楷体') {
+    process_characters_kai()
+  } else if (style.name === '字玩标准隶书') {
+    process_characters_li()
   }
 
   for (let i = 0; i < originSampleCharactersList.value.length; i++) {
@@ -619,6 +623,10 @@ const updateCharactersAndPreview_styleSwitch = () => {
 
     if (style.name === '字玩标准仿宋') {
       process_character_fangsong(character)
+    } else if (style.name === '字玩标准楷体') {
+      process_character_kai(character)
+    } else if (style.name === '字玩标准隶书') {
+      process_character_li(character)
     }
 
     switchStyle(character, style)
@@ -656,6 +664,10 @@ const updateCharactersList_styleSwitch = () => {
     process_characters_song()
   } else if (style.name === '字玩标准仿宋') {
     process_characters_fangsong()
+  } else if (style.name === '字玩标准楷体') {
+    process_characters_kai()
+  } else if (style.name === '字玩标准隶书') {
+    process_characters_li()
   }
   
   total.value = selectedFile.value.characterList.length + Math.min(visibleCount.value, selectedFile.value.characterList.length)
@@ -672,6 +684,10 @@ const updateCharactersList_styleSwitch = () => {
 
     if (style.name === '字玩标准仿宋') {
       process_character_fangsong(character)
+    } else if (style.name === '字玩标准楷体') {
+      process_character_kai(character)
+    } else if (style.name === '字玩标准隶书') {
+      process_character_li(character)
     }
 
     switchStyle2(character, style)
@@ -848,6 +864,96 @@ const process_character_fangsong = (characterFile) => {
         }
       })
       const stroke = kai_strokes.find(stroke => stroke.name === glyph.name)
+      if (stroke) {
+        stroke.params.map((param) => {
+          const _param = glyph.parameters.parameters.find(parameter => parameter.name === param.name)
+          if (param.originParam) {
+            const __param = glyph.parameters.parameters.find(parameter => parameter.name === param.originParam)
+            __param.name = param.name
+            __param.min = param.min
+            __param.max = param.max
+          } else if (!_param) {
+            const __param = addParam(glyph, param.name, param.default, ParameterType.Number)
+            __param.min = param.min
+            __param.max = param.max
+          }
+        })
+      }
+    }
+  }
+}
+
+const process_characters_kai = () => {
+  constants.value.find(constant => constant.name === '起笔风格').value = 1
+  constants.value.find(constant => constant.name === '起笔数值').value = 2
+  constants.value.find(constant => constant.name === '转角风格').value = 1
+  constants.value.find(constant => constant.name === '转角数值').value = 2
+  globalConstants.value.find(constant => constant.name === '起笔风格').value = 1
+  globalConstants.value.find(constant => constant.name === '起笔数值').value = 2
+  globalConstants.value.find(constant => constant.name === '转角风格').value = 1
+  globalConstants.value.find(constant => constant.name === '转角数值').value = 2
+}
+
+const process_character_kai = (characterFile) => {
+  for (let j = 0; j < characterFile.components.length; j++) {
+    const component = characterFile.components[j]
+    if (component.type === 'glyph') {
+      const glyph = component.value
+      glyph.parameters.parameters.forEach(parameter => {
+        if (parameter.name === '起笔风格') {
+          const value = getParam(parameter)
+          if (value === 0) {
+            // 无起笔样式，则添加无收笔衬线参数
+            addParam(glyph, '收笔风格', 0, ParameterType.Enum)
+          }
+        }
+      })
+      const stroke = kai_strokes.find(stroke => stroke.name === glyph.name)
+      if (stroke) {
+        stroke.params.map((param) => {
+          const _param = glyph.parameters.parameters.find(parameter => parameter.name === param.name)
+          if (param.originParam) {
+            const __param = glyph.parameters.parameters.find(parameter => parameter.name === param.originParam)
+            __param.name = param.name
+            __param.min = param.min
+            __param.max = param.max
+          } else if (!_param) {
+            const __param = addParam(glyph, param.name, param.default, ParameterType.Number)
+            __param.min = param.min
+            __param.max = param.max
+          }
+        })
+      }
+    }
+  }
+}
+
+const process_characters_li = () => {
+  constants.value.find(constant => constant.name === '起笔风格').value = 1
+  constants.value.find(constant => constant.name === '起笔数值').value = 2
+  constants.value.find(constant => constant.name === '转角风格').value = 1
+  constants.value.find(constant => constant.name === '转角数值').value = 2
+  globalConstants.value.find(constant => constant.name === '起笔风格').value = 1
+  globalConstants.value.find(constant => constant.name === '起笔数值').value = 2
+  globalConstants.value.find(constant => constant.name === '转角风格').value = 1
+  globalConstants.value.find(constant => constant.name === '转角数值').value = 2
+}
+
+const process_character_li = (characterFile) => {
+  for (let j = 0; j < characterFile.components.length; j++) {
+    const component = characterFile.components[j]
+    if (component.type === 'glyph') {
+      const glyph = component.value
+      glyph.parameters.parameters.forEach(parameter => {
+        if (parameter.name === '起笔风格') {
+          const value = getParam(parameter)
+          if (value === 0) {
+            // 无起笔样式，则添加无收笔衬线参数
+            addParam(glyph, '收笔风格', 0, ParameterType.Enum)
+          }
+        }
+      })
+      const stroke = li_strokes.find(stroke => stroke.name === glyph.name)
       if (stroke) {
         stroke.params.map((param) => {
           const _param = glyph.parameters.parameters.find(parameter => parameter.name === param.name)

@@ -48,62 +48,62 @@ const getJointsMap = (data) => {
     case 'heng1_end': {
       jointsMap['heng1_end'] = {
         x: glyph.tempData['heng1_end'].x + deltaX,
-        y: glyph.tempData['heng1_end'].y,
+        y: glyph.tempData['heng1_end'].y + deltaY,
       }
       jointsMap['zhe1_start'] = {
         x: glyph.tempData['zhe1_start'].x + deltaX,
-        y: glyph.tempData['zhe1_start'].y,
+        y: glyph.tempData['zhe1_start'].y + deltaY,
       }
       jointsMap['zhe1_end'] = {
         x: glyph.tempData['zhe1_end'].x + deltaX,
-        y: glyph.tempData['zhe1_end'].y,
+        y: glyph.tempData['zhe1_end'].y + deltaY,
       }
       jointsMap['heng2_start'] = {
         x: glyph.tempData['heng2_start'].x + deltaX,
-        y: glyph.tempData['heng2_start'].y,
+        y: glyph.tempData['heng2_start'].y + deltaY,
       }
       jointsMap['heng2_end'] = {
         x: glyph.tempData['heng2_end'].x + deltaX,
-        y: glyph.tempData['heng2_end'].y,
+        y: glyph.tempData['heng2_end'].y + deltaY,
       }
       jointsMap['zhe2_start'] = {
         x: glyph.tempData['zhe2_start'].x + deltaX,
-        y: glyph.tempData['zhe2_start'].y,
+        y: glyph.tempData['zhe2_start'].y + deltaY,
       }
       jointsMap['zhe2_end'] = {
         x: glyph.tempData['zhe2_end'].x + deltaX,
-        y: glyph.tempData['zhe2_end'].y,
+        y: glyph.tempData['zhe2_end'].y + deltaY,
       }
       break
     }
     case 'zhe1_start': {
       jointsMap['heng1_end'] = {
         x: glyph.tempData['heng1_end'].x + deltaX,
-        y: glyph.tempData['heng1_end'].y,
+        y: glyph.tempData['heng1_end'].y + deltaY,
       }
       jointsMap['zhe1_start'] = {
         x: glyph.tempData['zhe1_start'].x + deltaX,
-        y: glyph.tempData['zhe1_start'].y,
+        y: glyph.tempData['zhe1_start'].y + deltaY,
       }
       jointsMap['zhe1_end'] = {
         x: glyph.tempData['zhe1_end'].x + deltaX,
-        y: glyph.tempData['zhe1_end'].y,
+        y: glyph.tempData['zhe1_end'].y + deltaY,
       }
       jointsMap['heng2_start'] = {
         x: glyph.tempData['heng2_start'].x + deltaX,
-        y: glyph.tempData['heng2_start'].y,
+        y: glyph.tempData['heng2_start'].y + deltaY,
       }
       jointsMap['heng2_end'] = {
         x: glyph.tempData['heng2_end'].x + deltaX,
-        y: glyph.tempData['heng2_end'].y,
+        y: glyph.tempData['heng2_end'].y + deltaY,
       }
       jointsMap['zhe2_start'] = {
         x: glyph.tempData['zhe2_start'].x + deltaX,
-        y: glyph.tempData['zhe2_start'].y,
+        y: glyph.tempData['zhe2_start'].y + deltaY,
       }
       jointsMap['zhe2_end'] = {
         x: glyph.tempData['zhe2_end'].x + deltaX,
-        y: glyph.tempData['zhe2_end'].y,
+        y: glyph.tempData['zhe2_end'].y + deltaY,
       }
       break
     }
@@ -156,30 +156,30 @@ const getJointsMap = (data) => {
     case 'heng2_end': {
       jointsMap['heng2_end'] = {
         x: glyph.tempData['heng2_end'].x + deltaX,
-        y: glyph.tempData['heng2_end'].y,
+        y: glyph.tempData['heng2_end'].y + deltaY,
       }
       jointsMap['zhe2_start'] = {
         x: glyph.tempData['zhe2_start'].x + deltaX,
-        y: glyph.tempData['zhe2_start'].y,
+        y: glyph.tempData['zhe2_start'].y + deltaY,
       }
       jointsMap['zhe2_end'] = {
         x: glyph.tempData['zhe2_end'].x + deltaX,
-        y: glyph.tempData['zhe2_end'].y,
+        y: glyph.tempData['zhe2_end'].y + deltaY,
       }
       break
     }
     case 'zhe2_start': {
       jointsMap['heng2_end'] = {
         x: glyph.tempData['heng2_end'].x + deltaX,
-        y: glyph.tempData['heng2_end'].y,
+        y: glyph.tempData['heng2_end'].y + deltaY,
       }
       jointsMap['zhe2_start'] = {
         x: glyph.tempData['zhe2_start'].x + deltaX,
-        y: glyph.tempData['zhe2_start'].y,
+        y: glyph.tempData['zhe2_start'].y + deltaY,
       }
       jointsMap['zhe2_end'] = {
         x: glyph.tempData['zhe2_end'].x + deltaX,
-        y: glyph.tempData['zhe2_end'].y,
+        y: glyph.tempData['zhe2_end'].y + deltaY,
       }
       break
     }
@@ -254,12 +254,12 @@ const computeParamsByJoints = (jointsMap) => {
   const heng2_vertical_span_range = glyph.getParamRange('横2-竖直延伸')
   const zhe2_horizontal_span_range = glyph.getParamRange('折2-水平延伸')
   const zhe2_vertical_span_range = glyph.getParamRange('折2-竖直延伸')
-  const heng1_length = range(heng1_end.x - heng1_start.x, heng1_horizontal_span_range)
-  const heng1_verticalSpan = range(heng1_end.y - heng1_start.y, heng1_vertical_span_range)
+  const heng1_horizontalSpan = range(heng1_end.x - heng1_start.x, heng1_horizontal_span_range)
+  const heng1_verticalSpan = range(heng1_start.y - heng1_end.y, heng1_vertical_span_range)
   const zhe1_horizontalSpan = range(zhe1_start.x - zhe1_end.x, zhe1_horizontal_span_range)
   const zhe1_verticalSpan = range(zhe1_end.y - zhe1_start.y, zhe1_vertical_span_range)
-  const heng2_length = range(heng2_end.x - heng2_start.x, heng2_horizontal_span_range)
-  const heng2_verticalSpan = range(heng2_end.y - heng2_start.y, heng2_vertical_span_range)
+  const heng2_horizontalSpan = range(heng2_end.x - heng2_start.x, heng2_horizontal_span_range)
+  const heng2_verticalSpan = range(heng2_start.y - heng2_end.y, heng2_vertical_span_range)
   const zhe2_horizontalSpan = range(zhe2_start.x - zhe2_end.x, zhe2_horizontal_span_range)
   const zhe2_verticalSpan = range(zhe2_end.y - zhe2_start.y, zhe2_vertical_span_range)
   return {

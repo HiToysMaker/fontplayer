@@ -18,6 +18,10 @@ interface IGetContoursOption {
 	startWeight?: number;
 	endWeight?: number;
 	weightsVariationFnType?: string;
+	in_startWeight?: number;
+	in_endWeight?: number;
+	out_startWeight?: number;
+	out_endWeight?: number;
 }
 
 const getLineContours = (name, skeleton, weight, options: IGetContoursOption) => {
@@ -133,7 +137,7 @@ const getBezierFn = (type: string) => {
 }
 
 const getCurveContours = (name, skeleton, weight, options: IGetContoursOption) => {
-	let { startWeight, endWeight } = options || {}
+	let { startWeight, endWeight, in_startWeight, in_endWeight, out_startWeight, out_endWeight } = options || {}
 	if (!startWeight) {
 		if (options && options.weightsVariation) {
 			if (options.weightsVariationDir === 'reverse') {
@@ -155,6 +159,18 @@ const getCurveContours = (name, skeleton, weight, options: IGetContoursOption) =
 		} else {
 			endWeight = weight
 		}
+	}
+	if (!in_startWeight) {
+		in_startWeight = startWeight / 2
+	}
+	if (!in_endWeight) {
+		in_endWeight = endWeight / 2
+	}
+	if (!out_startWeight) {
+		out_startWeight = startWeight / 2
+	}
+	if (!out_endWeight) {
+		out_endWeight = endWeight / 2
 	}
 	let unticlockwise = false
 	let skeletonPos = 'center'
@@ -183,7 +199,8 @@ const getCurveContours = (name, skeleton, weight, options: IGetContoursOption) =
 	const in_points = []
 	const n = 100
 
-	const weights = []
+	const in_weights = []
+	const out_weights = []
 	for (let i = 0; i <= n; i++) {
 		if (!options) {
 			break
@@ -193,11 +210,13 @@ const getCurveContours = (name, skeleton, weight, options: IGetContoursOption) =
 				// 字重变化方向为由收尾到起始方向
 				const j = n - i
 				const f = j / n
-				weights.push(endWeight + (startWeight - endWeight) * f)
+				in_weights.push(in_endWeight + (in_startWeight - in_endWeight) * f)
+				out_weights.push(out_endWeight + (out_startWeight - out_endWeight) * f)
 			} else {
 				// 字重变化为由起始到收尾方向
 				const f = i / n
-				weights.push(startWeight + (endWeight - startWeight) * f)
+				in_weights.push(in_startWeight + (in_endWeight - in_startWeight) * f)
+				out_weights.push(out_startWeight + (out_endWeight - out_startWeight) * f)
 			}
 		} else if (options.weightsVariation === 'pow') {
 			// 字重变化为幂变化，options.weightsVariationPower取值范围为[0, 2]
@@ -205,11 +224,13 @@ const getCurveContours = (name, skeleton, weight, options: IGetContoursOption) =
 				// 字重变化方向为由收尾到起始方向
 				const j = n - i
 				const f = Math.pow(j / n, options.weightsVariationPower)
-				weights.push(endWeight + (startWeight - endWeight) * f)
+				in_weights.push(in_endWeight + (in_startWeight - in_endWeight) * f)
+				out_weights.push(out_endWeight + (out_startWeight - out_endWeight) * f)
 			} else {
 				// 字重变化为由起始到收尾方向
 				const f = Math.pow(i / n, options.weightsVariationPower)
-				weights.push(startWeight + (endWeight - startWeight) * f)
+				in_weights.push(in_startWeight + (in_endWeight - in_startWeight) * f)
+				out_weights.push(out_startWeight + (out_endWeight - out_startWeight) * f)
 			}
 		} else if (options.weightsVariation === 'log') {
 			// 字重变化为幂变化，options.weightsVariationPower取值范围为[0, 2]
@@ -218,12 +239,14 @@ const getCurveContours = (name, skeleton, weight, options: IGetContoursOption) =
 				const j = n - i
 				//const f = Math.pow(j / n, options.weightsVariationPower)
 				const f = Math.pow(Math.log(j / n + 1) / Math.log(2), options.weightsVariationPower)
-				weights.push(endWeight + (startWeight - endWeight) * f)
+				in_weights.push(in_endWeight + (in_startWeight - in_endWeight) * f)
+				out_weights.push(out_endWeight + (out_startWeight - out_endWeight) * f)
 			} else {
 				// 字重变化为由起始到收尾方向
 				//const f = Math.pow(i / n, options.weightsVariationPower)
 				const f = Math.pow(Math.log(i / n + 1) / Math.log(2), options.weightsVariationPower)
-				weights.push(startWeight + (endWeight - startWeight) * f)
+				in_weights.push(in_startWeight + (in_endWeight - in_startWeight) * f)
+				out_weights.push(out_startWeight + (out_endWeight - out_startWeight) * f)
 			}
 		} else if (options.weightsVariation === 'bezier') {
 			const fn = getBezierFn(options.weightsVariationFnType)
@@ -233,12 +256,14 @@ const getCurveContours = (name, skeleton, weight, options: IGetContoursOption) =
 				const j = n - i
 				//const f = Math.pow(j / n, options.weightsVariationPower)
 				const f = fn(j / n)
-				weights.push(endWeight + (startWeight - endWeight) * f)
+				in_weights.push(in_endWeight + (in_startWeight - in_endWeight) * f)
+				out_weights.push(out_endWeight + (out_startWeight - out_endWeight) * f)
 			} else {
 				// 字重变化为由起始到收尾方向
 				//const f = Math.pow(i / n, options.weightsVariationPower)
 				const f = fn(i / n)
-				weights.push(startWeight + (endWeight - startWeight) * f)
+				in_weights.push(in_startWeight + (in_endWeight - in_startWeight) * f)
+				out_weights.push(out_startWeight + (out_endWeight - out_startWeight) * f)
 			}
 		}
 	}
@@ -251,7 +276,8 @@ const getCurveContours = (name, skeleton, weight, options: IGetContoursOption) =
 		let point = lastPoint
 		let k = lastK
 		let angle = lastAngle
-		const _weight = weights.length ? weights[t - 1] : weight
+		const _inweight = in_weights.length ? in_weights[t - 1] : in_startWeight
+		const _outweight = out_weights.length ? out_weights[t - 1] : out_startWeight
 		if (t < (n + 1)) {
 			point = bezierCurve.q(bezier, t / n)
 			k = bezierCurve.qprime(bezier, t / n)
@@ -259,18 +285,18 @@ const getCurveContours = (name, skeleton, weight, options: IGetContoursOption) =
 		}
 		if (skeletonPos === 'center' && !unticlockwise) {
 			out_points.push({
-				x: lastPoint.x + _weight / 2 * Math.sin(lastAngle),
-				y: lastPoint.y - _weight / 2 * Math.cos(lastAngle),
+				x: lastPoint.x + _outweight * Math.sin(lastAngle),
+				y: lastPoint.y - _outweight * Math.cos(lastAngle),
 			})
 			in_points.push({
-				x: lastPoint.x - _weight / 2 * Math.sin(lastAngle),
-				y: lastPoint.y + _weight / 2 * Math.cos(lastAngle),
+				x: lastPoint.x - _inweight * Math.sin(lastAngle),
+				y: lastPoint.y + _inweight * Math.cos(lastAngle),
 			})
 		}
 		else if (skeletonPos === 'inner' && !unticlockwise) {
 			out_points.push({
-				x: lastPoint.x + _weight * Math.sin(lastAngle),
-				y: lastPoint.y - _weight * Math.cos(lastAngle),
+				x: lastPoint.x + (_outweight + _inweight)* Math.sin(lastAngle),
+				y: lastPoint.y - (_outweight + _inweight) * Math.cos(lastAngle),
 			})
 			in_points.push({
 				x: lastPoint.x,
@@ -279,18 +305,18 @@ const getCurveContours = (name, skeleton, weight, options: IGetContoursOption) =
 		}
 		else if (skeletonPos === 'center' && unticlockwise) {
 			out_points.push({
-				x: lastPoint.x - _weight / 2 * Math.sin(lastAngle),
-				y: lastPoint.y + _weight / 2 * Math.cos(lastAngle),
+				x: lastPoint.x - _outweight * Math.sin(lastAngle),
+				y: lastPoint.y + _outweight * Math.cos(lastAngle),
 			})
 			in_points.push({
-				x: lastPoint.x + _weight / 2 * Math.sin(lastAngle),
-				y: lastPoint.y - _weight / 2 * Math.cos(lastAngle),
+				x: lastPoint.x + _inweight * Math.sin(lastAngle),
+				y: lastPoint.y - _inweight * Math.cos(lastAngle),
 			})
 		}
 		else if (skeletonPos === 'inner' && unticlockwise) {
 			out_points.push({
-				x: lastPoint.x - _weight * Math.sin(lastAngle),
-				y: lastPoint.y + _weight * Math.cos(lastAngle),
+				x: lastPoint.x - (_outweight + _inweight) * Math.sin(lastAngle),
+				y: lastPoint.y + (_outweight + _inweight) * Math.cos(lastAngle),
 			})
 			in_points.push({
 				x: lastPoint.x,

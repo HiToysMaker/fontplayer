@@ -131,7 +131,7 @@ const computeParamsByJoints = (jointsMap) => {
   const heng_horizontalSpan_range = glyph.getParamRange('横-水平延伸')
   const heng_verticalSpan_range = glyph.getParamRange('横-竖直延伸')
   const zhe_length_range = glyph.getParamRange('折-长度')
-  const heng_length = range(heng_end.x - heng_start.x, heng_horizontalSpan_range)
+  const heng_horizontalSpan = range(heng_end.x - heng_start.x, heng_horizontalSpan_range)
   const heng_verticalSpan = range(heng_start.y - heng_end.y, heng_verticalSpan_range)
   const zhe_length = range(zhe_end.y - zhe_start.y, zhe_length_range)
   return {

@@ -1,3 +1,5 @@
+import * as R from "ramda"
+
 const strokes = [
   {
     name: '横',
@@ -1821,7 +1823,7 @@ const kai_strokes = [
       {
         name: '竖-水平延伸',
         default: 10,
-        min: 0,
+        min: -200,
         max: 200,
       },
       {
@@ -1908,7 +1910,7 @@ const kai_strokes = [
       {
         name: '竖-水平延伸',
         default: 10,
-        min: 0,
+        min: -200,
         max: 200,
       },
       {
@@ -2707,7 +2709,114 @@ const kai_strokes = [
   }
 ]
 
+const li_strokes = R.clone(kai_strokes)
+
+li_strokes.push(  {
+  name: '横波',
+  uuid: 'KXIDGV2F_Pyd7r0C6_TB1',
+  params: [
+    {
+      name: '水平延伸',
+      default: 500,
+      min: 50,
+      max: 1000,
+      originParam: '长度',
+    },
+    {
+      name: '竖直延伸',
+      default: 10,
+      min: 0,
+      max: 200,
+    },
+    {
+      name: '拱势',
+      default: 0.5,
+      min: 0,
+      max: 1,
+    },
+    {
+      name: '字重',
+      default: 50,
+      min: 10,
+      max: 100,
+    },
+  ]
+},)
+li_strokes.find(stroke => stroke.name === '横').params.push({
+  name: '拱势',
+  default: 0.5,
+  min: 0,
+  max: 1,
+})
+li_strokes.find(stroke => stroke.name === '横折').params.push({
+  name: '横-拱势',
+  default: 0.5,
+  min: 0,
+  max: 1,
+})
+li_strokes.find(stroke => stroke.name === '二横折').params.push({
+  name: '横1-拱势',
+  default: 0.5,
+  min: 0,
+  max: 1,
+})
+li_strokes.find(stroke => stroke.name === '二横折').params.push({
+  name: '横2-拱势',
+  default: 0.5,
+  min: 0,
+  max: 1,
+})
+li_strokes.find(stroke => stroke.name === '横钩').params.push({
+  name: '横-拱势',
+  default: 0.5,
+  min: 0,
+  max: 1,
+})
+li_strokes.find(stroke => stroke.name === '横撇').params.push({
+  name: '横-拱势',
+  default: 0.5,
+  min: 0,
+  max: 1,
+})
+li_strokes.find(stroke => stroke.name === '横弯钩').params.push({
+  name: '横-拱势',
+  default: 0.5,
+  min: 0,
+  max: 1,
+})
+li_strokes.find(stroke => stroke.name === '横折2').params.push({
+  name: '横-拱势',
+  default: 0.5,
+  min: 0,
+  max: 1,
+})
+li_strokes.find(stroke => stroke.name === '横折钩').params.push({
+  name: '横-拱势',
+  default: 0.5,
+  min: 0,
+  max: 1,
+})
+li_strokes.find(stroke => stroke.name === '横折弯钩').params.push({
+  name: '横-拱势',
+  default: 0.5,
+  min: 0,
+  max: 1,
+})
+li_strokes.find(stroke => stroke.name === '横折折弯钩').params.push({
+  name: '横-拱势',
+  default: 0.5,
+  min: 0,
+  max: 1,
+})
+li_strokes.find(stroke => stroke.name === '横折折弯钩').params.push({
+  name: '折2-拱势',
+  default: 0.5,
+  min: 0,
+  max: 1,
+})
+
 export {
   strokes,
   kai_strokes,
+  li_strokes,
 }
