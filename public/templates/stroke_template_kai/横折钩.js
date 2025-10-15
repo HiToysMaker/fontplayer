@@ -409,6 +409,7 @@ const getComponents = (skeleton) => {
     gou_end,
   } = skeleton
 
+  const radius = 15
   const _weight = weight * 1.5
   const turn_angle_1 = FP.degreeToRadius(10)
   const turn_angle_2 = FP.degreeToRadius(15)
@@ -430,7 +431,7 @@ const getComponents = (skeleton) => {
     { type: 'line', start: in_zhe_start, end: in_zhe_end },
     { type: 'line', start: in_gou_start, end: in_gou_end },
   )
-  const { corner: out_corner_zhe_gou } = FP.getIntersection(
+  let { corner: out_corner_zhe_gou } = FP.getIntersection(
     { type: 'line', start: out_zhe_start, end: out_zhe_end },
     { type: 'line', start: out_gou_start, end: out_gou_end },
   )
@@ -441,7 +442,8 @@ const getComponents = (skeleton) => {
   // 如果in_radius超出折1或折2长度，取折1或折2的最小长度
   const in_radius_min_length_heng_zhe = Math.min(
     getDistance(in_corner_heng_zhe, in_heng_start),
-    getDistance(in_corner_heng_zhe, in_corner_zhe_gou),
+    getDistance(in_corner_zhe_gou, in_corner_heng_zhe) * 0.2,
+    radius,
   )
   const out_radius_min_length_heng_zhe = Math.min(
     getDistance(out_zhe_end, out_heng_start),
@@ -478,7 +480,7 @@ const getComponents = (skeleton) => {
   // 如果in_radius超出折2或钩的长度，取折2或钩的最小长度
   const in_radius_min_length_zhe_gou = Math.min(
     getDistance(in_corner_zhe_gou, in_gou_end),
-    getDistance(in_corner_zhe_gou, in_radius_end_heng_zhe),
+    getDistance(in_corner_zhe_gou, in_corner_heng_zhe) * 0.2,
   )
   const out_radius_min_length_zhe_gou = Math.min(
     getDistance(gou_start, gou_end),
@@ -490,12 +492,12 @@ const getComponents = (skeleton) => {
   if (out_radius_zhe_gou >= out_radius_min_length_zhe_gou) {
     out_radius_zhe_gou = out_radius_min_length_zhe_gou
   }
-  const in_radius_start_zhe_gou = getRadiusPoint({
+  let in_radius_start_zhe_gou = getRadiusPoint({
     start: in_corner_zhe_gou,
     end: in_corner_heng_zhe,
     radius: in_radius_zhe_gou,
   })
-  const in_radius_end_zhe_gou = getRadiusPoint({
+  let in_radius_end_zhe_gou = getRadiusPoint({
     start: in_corner_zhe_gou,
     end: in_gou_end,
     radius: in_radius_zhe_gou,
@@ -548,7 +550,6 @@ const getComponents = (skeleton) => {
     }
   }
 
-  const radius = 15
   const topAngle = FP.degreeToRadius(-(5 + 5 * start_style_value))
   const bottomAngle = FP.degreeToRadius(25 + 5 * start_style_value)
   const leftAngle = FP.degreeToRadius(20)
@@ -566,7 +567,7 @@ const getComponents = (skeleton) => {
   const out_turn_p2 = FP.turnLeft(out_heng_end, FP.getPointOnLine(out_heng_end, out_heng_start, l * 0.5 - control_length), d)
   const out_turn_p1 = FP.turnLeft(out_heng_end, FP.getPointOnLine(out_heng_end, out_heng_start, l * 0.5), d)
   const out_turn_p0 = FP.turnLeft(out_heng_end, FP.getPointOnLine(out_heng_end, out_heng_start, l * 0.5 + control_length), d)
-  const in_turn_p2 = FP.turnRight(in_heng_end, FP.getPointOnLine(in_heng_end, in_heng_start, l * 0.5 - control_length), d)
+  let in_turn_p2 = FP.turnRight(in_heng_end, FP.getPointOnLine(in_heng_end, in_heng_start, l * 0.5 - control_length), d)
   const in_turn_p1 = FP.turnRight(in_heng_end, FP.getPointOnLine(in_heng_end, in_heng_start, l * 0.5), d)
   const in_turn_p0 = FP.turnRight(in_heng_end, FP.getPointOnLine(in_heng_end, in_heng_start, l * 0.5 + control_length), d)
   const out_turn_p3 = turn_data.turn_start_1
@@ -584,17 +585,17 @@ const getComponents = (skeleton) => {
   const out_turn_p9 = FP.turnLeft(out_zhe_end, FP.getPointOnLine(out_zhe_end, out_zhe_start, l_2 * 0.5 - control_length_2), d)
   const out_turn_p8 = FP.turnLeft(out_zhe_end, FP.getPointOnLine(out_zhe_end, out_zhe_start, l_2 * 0.5), d)
   const out_turn_p7 = FP.turnLeft(out_zhe_end, FP.getPointOnLine(out_zhe_end, out_zhe_start, l_2 * 0.5 + control_length_2), d)
-  const in_turn_p6 = FP.turnRight(in_zhe_end, FP.getPointOnLine(in_zhe_end, in_zhe_start, l_2 * 0.5 - control_length_2), d)
-  const in_turn_p5 = FP.turnRight(in_zhe_end, FP.getPointOnLine(in_zhe_end, in_zhe_start, l_2 * 0.5), d)
-  const in_turn_p4 = FP.turnRight(in_zhe_end, FP.getPointOnLine(in_zhe_end, in_zhe_start, l_2 * 0.5 + control_length_2), d)
+  let in_turn_p6 = FP.turnRight(in_zhe_end, FP.getPointOnLine(in_zhe_end, in_zhe_start, l_2 * 0.5 - control_length_2), d)
+  let in_turn_p5 = FP.turnRight(in_zhe_end, FP.getPointOnLine(in_zhe_end, in_zhe_start, l_2 * 0.5), d)
+  let in_turn_p4 = FP.turnRight(in_zhe_end, FP.getPointOnLine(in_zhe_end, in_zhe_start, l_2 * 0.5 + control_length_2), d)
   const in_turn_p3 = in_corner_heng_zhe
 
   const out_turn_p4_radius_before = FP.getPointOnLine(out_turn_p4, out_turn_p3, radius)
   const out_turn_p4_radius_after = FP.getPointOnLine(out_turn_p4, out_turn_p5, radius)
   const out_turn_p5_radius_before = FP.getPointOnLine(out_turn_p5, out_turn_p4, radius)
   const out_turn_p5_radius_after = FP.getPointOnLine(out_turn_p5, out_turn_p6, radius)
-  const in_turn_p3_radius_before = FP.getPointOnLine(in_turn_p3, in_turn_p2, radius)
-  const in_turn_p3_radius_after = FP.getPointOnLine(in_turn_p3, in_turn_p4, radius)
+  let in_turn_p3_radius_before = FP.getPointOnLine(in_turn_p3, in_turn_p2, in_radius_heng_zhe)
+  let in_turn_p3_radius_after = FP.getPointOnLine(in_turn_p3, in_turn_p4, in_radius_heng_zhe)
 
   const start_p1 = FP.getPointOnLine(out_heng_start, out_heng_end, start_length)
   const start_p4 = FP.getPointOnLine(in_heng_start, in_heng_end, start_length)
@@ -628,22 +629,133 @@ const getComponents = (skeleton) => {
     { type: 'line', start: end_p2, end: end_p2_p1_vector },
   )
 
+  if (FP.distance(in_turn_p3, in_corner_zhe_gou) <= 150) {
+    let control_length_3 = FP.distance(in_turn_p3, in_corner_zhe_gou) * 0.05
+    in_turn_p6 = FP.turnRight(in_zhe_end, FP.getPointOnLine(in_zhe_end, in_zhe_start, l_2 * 0.5 - control_length_3), d)
+    in_turn_p5 = FP.turnRight(in_zhe_end, FP.getPointOnLine(in_zhe_end, in_zhe_start, l_2 * 0.5), d)
+    in_turn_p4 = FP.turnRight(in_zhe_end, FP.getPointOnLine(in_zhe_end, in_zhe_start, l_2 * 0.5 + control_length_3), d)
+  }
+  in_radius_start_zhe_gou = FP.getPointOnLine(in_corner_zhe_gou, in_turn_p6, in_radius_zhe_gou)
+  out_corner_zhe_gou = FP.getIntersection(
+    { type: 'line', start: out_turn_p9, end: out_radius_start_zhe_gou },
+    { type: 'line', start: end_p0, end: out_radius_end_zhe_gou },
+  ).corner
+  in_turn_p3_radius_after = FP.getPointOnLine(in_turn_p3, in_turn_p4, in_radius_heng_zhe)
+  if (FP.distance(zhe_start, zhe_end) <= 150 || FP.getAngle(heng_start, heng_end, zhe_end) <= FP.degreeToRadius(60)) {
+    in_turn_p4 = FP.getPointOnLine(in_turn_p3, in_turn_p5, FP.distance(in_turn_p3, in_turn_p5) * 0.5)
+    in_turn_p3_radius_after = in_turn_p4
+  }
+  if (FP.distance(in_heng_start, in_turn_p3 ) <= 210) {
+    in_turn_p2 = FP.getPointOnLine(in_turn_p3, in_turn_p1, FP.distance(in_turn_p3, in_turn_p1) * 0.5)
+    in_turn_p3_radius_before = in_turn_p2
+  }
+
+  const start_p0_joint = new FP.Joint('start_p0', start_p0)
+  const start_p1_joint = new FP.Joint('start_p1', start_p1)
+  const start_p2_joint = new FP.Joint('start_p2', start_p2)
+  const start_p3_joint = new FP.Joint('start_p3', start_p3)
+  const start_p4_joint = new FP.Joint('start_p4', start_p4)
+  const start_p5_joint = new FP.Joint('start_p5', start_p5)
+  const in_turn_p0_joint = new FP.Joint('in_turn_p0', in_turn_p0)
+  const in_turn_p1_joint = new FP.Joint('in_turn_p1', in_turn_p1)
+  const in_turn_p2_joint = new FP.Joint('in_turn_p2', in_turn_p2)
+  const in_turn_p3_joint = new FP.Joint('in_turn_p3', in_turn_p3)
+  const in_turn_p4_joint = new FP.Joint('in_turn_p4', in_turn_p4)
+  const in_turn_p5_joint = new FP.Joint('in_turn_p5', in_turn_p5)
+  const in_turn_p6_joint = new FP.Joint('in_turn_p6', in_turn_p6)
+  const in_radius_start_zhe_gou_joint = new FP.Joint('in_radius_start_zhe_gou', in_radius_start_zhe_gou)
+  const in_radius_end_zhe_gou_joint = new FP.Joint('in_radius_end_zhe_gou', in_radius_end_zhe_gou)
+  const in_corner_zhe_gou_joint = new FP.Joint('in_corner_zhe_gou', in_corner_zhe_gou)
+  const out_corner_zhe_gou_joint = new FP.Joint('out_corner_zhe_gou', out_corner_zhe_gou)
+  const out_radius_end_zhe_gou_joint = new FP.Joint('out_radius_end_zhe_gou', out_radius_end_zhe_gou)
+  const out_radius_start_zhe_gou_joint = new FP.Joint('out_radius_start_zhe_gou', out_radius_start_zhe_gou)
+  const end_p0_joint = new FP.Joint('end_p0', end_p0)
+  const end_p1_joint = new FP.Joint('end_p1', end_p1)
+  const end_p2_joint = new FP.Joint('end_p2', end_p2)
+  const out_turn_p0_joint = new FP.Joint('out_turn_p0', out_turn_p0)
+  const out_turn_p1_joint = new FP.Joint('out_turn_p1', out_turn_p1)
+  const out_turn_p2_joint = new FP.Joint('out_turn_p2', out_turn_p2)
+  const out_turn_p3_joint = new FP.Joint('out_turn_p3', out_turn_p3)
+  const out_turn_p4_joint = new FP.Joint('out_turn_p4', out_turn_p4)
+  const out_turn_p5_joint = new FP.Joint('out_turn_p5', out_turn_p5)
+  const out_turn_p6_joint = new FP.Joint('out_turn_p6', out_turn_p6)
+  const out_turn_p7_joint = new FP.Joint('out_turn_p7', out_turn_p7)
+  const out_turn_p8_joint = new FP.Joint('out_turn_p8', out_turn_p8)
+  const out_turn_p9_joint = new FP.Joint('out_turn_p9', out_turn_p9)
+  const in_turn_p3_radius_before_joint = new FP.Joint('in_turn_p3_radius_before', in_turn_p3_radius_before)
+  const in_turn_p3_radius_after_joint = new FP.Joint('in_turn_p3_radius_after', in_turn_p3_radius_after)
+  glyph.addJoint(start_p0_joint)
+  glyph.addJoint(start_p1_joint)
+  glyph.addJoint(start_p2_joint)
+  glyph.addJoint(start_p3_joint)
+  glyph.addJoint(start_p4_joint)
+  glyph.addJoint(start_p5_joint)
+  glyph.addJoint(in_turn_p0_joint)
+  glyph.addJoint(in_turn_p1_joint)
+  glyph.addJoint(in_turn_p2_joint)
+  glyph.addJoint(in_turn_p3_joint)
+  glyph.addJoint(in_turn_p4_joint)
+  glyph.addJoint(in_turn_p5_joint)
+  glyph.addJoint(in_turn_p6_joint)
+  glyph.addJoint(in_radius_start_zhe_gou_joint)
+  glyph.addJoint(in_radius_end_zhe_gou_joint)
+  glyph.addJoint(in_corner_zhe_gou_joint)
+  glyph.addJoint(end_p0_joint)
+  glyph.addJoint(end_p1_joint)
+  glyph.addJoint(end_p2_joint)
+  glyph.addJoint(out_turn_p0_joint)
+  glyph.addJoint(out_turn_p1_joint)
+  glyph.addJoint(out_turn_p2_joint)
+  glyph.addJoint(out_turn_p3_joint)
+  glyph.addJoint(out_turn_p4_joint)
+  glyph.addJoint(out_turn_p5_joint)
+  glyph.addJoint(out_turn_p6_joint)
+  glyph.addJoint(out_turn_p7_joint)
+  glyph.addJoint(out_turn_p8_joint)
+  glyph.addJoint(out_turn_p9_joint)
+  glyph.addJoint(out_corner_zhe_gou_joint)
+  glyph.addJoint(out_radius_end_zhe_gou_joint)
+  glyph.addJoint(out_radius_start_zhe_gou_joint)
+  glyph.addJoint(in_turn_p3_radius_before_joint)
+  glyph.addJoint(in_turn_p3_radius_after_joint)
+
   // 创建钢笔组件
   const pen = new FP.PenComponent()
   pen.beginPath()
 
   // 按逆时针方向绘制轮廓
-  pen.moveTo(start_p0.x, start_p0.y)
-  pen.quadraticBezierTo(start_p1.x, start_p1.y, start_p2_radius_before.x, start_p2_radius_before.y)
-  pen.quadraticBezierTo(start_p2.x, start_p2.y, start_p2_radius_after.x, start_p2_radius_after.y)
-  pen.lineTo(start_p3_radius_before.x, start_p3_radius_before.y)
-  pen.quadraticBezierTo(start_p3.x, start_p3.y, start_p3_radius_after.x, start_p3_radius_after.y)
-  pen.quadraticBezierTo(start_p4.x, start_p4.y, start_p5.x, start_p5.y)
+  if (FP.distance(heng_start, heng_end) > 250) {
+    pen.moveTo(out_turn_p1.x, out_turn_p1.y)
+    pen.quadraticBezierTo(out_turn_p0.x, out_turn_p0.y, start_p0.x, start_p0.y)
+    pen.quadraticBezierTo(start_p1.x, start_p1.y, start_p2_radius_before.x, start_p2_radius_before.y)
+    pen.quadraticBezierTo(start_p2.x, start_p2.y, start_p2_radius_after.x, start_p2_radius_after.y)
+    pen.lineTo(start_p3_radius_before.x, start_p3_radius_before.y)
+    pen.quadraticBezierTo(start_p3.x, start_p3.y, start_p3_radius_after.x, start_p3_radius_after.y)
+    pen.quadraticBezierTo(start_p4.x, start_p4.y, start_p5.x, start_p5.y)
+    pen.quadraticBezierTo(in_turn_p0.x, in_turn_p0.y, in_turn_p1.x, in_turn_p1.y)
+  } else if (FP.distance(heng_start, heng_end) <= 250 && FP.distance(heng_start, heng_end) > 150) {
+    pen.moveTo(out_turn_p1.x, out_turn_p1.y)
+    pen.quadraticBezierTo(start_p0.x, start_p0.y, start_p2_radius_before.x, start_p2_radius_before.y)
+    pen.quadraticBezierTo(start_p2.x, start_p2.y, start_p2_radius_after.x, start_p2_radius_after.y)
+    pen.lineTo(start_p3_radius_before.x, start_p3_radius_before.y)
+    pen.quadraticBezierTo(start_p3.x, start_p3.y, start_p3_radius_after.x, start_p3_radius_after.y)
+    pen.quadraticBezierTo(start_p5.x, start_p5.y, in_turn_p1.x, in_turn_p1.y)
+  } else if (FP.distance(heng_start, heng_end) <= 150) {
+    pen.moveTo(out_turn_p4_radius_before.x, out_turn_p4_radius_before.y)
+    pen.quadraticBezierTo(out_turn_p1.x, out_turn_p1.y, start_p2_radius_before.x, start_p2_radius_before.y)
+    pen.quadraticBezierTo(start_p2.x, start_p2.y, start_p2_radius_after.x, start_p2_radius_after.y)
+    pen.lineTo(start_p3_radius_before.x, start_p3_radius_before.y)
+    pen.quadraticBezierTo(start_p3.x, start_p3.y, start_p3_radius_after.x, start_p3_radius_after.y)
+    pen.quadraticBezierTo(in_turn_p1.x, in_turn_p1.y, in_turn_p3_radius_before.x, in_turn_p3_radius_before.y)
+  }
 
-  pen.quadraticBezierTo(in_turn_p0.x, in_turn_p0.y, in_turn_p1.x, in_turn_p1.y)
-  pen.quadraticBezierTo(in_turn_p2.x, in_turn_p2.y, in_turn_p3_radius_before.x, in_turn_p3_radius_before.y)
-  pen.quadraticBezierTo(in_turn_p3.x, in_turn_p3.y, in_turn_p3_radius_after.x, in_turn_p3_radius_after.y)
+  if (FP.distance(heng_start, heng_end) > 150) {
+    pen.quadraticBezierTo(in_turn_p2.x, in_turn_p2.y, in_turn_p3_radius_before.x, in_turn_p3_radius_before.y)
+    pen.quadraticBezierTo(in_turn_p3.x, in_turn_p3.y, in_turn_p3_radius_after.x, in_turn_p3_radius_after.y)
+  }
+  
   pen.quadraticBezierTo(in_turn_p4.x, in_turn_p4.y, in_turn_p5.x, in_turn_p5.y)
+  
   pen.quadraticBezierTo(in_turn_p6.x, in_turn_p6.y, in_radius_start_zhe_gou.x, in_radius_start_zhe_gou.y)
 
   pen.quadraticBezierTo(in_corner_zhe_gou.x, in_corner_zhe_gou.y, in_radius_end_zhe_gou.x, in_radius_end_zhe_gou.y)
@@ -659,7 +771,35 @@ const getComponents = (skeleton) => {
   pen.lineTo(out_turn_p4_radius_after.x, out_turn_p4_radius_after.y)
   pen.quadraticBezierTo(out_turn_p4.x, out_turn_p4.y, out_turn_p4_radius_before.x, out_turn_p4_radius_before.y)
   pen.bezierTo(out_turn_p3.x, out_turn_p3.y, out_turn_p2.x, out_turn_p2.y, out_turn_p1.x, out_turn_p1.y)
-  pen.quadraticBezierTo(out_turn_p0.x, out_turn_p0.y, start_p0.x, start_p0.y)
+
+
+  // pen.moveTo(start_p0.x, start_p0.y)
+  // pen.quadraticBezierTo(start_p1.x, start_p1.y, start_p2_radius_before.x, start_p2_radius_before.y)
+  // pen.quadraticBezierTo(start_p2.x, start_p2.y, start_p2_radius_after.x, start_p2_radius_after.y)
+  // pen.lineTo(start_p3_radius_before.x, start_p3_radius_before.y)
+  // pen.quadraticBezierTo(start_p3.x, start_p3.y, start_p3_radius_after.x, start_p3_radius_after.y)
+  // pen.quadraticBezierTo(start_p4.x, start_p4.y, start_p5.x, start_p5.y)
+
+  // pen.quadraticBezierTo(in_turn_p0.x, in_turn_p0.y, in_turn_p1.x, in_turn_p1.y)
+  // pen.quadraticBezierTo(in_turn_p2.x, in_turn_p2.y, in_turn_p3_radius_before.x, in_turn_p3_radius_before.y)
+  // pen.quadraticBezierTo(in_turn_p3.x, in_turn_p3.y, in_turn_p3_radius_after.x, in_turn_p3_radius_after.y)
+  // pen.quadraticBezierTo(in_turn_p4.x, in_turn_p4.y, in_turn_p5.x, in_turn_p5.y)
+  // pen.quadraticBezierTo(in_turn_p6.x, in_turn_p6.y, in_radius_start_zhe_gou.x, in_radius_start_zhe_gou.y)
+
+  // pen.quadraticBezierTo(in_corner_zhe_gou.x, in_corner_zhe_gou.y, in_radius_end_zhe_gou.x, in_radius_end_zhe_gou.y)
+
+  // pen.lineTo(in_gou_end.x, in_gou_end.y)
+
+  // pen.bezierTo(end_p1.x, end_p1.y, end_p0.x, end_p0.y, out_radius_end_zhe_gou.x, out_radius_end_zhe_gou.y)
+  // pen.quadraticBezierTo(out_corner_zhe_gou.x, out_corner_zhe_gou.y, out_radius_start_zhe_gou.x, out_radius_start_zhe_gou.y)
+
+  // pen.quadraticBezierTo(out_turn_p9.x, out_turn_p9.y, out_turn_p8.x, out_turn_p8.y)
+  // pen.bezierTo(out_turn_p7.x, out_turn_p7.y, out_turn_p6.x, out_turn_p6.y, out_turn_p5_radius_after.x, out_turn_p5_radius_after.y)
+  // pen.quadraticBezierTo(out_turn_p5.x, out_turn_p5.y, out_turn_p5_radius_before.x, out_turn_p5_radius_before.y)
+  // pen.lineTo(out_turn_p4_radius_after.x, out_turn_p4_radius_after.y)
+  // pen.quadraticBezierTo(out_turn_p4.x, out_turn_p4.y, out_turn_p4_radius_before.x, out_turn_p4_radius_before.y)
+  // pen.bezierTo(out_turn_p3.x, out_turn_p3.y, out_turn_p2.x, out_turn_p2.y, out_turn_p1.x, out_turn_p1.y)
+  // pen.quadraticBezierTo(out_turn_p0.x, out_turn_p0.y, start_p0.x, start_p0.y)
 
   pen.closePath()
   return [ pen ]

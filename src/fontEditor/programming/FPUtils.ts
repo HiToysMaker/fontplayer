@@ -470,6 +470,30 @@ const distance = (p1, p2) => {
   return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y))
 }
 
+const getAngle = (A, B, C) => {
+  // 计算向量 BA
+  const BA = { x: A.x - B.x, y: A.y - B.y }
+  // 计算向量 BC
+  const BC = { x: C.x - B.x, y: C.y - B.y }
+  
+  // 使用 atan2 计算每个向量的角度
+  const angleBA = Math.atan2(BA.y, BA.x)
+  const angleBC = Math.atan2(BC.y, BC.x)
+  
+  // 计算角度差
+  let angle = angleBA - angleBC
+  
+  // 确保角度在 [0, 2π] 范围内
+  if (angle < 0) {
+    angle += 2 * Math.PI
+  }
+  if (angle > Math.PI) {
+    angle = 2 * Math.PI - angle
+  }
+  
+  return angle
+}
+
 const getRadiusPointsOnCurve = (_points, radius, reverse: boolean = false) => {
 	let length = 0
 	let points = R.clone(_points)
@@ -765,6 +789,10 @@ const degreeToRadius = (degree) => {
 	return Math.PI * degree / 180
 }
 
+const radiusToDegree = (radius) => {
+	return radius * 180 / Math.PI
+}
+
 const getPointOnLine = (start, end, length) => {
 	const angle = Math.atan2(start.y - end.y, end.x - start.x)
 	const point = {
@@ -824,6 +852,8 @@ const FP = {
 	turnAngleFromStart,
 	turnAngleFromEnd,
 	degreeToRadius,
+	getAngle,
+	radiusToDegree,
 }
 
 const suggestion_items = [

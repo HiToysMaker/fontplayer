@@ -14,6 +14,7 @@ import { emitter } from '../Event/bus'
 import { getJoints } from '../programming/Joint'
 import * as R from 'ramda'
 import { selectedItemByUUID } from '../stores/files'
+import { throttle } from '../../utils/performance'
 
 const getBound = (joints) => {
 	let x_min = Infinity
@@ -156,6 +157,35 @@ const initGlyphDragger = (canvas: HTMLCanvasElement) => {
 	let mouseDownX = -1
 	let mouseDownY = -1
 	let coords = []
+	// 创建时间节流函数，16ms ≈ 60fps
+	const throttledRender_skeletonDrag = throttle((glyph, joint, dx, dy) => {
+		// 如果设置了onSkeletonDrag，则骨架可拖拽，拖拽骨架则不再移动字形
+		glyph._o.onSkeletonDrag({
+			draggingJoint: draggingJoint.value,
+			deltaX: dx,
+			deltaY: dy,
+		})
+		emitter.emit('renderGlyph')
+	}, 16, { leading: true, trailing: true })
+
+	const throttledRender_glyphDrag = throttle((dx, dy) => {
+		if (!selectedSubComponentOnDragging.value) {
+			if (!editGlyphOnDragging.value) return
+			for (let i = 0; i < editGlyphOnDragging.value.components.length; i++) {
+				if (editGlyphOnDragging.value.components[i].uuid === selectedComponentUUID.value) {
+					editGlyphOnDragging.value.components[i].ox = _ox + dx
+					editGlyphOnDragging.value.components[i].oy = _oy + dy
+				}
+			}
+			emitter.emit('renderGlyph')
+		} else {
+			addScript()
+			modifySubComponent({
+				ox: _ox + dx,
+				oy: _oy + dy,
+			})
+		}
+	}, 16, { leading: true, trailing: true })
 	const onMouseDown = (e: MouseEvent) => {
 		if (!draggable.value) return
 		editGlyphOnDragging.value = R.clone(editGlyph.value)
@@ -239,34 +269,36 @@ const initGlyphDragger = (canvas: HTMLCanvasElement) => {
 					x: ox + dx + unitsPerEm / 2,
 					y: oy + dy + unitsPerEm / 2,
 				}
-				if (!selectedSubComponentOnDragging.value) {
-					//addScript()
-					// modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
-					// 	ox: _ox + dx,
-					// 	oy: _oy + dy,
-					// })
-					for (let i = 0; i < editGlyphOnDragging.value.components.length; i++) {
-						if (editGlyphOnDragging.value.components[i].uuid === selectedComponentUUID.value) {
-							editGlyphOnDragging.value.components[i].ox = _ox + dx
-							editGlyphOnDragging.value.components[i].oy = _oy + dy
-						}
-					}
-					emitter.emit('renderGlyph')
-				} else {
-					addScript()
-					modifySubComponent({
-						ox: _ox + dx,
-						oy: _oy + dy,
-					})
-				}
+				// if (!selectedSubComponentOnDragging.value) {
+				// 	//addScript()
+				// 	// modifyComponentForCurrentCharacterFile(selectedComponentUUID.value, {
+				// 	// 	ox: _ox + dx,
+				// 	// 	oy: _oy + dy,
+				// 	// })
+				// 	for (let i = 0; i < editGlyphOnDragging.value.components.length; i++) {
+				// 		if (editGlyphOnDragging.value.components[i].uuid === selectedComponentUUID.value) {
+				// 			editGlyphOnDragging.value.components[i].ox = _ox + dx
+				// 			editGlyphOnDragging.value.components[i].oy = _oy + dy
+				// 		}
+				// 	}
+				// 	emitter.emit('renderGlyph')
+				// } else {
+				// 	addScript()
+				// 	modifySubComponent({
+				// 		ox: _ox + dx,
+				// 		oy: _oy + dy,
+				// 	})
+				// }
+				throttledRender_glyphDrag(dx, dy)
 			} else if (glyph._o?.onSkeletonDrag) {
 				// 如果设置了onSkeletonDrag，则骨架可拖拽，拖拽骨架则不再移动字形
-				glyph._o.onSkeletonDrag({
-					draggingJoint: draggingJoint.value,
-					deltaX: dx,
-					deltaY: dy,
-				})
-				emitter.emit('renderGlyph')
+				// glyph._o.onSkeletonDrag({
+				// 	draggingJoint: draggingJoint.value,
+				// 	deltaX: dx,
+				// 	deltaY: dy,
+				// })
+				// emitter.emit('renderGlyph')
+				throttledRender_skeletonDrag(glyph, draggingJoint.value, dx, dy)
 			} else {
 				putAtCoord.value = {
 					x: ox + draggingJoint.value.x + dx,
