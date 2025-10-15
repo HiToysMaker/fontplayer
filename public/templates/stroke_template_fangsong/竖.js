@@ -94,11 +94,11 @@ const computeParamsByJoints = (jointsMap) => {
   const { start, end } = jointsMap
   const horizontal_span_range = glyph.getParamRange('水平延伸')
   const vertical_span_range = glyph.getParamRange('竖直延伸')
-  const horizontal_span = range(end.x - start.x, horizontal_span_range)
-  const vertical_span = range(end.y - start.y, vertical_span_range)
+  const horizontalSpan = range(end.x - start.x, horizontal_span_range)
+  const verticalSpan = range(end.y - start.y, vertical_span_range)
   return {
-    horizontal_span,
-    vertical_span,
+    horizontalSpan,
+    verticalSpan,
     skeletonRefPos: glyph.getParam('参考位置'),
   }
 }

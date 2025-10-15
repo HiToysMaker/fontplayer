@@ -309,7 +309,7 @@ const computeParamsByJoints = (jointsMap) => {
   const zhe1_horizontalSpan = range(zhe1_start.x - zhe1_end.x, zhe1_horizontal_span_range)
   const zhe1_verticalSpan = range(zhe1_end.y - zhe1_start.y, zhe1_vertical_span_range)
   const zhe2_horizontalSpan = range(zhe2_end.x - zhe2_start.x, zhe2_horizontal_span_range)
-  const zhe2_verticalSpan = range(zhe2_end.y - zhe2_start.y, zhe2_vertical_span_range)
+  const zhe2_verticalSpan = range(zhe2_start.y - zhe2_end.y, zhe2_vertical_span_range)
   const pie_horizontalSpan = range(pie_start.x - pie_end.x, pie_horizontal_span_range)
   const pie_verticalSpan = range(pie_end.y - pie_start.y, pie_vertical_span_range)
   const pie_bendCursor = range((pie_bend.y - pie_start.y) / pie_verticalSpan, pie_bend_cursor_range)
@@ -318,7 +318,8 @@ const computeParamsByJoints = (jointsMap) => {
     heng_verticalSpan,
     zhe1_horizontalSpan,
     zhe1_verticalSpan,
-    zhe2_length,
+    zhe2_horizontalSpan,
+    zhe2_verticalSpan,
     pie_horizontalSpan,
     pie_verticalSpan,
     pie_bendCursor,
@@ -339,6 +340,7 @@ const updateGlyphByParams = (params, global_params) => {
     pie_bendCursor,
     skeletonRefPos,
   } = params
+  const { weight } = global_params
 
   // 横
   let heng_start, heng_end

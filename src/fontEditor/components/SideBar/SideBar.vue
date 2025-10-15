@@ -79,6 +79,8 @@
     'template-4': TemplateEnable,
     'template-5': TemplateEnable,
     'template-6': TemplateEnable,
+    'template-7': TemplateEnable,
+    'template-8': TemplateEnable,
     'remove_overlap': enableAtEdit,
 	}
 
