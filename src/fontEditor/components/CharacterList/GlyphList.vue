@@ -39,7 +39,9 @@
 			if (i >= glyphs.value.length) return
 			const glyph = glyphs.value[i]
 			executeScript(glyph)
-			const canvas: HTMLCanvasElement = document.getElementById(`preview-canvas-${glyph.uuid}`) as HTMLCanvasElement
+			const wrapper = document.getElementById('glyph-render-list')
+			if (!wrapper) return
+			const canvas: HTMLCanvasElement = wrapper.querySelector(`#preview-canvas-${glyph.uuid}`) as HTMLCanvasElement
 			if (!canvas) return
 			//renderGlyphPreview(glyph, canvas)
 			const contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(glyph._o.components, {

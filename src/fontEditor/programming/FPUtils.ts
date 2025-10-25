@@ -337,6 +337,272 @@ const getCurveContours = (name, skeleton, weight, options: IGetContoursOption) =
 	return contours
 }
 
+// 多条连续贝塞尔曲线骨架，可以用这个方法获取轮廓
+const getCurveContours2 = (name, skeleton, weight, options: IGetContoursOption) => {
+	let { startWeight, endWeight, in_startWeight, in_endWeight, out_startWeight, out_endWeight } = options || {}
+	if (!startWeight) {
+		if (options && options.weightsVariation) {
+			if (options.weightsVariationDir === 'reverse') {
+				startWeight = weight
+			} else {
+				startWeight = 0
+			}
+		} else {
+			startWeight = weight
+		}
+	}
+	if (!endWeight) {
+		if (options && options.weightsVariation) {
+			if (options.weightsVariationDir === 'reverse') {
+				endWeight = 0
+			} else {
+				endWeight = weight
+			}
+		} else {
+			endWeight = weight
+		}
+	}
+	if (!in_startWeight) {
+		in_startWeight = startWeight / 2
+	}
+	if (!in_endWeight) {
+		in_endWeight = endWeight / 2
+	}
+	if (!out_startWeight) {
+		out_startWeight = startWeight / 2
+	}
+	if (!out_endWeight) {
+		out_endWeight = endWeight / 2
+	}
+	let unticlockwise = false
+	let skeletonPos = 'center'
+	if (options && options.unticlockwise) {
+		unticlockwise = options.unticlockwise
+	}
+	if (options && options.skeletonPos) {
+		skeletonPos = options.skeletonPos
+	}
+
+	const beziers = []
+	for (let i = 0; i < skeleton.length; i++) {
+		const { start, control1, control2, end, bend } = skeleton[i]
+		if (control1 && control2) {
+			// cubic bezier
+			beziers.push([start, control1, control2, end])
+		} else if (bend) {
+			// quadratic bezier
+			beziers.push([start, {
+				x: start.x + 2 / 3 * (bend.x - start.x),
+				y: start.y + 2 / 3 * (bend.y - start.y),
+			}, {
+				x: end.x + 2 / 3 * (bend.x - end.x),
+				y: end.y + 2 / 3 * (bend.y - end.y),
+			}, end])
+		} else {
+			const l = distance(start, end) * 0.3
+			beziers.push([start, getPointOnLine(start, end, l), getPointOnLine(end, start, l), end])
+		}
+	}
+
+	// 顺时针方向，右上侧为out, 左下侧为in
+	// 逆时针方向，左下侧为out, 右上侧为in
+	const out_points = []
+	const in_points = []
+	const n = 100
+
+	const in_weights = []
+	const out_weights = []
+	for (let i = 0; i <= n * beziers.length; i++) {
+		if (!options) {
+			break
+		} else if (options.weightsVariation === 'linear') {
+			// 字重为线性变化
+			if (options.weightsVariationDir === 'reverse') {
+				// 字重变化方向为由收尾到起始方向
+				const j = n - i
+				const f = j / n
+				in_weights.push(in_endWeight + (in_startWeight - in_endWeight) * f)
+				out_weights.push(out_endWeight + (out_startWeight - out_endWeight) * f)
+			} else {
+				// 字重变化为由起始到收尾方向
+				const f = i / n
+				in_weights.push(in_startWeight + (in_endWeight - in_startWeight) * f)
+				out_weights.push(out_startWeight + (out_endWeight - out_startWeight) * f)
+			}
+		} else if (options.weightsVariation === 'pow') {
+			// 字重变化为幂变化，options.weightsVariationPower取值范围为[0, 2]
+			if (options.weightsVariationDir === 'reverse') {
+				// 字重变化方向为由收尾到起始方向
+				const j = n - i
+				const f = Math.pow(j / n, options.weightsVariationPower)
+				in_weights.push(in_endWeight + (in_startWeight - in_endWeight) * f)
+				out_weights.push(out_endWeight + (out_startWeight - out_endWeight) * f)
+			} else {
+				// 字重变化为由起始到收尾方向
+				const f = Math.pow(i / n, options.weightsVariationPower)
+				in_weights.push(in_startWeight + (in_endWeight - in_startWeight) * f)
+				out_weights.push(out_startWeight + (out_endWeight - out_startWeight) * f)
+			}
+		} else if (options.weightsVariation === 'log') {
+			// 字重变化为幂变化，options.weightsVariationPower取值范围为[0, 2]
+			if (options.weightsVariationDir === 'reverse') {
+				// 字重变化方向为由收尾到起始方向
+				const j = n - i
+				//const f = Math.pow(j / n, options.weightsVariationPower)
+				const f = Math.pow(Math.log(j / n + 1) / Math.log(2), options.weightsVariationPower)
+				in_weights.push(in_endWeight + (in_startWeight - in_endWeight) * f)
+				out_weights.push(out_endWeight + (out_startWeight - out_endWeight) * f)
+			} else {
+				// 字重变化为由起始到收尾方向
+				//const f = Math.pow(i / n, options.weightsVariationPower)
+				const f = Math.pow(Math.log(i / n + 1) / Math.log(2), options.weightsVariationPower)
+				in_weights.push(in_startWeight + (in_endWeight - in_startWeight) * f)
+				out_weights.push(out_startWeight + (out_endWeight - out_startWeight) * f)
+			}
+		} else if (options.weightsVariation === 'bezier') {
+			const fn = getBezierFn(options.weightsVariationFnType)
+			// 字重变化为幂变化，options.weightsVariationPower取值范围为[0, 2]
+			if (options.weightsVariationDir === 'reverse') {
+				// 字重变化方向为由收尾到起始方向
+				const j = n - i
+				//const f = Math.pow(j / n, options.weightsVariationPower)
+				const f = fn(j / n)
+				in_weights.push(in_endWeight + (in_startWeight - in_endWeight) * f)
+				out_weights.push(out_endWeight + (out_startWeight - out_endWeight) * f)
+			} else {
+				// 字重变化为由起始到收尾方向
+				//const f = Math.pow(i / n, options.weightsVariationPower)
+				const f = fn(i / n)
+				in_weights.push(in_startWeight + (in_endWeight - in_startWeight) * f)
+				out_weights.push(out_startWeight + (out_endWeight - out_startWeight) * f)
+			}
+		}
+	}
+
+	let lastPoint = bezierCurve.q(beziers[0], 0)
+	let lastK = bezierCurve.qprime(beziers[0], 0)
+	if (lastK.x === 0 && lastK.y === 0) {
+		lastK = { x: 0, y: 1 }
+	}
+	let lastAngle = Math.atan2(lastK.y, lastK.x)
+
+	for (let t = 1; t <= n * beziers.length; t++) {
+		let point = lastPoint
+		let k = lastK
+		let angle = lastAngle
+		let bezierIndex = Math.floor((t - 1) / n)
+		if (bezierIndex >= beziers.length) {
+			bezierIndex = beziers.length - 1
+		}
+		const bezier = beziers[bezierIndex]
+		let t_local = t % n
+		if (t_local === 0) {
+			t_local = n
+		}
+		const _inweight = in_weights.length ? in_weights[t - 1] : in_startWeight
+		const _outweight = out_weights.length ? out_weights[t - 1] : out_startWeight
+		if (t_local < (n + 1)) {
+			point = bezierCurve.q(bezier, t_local / n)
+			k = bezierCurve.qprime(bezier, t_local / n)
+			if (k.x === 0 && k.y === 0) {
+				k = { x: 0, y: 1 }
+			}
+			angle = Math.atan2(k.y, k.x)
+		}
+		if (skeletonPos === 'center' && !unticlockwise) {
+			out_points.push({
+				x: lastPoint.x + _outweight * Math.sin(lastAngle),
+				y: lastPoint.y - _outweight * Math.cos(lastAngle),
+			})
+			in_points.push({
+				x: lastPoint.x - _inweight * Math.sin(lastAngle),
+				y: lastPoint.y + _inweight * Math.cos(lastAngle),
+			})
+			if (t === n * beziers.length) {
+				out_points.push({
+					x: point.x + _outweight * Math.sin(angle),
+					y: point.y - _outweight * Math.cos(angle),
+				})
+				in_points.push({
+					x: point.x - _inweight * Math.sin(angle),
+					y: point.y + _inweight * Math.cos(angle),
+				})
+			}
+		}
+		else if (skeletonPos === 'inner' && !unticlockwise) {
+			out_points.push({
+				x: lastPoint.x + (_outweight + _inweight)* Math.sin(lastAngle),
+				y: lastPoint.y - (_outweight + _inweight) * Math.cos(lastAngle),
+			})
+			in_points.push({
+				x: lastPoint.x,
+				y: lastPoint.y,
+			})
+			if (t === n * beziers.length) {
+				out_points.push({
+					x: point.x + (_outweight + _inweight) * Math.sin(angle),
+					y: point.y - (_outweight + _inweight) * Math.cos(angle),
+				})
+				in_points.push({
+					x: point.x,
+					y: point.y,
+				})
+			}
+		}
+		else if (skeletonPos === 'center' && unticlockwise) {
+			out_points.push({
+				x: lastPoint.x - _outweight * Math.sin(lastAngle),
+				y: lastPoint.y + _outweight * Math.cos(lastAngle),
+			})
+			in_points.push({
+				x: lastPoint.x + _inweight * Math.sin(lastAngle),
+				y: lastPoint.y - _inweight * Math.cos(lastAngle),
+			})
+			if (t === n * beziers.length) {
+				out_points.push({
+					x: point.x - _outweight * Math.sin(angle),
+					y: point.y + _outweight * Math.cos(angle),
+				})
+				in_points.push({
+					x: point.x + _inweight * Math.sin(angle),
+					y: point.y - _inweight * Math.cos(angle),
+				})
+			}
+		}
+		else if (skeletonPos === 'inner' && unticlockwise) {
+			out_points.push({
+				x: lastPoint.x - (_outweight + _inweight) * Math.sin(lastAngle),
+				y: lastPoint.y + (_outweight + _inweight) * Math.cos(lastAngle),
+			})
+			in_points.push({
+				x: lastPoint.x,
+				y: lastPoint.y,
+			})
+			if (t === n * beziers.length) {
+				out_points.push({
+					x: point.x - (_outweight + _inweight) * Math.sin(angle),
+					y: point.y + (_outweight + _inweight) * Math.cos(angle),
+				})
+				in_points.push({
+					x: point.x,
+					y: point.y,
+				})
+			}
+		}
+		lastPoint = point
+		lastK = k
+		lastAngle = angle
+	}
+	const { curves: out_curves } = fitCurvesByPoints(out_points)
+	const { curves: in_curves } = fitCurvesByPoints(in_points)
+	const contours = {}
+	contours[`out_${name}_points`] = out_points
+	contours[`in_${name}_points`] = in_points
+	contours[`out_${name}_curves`] = out_curves
+	contours[`in_${name}_curves`] = in_curves
+	return contours
+}
+
 const getIntersection = (item1, item2) => {
 	let curve1 = null
 	let curve2 = null
@@ -824,6 +1090,46 @@ const isPointOnLineSegment = (point, lineStart, lineEnd) => {
 	return Math.abs(distToStart + distToEnd - segmentLength) < 1e-10;
 }
 
+const getSquare = (point, sideLength) => {
+	const square = [
+		{ x: point.x + sideLength / 2, y: point.y - sideLength / 2 },
+		{ x: point.x - sideLength / 2, y: point.y - sideLength / 2 },
+		{ x: point.x - sideLength / 2, y: point.y + sideLength / 2 },
+		{ x: point.x + sideLength / 2, y: point.y + sideLength / 2 },
+	]
+	return square
+}
+
+const getCircle = (point, radius) => {
+	const circle = [
+		{
+			start: { x: point.x, y: point.y - radius },
+			control1: { x: point.x - radius / 2, y: point.y - radius },
+			control2: { x: point.x - radius, y: point.y - radius / 2 },
+			end: { x: point.x - radius, y: point.y },
+		},
+		{
+			start: { x: point.x - radius, y: point.y },
+			control1: { x: point.x - radius, y: point.y + radius / 2 },
+			control2: { x: point.x - radius / 2, y: point.y + radius },
+			end: { x: point.x, y: point.y + radius },
+		},
+		{
+			start: { x: point.x, y: point.y + radius },
+			control1: { x: point.x + radius / 2, y: point.y + radius },
+			control2: { x: point.x + radius, y: point.y + radius / 2 },
+			end: { x: point.x + radius, y: point.y },
+		},
+		{
+			start: { x: point.x + radius, y: point.y },
+			control1: { x: point.x + radius, y: point.y - radius / 2 },
+			control2: { x: point.x + radius / 2, y: point.y - radius },
+			end: { x: point.x, y: point.y - radius },
+		},
+	]
+	return circle
+}
+
 const FP = {
 	EllipseComponent,
 	PenComponent,
@@ -854,6 +1160,9 @@ const FP = {
 	degreeToRadius,
 	getAngle,
 	radiusToDegree,
+	getCurveContours2,
+	getSquare,
+	getCircle,
 }
 
 const suggestion_items = [

@@ -81,6 +81,8 @@
     'template-6': TemplateEnable,
     'template-7': TemplateEnable,
     'template-8': TemplateEnable,
+    'template-digits': TemplateEnable,
+    'template-letters': TemplateEnable,
     'remove_overlap': enableAtEdit,
 	}
 

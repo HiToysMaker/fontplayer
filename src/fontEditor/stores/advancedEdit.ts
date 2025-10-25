@@ -953,6 +953,11 @@ const process_character_li = (characterFile) => {
           }
         }
       })
+      if (glyph.name === '横') {
+        if (glyph.parameters.parameters.find(parameter => parameter.name === '长度').value >= 500) {
+          glyph.name = '横波'
+        }
+      }
       const stroke = li_strokes.find(stroke => stroke.name === glyph.name)
       if (stroke) {
         stroke.params.map((param) => {

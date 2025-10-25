@@ -101,6 +101,9 @@ import { ENV } from '../stores/system'
 import { OpType, saveState, StoreType, undo as _undo, redo as _redo } from '../stores/edit'
 import { getEnName, name_data } from '../stores/settings'
 import { strokes as hei_strokes, kai_strokes, li_strokes } from '../templates/strokes_1'
+import { lowercaseLetters } from '../templates/lowercase_letters'
+import { capitalLetters } from '../templates/capital_letters'
+import { digits } from '../templates/digits'
 import { i18n } from '../../i18n'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { strokeFnMap } from '../templates/strokeFnMap'
@@ -3347,6 +3350,169 @@ const importTemplate8 = async () => {
   emitter.emit('renderStrokeGlyphPreviewCanvas')
 }
 
+const importTemplateDigits = async () => {
+  for (let i = 0; i < digits.length; i++) {
+    loaded.value += 1
+    const digit = digits[i]
+    const { name, params, globalParams } = digit
+    const uuid = genUUID()
+    const parameters: Array<IParameter> = []
+    for (let j = 0; j < params.length; j++) {
+      const param = params[j]
+      parameters.push({
+        uuid: genUUID(),
+        name: param.name,
+        type: ParameterType.Number,
+        value: param.default,
+        min: param.min || 0,
+        max: param.max || 1000,
+      })
+    }
+    for (let j = 0; j < globalParams.length; j++) {
+      const param = globalParams[j]
+      parameters.push({
+        uuid: genUUID(),
+        name: param.name,
+        type: ParameterType.Number,
+        value: param.default,
+        min: param.min || 0,
+        max: param.max || 1000,
+      })
+    }
+    let letter_script_res = base ? await fetch(base + `/templates/digits/${name}.js`) : await fetch(`templates/digits/${name}.js`)
+    let letter_script = await letter_script_res.text()
+    const glyph = {
+      uuid,
+      type: 'system',
+      name,
+      components: [],
+      groups: [],
+      orderedList: [],
+      selectedComponentsUUIDs: [],
+      view: {
+        zoom: 100,
+        translateX: 0,
+        translateY: 0,
+      },
+      parameters: new ParametersMap(parameters),
+      joints: [],
+      style: '字玩数字模板',
+      script: `function script_${uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t${letter_script}\n}`,
+    }
+    addGlyph(glyph, Status.GlyphList)
+    addGlyphTemplate(glyph, Status.GlyphList)
+  }
+  await nextTick()
+  emitter.emit('renderGlyphPreviewCanvas')
+}
+
+const importTemplateLetters = async () => {
+  for (let i = 0; i < lowercaseLetters.length; i++) {
+    loaded.value += 1
+    const letter = lowercaseLetters[i]
+    const { name, params, globalParams } = letter
+    const uuid = genUUID()
+    const parameters: Array<IParameter> = []
+    for (let j = 0; j < params.length; j++) {
+      const param = params[j]
+      parameters.push({
+        uuid: genUUID(),
+        name: param.name,
+        type: ParameterType.Number,
+        value: param.default,
+        min: param.min || 0,
+        max: param.max || 1000,
+      })
+    }
+    for (let j = 0; j < globalParams.length; j++) {
+      const param = globalParams[j]
+      parameters.push({
+        uuid: genUUID(),
+        name: param.name,
+        type: ParameterType.Number,
+        value: param.default,
+        min: param.min || 0,
+        max: param.max || 1000,
+      })
+    }
+    let letter_script_res = base ? await fetch(base + `/templates/lowercase_letters/${name}.js`) : await fetch(`templates/lowercase_letters/${name}.js`)
+    let letter_script = await letter_script_res.text()
+    const glyph = {
+      uuid,
+      type: 'system',
+      name,
+      components: [],
+      groups: [],
+      orderedList: [],
+      selectedComponentsUUIDs: [],
+      view: {
+        zoom: 100,
+        translateX: 0,
+        translateY: 0,
+      },
+      parameters: new ParametersMap(parameters),
+      joints: [],
+      style: '字玩小写字母模板',
+      script: `function script_${uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t${letter_script}\n}`,
+    }
+    addGlyph(glyph, Status.GlyphList)
+    addGlyphTemplate(glyph, Status.GlyphList)
+  }
+  for (let i = 0; i < capitalLetters.length; i++) {
+    loaded.value += 1
+    const letter = capitalLetters[i]
+    const { name, params, globalParams } = letter
+    const uuid = genUUID()
+    const parameters: Array<IParameter> = []
+    for (let j = 0; j < params.length; j++) {
+      const param = params[j]
+      parameters.push({
+        uuid: genUUID(),
+        name: param.name,
+        type: ParameterType.Number,
+        value: param.default,
+        min: param.min || 0,
+        max: param.max || 1000,
+      })
+    }
+    for (let j = 0; j < globalParams.length; j++) {
+      const param = globalParams[j]
+      parameters.push({
+        uuid: genUUID(),
+        name: param.name,
+        type: ParameterType.Number,
+        value: param.default,
+        min: param.min || 0,
+        max: param.max || 1000,
+      })
+    }
+    let letter_script_res = base ? await fetch(base + `/templates/capital_letters/${name}.js`) : await fetch(`templates/capital_letters/${name}.js`)
+    let letter_script = await letter_script_res.text()
+    const glyph = {
+      uuid,
+      type: 'system',
+      name,
+      components: [],
+      groups: [],
+      orderedList: [],
+      selectedComponentsUUIDs: [],
+      view: {
+        zoom: 100,
+        translateX: 0,
+        translateY: 0,
+      },
+      parameters: new ParametersMap(parameters),
+      joints: [],
+      style: '字玩大写字母模板',
+      script: `function script_${uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t${letter_script}\n}`,
+    }
+    addGlyph(glyph, Status.GlyphList)
+    addGlyphTemplate(glyph, Status.GlyphList)
+  }
+  await nextTick()
+  emitter.emit('renderGlyphPreviewCanvas')
+}
+
 const importTemplate1 = async () => {
   if (files.value && files.value.length) {
     tips.value = '导入模板会覆盖当前工程，请关闭当前工程再导入。注意，关闭工程前请保存工程以避免数据丢失。'
@@ -4724,6 +4890,8 @@ const tauri_handlers: IHandlerMap = {
   'template-6': importTemplate6,
   'template-7': importTemplate7,
   'template-8': importTemplate8,
+  'template-digits': importTemplateDigits,
+  'template-letters': importTemplateLetters,
   'remove_overlap': removeOverlap,
 }
 
@@ -4763,6 +4931,8 @@ const web_handlers: IHandlerMap = {
   'template-6': importTemplate6,
   'template-7': importTemplate7,
   'template-8': importTemplate8,
+  'template-digits': importTemplateDigits,
+  'template-letters': importTemplateLetters,
   'remove_overlap': removeOverlap,
 }
 

@@ -270,34 +270,48 @@ const web_menu: Array<IMenu> = [
 					handlers['template-4']()
 				}
 			},
-				{
-					label: tm('menus.templates.test5'),
-					key: 'template-5',
-					click: (handlers: IHandlerMap) => {
-						handlers['template-5']()
-					}
-				},
-				{
-					label: tm('menus.templates.test6'),
-					key: 'template-6',
-					click: (handlers: IHandlerMap) => {
-						handlers['template-6']()
-					}
-				},
-				{
-					label: tm('menus.templates.test7'),
-					key: 'template-7',
-					click: (handlers: IHandlerMap) => {
-						handlers['template-7']()
-					}
-				},
-				{
-					label: tm('menus.templates.test8'),
-					key: 'template-8',
-					click: (handlers: IHandlerMap) => {
-						handlers['template-8']()
-					}
-				},
+			{
+				label: tm('menus.templates.test5'),
+				key: 'template-5',
+				click: (handlers: IHandlerMap) => {
+					handlers['template-5']()
+				}
+			},
+			{
+				label: tm('menus.templates.test6'),
+				key: 'template-6',
+				click: (handlers: IHandlerMap) => {
+					handlers['template-6']()
+				}
+			},
+			{
+				label: tm('menus.templates.test7'),
+				key: 'template-7',
+				click: (handlers: IHandlerMap) => {
+					handlers['template-7']()
+				}
+			},
+			{
+				label: tm('menus.templates.test8'),
+				key: 'template-8',
+				click: (handlers: IHandlerMap) => {
+					handlers['template-8']()
+				}
+			},
+			{
+				label: tm('menus.templates.digits'),
+				key: 'template-digits',
+				click: (handlers: IHandlerMap) => {
+					handlers['template-digits']()
+				}
+			},
+			{
+				label: tm('menus.templates.letters'),
+				key: 'template-letters',
+				click: (handlers: IHandlerMap) => {
+					handlers['template-letters']()
+				}
+			},
 		]
 	},
 	{

@@ -598,21 +598,21 @@ const resetEditGlyph = () => {
 }
 const updateGlyphListFromEditFile = () => {
 	const glyphType = getGlyphType(editGlyph.value.uuid)
-	let glyphs = null
+	let _glyphs = null
 	if (glyphType === Status.GlyphList) {
-		glyphs = glyphs.value
+		_glyphs = glyphs.value
 	} else if (glyphType === Status.RadicalGlyphList) {
-		glyphs = radical_glyphs.value
+		_glyphs = radical_glyphs.value
 	} else if (glyphType === Status.StrokeGlyphList) {
-		glyphs = stroke_glyphs.value
+		_glyphs = stroke_glyphs.value
 	} else if (glyphType === Status.CompGlyphList) {
-		glyphs = comp_glyphs.value
+		_glyphs = comp_glyphs.value
 	}
-	if (!glyphs) return
-	for (let i = 0; i < glyphs.length; i++) {
-		if (editGlyph.value.uuid === glyphs[i].uuid) {
-			glyphs[i] = R.clone(editGlyph.value)
-			componentsToContours(orderedListWithItemsForGlyph(glyphs[i]), {
+	if (!_glyphs) return
+	for (let i = 0; i < _glyphs.length; i++) {
+		if (editGlyph.value.uuid === _glyphs[i].uuid) {
+			_glyphs[i] = R.clone(editGlyph.value)
+			componentsToContours(orderedListWithItemsForGlyph(_glyphs[i]), {
 				unitsPerEm: selectedFile.value.fontSettings.unitsPerEm,
 				descender: selectedFile.value.fontSettings.descender,
 				advanceWidth: selectedFile.value.fontSettings.unitsPerEm,
