@@ -1,3 +1,4 @@
+import { ParameterType } from "../stores/glyph"
 const xHeight = 500
 const ascender = 800
 const capitalHeight = 750
@@ -5,7 +6,7 @@ const width = 360
 const capitalWidth = 500
 const descender = -200
 
-const digits = [
+let digits = [
   {
     name: '0',
     params: [
@@ -461,6 +462,37 @@ const digits = [
     ],
   },
 ]
+
+digits = digits.map((digit) => {
+  digit.globalParams.push({
+    name: '衬线类型',
+    // @ts-ignore
+    type: ParameterType.Enum,
+    value: 1,
+    default: 1,
+    options: [
+      {
+        value: 0,
+        label: '无衬线',
+      },
+      {
+        value: 1,
+        label: '衬线类型1',
+      },
+    ]
+  })
+  digit.globalParams.push({
+    name: '衬线大小',
+    // @ts-ignore
+    type: ParameterType.Number,
+    value: 2.0,
+    min: 1.0,
+    max: 3.0,
+    step: 0.1,
+    default: 2.0,
+  })
+  return digit
+})
 
 export {
   digits,

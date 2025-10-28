@@ -5,6 +5,8 @@ const params = {
 }
 const global_params = {
   weight: glyph.getParam('字重') || 40,
+  serifType: glyph.getParam('衬线类型') || 0,
+  serifSize: glyph.getParam('衬线大小') || 2.0,
 }
 const ascender = 800
 const descender = -200
@@ -299,7 +301,7 @@ const refline = (p1, p2, type) => {
 
 const updateGlyphByParams = (params, global_params) => {
   const { h1, h2, w1 } = params
-  const { weight } = global_params
+  const { weight, serifType, serifSize } = global_params
 
   const skeleton_0 = new FP.Joint('skeleton_0', {
     x: x0,

@@ -1,3 +1,4 @@
+import { ParameterType } from "../stores/glyph"
 const xHeight = 500
 const ascender = 800
 const capitalHeight = 750
@@ -5,7 +6,7 @@ const width = 360
 const capitalWidth = 500
 const descender = -200
 
-const capitalLetters = [
+let capitalLetters = [
   {
     name: 'a',
     params: [
@@ -36,7 +37,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -75,7 +76,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -114,7 +115,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -145,7 +146,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -176,7 +177,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -215,7 +216,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -270,7 +271,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -301,7 +302,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -324,7 +325,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -371,7 +372,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -434,7 +435,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -465,7 +466,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -504,7 +505,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -535,7 +536,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -566,7 +567,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -602,10 +603,18 @@ const capitalLetters = [
         step: 1,
         default: capitalWidth,
       },
+      {
+        name: 'w2',
+        value: capitalWidth * 0.5,
+        min: 0,
+        max: 1000,
+        step: 1,
+        default: capitalWidth * 0.5,
+      },
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -644,7 +653,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -688,10 +697,18 @@ const capitalLetters = [
         step: 1,
         default: capitalWidth * 0.7,
       },
+      {
+        name: 'w3',
+        value: capitalWidth * 0.5,
+        min: 0,
+        max: 1000,
+        step: 1,
+        default: capitalWidth * 0.5,
+      },
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -730,7 +747,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -761,7 +778,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -800,7 +817,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -831,7 +848,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -862,7 +879,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -893,7 +910,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -932,7 +949,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -963,7 +980,7 @@ const capitalLetters = [
     ],
     globalParams: [
       {
-        name: 'weight',
+        name: '字重',
         value: 40,
         min: 0,
         max: 100,
@@ -973,6 +990,37 @@ const capitalLetters = [
     ],
   },
 ]
+
+capitalLetters = capitalLetters.map((letter) => {
+  letter.globalParams.push({
+    name: '衬线类型',
+    // @ts-ignore
+    type: ParameterType.Enum,
+    value: 1,
+    default: 1,
+    options: [
+      {
+        value: 0,
+        label: '无衬线',
+      },
+      {
+        value: 1,
+        label: '衬线类型1',
+      },
+    ]
+  })
+  letter.globalParams.push({
+    name: '衬线大小',
+    // @ts-ignore
+    type: ParameterType.Number,
+    value: 2.0,
+    min: 1.0,
+    max: 3.0,
+    step: 0.1,
+    default: 2.0,
+  })
+  return letter
+})
 
 export {
   capitalLetters,

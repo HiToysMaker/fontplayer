@@ -6,6 +6,8 @@ const params = {
 }
 const global_params = {
   weight: glyph.getParam('字重') || 40,
+  serifType: glyph.getParam('衬线类型') || 0,
+  serifSize: glyph.getParam('衬线大小') || 2.0,
 }
 const ascender = 800
 const descender = -200
@@ -336,7 +338,7 @@ const updateGlyphByParams = (params, global_params) => {
 
 const getComponents = (skeleton, global_params) => {
   // 获取骨架以外的全局风格变量
-  const { weight } = global_params
+  const { weight, serifType, serifSize } = global_params
 
   // 根据骨架计算轮廓关键点
   const { skeleton_0, skeleton_1, skeleton_2, skeleton_3, skeleton_4, skeleton_5, skeleton_6, skeleton_7, skeleton_8, skeleton_9, skeleton_10, skeleton_11, skeleton_12, skeleton_13, skeleton_14 } = skeleton
@@ -365,31 +367,142 @@ const getComponents = (skeleton, global_params) => {
     weight
   )
 
+  const serif_w1 = 200
+  const serif_h1 = 100
+  const serif_h2 = 20
+  const serif_c1 = 20
+  const serif_c2 = 20
+  const stroke1_end_serif_p0 = {
+    x: skeleton_1.x - serif_w1 / 2,
+    y: skeleton_1.y,
+  }
+  const stroke1_end_serif_p1 = {
+    x: skeleton_1.x + serif_w1 / 2,
+    y: skeleton_1.y,
+  }
+  const stroke1_end_serif_p2 = {
+    x: stroke1_end_serif_p0.x,
+    y: stroke1_end_serif_p0.y - serif_h2,
+  }
+  const stroke1_end_serif_p3 = {
+    x: stroke1_end_serif_p1.x,
+    y: stroke1_end_serif_p1.y - serif_h2,
+  }
+  const stroke1_end_serif_p4 = FP.getIntersection({
+    type: 'line',
+    start: stroke1_end_serif_p2,
+    end: stroke1_end_serif_p3,
+  }, {
+    type: 'line',
+    start: in_stroke1_end,
+    end: in_stroke1_start,
+  }).corner
+  const stroke1_end_serif_p5 = FP.getIntersection({
+    type: 'line',
+    start: stroke1_end_serif_p2,
+    end: stroke1_end_serif_p3,
+  }, {
+    type: 'line',
+    start: out_stroke1_end,
+    end: out_stroke1_start,
+  }).corner
+  const stroke1_end_serif_p6 = FP.goStraight(in_stroke1_end, stroke1_end_serif_p4, serif_h1)
+  const stroke1_end_serif_p7 = FP.goStraight(out_stroke1_end, stroke1_end_serif_p5, serif_h1)
+  const stroke1_end_serif_p4_before = FP.getPointOnLine(stroke1_end_serif_p4, stroke1_end_serif_p2, serif_c1)
+  const stroke1_end_serif_p4_after = FP.getPointOnLine(stroke1_end_serif_p4, stroke1_end_serif_p6, serif_c2)
+  const stroke1_end_serif_p5_before = FP.getPointOnLine(stroke1_end_serif_p5, stroke1_end_serif_p3, serif_c1)
+  const stroke1_end_serif_p5_after = FP.getPointOnLine(stroke1_end_serif_p5, stroke1_end_serif_p7, serif_c2)
+
+  const stroke2_end_serif_p0 = {
+    x: skeleton_7.x - serif_w1 / 2,
+    y: skeleton_7.y,
+  }
+  const stroke2_end_serif_p1 = {
+    x: skeleton_7.x + serif_w1 / 2,
+    y: skeleton_7.y,
+  }
+  const stroke2_end_serif_p2 = {
+    x: stroke2_end_serif_p0.x,
+    y: stroke2_end_serif_p0.y - serif_h2,
+  }
+  const stroke2_end_serif_p3 = {
+    x: stroke2_end_serif_p1.x,
+    y: stroke2_end_serif_p1.y - serif_h2,
+  }
+  const stroke2_end_serif_p4 = FP.getIntersection({
+    type: 'line',
+    start: stroke2_end_serif_p2,
+    end: stroke2_end_serif_p3,
+  }, {
+    type: 'line',
+    start: in_stroke2_curves[in_stroke2_curves.length - 1].end,
+    end: in_stroke2_curves[in_stroke2_curves.length - 1].control2,
+  }).corner
+  const stroke2_end_serif_p5 = FP.getIntersection({
+    type: 'line',
+    start: stroke2_end_serif_p2,
+    end: stroke2_end_serif_p3,
+  }, {
+    type: 'line',
+    start: out_stroke2_curves[out_stroke2_curves.length - 1].end,
+    end: out_stroke2_curves[out_stroke2_curves.length - 1].control2,
+  }).corner
+  const stroke2_end_serif_p6 = FP.goStraight(in_stroke2_curves[in_stroke2_curves.length - 1].end, stroke2_end_serif_p4, serif_h1)
+  const stroke2_end_serif_p7 = FP.goStraight(out_stroke2_curves[out_stroke2_curves.length - 1].end, stroke2_end_serif_p5, serif_h1)
+  const stroke2_end_serif_p4_before = FP.getPointOnLine(stroke2_end_serif_p4, stroke2_end_serif_p2, serif_c1)
+  const stroke2_end_serif_p4_after = FP.getPointOnLine(stroke2_end_serif_p4, stroke2_end_serif_p6, serif_c2)
+  const stroke2_end_serif_p5_before = FP.getPointOnLine(stroke2_end_serif_p5, stroke2_end_serif_p3, serif_c1)
+  const stroke2_end_serif_p5_after = FP.getPointOnLine(stroke2_end_serif_p5, stroke2_end_serif_p7, serif_c2)
+  const { final_curves: in_stroke2_curves_final } = FP.getRadiusPointsOnCurve(in_stroke2_points, serif_h1 + serif_h2, true)
+  const { final_curves: out_stroke2_curves_final } = FP.getRadiusPointsOnCurve(out_stroke2_points, serif_h1 + serif_h2, true)
+  
   // 创建钢笔组件
   const pen1 = new FP.PenComponent()
   pen1.beginPath()
-  // 按逆时针方向绘制轮廓
-  // 绘制stroke1
-  pen1.moveTo(out_stroke1_start.x, out_stroke1_start.y)
-  pen1.lineTo(out_stroke1_end.x, out_stroke1_end.y)
-  pen1.lineTo(in_stroke1_end.x, in_stroke1_end.y)
-  pen1.lineTo(in_stroke1_start.x, in_stroke1_start.y)
+  pen1.moveTo(in_stroke1_start.x, in_stroke1_start.y)
+  pen1.lineTo(stroke1_end_serif_p6.x, stroke1_end_serif_p6.y)
+  pen1.bezierTo(
+    stroke1_end_serif_p4_after.x, stroke1_end_serif_p4_after.y,
+    stroke1_end_serif_p4_before.x, stroke1_end_serif_p4_before.y,
+    stroke1_end_serif_p2.x, stroke1_end_serif_p2.y,
+  )
+  pen1.lineTo(stroke1_end_serif_p0.x, stroke1_end_serif_p0.y)
+  pen1.lineTo(stroke1_end_serif_p1.x, stroke1_end_serif_p1.y)
+  pen1.lineTo(stroke1_end_serif_p3.x, stroke1_end_serif_p3.y)
+  pen1.bezierTo(
+    stroke1_end_serif_p5_before.x, stroke1_end_serif_p5_before.y,
+    stroke1_end_serif_p5_after.x, stroke1_end_serif_p5_after.y,
+    stroke1_end_serif_p7.x, stroke1_end_serif_p7.y,
+  )
   pen1.lineTo(out_stroke1_start.x, out_stroke1_start.y)
+  pen1.lineTo(in_stroke1_start.x, in_stroke1_start.y)
   pen1.closePath()
 
   const pen2 = new FP.PenComponent()
   pen2.beginPath()
-  pen2.moveTo(out_stroke2_curves[0].start.x, out_stroke2_curves[0].start.y)
-  for (let i = 0; i < out_stroke2_curves.length; i++) {
-    const curve = out_stroke2_curves[i]
+  pen2.moveTo(in_stroke2_curves_final[0].start.x, in_stroke2_curves_final[0].start.y)
+  for (let i = 0; i < in_stroke2_curves_final.length; i++) {
+    const curve = in_stroke2_curves_final[i]
     pen2.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
   }
-  pen2.lineTo(in_stroke2_curves[in_stroke2_curves.length - 1].end.x, in_stroke2_curves[in_stroke2_curves.length - 1].end.y)
-  for (let i = in_stroke2_curves.length - 1; i >= 0; i--) {
-    const curve = in_stroke2_curves[i]
+  pen2.bezierTo(
+    stroke2_end_serif_p4_after.x, stroke2_end_serif_p4_after.y,
+    stroke2_end_serif_p4_before.x, stroke2_end_serif_p4_before.y,
+    stroke2_end_serif_p2.x, stroke2_end_serif_p2.y,
+  )
+  pen2.lineTo(stroke2_end_serif_p0.x, stroke2_end_serif_p0.y)
+  pen2.lineTo(stroke2_end_serif_p1.x, stroke2_end_serif_p1.y)
+  pen2.lineTo(stroke2_end_serif_p3.x, stroke2_end_serif_p3.y)
+  pen2.bezierTo(
+    stroke2_end_serif_p5_before.x, stroke2_end_serif_p5_before.y,
+    stroke2_end_serif_p5_after.x, stroke2_end_serif_p5_after.y,
+    stroke2_end_serif_p7.x, stroke2_end_serif_p7.y,
+  )
+  for (let i = out_stroke2_curves_final.length - 1; i >= 0; i--) {
+    const curve = out_stroke2_curves_final[i]
     pen2.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
   }
-  pen2.lineTo(out_stroke2_curves[0].start.x, out_stroke2_curves[0].start.y)
+  pen2.lineTo(out_stroke2_curves_final[0].start.x, out_stroke2_curves_final[0].start.y)
   pen2.closePath()
 
   return [ pen1, pen2 ]

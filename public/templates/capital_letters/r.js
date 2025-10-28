@@ -3,9 +3,12 @@ const params = {
   h2: glyph.getParam('h2'),
   w1: glyph.getParam('w1'),
   w2: glyph.getParam('w2'),
+  w3: glyph.getParam('w3'),
 }
 const global_params = {
   weight: glyph.getParam('字重') || 40,
+  serifType: glyph.getParam('衬线类型') || 0,
+  serifSize: glyph.getParam('衬线大小') || 2.0,
 }
 const ascender = 800
 const descender = -200
@@ -41,35 +44,41 @@ const getJointsMap = (data) => {
         x: glyph.tempData['skeleton_4'].x + deltaX,
         y: glyph.tempData['skeleton_4'].y,
       }
-      const refLine = {
-        start: { x:jointsMap['skeleton_5'].x + params.w2, y: jointsMap['skeleton_0'].y },
-        end: { x:jointsMap['skeleton_5'].x + params.w2, y: jointsMap['skeleton_1'].y },
-      }
-      const curve_points = FP.getCurvesPoints([{
-        start: jointsMap['skeleton_5'],
-        control1: {
-          x: jointsMap['skeleton_5'].x + 2 / 3 * (jointsMap['skeleton_4'].x - jointsMap['skeleton_5'].x),
-          y: jointsMap['skeleton_5'].y + 2 / 3 * (jointsMap['skeleton_4'].y - jointsMap['skeleton_5'].y),
-        },
-        control2: {
-          x: jointsMap['skeleton_3'].x + 2 / 3 * (jointsMap['skeleton_4'].x - jointsMap['skeleton_3'].x),
-          y: jointsMap['skeleton_3'].y + 2 / 3 * (jointsMap['skeleton_4'].y - jointsMap['skeleton_3'].y),
-        },
-        end: jointsMap['skeleton_3'],
-      }]);
-      const data = FP.getIntersection({
-        type: 'line',
-        start: refLine.start,
-        end: refLine.end,
-      }, {
-        type: 'curve',
-        points: curve_points,
-      });
-      if (data.corner) {
-        jointsMap['skeleton_6'] = {
-          x: data.corner.x,
-          y: data.corner.y,
+      let corner = jointsMap['skeleton_8']
+      const w2 = jointsMap['skeleton_6'].x - jointsMap['skeleton_5'].x
+      const w3 = jointsMap['skeleton_9'].x - jointsMap['skeleton_5'].x
+      if (w2 <= w3) {
+        corner = FP.getPointOnLine(jointsMap['skeleton_5'], jointsMap['skeleton_8'], w2)
+      } else {
+        const refLine = {
+          start: { x: jointsMap['skeleton_5'].x + w2, y: jointsMap['skeleton_0'].y },
+          end: { x: jointsMap['skeleton_5'].x + w2, y: jointsMap['skeleton_1'].y },
         }
+        const curve_points = FP.getCurvesPoints([{
+          start: jointsMap['skeleton_9'],
+          control1: {
+            x: jointsMap['skeleton_9'].x + 2 / 3 * (jointsMap['skeleton_4'].x - jointsMap['skeleton_9'].x),
+            y: jointsMap['skeleton_9'].y + 2 / 3 * (jointsMap['skeleton_4'].y - jointsMap['skeleton_9'].y),
+          },
+          control2: {
+            x: jointsMap['skeleton_3'].x + 2 / 3 * (jointsMap['skeleton_4'].x - jointsMap['skeleton_3'].x),
+            y: jointsMap['skeleton_3'].y + 2 / 3 * (jointsMap['skeleton_4'].y - jointsMap['skeleton_3'].y),
+          },
+          end: jointsMap['skeleton_3'],
+        }]);
+        const data = FP.getIntersection({
+          type: 'line',
+          start: refLine.start,
+          end: refLine.end,
+        }, {
+          type: 'curve',
+          points: curve_points,
+        });
+        corner = data.corner
+      }
+      jointsMap['skeleton_6'] = {
+        x: corner.x,
+        y: corner.y,
       }
       break
     }
@@ -86,35 +95,41 @@ const getJointsMap = (data) => {
         x: glyph.tempData['skeleton_4'].x + deltaX,
         y: glyph.tempData['skeleton_4'].y,
       }
-      const refLine = {
-        start: { x:jointsMap['skeleton_5'].x + params.w2, y: jointsMap['skeleton_0'].y },
-        end: { x:jointsMap['skeleton_5'].x + params.w2, y: jointsMap['skeleton_1'].y },
-      }
-      const curve_points = FP.getCurvesPoints([{
-        start: jointsMap['skeleton_5'],
-        control1: {
-          x: jointsMap['skeleton_5'].x + 2 / 3 * (jointsMap['skeleton_4'].x - jointsMap['skeleton_5'].x),
-          y: jointsMap['skeleton_5'].y + 2 / 3 * (jointsMap['skeleton_4'].y - jointsMap['skeleton_5'].y),
-        },
-        control2: {
-          x: jointsMap['skeleton_3'].x + 2 / 3 * (jointsMap['skeleton_4'].x - jointsMap['skeleton_3'].x),
-          y: jointsMap['skeleton_3'].y + 2 / 3 * (jointsMap['skeleton_4'].y - jointsMap['skeleton_3'].y),
-        },
-        end: jointsMap['skeleton_3'],
-      }]);
-      const data = FP.getIntersection({
-        type: 'line',
-        start: refLine.start,
-        end: refLine.end,
-      }, {
-        type: 'curve',
-        points: curve_points,
-      });
-      if (data.corner) {
-        jointsMap['skeleton_6'] = {
-          x: data.corner.x,
-          y: data.corner.y,
+      let corner = jointsMap['skeleton_8']
+      const w2 = jointsMap['skeleton_6'].x - jointsMap['skeleton_5'].x
+      const w3 = jointsMap['skeleton_9'].x - jointsMap['skeleton_5'].x
+      if (w2 <= w3) {
+        corner = FP.getPointOnLine(jointsMap['skeleton_5'], jointsMap['skeleton_8'], w2)
+      } else {
+        const refLine = {
+          start: { x: jointsMap['skeleton_5'].x + w2, y: jointsMap['skeleton_0'].y },
+          end: { x: jointsMap['skeleton_5'].x + w2, y: jointsMap['skeleton_1'].y },
         }
+        const curve_points = FP.getCurvesPoints([{
+          start: jointsMap['skeleton_9'],
+          control1: {
+            x: jointsMap['skeleton_9'].x + 2 / 3 * (jointsMap['skeleton_4'].x - jointsMap['skeleton_9'].x),
+            y: jointsMap['skeleton_9'].y + 2 / 3 * (jointsMap['skeleton_4'].y - jointsMap['skeleton_9'].y),
+          },
+          control2: {
+            x: jointsMap['skeleton_3'].x + 2 / 3 * (jointsMap['skeleton_4'].x - jointsMap['skeleton_3'].x),
+            y: jointsMap['skeleton_3'].y + 2 / 3 * (jointsMap['skeleton_4'].y - jointsMap['skeleton_3'].y),
+          },
+          end: jointsMap['skeleton_3'],
+        }]);
+        const data = FP.getIntersection({
+          type: 'line',
+          start: refLine.start,
+          end: refLine.end,
+        }, {
+          type: 'curve',
+          points: curve_points,
+        });
+        corner = data.corner
+      }
+      jointsMap['skeleton_6'] = {
+        x: corner.x,
+        y: corner.y,
       }
       break
     }
@@ -131,35 +146,45 @@ const getJointsMap = (data) => {
         x: glyph.tempData['skeleton_4'].x + deltaX,
         y: glyph.tempData['skeleton_4'].y,
       }
-      const refLine = {
-        start: { x:jointsMap['skeleton_5'].x + params.w2, y: jointsMap['skeleton_0'].y },
-        end: { x:jointsMap['skeleton_5'].x + params.w2, y: jointsMap['skeleton_1'].y },
+      jointsMap['skeleton_9'] = {
+        x: glyph.tempData['skeleton_9'].x,
+        y: glyph.tempData['skeleton_9'].y + deltaY,
       }
-      const curve_points = FP.getCurvesPoints([{
-        start: jointsMap['skeleton_5'],
-        control1: {
-          x: jointsMap['skeleton_5'].x + 2 / 3 * (jointsMap['skeleton_4'].x - jointsMap['skeleton_5'].x),
-          y: jointsMap['skeleton_5'].y + 2 / 3 * (jointsMap['skeleton_4'].y - jointsMap['skeleton_5'].y),
-        },
-        control2: {
-          x: jointsMap['skeleton_3'].x + 2 / 3 * (jointsMap['skeleton_4'].x - jointsMap['skeleton_3'].x),
-          y: jointsMap['skeleton_3'].y + 2 / 3 * (jointsMap['skeleton_4'].y - jointsMap['skeleton_3'].y),
-        },
-        end: jointsMap['skeleton_3'],
-      }]);
-      const data = FP.getIntersection({
-        type: 'line',
-        start: refLine.start,
-        end: refLine.end,
-      }, {
-        type: 'curve',
-        points: curve_points,
-      });
-      if (data.corner) {
-        jointsMap['skeleton_6'] = {
-          x: data.corner.x,
-          y: data.corner.y,
+      let corner = jointsMap['skeleton_8']
+      const w2 = jointsMap['skeleton_6'].x - jointsMap['skeleton_5'].x
+      const w3 = jointsMap['skeleton_9'].x - jointsMap['skeleton_5'].x
+      if (w2 <= w3) {
+        corner = FP.getPointOnLine(jointsMap['skeleton_5'], jointsMap['skeleton_8'], w2)
+      } else {
+        const refLine = {
+          start: { x: jointsMap['skeleton_5'].x + w2, y: jointsMap['skeleton_0'].y },
+          end: { x: jointsMap['skeleton_5'].x + w2, y: jointsMap['skeleton_1'].y },
         }
+        const curve_points = FP.getCurvesPoints([{
+          start: jointsMap['skeleton_9'],
+          control1: {
+            x: jointsMap['skeleton_9'].x + 2 / 3 * (jointsMap['skeleton_4'].x - jointsMap['skeleton_9'].x),
+            y: jointsMap['skeleton_9'].y + 2 / 3 * (jointsMap['skeleton_4'].y - jointsMap['skeleton_9'].y),
+          },
+          control2: {
+            x: jointsMap['skeleton_3'].x + 2 / 3 * (jointsMap['skeleton_4'].x - jointsMap['skeleton_3'].x),
+            y: jointsMap['skeleton_3'].y + 2 / 3 * (jointsMap['skeleton_4'].y - jointsMap['skeleton_3'].y),
+          },
+          end: jointsMap['skeleton_3'],
+        }]);
+        const data = FP.getIntersection({
+          type: 'line',
+          start: refLine.start,
+          end: refLine.end,
+        }, {
+          type: 'curve',
+          points: curve_points,
+        });
+        corner = data.corner
+      }
+      jointsMap['skeleton_6'] = {
+        x: corner.x,
+        y: corner.y,
       }
       break
     }
@@ -176,69 +201,84 @@ const getJointsMap = (data) => {
         x: glyph.tempData['skeleton_5'].x,
         y: glyph.tempData['skeleton_5'].y + deltaY,
       }
-      const refLine = {
-        start: { x:jointsMap['skeleton_5'].x + params.w2, y: jointsMap['skeleton_0'].y },
-        end: { x:jointsMap['skeleton_5'].x + params.w2, y: jointsMap['skeleton_1'].y },
+      jointsMap['skeleton_9'] = {
+        x: glyph.tempData['skeleton_9'].x,
+        y: glyph.tempData['skeleton_9'].y + deltaY,
       }
-      const curve_points = FP.getCurvesPoints([{
-        start: jointsMap['skeleton_5'],
-        control1: {
-          x: jointsMap['skeleton_5'].x + 2 / 3 * (jointsMap['skeleton_4'].x - jointsMap['skeleton_5'].x),
-          y: jointsMap['skeleton_5'].y + 2 / 3 * (jointsMap['skeleton_4'].y - jointsMap['skeleton_5'].y),
-        },
-        control2: {
-          x: jointsMap['skeleton_3'].x + 2 / 3 * (jointsMap['skeleton_4'].x - jointsMap['skeleton_3'].x),
-          y: jointsMap['skeleton_3'].y + 2 / 3 * (jointsMap['skeleton_4'].y - jointsMap['skeleton_3'].y),
-        },
-        end: jointsMap['skeleton_3'],
-      }]);
-      const data = FP.getIntersection({
-        type: 'line',
-        start: refLine.start,
-        end: refLine.end,
-      }, {
-        type: 'curve',
-        points: curve_points,
-      });
-      if (data.corner) {
-        jointsMap['skeleton_6'] = {
-          x: data.corner.x,
-          y: data.corner.y,
+      let corner = jointsMap['skeleton_8']
+      const w2 = jointsMap['skeleton_6'].x - jointsMap['skeleton_5'].x
+      const w3 = jointsMap['skeleton_9'].x - jointsMap['skeleton_5'].x
+      if (w2 <= w3) {
+        corner = FP.getPointOnLine(jointsMap['skeleton_5'], jointsMap['skeleton_8'], w2)
+      } else {
+        const refLine = {
+          start: { x: jointsMap['skeleton_5'].x + w2, y: jointsMap['skeleton_0'].y },
+          end: { x: jointsMap['skeleton_5'].x + w2, y: jointsMap['skeleton_1'].y },
         }
+        const curve_points = FP.getCurvesPoints([{
+          start: jointsMap['skeleton_9'],
+          control1: {
+            x: jointsMap['skeleton_9'].x + 2 / 3 * (jointsMap['skeleton_4'].x - jointsMap['skeleton_9'].x),
+            y: jointsMap['skeleton_9'].y + 2 / 3 * (jointsMap['skeleton_4'].y - jointsMap['skeleton_9'].y),
+          },
+          control2: {
+            x: jointsMap['skeleton_3'].x + 2 / 3 * (jointsMap['skeleton_4'].x - jointsMap['skeleton_3'].x),
+            y: jointsMap['skeleton_3'].y + 2 / 3 * (jointsMap['skeleton_4'].y - jointsMap['skeleton_3'].y),
+          },
+          end: jointsMap['skeleton_3'],
+        }]);
+        const data = FP.getIntersection({
+          type: 'line',
+          start: refLine.start,
+          end: refLine.end,
+        }, {
+          type: 'curve',
+          points: curve_points,
+        });
+        corner = data.corner
+      }
+      jointsMap['skeleton_6'] = {
+        x: corner.x,
+        y: corner.y,
       }
       break
     }
     case 'skeleton_6': {
       const w2 = params.w2 + deltaX;
-      const refLine = {
-        start: { x:jointsMap['skeleton_5'].x + w2, y: jointsMap['skeleton_0'].y },
-        end: { x:jointsMap['skeleton_5'].x + w2, y: jointsMap['skeleton_1'].y },
-      }
-      const curve_points = FP.getCurvesPoints([{
-        start: jointsMap['skeleton_5'],
-        control1: {
-          x: jointsMap['skeleton_5'].x + 2 / 3 * (jointsMap['skeleton_4'].x - jointsMap['skeleton_5'].x),
-          y: jointsMap['skeleton_5'].y + 2 / 3 * (jointsMap['skeleton_4'].y - jointsMap['skeleton_5'].y),
-        },
-        control2: {
-          x: jointsMap['skeleton_3'].x + 2 / 3 * (jointsMap['skeleton_4'].x - jointsMap['skeleton_3'].x),
-          y: jointsMap['skeleton_3'].y + 2 / 3 * (jointsMap['skeleton_4'].y - jointsMap['skeleton_3'].y),
-        },
-        end: jointsMap['skeleton_3'],
-      }]);
-      const data = FP.getIntersection({
-        type: 'line',
-        start: refLine.start,
-        end: refLine.end,
-      }, {
-        type: 'curve',
-        points: curve_points,
-      });
-      if (data.corner) {
-        jointsMap['skeleton_6'] = {
-          x: data.corner.x,
-          y: data.corner.y,
+      const w3 = jointsMap['skeleton_9'].x - jointsMap['skeleton_5'].x
+      let corner = jointsMap['skeleton_8']
+      if (w2 <= w3) {
+        corner = FP.getPointOnLine(jointsMap['skeleton_5'], jointsMap['skeleton_8'], w2)
+      } else {
+        const refLine = {
+          start: { x: jointsMap['skeleton_5'].x + w2, y: jointsMap['skeleton_0'].y },
+          end: { x: jointsMap['skeleton_5'].x + w2, y: jointsMap['skeleton_1'].y },
         }
+        const curve_points = FP.getCurvesPoints([{
+          start: jointsMap['skeleton_9'],
+          control1: {
+            x: jointsMap['skeleton_9'].x + 2 / 3 * (jointsMap['skeleton_4'].x - jointsMap['skeleton_9'].x),
+            y: jointsMap['skeleton_9'].y + 2 / 3 * (jointsMap['skeleton_4'].y - jointsMap['skeleton_9'].y),
+          },
+          control2: {
+            x: jointsMap['skeleton_3'].x + 2 / 3 * (jointsMap['skeleton_4'].x - jointsMap['skeleton_3'].x),
+            y: jointsMap['skeleton_3'].y + 2 / 3 * (jointsMap['skeleton_4'].y - jointsMap['skeleton_3'].y),
+          },
+          end: jointsMap['skeleton_3'],
+        }]);
+        const data = FP.getIntersection({
+          type: 'line',
+          start: refLine.start,
+          end: refLine.end,
+        }, {
+          type: 'curve',
+          points: curve_points,
+        });
+        corner = data.corner
+      }
+      jointsMap['skeleton_6'] = {
+        x: corner.x,
+        y: corner.y,
       }
       break
     }
@@ -250,6 +290,28 @@ const getJointsMap = (data) => {
       jointsMap['skeleton_7'] = {
         x: glyph.tempData['skeleton_7'].x,
         y: glyph.tempData['skeleton_7'].y + deltaY,
+      }
+      break
+    }
+    case 'skeleton_8': {
+      jointsMap['skeleton_8'] = {
+        x: glyph.tempData['skeleton_8'].x + deltaX,
+        y: glyph.tempData['skeleton_8'].y,
+      }
+      jointsMap['skeleton_9'] = {
+        x: glyph.tempData['skeleton_9'].x + deltaX,
+        y: glyph.tempData['skeleton_9'].y,
+      }
+      break
+    }
+    case 'skeleton_9': {
+      jointsMap['skeleton_9'] = {
+        x: glyph.tempData['skeleton_9'].x + deltaX,
+        y: glyph.tempData['skeleton_9'].y,
+      }
+      jointsMap['skeleton_8'] = {
+        x: glyph.tempData['skeleton_8'].x + deltaX,
+        y: glyph.tempData['skeleton_8'].y,
       }
       break
     }
@@ -291,6 +353,7 @@ glyph.onSkeletonDragEnd = (data) => {
   glyph.setParam('h2', _params.h2)
   glyph.setParam('w1', _params.w1)
   glyph.setParam('w2', _params.w2)
+  glyph.setParam('w3', _params.w3)
   glyph.tempData = null
 }
 
@@ -309,15 +372,18 @@ const computeParamsByJoints = (jointsMap) => {
   const h2_range = glyph.getParamRange('h2')
   const w1_range = glyph.getParamRange('w1')
   const w2_range = glyph.getParamRange('w2')
+  const w3_range = glyph.getParamRange('w3')
   const h1 = range(skeleton_1.y - skeleton_0.y, h1_range)
   const h2 = range(skeleton_5.y - skeleton_0.y, h2_range)
   const w1 = range(skeleton_2.x - skeleton_0.x, w1_range)
   const w2 = range(skeleton_6.x - skeleton_5.x, w2_range)
+  const w3 = range(skeleton_9.x - skeleton_5.x, w3_range)
   return {
     h1,
     h2,
     w1,
     w2,
+    w3,
   }
 }
 
@@ -334,7 +400,7 @@ const refline = (p1, p2, type) => {
 }
 
 const updateGlyphByParams = (params, global_params) => {
-  const { h1, h2, w1, w2 } = params
+  const { h1, h2, w1, w2, w3 } = params
   const { weight } = global_params
 
   const skeleton_0 = new FP.Joint('skeleton_0', {
@@ -365,40 +431,48 @@ const updateGlyphByParams = (params, global_params) => {
     x: skeleton_2.x,
     y: skeleton_2.y + h1,
   })
-  const refLine = {
-    start: { x: skeleton_5.x + w2, y: skeleton_0.y },
-    end: { x: skeleton_5.x + w2, y: skeleton_1.y },
-  }
-  const curve_points = FP.getCurvesPoints([{
-    start: skeleton_5,
-    control1: {
-      x: skeleton_5.x + 2 / 3 * (skeleton_4.x - skeleton_5.x),
-      y: skeleton_5.y + 2 / 3 * (skeleton_4.y - skeleton_5.y),
-    },
-    control2: {
-      x: skeleton_3.x + 2 / 3 * (skeleton_4.x - skeleton_3.x),
-      y: skeleton_3.y + 2 / 3 * (skeleton_4.y - skeleton_3.y),
-    },
-    end: skeleton_3,
-  }]);
-  const data = FP.getIntersection({
-    type: 'line',
-    start: refLine.start,
-    end: refLine.end,
-  }, {
-    type: 'curve',
-    points: curve_points,
-  });
-  let skeleton_6 = new FP.Joint('skeleton_6', {
-    x: skeleton_5.x,
+  const skeleton_8 = new FP.Joint('skeleton_8', {
+    x: skeleton_0.x + w3,
+    y: skeleton_0.y,
+  })
+  const skeleton_9 = new FP.Joint('skeleton_9', {
+    x: skeleton_5.x + w3,
     y: skeleton_5.y,
   })
-  if (data.corner) {
-    skeleton_6 = new FP.Joint('skeleton_6', {
-      x: data.corner.x,
-      y: data.corner.y,
-    })
+  let corner = skeleton_8
+  if (w2 <= w3) {
+    corner = FP.getPointOnLine(skeleton_5, skeleton_8, w2)
+  } else {
+    const refLine = {
+      start: { x: skeleton_5.x + w2, y: skeleton_0.y },
+      end: { x: skeleton_5.x + w2, y: skeleton_1.y },
+    }
+    const curve_points = FP.getCurvesPoints([{
+      start: skeleton_9,
+      control1: {
+        x: skeleton_9.x + 2 / 3 * (skeleton_4.x - skeleton_9.x),
+        y: skeleton_9.y + 2 / 3 * (skeleton_4.y - skeleton_9.y),
+      },
+      control2: {
+        x: skeleton_3.x + 2 / 3 * (skeleton_4.x - skeleton_3.x),
+        y: skeleton_3.y + 2 / 3 * (skeleton_4.y - skeleton_3.y),
+      },
+      end: skeleton_3,
+    }]);
+    const data = FP.getIntersection({
+      type: 'line',
+      start: refLine.start,
+      end: refLine.end,
+    }, {
+      type: 'curve',
+      points: curve_points,
+    });
+    corner = data.corner
   }
+  let skeleton_6 = new FP.Joint('skeleton_6', {
+    x: corner.x,
+    y: corner.y,
+  })
   const skeleton = {
     skeleton_0,
     skeleton_1,
@@ -408,6 +482,8 @@ const updateGlyphByParams = (params, global_params) => {
     skeleton_5,
     skeleton_6,
     skeleton_7,
+    skeleton_8,
+    skeleton_9,
   }
   
   glyph.addJoint(skeleton_0)
@@ -418,6 +494,8 @@ const updateGlyphByParams = (params, global_params) => {
   glyph.addJoint(skeleton_5)
   glyph.addJoint(skeleton_6)
   glyph.addJoint(skeleton_7)
+  glyph.addJoint(skeleton_8)
+  glyph.addJoint(skeleton_9)
   glyph.addRefLine(refline(skeleton_0, skeleton_1))
   glyph.addRefLine(refline(skeleton_0, skeleton_2))
   glyph.addRefLine(refline(skeleton_2, skeleton_3))
@@ -440,10 +518,10 @@ const updateGlyphByParams = (params, global_params) => {
 
 const getComponents = (skeleton, global_params) => {
   // 获取骨架以外的全局风格变量
-  const { weight } = global_params
+  const { weight, serifType, serifSize } = global_params
 
   // 根据骨架计算轮廓关键点
-  const { skeleton_0, skeleton_1, skeleton_2, skeleton_3, skeleton_4, skeleton_5, skeleton_6, skeleton_7 } = skeleton
+  const { skeleton_0, skeleton_1, skeleton_2, skeleton_3, skeleton_4, skeleton_5, skeleton_6, skeleton_7, skeleton_8, skeleton_9 } = skeleton
 
   // out指上侧（外侧）轮廓线
   // in指下侧（内侧）轮廓线
@@ -453,14 +531,22 @@ const getComponents = (skeleton, global_params) => {
     [
       {
         start: skeleton_0,
+        end: skeleton_8,
+      },
+      {
+        start: skeleton_8,
         bend: skeleton_2,
         end: skeleton_3,
       },
       {
         start: skeleton_3,
         bend: skeleton_4,
-        end: skeleton_5,
+        end: skeleton_9,
       },
+      {
+        start: skeleton_9,
+        end: skeleton_5,
+      }
     ],
     weight
   )
@@ -469,38 +555,149 @@ const getComponents = (skeleton, global_params) => {
   out_stroke1_start.y -= weight / 2
   in_stroke1_start.y -= weight / 2
 
+  const serif_w1 = 200
+  const serif_h1 = 100
+  const serif_h2 = 20
+  const serif_c1 = 20
+  const serif_c2 = 20
+  const stroke1_end_serif_p0 = {
+    x: skeleton_1.x - serif_w1 / 2,
+    y: skeleton_1.y,
+  }
+  const stroke1_end_serif_p1 = {
+    x: skeleton_1.x + serif_w1 / 2,
+    y: skeleton_1.y,
+  }
+  const stroke1_end_serif_p2 = {
+    x: stroke1_end_serif_p0.x,
+    y: stroke1_end_serif_p0.y - serif_h2,
+  }
+  const stroke1_end_serif_p3 = {
+    x: stroke1_end_serif_p1.x,
+    y: stroke1_end_serif_p1.y - serif_h2,
+  }
+  const stroke1_end_serif_p4 = FP.getIntersection({
+    type: 'line',
+    start: stroke1_end_serif_p2,
+    end: stroke1_end_serif_p3,
+  }, {
+    type: 'line',
+    start: in_stroke1_end,
+    end: in_stroke1_start,
+  }).corner
+  const stroke1_end_serif_p5 = FP.getIntersection({
+    type: 'line',
+    start: stroke1_end_serif_p2,
+    end: stroke1_end_serif_p3,
+  }, {
+    type: 'line',
+    start: out_stroke1_end,
+    end: out_stroke1_start,
+  }).corner
+  const stroke1_end_serif_p6 = FP.goStraight(in_stroke1_end, stroke1_end_serif_p4, serif_h1)
+  const stroke1_end_serif_p7 = FP.goStraight(out_stroke1_end, stroke1_end_serif_p5, serif_h1)
+  const stroke1_end_serif_p4_before = FP.getPointOnLine(stroke1_end_serif_p4, stroke1_end_serif_p2, serif_c1)
+  const stroke1_end_serif_p4_after = FP.getPointOnLine(stroke1_end_serif_p4, stroke1_end_serif_p6, serif_c2)
+  const stroke1_end_serif_p5_before = FP.getPointOnLine(stroke1_end_serif_p5, stroke1_end_serif_p3, serif_c1)
+  const stroke1_end_serif_p5_after = FP.getPointOnLine(stroke1_end_serif_p5, stroke1_end_serif_p7, serif_c2)
+
+  const stroke3_end_serif_p0 = {
+    x: skeleton_7.x - serif_w1 / 2,
+    y: skeleton_7.y,
+  }
+  const stroke3_end_serif_p1 = {
+    x: skeleton_7.x + serif_w1 / 2,
+    y: skeleton_7.y,
+  }
+  const stroke3_end_serif_p2 = {
+    x: stroke3_end_serif_p0.x,
+    y: stroke3_end_serif_p0.y - serif_h2,
+  }
+  const stroke3_end_serif_p3 = {
+    x: stroke3_end_serif_p1.x,
+    y: stroke3_end_serif_p1.y - serif_h2,
+  }
+  const stroke3_end_serif_p4 = FP.getIntersection({
+    type: 'line',
+    start: stroke3_end_serif_p2,
+    end: stroke3_end_serif_p3,
+  }, {
+    type: 'line',
+    start: in_stroke3_end,
+    end: in_stroke3_start,
+  }).corner
+  const stroke3_end_serif_p5 = FP.getIntersection({
+    type: 'line',
+    start: stroke3_end_serif_p2,
+    end: stroke3_end_serif_p3,
+  }, {
+    type: 'line',
+    start: out_stroke3_end,
+    end: out_stroke3_start,
+  }).corner
+  const stroke3_end_serif_p6 = FP.goStraight(in_stroke3_end, stroke3_end_serif_p4, serif_h1)
+  const stroke3_end_serif_p7 = FP.goStraight(out_stroke3_end, stroke3_end_serif_p5, serif_h1)
+  const stroke3_end_serif_p4_before = FP.getPointOnLine(stroke3_end_serif_p4, stroke3_end_serif_p2, serif_c1)
+  const stroke3_end_serif_p4_after = FP.getPointOnLine(stroke3_end_serif_p4, stroke3_end_serif_p6, serif_c2)
+  const stroke3_end_serif_p5_before = FP.getPointOnLine(stroke3_end_serif_p5, stroke3_end_serif_p3, serif_c1)
+  const stroke3_end_serif_p5_after = FP.getPointOnLine(stroke3_end_serif_p5, stroke3_end_serif_p7, serif_c2)
+
   // 创建钢笔组件
   const pen1 = new FP.PenComponent()
   pen1.beginPath()
-  pen1.moveTo(out_stroke1_start.x, out_stroke1_start.y)
-  pen1.lineTo(out_stroke1_end.x, out_stroke1_end.y)
-  pen1.lineTo(in_stroke1_end.x, in_stroke1_end.y)
-  pen1.lineTo(in_stroke1_start.x, in_stroke1_start.y)
+  pen1.moveTo(in_stroke1_start.x, in_stroke1_start.y)
+  pen1.lineTo(stroke1_end_serif_p6.x, stroke1_end_serif_p6.y)
+  pen1.bezierTo(
+    stroke1_end_serif_p4_after.x, stroke1_end_serif_p4_after.y,
+    stroke1_end_serif_p4_before.x, stroke1_end_serif_p4_before.y,
+    stroke1_end_serif_p2.x, stroke1_end_serif_p2.y,
+  )
+  pen1.lineTo(stroke1_end_serif_p0.x, stroke1_end_serif_p0.y)
+  pen1.lineTo(stroke1_end_serif_p1.x, stroke1_end_serif_p1.y)
+  pen1.lineTo(stroke1_end_serif_p3.x, stroke1_end_serif_p3.y)
+  pen1.bezierTo(
+    stroke1_end_serif_p5_before.x, stroke1_end_serif_p5_before.y,
+    stroke1_end_serif_p5_after.x, stroke1_end_serif_p5_after.y,
+    stroke1_end_serif_p7.x, stroke1_end_serif_p7.y,
+  )
   pen1.lineTo(out_stroke1_start.x, out_stroke1_start.y)
+  pen1.lineTo(in_stroke1_start.x, in_stroke1_start.y)
   pen1.closePath()
 
   const pen2 = new FP.PenComponent()
   pen2.beginPath()
-  pen2.moveTo(out_stroke2_curves[0].start.x, out_stroke2_curves[0].start.y)
-  for (let i = 0; i < out_stroke2_curves.length; i++) {
-    const curve = out_stroke2_curves[i]
+  pen2.moveTo(in_stroke2_curves[0].start.x, in_stroke2_curves[0].start.y)
+  for (let i = 0; i < in_stroke2_curves.length; i++) {
+    const curve = in_stroke2_curves[i]
     pen2.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
   }
-  pen2.lineTo(in_stroke2_curves[in_stroke2_curves.length - 1].end.x, in_stroke2_curves[in_stroke2_curves.length - 1].end.y)
-  for (let i = in_stroke2_curves.length - 1; i >= 0; i--) {
-    const curve = in_stroke2_curves[i]
+  pen2.lineTo(out_stroke2_curves[out_stroke2_curves.length - 1].end.x, out_stroke2_curves[out_stroke2_curves.length - 1].end.y)
+  for (let i = out_stroke2_curves.length - 1; i >= 0; i--) {
+    const curve = out_stroke2_curves[i]
     pen2.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
   }
-  pen2.lineTo(out_stroke2_curves[0].start.x, out_stroke2_curves[0].start.y)
+  pen2.lineTo(in_stroke2_curves[0].start.x, in_stroke2_curves[0].start.y)
   pen2.closePath()
 
   const pen3 = new FP.PenComponent()
   pen3.beginPath()
-  pen3.moveTo(out_stroke3_start.x, out_stroke3_start.y)
-  pen3.lineTo(out_stroke3_end.x, out_stroke3_end.y)
-  pen3.lineTo(in_stroke3_end.x, in_stroke3_end.y)
-  pen3.lineTo(in_stroke3_start.x, in_stroke3_start.y)
+  pen3.moveTo(in_stroke3_start.x, in_stroke3_start.y)
+  pen3.lineTo(stroke3_end_serif_p6.x, stroke3_end_serif_p6.y)
+  pen3.bezierTo(
+    stroke3_end_serif_p4_after.x, stroke3_end_serif_p4_after.y,
+    stroke3_end_serif_p4_before.x, stroke3_end_serif_p4_before.y,
+    stroke3_end_serif_p2.x, stroke3_end_serif_p2.y,
+  )
+  pen3.lineTo(stroke3_end_serif_p0.x, stroke3_end_serif_p0.y)
+  pen3.lineTo(stroke3_end_serif_p1.x, stroke3_end_serif_p1.y)
+  pen3.lineTo(stroke3_end_serif_p3.x, stroke3_end_serif_p3.y)
+  pen3.bezierTo(
+    stroke3_end_serif_p5_before.x, stroke3_end_serif_p5_before.y,
+    stroke3_end_serif_p5_after.x, stroke3_end_serif_p5_after.y,
+    stroke3_end_serif_p7.x, stroke3_end_serif_p7.y,
+  )
   pen3.lineTo(out_stroke3_start.x, out_stroke3_start.y)
+  pen3.lineTo(in_stroke3_start.x, in_stroke3_start.y)
   pen3.closePath()
 
   return [ pen1, pen2, pen3 ]

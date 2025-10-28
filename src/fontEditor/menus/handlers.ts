@@ -3370,14 +3370,28 @@ const importTemplateDigits = async () => {
     }
     for (let j = 0; j < globalParams.length; j++) {
       const param = globalParams[j]
-      parameters.push({
-        uuid: genUUID(),
-        name: param.name,
-        type: ParameterType.Number,
-        value: param.default,
-        min: param.min || 0,
-        max: param.max || 1000,
-      })
+      // @ts-ignore
+      if (param.type === ParameterType.Enum) {
+        parameters.push({
+          uuid: genUUID(),
+          name: param.name,
+          // @ts-ignore
+          type: ParameterType.Enum,
+          value: param.default,
+          // @ts-ignore
+          options: param.options,
+        })
+      } else {
+        parameters.push({
+          uuid: genUUID(),
+          name: param.name,
+          // @ts-ignore
+          type: param.type || ParameterType.Number,
+          value: param.default,
+          min: param.min || 0,
+          max: param.max || 1000,
+        })
+      }
     }
     let letter_script_res = base ? await fetch(base + `/templates/digits/${name}.js`) : await fetch(`templates/digits/${name}.js`)
     let letter_script = await letter_script_res.text()
@@ -3426,14 +3440,28 @@ const importTemplateLetters = async () => {
     }
     for (let j = 0; j < globalParams.length; j++) {
       const param = globalParams[j]
-      parameters.push({
-        uuid: genUUID(),
-        name: param.name,
-        type: ParameterType.Number,
-        value: param.default,
-        min: param.min || 0,
-        max: param.max || 1000,
-      })
+      // @ts-ignore
+      if (param.type === ParameterType.Enum) {
+        parameters.push({
+          uuid: genUUID(),
+          name: param.name,
+          // @ts-ignore
+          type: ParameterType.Enum,
+          value: param.default,
+          // @ts-ignore
+          options: param.options,
+        })
+      } else {
+        parameters.push({
+          uuid: genUUID(),
+          name: param.name,
+          // @ts-ignore
+          type: param.type || ParameterType.Number,
+          value: param.default,
+          min: param.min || 0,
+          max: param.max || 1000,
+        })
+      }
     }
     let letter_script_res = base ? await fetch(base + `/templates/lowercase_letters/${name}.js`) : await fetch(`templates/lowercase_letters/${name}.js`)
     let letter_script = await letter_script_res.text()
@@ -3477,14 +3505,28 @@ const importTemplateLetters = async () => {
     }
     for (let j = 0; j < globalParams.length; j++) {
       const param = globalParams[j]
-      parameters.push({
-        uuid: genUUID(),
-        name: param.name,
-        type: ParameterType.Number,
-        value: param.default,
-        min: param.min || 0,
-        max: param.max || 1000,
-      })
+      // @ts-ignore
+      if (param.type === ParameterType.Enum) {
+        parameters.push({
+          uuid: genUUID(),
+          name: param.name,
+          // @ts-ignore
+          type: ParameterType.Enum,
+          value: param.default,
+          // @ts-ignore
+          options: param.options,
+        })
+      } else {
+        parameters.push({
+          uuid: genUUID(),
+          name: param.name,
+          // @ts-ignore
+          type: param.type || ParameterType.Number,
+          value: param.default,
+          min: param.min || 0,
+          max: param.max || 1000,
+        })
+      }
     }
     let letter_script_res = base ? await fetch(base + `/templates/capital_letters/${name}.js`) : await fetch(`templates/capital_letters/${name}.js`)
     let letter_script = await letter_script_res.text()

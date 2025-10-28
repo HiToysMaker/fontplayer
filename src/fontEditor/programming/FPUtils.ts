@@ -678,6 +678,9 @@ const getIntersection = (item1, item2) => {
 const calculateIntersection = (p1, p2, p3, p4) => {
 	// 计算分母
 	const denominator = (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
+	if (p1.x === p2.x && p1.y === p2.y || p3.x === p4.x && p3.y === p4.y && denominator === 0) {
+		return null
+	}
 	// 平行或重合
 	if (denominator === 0) return p2;
 
@@ -760,7 +763,7 @@ const getAngle = (A, B, C) => {
   return angle
 }
 
-const getRadiusPointsOnCurve = (_points, radius, reverse: boolean = false) => {
+const getRadiusPointsOnCurve = (_points, radius, reverse: boolean = false, reverse_final_curves: boolean = false) => {
 	let length = 0
 	let points = R.clone(_points)
 	if (reverse) {
@@ -785,13 +788,14 @@ const getRadiusPointsOnCurve = (_points, radius, reverse: boolean = false) => {
 			point: points[0],
 			index: 0,
 			tangent: _line,
-			final_curves: reverse ? reverseCurves(final_curves) : final_curves,
+			final_curves: reverse && !reverse_final_curves ? reverseCurves(final_curves) : final_curves,
 		}
 	}
 	for (let i = 1; i < points.length; i++) {
 		length += distance(points[i], points[i - 1])
 		if (length >= radius) {
-			const { curves: final_curves } = fitCurvesByPoints(points.slice(i))
+			const final_points = points.slice(i)
+			const { curves: final_curves } = fitCurvesByPoints(final_points)
 			const _curve = [final_curves[0].start, final_curves[0].control1, final_curves[0].control2, final_curves[0].end]
 			const _k = bezierCurve.qprime(getBezierCurve(final_curves[0]), 0)
 			const _angle = Math.atan2(_k.y, _k.x)
@@ -806,7 +810,8 @@ const getRadiusPointsOnCurve = (_points, radius, reverse: boolean = false) => {
 				point: points[i],
 				index: i,
 				tangent: _line,
-				final_curves: reverse ? reverseCurves(final_curves) : final_curves,
+				final_curves: reverse && !reverse_final_curves ? reverseCurves(final_curves) : final_curves,
+				final_points: final_points,
 			}
 		}
 	}
@@ -825,7 +830,7 @@ const getRadiusPointsOnCurve = (_points, radius, reverse: boolean = false) => {
 		point: points[points.length - 1],
 		index: points.length - 1,
 		tangent: _line,
-		final_curves: reverse ? reverseCurves(final_curves) : final_curves,
+		final_curves: reverse && !reverse_final_curves ? reverseCurves(final_curves) : final_curves,
 	}
 }
 
@@ -1100,14 +1105,8 @@ const getSquare = (point, sideLength) => {
 	return square
 }
 
-const getCircle = (point, radius) => {
-	const circle = [
-		{
-			start: { x: point.x, y: point.y - radius },
-			control1: { x: point.x - radius / 2, y: point.y - radius },
-			control2: { x: point.x - radius, y: point.y - radius / 2 },
-			end: { x: point.x - radius, y: point.y },
-		},
+const getCircle = (point, radius, angle = 0, reverse: boolean = false) => {
+	let circle = [
 		{
 			start: { x: point.x - radius, y: point.y },
 			control1: { x: point.x - radius, y: point.y + radius / 2 },
@@ -1126,8 +1125,89 @@ const getCircle = (point, radius) => {
 			control2: { x: point.x + radius / 2, y: point.y - radius },
 			end: { x: point.x, y: point.y - radius },
 		},
+		{
+			start: { x: point.x, y: point.y - radius },
+			control1: { x: point.x - radius / 2, y: point.y - radius },
+			control2: { x: point.x - radius, y: point.y - radius / 2 },
+			end: { x: point.x - radius, y: point.y },
+		},
 	]
+	if (angle !== 0) {
+		circle = circle.map(curve => {
+			return {
+				start: rotateFromPoint(curve.start, point, angle),
+				control1: rotateFromPoint(curve.control1, point, angle),
+				control2: rotateFromPoint(curve.control2, point, angle),
+				end: rotateFromPoint(curve.end, point, angle),
+			}
+		})
+	}
+	if (reverse) {
+		circle = reverseCurves(circle)
+	}
 	return circle
+}
+
+const getTangentOnCurves = (curves, percentage) => {
+	const length = 100
+	const _percentage = percentage % (1 / curves.length) / (1 / curves.length)
+	const _curveIndex = Math.floor(percentage / (1 / curves.length))
+	const points = []
+	let p = null
+	let k = null
+	let angle = 0
+	const n = 100
+	for (let i = 0; i < curves.length; i++) {
+		if (i < _curveIndex) {
+			const _curve = [curves[i].start, curves[i].control1, curves[i].control2, curves[i].end]
+			for (let j = 0; j <= n; j++) {
+				const point = bezierCurve.q(_curve, j / n)
+				points.push(point)
+			}
+		} else if (i === _curveIndex) {
+			const _curve = [curves[i].start, curves[i].control1, curves[i].control2, curves[i].end]
+			for (let j = 0; j <= n; j++) {
+				if (j <= _percentage * n) {
+					const point = bezierCurve.q(_curve, j / n)
+					points.push(point)
+				} else if (!p){
+					k = bezierCurve.qprime(_curve, j / n)
+					p = bezierCurve.q(_curve, j / n)
+					angle = Math.atan2(k.y, k.x)
+				}
+			}
+		}
+	}
+	return {
+		tangent: {
+			start: p,
+			end: {
+				x: p.x + length * Math.cos(angle),
+				y: p.y - length * Math.sin(angle),
+			},
+		},
+		point: p,
+		final_curves: percentage === 0 ? curves : fitCurvesByPoints(points).curves,
+	}
+}
+
+const rotateFromPoint = (p1, p2, angle) => {
+	// 将坐标系平移到以 p2 为原点
+	const dx = p1.x - p2.x
+	const dy = p1.y - p2.y
+	
+	// 应用旋转矩阵（逆时针旋转 angle 弧度）
+	// 在 canvas 坐标系（y 向下）中，y 相关的计算需要调整符号
+	const cosA = Math.cos(angle)
+	const sinA = Math.sin(angle)
+	const rotatedDx = dx * cosA + dy * sinA
+	const rotatedDy = -dx * sinA + dy * cosA
+	
+	// 平移回原坐标系
+	return {
+		x: rotatedDx + p2.x,
+		y: rotatedDy + p2.y
+	}
 }
 
 const FP = {
@@ -1163,6 +1243,7 @@ const FP = {
 	getCurveContours2,
 	getSquare,
 	getCircle,
+	getTangentOnCurves,
 }
 
 const suggestion_items = [
