@@ -186,26 +186,68 @@ const getComponents = (skeleton, global_params) => {
   const stroke1_end_serif_p5_before = FP.getPointOnLine(stroke1_end_serif_p5, stroke1_end_serif_p3, serif_c1)
   const stroke1_end_serif_p5_after = FP.getPointOnLine(stroke1_end_serif_p5, stroke1_end_serif_p7, serif_c2)
 
+  const serif2_w1 = weight * 1.5 * serifSize
+  const serif2_h1 = serif2_w1 * 0.5
+  const serif2_radius = 20
+  const serif2_radius2 = 50
+  const serif2_angle = -FP.degreeToRadius(30)
+  const start_serif_p0 = out_stroke1_start
+  const start_serif_p1 = {
+    x: start_serif_p0.x - serif2_radius,
+    y: start_serif_p0.y,
+  }
+  const start_serif_p23 = {
+    x: start_serif_p1.x - serif2_w1,
+    y: start_serif_p1.y + serif2_h1,
+  }
+  const start_serif_vec_p23_4 = FP.turnAngleFromStart(start_serif_p23, start_serif_p1, serif2_angle, 100)
+  const start_serif_p4 = FP.getIntersection({
+    type: 'line',
+    start: start_serif_p23,
+    end: start_serif_vec_p23_4,
+  }, {
+    type: 'line',
+    start: in_stroke1_start,
+    end: in_stroke1_end,
+  }).corner
+  const start_serif_p5 = FP.getPointOnLine(start_serif_p4, in_stroke1_end, serif2_radius2)
+  const start_serif_p4_before = FP.getPointOnLine(start_serif_p4, start_serif_p23, serif2_radius2 * 0.5)
+  const start_serif_p4_after = FP.getPointOnLine(start_serif_p4, start_serif_p5, serif2_radius2 * 0.5)
+  const start_serif_p2 = FP.getPointOnLine(start_serif_p23, start_serif_p1, serif2_radius)
+  const start_serif_p3 = FP.getPointOnLine(start_serif_p23, start_serif_p4, serif2_radius)
+
   // 创建钢笔组件
   const pen1 = new FP.PenComponent()
   pen1.beginPath()
-  pen1.moveTo(in_stroke1_start.x, in_stroke1_start.y)
-  pen1.lineTo(stroke1_end_serif_p6.x, stroke1_end_serif_p6.y)
-  pen1.bezierTo(
-    stroke1_end_serif_p4_after.x, stroke1_end_serif_p4_after.y,
-    stroke1_end_serif_p4_before.x, stroke1_end_serif_p4_before.y,
-    stroke1_end_serif_p2.x, stroke1_end_serif_p2.y,
-  )
-  pen1.lineTo(stroke1_end_serif_p0.x, stroke1_end_serif_p0.y)
-  pen1.lineTo(stroke1_end_serif_p1.x, stroke1_end_serif_p1.y)
-  pen1.lineTo(stroke1_end_serif_p3.x, stroke1_end_serif_p3.y)
-  pen1.bezierTo(
-    stroke1_end_serif_p5_before.x, stroke1_end_serif_p5_before.y,
-    stroke1_end_serif_p5_after.x, stroke1_end_serif_p5_after.y,
-    stroke1_end_serif_p7.x, stroke1_end_serif_p7.y,
-  )
-  pen1.lineTo(out_stroke1_start.x, out_stroke1_start.y)
-  pen1.lineTo(in_stroke1_start.x, in_stroke1_start.y)
+  if (serifType === 0) {
+    pen1.moveTo(in_stroke1_start.x, in_stroke1_start.y)
+    pen1.lineTo(in_stroke1_end.x, in_stroke1_end.y)
+    pen1.lineTo(out_stroke1_end.x, out_stroke1_end.y)
+    pen1.lineTo(out_stroke1_start.x, out_stroke1_start.y)
+    pen1.lineTo(in_stroke1_start.x, in_stroke1_start.y)
+  } else if (serifType === 1) {
+    pen1.moveTo(start_serif_p0.x, start_serif_p0.y)
+    pen1.lineTo(start_serif_p1.x, start_serif_p1.y)
+    pen1.lineTo(start_serif_p2.x, start_serif_p2.y)
+    pen1.lineTo(start_serif_p3.x, start_serif_p3.y)
+    pen1.lineTo(start_serif_p4_before.x, start_serif_p4_before.y)
+    pen1.quadraticBezierTo(start_serif_p4.x, start_serif_p4.y, start_serif_p5.x, start_serif_p5.y)
+    pen1.lineTo(stroke1_end_serif_p6.x, stroke1_end_serif_p6.y)
+    pen1.bezierTo(
+      stroke1_end_serif_p4_after.x, stroke1_end_serif_p4_after.y,
+      stroke1_end_serif_p4_before.x, stroke1_end_serif_p4_before.y,
+      stroke1_end_serif_p2.x, stroke1_end_serif_p2.y,
+    )
+    pen1.lineTo(stroke1_end_serif_p0.x, stroke1_end_serif_p0.y)
+    pen1.lineTo(stroke1_end_serif_p1.x, stroke1_end_serif_p1.y)
+    pen1.lineTo(stroke1_end_serif_p3.x, stroke1_end_serif_p3.y)
+    pen1.bezierTo(
+      stroke1_end_serif_p5_before.x, stroke1_end_serif_p5_before.y,
+      stroke1_end_serif_p5_after.x, stroke1_end_serif_p5_after.y,
+      stroke1_end_serif_p7.x, stroke1_end_serif_p7.y,
+    )
+    pen1.lineTo(start_serif_p0.x, start_serif_p0.y)
+  }
   pen1.closePath()
 
   return [ pen1 ]

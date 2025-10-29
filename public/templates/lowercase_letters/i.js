@@ -206,6 +206,36 @@ const getComponents = (skeleton, global_params) => {
   const stroke2_end_serif_p5_before = FP.getPointOnLine(stroke2_end_serif_p5, stroke2_end_serif_p3, serif_c1)
   const stroke2_end_serif_p5_after = FP.getPointOnLine(stroke2_end_serif_p5, stroke2_end_serif_p7, serif_c2)
 
+  const serif2_w1 = weight * 1.5 * serifSize
+  const serif2_h1 = serif2_w1 * 0.5
+  const serif2_radius = 20
+  const serif2_radius2 = 50
+  const serif2_angle = -FP.degreeToRadius(30)
+  const start_serif_p0 = out_stroke2_start
+  const start_serif_p1 = {
+    x: start_serif_p0.x - serif2_radius,
+    y: start_serif_p0.y,
+  }
+  const start_serif_p23 = {
+    x: start_serif_p1.x - serif2_w1,
+    y: start_serif_p1.y + serif2_h1,
+  }
+  const start_serif_vec_p23_4 = FP.turnAngleFromStart(start_serif_p23, start_serif_p1, serif2_angle, 100)
+  const start_serif_p4 = FP.getIntersection({
+    type: 'line',
+    start: start_serif_p23,
+    end: start_serif_vec_p23_4,
+  }, {
+    type: 'line',
+    start: in_stroke2_start,
+    end: in_stroke2_end,
+  }).corner
+  const start_serif_p5 = FP.getPointOnLine(start_serif_p4, in_stroke2_end, serif2_radius2)
+  const start_serif_p4_before = FP.getPointOnLine(start_serif_p4, start_serif_p23, serif2_radius2 * 0.5)
+  const start_serif_p4_after = FP.getPointOnLine(start_serif_p4, start_serif_p5, serif2_radius2 * 0.5)
+  const start_serif_p2 = FP.getPointOnLine(start_serif_p23, start_serif_p1, serif2_radius)
+  const start_serif_p3 = FP.getPointOnLine(start_serif_p23, start_serif_p4, serif2_radius)
+
   // 创建钢笔组件
   const pen1 = new FP.PenComponent()
   pen1.beginPath()
@@ -220,23 +250,35 @@ const getComponents = (skeleton, global_params) => {
 
   const pen2 = new FP.PenComponent()
   pen2.beginPath()
-  pen2.moveTo(in_stroke2_start.x, in_stroke2_start.y)
-  pen2.lineTo(stroke2_end_serif_p6.x, stroke2_end_serif_p6.y)
-  pen2.bezierTo(
-    stroke2_end_serif_p4_after.x, stroke2_end_serif_p4_after.y,
-    stroke2_end_serif_p4_before.x, stroke2_end_serif_p4_before.y,
-    stroke2_end_serif_p2.x, stroke2_end_serif_p2.y,
-  )
-  pen2.lineTo(stroke2_end_serif_p0.x, stroke2_end_serif_p0.y)
-  pen2.lineTo(stroke2_end_serif_p1.x, stroke2_end_serif_p1.y)
-  pen2.lineTo(stroke2_end_serif_p3.x, stroke2_end_serif_p3.y)
-  pen2.bezierTo(
-    stroke2_end_serif_p5_before.x, stroke2_end_serif_p5_before.y,
-    stroke2_end_serif_p5_after.x, stroke2_end_serif_p5_after.y,
-    stroke2_end_serif_p7.x, stroke2_end_serif_p7.y,
-  )
-  pen2.lineTo(out_stroke2_start.x, out_stroke2_start.y)
-  pen2.lineTo(in_stroke2_start.x, in_stroke2_start.y)
+  if (serifType === 0) {
+    pen2.moveTo(in_stroke2_start.x, in_stroke2_start.y)
+    pen2.lineTo(in_stroke2_end.x, in_stroke2_end.y)
+    pen2.lineTo(out_stroke2_end.x, out_stroke2_end.y)
+    pen2.lineTo(out_stroke2_start.x, out_stroke2_start.y)
+    pen2.lineTo(in_stroke2_start.x, in_stroke2_start.y)
+  } else if (serifType === 1) {
+    pen2.moveTo(start_serif_p0.x, start_serif_p0.y)
+    pen2.lineTo(start_serif_p1.x, start_serif_p1.y)
+    pen2.lineTo(start_serif_p2.x, start_serif_p2.y)
+    pen2.lineTo(start_serif_p3.x, start_serif_p3.y)
+    pen2.lineTo(start_serif_p4_before.x, start_serif_p4_before.y)
+    pen2.quadraticBezierTo(start_serif_p4.x, start_serif_p4.y, start_serif_p5.x, start_serif_p5.y)
+    pen2.lineTo(stroke2_end_serif_p6.x, stroke2_end_serif_p6.y)
+    pen2.bezierTo(
+      stroke2_end_serif_p4_after.x, stroke2_end_serif_p4_after.y,
+      stroke2_end_serif_p4_before.x, stroke2_end_serif_p4_before.y,
+      stroke2_end_serif_p2.x, stroke2_end_serif_p2.y,
+    )
+    pen2.lineTo(stroke2_end_serif_p0.x, stroke2_end_serif_p0.y)
+    pen2.lineTo(stroke2_end_serif_p1.x, stroke2_end_serif_p1.y)
+    pen2.lineTo(stroke2_end_serif_p3.x, stroke2_end_serif_p3.y)
+    pen2.bezierTo(
+      stroke2_end_serif_p5_before.x, stroke2_end_serif_p5_before.y,
+      stroke2_end_serif_p5_after.x, stroke2_end_serif_p5_after.y,
+      stroke2_end_serif_p7.x, stroke2_end_serif_p7.y,
+    )
+    pen2.lineTo(start_serif_p0.x, start_serif_p0.y)
+  }
   pen2.closePath()
 
   return [ pen1, pen2 ]

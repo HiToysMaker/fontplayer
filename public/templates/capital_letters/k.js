@@ -243,7 +243,7 @@ const getComponents = (skeleton, global_params) => {
   const serif_c1 = 20
   const serif_c2 = 20
   const stroke1_start_serif_p0 = {
-    x: skeleton_0.x - serif_w1 * 0.35,
+    x: skeleton_0.x - serif_w1 / 2,
     y: skeleton_0.y,
   }
   const stroke1_start_serif_p1 = {
