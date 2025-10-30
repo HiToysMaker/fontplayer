@@ -292,7 +292,7 @@ const getComponents = (skeleton, global_params) => {
     end: out_stroke1_curves_final_2[0].control1,
   }).corner
 
-  const serif_w1 = 200
+  const serif_w1 = serifSize * 100
   const serif_h1 = 100
   const serif_h2 = 20
   const serif_c1 = 20

@@ -276,7 +276,7 @@ const getComponents = (skeleton, global_params) => {
     weight
   )
 
-  const serif_w1 = 200
+  const serif_w1 = serifSize * 100
   const serif_h1 = 100
   const serif_h2 = 20
   const serif_c1 = 20
@@ -431,29 +431,43 @@ const getComponents = (skeleton, global_params) => {
 
   const pen2 = new FP.PenComponent()
   pen2.beginPath()
-  pen2.moveTo(in_stroke2_curves_final[0].start.x, in_stroke2_curves_final[0].start.y)
-  for (let i = 0; i < in_stroke2_curves_final.length; i++) {
-    const curve = in_stroke2_curves_final[i]
-    pen2.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
+  if (serifType === 0) {
+    pen2.moveTo(in_stroke2_curves[0].start.x, in_stroke2_curves[0].start.y)
+    for (let i = 0; i < in_stroke2_curves.length; i++) {
+      const curve = in_stroke2_curves[i]
+      pen2.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
+    }
+    pen2.lineTo(out_stroke2_curves[out_stroke2_curves.length - 1].end.x, out_stroke2_curves[out_stroke2_curves.length - 1].end.y)
+    for (let i = out_stroke2_curves.length - 1; i >= 0; i--) {
+      const curve = out_stroke2_curves[i]
+      pen2.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
+    }
+    pen2.lineTo(in_stroke2_curves[0].start.x, in_stroke2_curves[0].start.y)
+  } else if (serifType === 1) {
+    pen2.moveTo(in_stroke2_curves_final[0].start.x, in_stroke2_curves_final[0].start.y)
+    for (let i = 0; i < in_stroke2_curves_final.length; i++) {
+      const curve = in_stroke2_curves_final[i]
+      pen2.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
+    }
+    pen2.bezierTo(
+      stroke2_end_serif_p4_after.x, stroke2_end_serif_p4_after.y,
+      stroke2_end_serif_p4_before.x, stroke2_end_serif_p4_before.y,
+      stroke2_end_serif_p2.x, stroke2_end_serif_p2.y,
+    )
+    pen2.lineTo(stroke2_end_serif_p0.x, stroke2_end_serif_p0.y)
+    pen2.lineTo(stroke2_end_serif_p1.x, stroke2_end_serif_p1.y)
+    pen2.lineTo(stroke2_end_serif_p3.x, stroke2_end_serif_p3.y)
+    pen2.bezierTo(
+      stroke2_end_serif_p5_before.x, stroke2_end_serif_p5_before.y,
+      stroke2_end_serif_p5_after.x, stroke2_end_serif_p5_after.y,
+      stroke2_end_serif_p7.x, stroke2_end_serif_p7.y,
+    )
+    for (let i = out_stroke2_curves_final.length - 1; i >= 0; i--) {
+      const curve = out_stroke2_curves_final[i]
+      pen2.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
+    }
+    pen2.lineTo(out_stroke2_curves_final[0].start.x, out_stroke2_curves_final[0].start.y)
   }
-  pen2.bezierTo(
-    stroke2_end_serif_p4_after.x, stroke2_end_serif_p4_after.y,
-    stroke2_end_serif_p4_before.x, stroke2_end_serif_p4_before.y,
-    stroke2_end_serif_p2.x, stroke2_end_serif_p2.y,
-  )
-  pen2.lineTo(stroke2_end_serif_p0.x, stroke2_end_serif_p0.y)
-  pen2.lineTo(stroke2_end_serif_p1.x, stroke2_end_serif_p1.y)
-  pen2.lineTo(stroke2_end_serif_p3.x, stroke2_end_serif_p3.y)
-  pen2.bezierTo(
-    stroke2_end_serif_p5_before.x, stroke2_end_serif_p5_before.y,
-    stroke2_end_serif_p5_after.x, stroke2_end_serif_p5_after.y,
-    stroke2_end_serif_p7.x, stroke2_end_serif_p7.y,
-  )
-  for (let i = out_stroke2_curves_final.length - 1; i >= 0; i--) {
-    const curve = out_stroke2_curves_final[i]
-    pen2.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
-  }
-  pen2.lineTo(out_stroke2_curves_final[0].start.x, out_stroke2_curves_final[0].start.y)
   pen2.closePath()
 
   return [ pen1, pen2 ]

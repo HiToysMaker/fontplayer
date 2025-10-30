@@ -274,7 +274,7 @@ const getComponents = (skeleton, global_params) => {
     weight
   )
 
-  const serif_w1 = 200
+  const serif_w1 = serifSize * 100
   const serif_h1 = 100
   const serif_h2 = 20
   const serif_c1 = 20

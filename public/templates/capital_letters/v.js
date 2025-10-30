@@ -155,7 +155,7 @@ const updateGlyphByParams = (params, global_params) => {
 
 const getComponents = (skeleton, global_params) => {
   // 获取骨架以外的全局风格变量
-  const { weight } = global_params
+  const { weight, serifType, serifSize } = global_params
 
   // 根据骨架计算轮廓关键点
   const { skeleton_0, skeleton_1, skeleton_2 } = skeleton
@@ -182,7 +182,7 @@ const getComponents = (skeleton, global_params) => {
     { type: 'line', start: out_stroke2_start, end: out_stroke2_end },
   ).corner
 
-  const serif_w1 = 200
+  const serif_w1 = serifSize * 100
   const serif_h1 = 100
   const serif_h2 = 20
   const serif_c1 = 20
@@ -272,46 +272,64 @@ const getComponents = (skeleton, global_params) => {
   // 创建钢笔组件
   const pen1 = new FP.PenComponent()
   pen1.beginPath()
-  pen1.moveTo(stroke1_start_serif_p1.x, stroke1_start_serif_p1.y)
-  pen1.lineTo(stroke1_start_serif_p0.x, stroke1_start_serif_p0.y)
-  pen1.lineTo(stroke1_start_serif_p2.x, stroke1_start_serif_p2.y)
-  pen1.bezierTo(
-    stroke1_start_serif_p4_before.x, stroke1_start_serif_p4_before.y,
-    stroke1_start_serif_p4_after.x, stroke1_start_serif_p4_after.y,
-    stroke1_start_serif_p6.x, stroke1_start_serif_p6.y,
-  )
-  pen1.lineTo(out_corner_left.x, out_corner_left.y)
-  pen1.lineTo(skeleton_1.x, skeleton_1.y)
-  pen1.lineTo(out_stroke1_end.x, out_stroke1_end.y)
-  pen1.lineTo(stroke1_start_serif_p7.x, stroke1_start_serif_p7.y)
-  pen1.bezierTo(
-    stroke1_start_serif_p5_after.x, stroke1_start_serif_p5_after.y,
-    stroke1_start_serif_p5_before.x, stroke1_start_serif_p5_before.y,
-    stroke1_start_serif_p3.x, stroke1_start_serif_p3.y
-  )
-  pen1.lineTo(stroke1_start_serif_p1.x, stroke1_start_serif_p1.y)
+  if (serifType === 0) {
+    pen1.moveTo(in_stroke1_start.x, in_stroke1_start.y)
+    pen1.lineTo(out_corner_left.x, out_corner_left.y)
+    pen1.lineTo(skeleton_1.x, skeleton_1.y)
+    pen1.lineTo(out_stroke1_end.x, out_stroke1_end.y)
+    pen1.lineTo(out_stroke1_start.x, out_stroke1_start.y)
+    pen1.lineTo(in_stroke1_start.x, in_stroke1_start.y)
+  } else if (serifType === 1) {
+    pen1.moveTo(stroke1_start_serif_p1.x, stroke1_start_serif_p1.y)
+    pen1.lineTo(stroke1_start_serif_p0.x, stroke1_start_serif_p0.y)
+    pen1.lineTo(stroke1_start_serif_p2.x, stroke1_start_serif_p2.y)
+    pen1.bezierTo(
+      stroke1_start_serif_p4_before.x, stroke1_start_serif_p4_before.y,
+      stroke1_start_serif_p4_after.x, stroke1_start_serif_p4_after.y,
+      stroke1_start_serif_p6.x, stroke1_start_serif_p6.y,
+    )
+    pen1.lineTo(out_corner_left.x, out_corner_left.y)
+    pen1.lineTo(skeleton_1.x, skeleton_1.y)
+    pen1.lineTo(out_stroke1_end.x, out_stroke1_end.y)
+    pen1.lineTo(stroke1_start_serif_p7.x, stroke1_start_serif_p7.y)
+    pen1.bezierTo(
+      stroke1_start_serif_p5_after.x, stroke1_start_serif_p5_after.y,
+      stroke1_start_serif_p5_before.x, stroke1_start_serif_p5_before.y,
+      stroke1_start_serif_p3.x, stroke1_start_serif_p3.y
+    )
+    pen1.lineTo(stroke1_start_serif_p1.x, stroke1_start_serif_p1.y)
+  }
   pen1.closePath()
 
   const pen2 = new FP.PenComponent()
   pen2.beginPath()
-  pen2.moveTo(stroke2_start_serif_p1.x, stroke2_start_serif_p1.y)
-  pen2.lineTo(stroke2_start_serif_p0.x, stroke2_start_serif_p0.y)
-  pen2.lineTo(stroke2_start_serif_p2.x, stroke2_start_serif_p2.y)
-  pen2.bezierTo(
-    stroke2_start_serif_p4_before.x, stroke2_start_serif_p4_before.y,
-    stroke2_start_serif_p4_after.x, stroke2_start_serif_p4_after.y,
-    stroke2_start_serif_p6.x, stroke2_start_serif_p6.y,
-  )
-  pen2.lineTo(in_stroke2_end.x, in_stroke2_end.y)
-  pen2.lineTo(skeleton_1.x, skeleton_1.y)
-  pen2.lineTo(out_corner_right.x, out_corner_right.y)
-  pen2.lineTo(stroke2_start_serif_p7.x, stroke2_start_serif_p7.y)
-  pen2.bezierTo(
-    stroke2_start_serif_p5_after.x, stroke2_start_serif_p5_after.y,
-    stroke2_start_serif_p5_before.x, stroke2_start_serif_p5_before.y,
-    stroke2_start_serif_p3.x, stroke2_start_serif_p3.y
-  )
-  pen2.lineTo(stroke2_start_serif_p1.x, stroke2_start_serif_p1.y)
+  if (serifType === 0) {
+    pen2.moveTo(in_stroke2_start.x, in_stroke2_start.y)
+    pen2.lineTo(in_stroke2_end.x, in_stroke2_end.y)
+    pen2.lineTo(skeleton_1.x, skeleton_1.y)
+    pen2.lineTo(out_corner_right.x, out_corner_right.y)
+    pen2.lineTo(out_stroke2_start.x, out_stroke2_start.y)
+    pen2.lineTo(in_stroke2_start.x, in_stroke2_start.y)
+  } else if (serifType === 1) {
+    pen2.moveTo(stroke2_start_serif_p1.x, stroke2_start_serif_p1.y)
+    pen2.lineTo(stroke2_start_serif_p0.x, stroke2_start_serif_p0.y)
+    pen2.lineTo(stroke2_start_serif_p2.x, stroke2_start_serif_p2.y)
+    pen2.bezierTo(
+      stroke2_start_serif_p4_before.x, stroke2_start_serif_p4_before.y,
+      stroke2_start_serif_p4_after.x, stroke2_start_serif_p4_after.y,
+      stroke2_start_serif_p6.x, stroke2_start_serif_p6.y,
+    )
+    pen2.lineTo(in_stroke2_end.x, in_stroke2_end.y)
+    pen2.lineTo(skeleton_1.x, skeleton_1.y)
+    pen2.lineTo(out_corner_right.x, out_corner_right.y)
+    pen2.lineTo(stroke2_start_serif_p7.x, stroke2_start_serif_p7.y)
+    pen2.bezierTo(
+      stroke2_start_serif_p5_after.x, stroke2_start_serif_p5_after.y,
+      stroke2_start_serif_p5_before.x, stroke2_start_serif_p5_before.y,
+      stroke2_start_serif_p3.x, stroke2_start_serif_p3.y
+    )
+    pen2.lineTo(stroke2_start_serif_p1.x, stroke2_start_serif_p1.y)
+  }
   pen2.closePath()
 
   // const pen1 = new FP.PenComponent()
