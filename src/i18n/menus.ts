@@ -57,6 +57,8 @@ const menus = {
 			test6: '字玩标准仿宋（仅笔画）',
 			test7: '字玩标准楷体（仅笔画）',
 			test8: '字玩标准隶书（仅笔画）',
+			digits: '数字模板',
+			letters: '字母模板',
 		},
 		tools: {
 			remove_overlap: '去除重叠',
@@ -121,6 +123,8 @@ const menus = {
 			test6: 'template 6',
 			test7: 'template 7',
 			test8: 'template 8',
+			digits: 'Digits Template',
+			letters: 'Letters Template',
 		},
 		tools: {
 			remove_overlap: 'remove_overlap',

@@ -78,6 +78,10 @@
     'template-4': TemplateEnable,
     'template-5': TemplateEnable,
     'template-6': TemplateEnable,
+    'template-7': TemplateEnable,
+    'template-8': TemplateEnable,
+    'template-digits': TemplateEnable,
+    'template-letters': TemplateEnable,
 	}
 
 	const web_menu_icons: IIconsMap = {
