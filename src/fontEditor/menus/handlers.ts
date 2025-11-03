@@ -12,6 +12,8 @@ import {
   setExportDialogVisible,
   setExportFontTauriDialogVisible,
   setExportFontDialogVisible,
+  setExportVarFontTauriDialogVisible,
+  setExportVarFontDialogVisible,
 } from '../stores/dialogs'
 import {
   files,
@@ -630,6 +632,18 @@ const showExportFontDialog = () => {
     showExportFontDialog_tauri()
   } else {
     setExportFontDialogVisible(true)
+  }
+}
+
+const showExportVarFontDialog_tauri = () => {
+  setExportVarFontTauriDialogVisible(true)
+}
+
+const showExportVarFontDialog = () => {
+  if (ENV.value === 'tauri') {
+    showExportVarFontDialog_tauri()
+  } else {
+    setExportVarFontDialogVisible(true)
   }
 }
 
@@ -1756,15 +1770,271 @@ const createFont = async (options?: CreateFontOptions) => {
   return font
 }
 
+const createVarFont = async (options?: CreateFontOptions) => {
+  const _width = selectedFile.value.width
+  const _height = selectedFile.value.height
+  
+  // 检查字符列表中是否有name为.notdef的字形
+  let notdefCharacter = null
+  for (let i = 0; i < selectedFile.value.characterList.length; i++) {
+    const char = selectedFile.value.characterList[i]
+    if (char.character.text === '.notdef') {
+      notdefCharacter = char
+      break
+    }
+  }
+  
+  // 如果有.notdef字符，使用它；否则创建一个空的.notdef字符
+  const fontCharacters = []
+  if (notdefCharacter) {
+    // 使用现有的.notdef字符
+    let contours = [[]]
+    if (options && options.remove_overlap && notdefCharacter.overlap_removed_contours?.length) {
+      contours = notdefCharacter.overlap_removed_contours
+    } else {
+      contours = componentsToContours(
+        orderedListWithItemsForCharacterFile(notdefCharacter),
+        {
+          unitsPerEm: selectedFile.value.fontSettings.unitsPerEm,
+          descender: selectedFile.value.fontSettings.descender,
+          advanceWidth: selectedFile.value.fontSettings.unitsPerEm,
+        }, {x: 0, y: 0}, false, false, false
+      )
+    }
+    fontCharacters.push({
+      unicode: 0,
+      name: '.notdef',
+      contours,
+      contourNum: contours.length,
+      advanceWidth: notdefCharacter.info?.metrics?.advanceWidth || Math.max(_width, _height),
+      leftSideBearing: notdefCharacter.info?.metrics?.lsb || 0,
+    })
+  } else {
+    // 创建一个空的.notdef字符
+    fontCharacters.push({
+      unicode: 0,
+      name: '.notdef',
+      contours: [[]] as Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>,
+      contourNum: 0,
+      advanceWidth: Math.max(_width, _height),
+      leftSideBearing: 0,
+    })
+  }
+
+  // {
+  // 	unicode: 0xa0,
+  // 	name: 'no-break-space',
+  // 	contours: [[]] as Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>,
+  // 	contourNum: 0,
+  // 	advanceWidth: Math.max(_width, _height),
+  // }
+
+  let containSpace = false
+  const { unitsPerEm, ascender, descender } = selectedFile.value.fontSettings
+  for (let i = 0; i < selectedFile.value.characterList.length; i++) {
+    loaded.value++
+    if (loaded.value >= total.value) {
+      loading.value = false
+      loaded.value = 0
+      total.value = 0
+    }
+    const char: ICharacterFile = selectedFile.value.characterList[i]
+    
+    // 跳过.notdef字符，因为已经处理过了
+    if (char.character.text === '.notdef') {
+      continue
+    }
+    
+    let contours = [[]]
+    if (options && options.remove_overlap && char.overlap_removed_contours?.length) {
+      contours = char.overlap_removed_contours
+    } else {
+      contours = componentsToContours(
+        orderedListWithItemsForCharacterFile(char),
+        {
+          unitsPerEm,
+          descender,
+          advanceWidth: unitsPerEm,
+        }, {x: 0, y: 0}, false, false, false
+      )
+    }
+    const { text, unicode } = char.character
+
+    fontCharacters.push({
+      name: text,
+      unicode: parseInt(unicode, 16),
+      advanceWidth: char.info?.metrics?.advanceWidth || unitsPerEm,
+      leftSideBearing: char.info?.metrics?.lsb || undefined,
+      contours,
+      contourNum: contours.length,
+    })
+
+    if (text === ' ') {
+      containSpace = true
+    }
+  }
+
+  if (!containSpace) {
+    fontCharacters.push({
+      name: ' ',
+      unicode: parseInt('0x20', 16),
+      advanceWidth: unitsPerEm,
+      leftSideBearing: 0,
+      contours: [[]],
+      contourNum: 0,
+    })
+  }
+
+  fontCharacters.sort((a: any, b: any) => {
+    return a.unicode - b.unicode
+  })
+
+  // 创建所有变体
+  const combinations: any = generateAllAxisCombinations(selectedFile.value.variants?.axes?.length || 0)
+  for (let i = 0; i < combinations.length; i++) {
+    const combination = combinations[i]
+    const tuple = combination.tuple
+    const origin_constants = R.clone(constants.value)
+    for (let j = 0; j < tuple.length; j++) {
+      const axis = selectedFile.value.variants?.axes[j]
+      const value = axis.minValue + (axis.maxValue - axis.minValue) * tuple[j]
+      constants.value.find((constant) => constant.uuid === axis.uuid).value = value
+    }
+    combination.overlapRemovedContours = options.remove_overlap ? await getOverlapRemovedContours({containSpace}) : await getVarFontContours({containSpace})
+    constants.value = origin_constants
+    constantsMap.update(constants.value)
+  }
+
+  const font = await create(fontCharacters, {
+    familyName: selectedFile.value.name,
+    styleName: 'Regular',
+    unitsPerEm,
+    ascender,
+    descender,
+    variants: {
+      axes: selectedFile.value.variants?.axes,
+      instances: selectedFile.value.variants?.instances,
+      combinations: combinations,
+    },
+    tables: selectedFile.value.fontSettings.tables || null,
+  })
+  return font
+}
+
+const getOverlapRemovedContours = async (options?: any) => {
+  await computeOverlapRemovedContours({ forceUpdate: true })
+  const{ containSpace } = options
+  const fontCharacters = []
+  if (!containSpace) {
+    fontCharacters.push({
+      unicode: parseInt('0x20', 16),
+      contours: [[]],
+    })
+  }
+  for (let i = 0; i < selectedFile.value.characterList.length; i++) {
+    const char = selectedFile.value.characterList[i]
+    fontCharacters.push({
+      unicode: parseInt(char.character.unicode, 16),
+      contours: char.overlap_removed_contours,
+    })
+  }
+  fontCharacters.sort((a: any, b: any) => {
+    return a.unicode - b.unicode
+  })
+  return fontCharacters
+}
+
+const getVarFontContours = async (options?: any) => {
+  const{ containSpace } = options
+  const fontCharacters = []
+  if (!containSpace) {
+    fontCharacters.push({
+      unicode: parseInt('0x20', 16),
+      contours: [[]],
+    })
+  }
+  for (let i = 0; i < selectedFile.value.characterList.length; i++) {
+    const char = selectedFile.value.characterList[i]
+    let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(orderedListWithItemsForCharacterFile(char), {
+      unitsPerEm: selectedFile.value.fontSettings.unitsPerEm,
+      descender: selectedFile.value.fontSettings.descender,
+      advanceWidth: selectedFile.value.fontSettings.unitsPerEm,
+    }, { x: 0, y: 0 }, false, false, options.forceUpdate)
+    fontCharacters.push({
+      unicode: parseInt(char.character.unicode, 16),
+      contours: contours,
+    })
+  }
+  fontCharacters.sort((a: any, b: any) => {
+    return a.unicode - b.unicode
+  })
+  return fontCharacters
+}
+
+/**
+ * 生成所有轴组合的peakTuple
+ * @param axisCount 轴的数量
+ * @returns 所有组合的peakTuple数组（不包括全0的默认状态）
+ */
+const generateAllAxisCombinations = (axisCount: number): number[][] => {
+  const totalCombinations = Math.pow(2, axisCount)
+  const combinations: any = []
+  
+  // 从1开始（跳过全0的默认状态）
+  for (let i = 1; i < totalCombinations; i++) {
+    const tuple: number[] = []
+    
+    // 将数字i的二进制表示转换为tuple
+    for (let j = 0; j < axisCount; j++) {
+      // 检查第j位是否为1
+      tuple.push((i & (1 << j)) ? 1.0 : 0.0)
+    }
+    
+    combinations.push({ tuple, overlapRemovedContours: null })
+  }
+  
+  return combinations
+}
+
 const exportFont = async (options: CreateFontOptions) => {
   const font = await createFont(options)
   loadingMsg.value = '已经处理完所有字符，正在生成压缩包，请稍候...'
-  const dataView = new DataView(toArrayBuffer(font) as ArrayBuffer)
-  const blob = new Blob([dataView], {type: 'font/opentype'})
+  
+  // 直接使用ArrayBuffer创建Blob，不要通过DataView
+  const arrayBuffer = toArrayBuffer(font) as ArrayBuffer
+  console.log(`[exportFont] ArrayBuffer size: ${arrayBuffer.byteLength} bytes`)
+  
+  const blob = new Blob([arrayBuffer], {type: 'font/opentype'})
+  console.log(`[exportFont] Blob size: ${blob.size} bytes`)
+  
   var zip = new JSZip()
   zip.file(`${selectedFile.value.name}.otf`, blob)
   zip.generateAsync({type:"blob"}).then(function(content: any) {
     saveAs(content, `${selectedFile.value.name}.zip`)
+    console.log(`[exportFont] ZIP saved successfully`)
+    loading.value = false
+    loaded.value = 0;
+		total.value = 0;
+    loadingMsg.value = ''
+  })
+}
+
+const exportVarFont = async (options: CreateFontOptions) => {
+  const font = await createVarFont(options)
+  loadingMsg.value = '已经处理完所有字符，正在生成压缩包，请稍候...'
+  
+  // 直接使用ArrayBuffer创建Blob，不要通过DataView
+  const arrayBuffer = toArrayBuffer(font) as ArrayBuffer
+  console.log(`[exportVarFont] ArrayBuffer size: ${arrayBuffer.byteLength} bytes`)
+  
+  const blob = new Blob([arrayBuffer], {type: 'font/opentype'})
+  console.log(`[exportVarFont] Blob size: ${blob.size} bytes`)
+  
+  var zip = new JSZip()
+  zip.file(`${selectedFile.value.name}.otf`, blob)
+  zip.generateAsync({type:"blob"}).then(function(content: any) {
+    saveAs(content, `${selectedFile.value.name}.zip`)
+    console.log(`[exportVarFont] ZIP saved successfully`)
     loading.value = false
     loaded.value = 0;
 		total.value = 0;
@@ -4103,11 +4373,16 @@ const isAlreadyOptimized = (contours: Array<Array<ILine | IQuadraticBezierCurve 
   return !hasOverlap
 }
 
-const computeOverlapRemovedContours = async () => {
+const computeOverlapRemovedContours = async (options?: any) => {
   const {
     unitsPerEm,
     descender,
   } = selectedFile.value.fontSettings
+
+  let forceUpdate = false
+  if (options) {
+    forceUpdate = options.forceUpdate || false
+  }
 
   let m = 0
 
@@ -4124,7 +4399,7 @@ const computeOverlapRemovedContours = async () => {
       unitsPerEm,
       descender,
       advanceWidth: unitsPerEm,
-    }, { x: 0, y: 0 }, false, false, false)
+    }, { x: 0, y: 0 }, false, false, forceUpdate)
 
     // 检查是否已经优化过
     if (isAlreadyOptimized(contours)) {
@@ -4915,6 +5190,7 @@ const tauri_handlers: IHandlerMap = {
   'import-pic': importPic_tauri,
   'import-svg': importSVG_tauri,
   'export-font-file': showExportFontDialog_tauri,
+  'export-var-font-file': showExportVarFontDialog_tauri,
   'export-glyphs': exportGlyphs_tauri,
   'export-jpeg': exportJPEG_tauri,
   'export-png': exportPNG_tauri,
@@ -4956,6 +5232,7 @@ const web_handlers: IHandlerMap = {
   'import-pic': importPic,
   'import-svg': importSVG,
   'export-font-file': showExportFontDialog,
+  'export-var-font-file': showExportVarFontDialog,
   'export-glyphs': exportGlyphs,
   'export-jpeg': exportJPEG,
   'export-png': exportPNG,
@@ -5002,5 +5279,7 @@ export {
   nativeImportFile,
   instanceCharacter,
   nativeSaveBinary,
-  openPlayground, addLoaded,
+  openPlayground,
+  addLoaded,
+  exportVarFont,
 }

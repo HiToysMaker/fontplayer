@@ -39,6 +39,31 @@ export interface IFile {
 	stroke_glyphs?: Array<ICustomGlyph>;
 	radical_glyphs?: Array<ICustomGlyph>;
 	comp_glyphs?: Array<ICustomGlyph>;
+	variants?: IVariants;
+}
+
+interface IVariants {
+	axes: Array<IVariationAxis>;
+	instances: Array<IInstance>;
+}
+
+interface IVariationAxis {
+	axisTag: string;
+	minValue: number;
+	defaultValue: number;
+	maxValue: number;
+	flags: number;
+	name: string;
+	nameID?: number;
+	uuid: string;
+}
+
+interface IInstance {
+	subfamilyNameID?: number;
+	subfamilyName?: string;
+	flags: number;
+	coordinates: number;
+	postScriptNameID?: number;
 }
 
 // 字体设置数据结构

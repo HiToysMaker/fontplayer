@@ -910,7 +910,183 @@ interface IPlainNameRecord {
 	default: boolean,
 }
 
-const createTable2 = (names: Array<any>) => {
+/**
+ * 为可变字体轴分配nameID
+ * Allocate nameID for variation font axes
+ * @param axes 可变字体轴数组
+ * @param names 现有的name记录数组
+ * @returns 更新后的names数组
+ * 注意：此函数只添加到names数组，不处理stringPool
+ *       stringPool会在createTable2的主循环中统一处理
+ */
+const addAxisNamesToTable = (
+	axes: Array<any>,
+	names: Array<any>
+): Array<any> => {
+	if (!axes || axes.length === 0) return names
+	
+	// 找到当前最大的nameID（从256开始，因为0-255是预定义的）
+	let maxNameID = 255
+	for (const name of names) {
+		if (name.nameID > maxNameID) {
+			maxNameID = name.nameID
+		}
+	}
+	
+	// 为每个axis分配nameID并添加到names
+	for (const axis of axes) {
+		if (!axis.name) continue
+		
+		maxNameID++
+		const axisNameID = maxNameID
+		
+		// 更新axis对象的nameID（如果传入的是引用，会直接修改）
+		axis.nameID = axisNameID
+		
+		// 添加英文名称
+		names.push({
+			nameID: axisNameID,
+			nameLabel: `axis_${axis.tag || axis.axisTag}`,
+			platformID: 3,
+			encodingID: 1,
+			langID: 0x409,  // en-US
+			value: axis.name,
+			default: true,
+		})
+		
+		// 如果需要，也可以添加中文名称
+		// 这里暂时使用相同的名称，实际应用中可以提供中文翻译
+		names.push({
+			nameID: axisNameID,
+			nameLabel: `axis_${axis.tag || axis.axisTag}`,
+			platformID: 3,
+			encodingID: 1,
+			langID: 0x804,  // zh-CN
+			value: axis.name,
+			default: true,
+		})
+	}
+	
+	return names
+}
+
+/**
+ * 生成PostScript兼容的名称
+ * Generate PostScript compatible name
+ * @param familyName 字体家族名
+ * @param subfamilyName 子族名称
+ * @returns PostScript格式的名称（无空格，最多63字符）
+ */
+const generatePostScriptName = (familyName: string, subfamilyName: string): string => {
+	// 移除空格，连接为 FamilyName-SubfamilyName 格式
+	const psName = (familyName + '-' + subfamilyName)
+		.replace(/\s/g, '')  // 移除所有空格
+		.slice(0, 63)         // 限制为63个字符
+	
+	return psName
+}
+
+/**
+ * 为可变字体实例分配nameID
+ * Allocate nameID for variation font instances
+ * @param instances 可变字体实例数组
+ * @param names 现有的name记录数组
+ * @param familyName 字体家族名（用于生成PostScript名称）
+ * @returns 更新后的names数组
+ * 注意：此函数只添加到names数组，不处理stringPool
+ *       stringPool会在createTable2的主循环中统一处理
+ */
+const addInstanceNamesToTable = (
+	instances: Array<any>,
+	names: Array<any>,
+	familyName?: string
+): Array<any> => {
+	if (!instances || instances.length === 0) return names
+	
+	// 找到当前最大的nameID
+	let maxNameID = 255
+	for (const name of names) {
+		if (name.nameID > maxNameID) {
+			maxNameID = name.nameID
+		}
+	}
+	
+	// 如果没有提供familyName，尝试从names中获取（nameID=1是fontFamily）
+	let _familyName = familyName
+	if (!_familyName) {
+		const familyNameRecord = names.find(n => n.nameID === 1)
+		if (familyNameRecord) {
+			_familyName = familyNameRecord.value
+		}
+	}
+	
+	// 为每个instance分配nameID并添加到names
+	for (const instance of instances) {
+		if (!instance.subfamilyName) continue
+		
+		// 分配subfamilyNameID
+		maxNameID++
+		const subfamilyNameID = maxNameID
+		
+		// 更新instance对象的subfamilyNameID
+		instance.subfamilyNameID = subfamilyNameID
+		
+		// 添加英文名称
+		names.push({
+			nameID: subfamilyNameID,
+			nameLabel: `instance_subfamily_${subfamilyNameID}`,
+			platformID: 3,
+			encodingID: 1,
+			langID: 0x409,  // en-US
+			value: instance.subfamilyName,
+			default: true,
+		})
+		
+		// 添加中文名称
+		names.push({
+			nameID: subfamilyNameID,
+			nameLabel: `instance_subfamily_${subfamilyNameID}`,
+			platformID: 3,
+			encodingID: 1,
+			langID: 0x804,  // zh-CN
+			value: instance.subfamilyName,
+			default: true,
+		})
+		
+		// 自动生成或使用提供的postScriptName
+		let postScriptName = instance.postScriptName
+		if (!postScriptName && _familyName) {
+			// 自动生成：FamilyName-SubfamilyName（无空格，最多63字符）
+			postScriptName = generatePostScriptName(_familyName, instance.subfamilyName)
+			// 将生成的postScriptName保存到instance对象
+			instance.postScriptName = postScriptName
+		}
+		
+		// 如果有postScriptName（自动生成或用户提供），分配nameID
+		if (postScriptName) {
+			maxNameID++
+			const postScriptNameID = maxNameID
+			
+			// 更新instance对象的postScriptNameID
+			instance.postScriptNameID = postScriptNameID
+			
+			// 添加PostScript名称（只需英文）
+			names.push({
+				nameID: postScriptNameID,
+				nameLabel: `instance_postscript_${postScriptNameID}`,
+				platformID: 3,
+				encodingID: 1,
+				langID: 0x409,  // en-US
+				value: postScriptName,
+				default: true,
+			})
+		}
+	}
+	
+	return names
+}
+
+const createTable2 = (names: Array<any>, variants?: any) => {
 	const nameRecord = [];
 	const stringPool: Array<any> = []
 
@@ -948,10 +1124,26 @@ const createTable2 = (names: Array<any>) => {
 		value: fullname,
 		default: true,
 	})
+	
+	// 如果是可变字体，添加axis names
+	if (variants && variants.axes) {
+		addAxisNamesToTable(variants.axes, names)
+	}
+	
+	// 如果是可变字体，添加instance names
+	if (variants && variants.instances) {
+		// 尝试获取familyName以自动生成postScriptName
+		let familyName = ''
+		const familyNameRecord = names.find(n => n.nameID === 1 && n.langID === 0x409)
+		if (familyNameRecord) {
+			familyName = familyNameRecord.value
+		}
+		addInstanceNamesToTable(variants.instances, names, familyName)
+	}
 
 	for (let i = 0; i < names.length; i++) {
 		const { value, nameID, langID, encodingID, platformID } = names[i]
-		if (platformID != 3) break
+		if (platformID != 3) continue  // 改为continue，跳过非Windows平台的记录
 		let winName = encoder.utf16(value)
 		const winNameOffset = addStringToPool(winName, stringPool)
 		nameRecord.push({
@@ -976,8 +1168,16 @@ const createTable2 = (names: Array<any>) => {
 		count: nameRecord.length,
 		storageOffset: 6 + nameRecord.length * 12,
 		nameRecord,
-		stringPool,
+		stringPool
 	}
+	
+	// 调试输出
+	console.log('=== createTable2 Result ===')
+	console.log(`nameRecord.length: ${nameRecord.length}`)
+	console.log(`storageOffset: ${nameTable.storageOffset}`)
+	console.log(`stringPool.length: ${stringPool.length}`)
+	console.log(`Expected table size: ${nameTable.storageOffset + stringPool.length}`)
+	
 	return nameTable
 }
 
@@ -1176,46 +1376,84 @@ const createTable = (names: Array<any>, ltag: Array<any>) => {
 const create = (table: INameTable) => {
 	let data: Array<number> = []
 
-	// 遍历table的每个键值，生成对应数据
-	// traverse table, generate data for each key
-	Object.keys(table).forEach((key: string) => {
-		const type = types[key as keyof typeof types]
-		const value = table[key as keyof typeof table]
-
-		// 使用encoder中的方法，根据不同键值对应的数据类型生成数据
-		// generate data use encoder according to each key's data type
-		let bytes: Array<number> = []
-		if (key === 'nameRecord') {
-			const nameRecord = value as Array<INameRecord>
-			for (let i = 0; i < nameRecord.length; i++) {
-				const record = nameRecord[i]
-				Object.keys(record).forEach((key) => {
-					if (key !== 'str') {
-						const type = types[key as keyof typeof types]
-						const value = record[key as keyof typeof record]
-						bytes = bytes.concat(encoder[type as keyof typeof encoder](value) as Array<number>)
-					}
-				})
-			}
-		} else if (key === 'langTagRecord') {
-			const langTagRecord = value as Array<ILangTagRecord>
-			for (let i = 0; i < langTagRecord.length; i++) {
-				const record = langTagRecord[i]
-				Object.keys(record).forEach((key) => {
-					if (key !== 'str') {
-						const type = types[key as keyof typeof types]
-						const value = record[key as keyof typeof record]
-						bytes = bytes.concat(encoder[type as keyof typeof encoder](value) as Array<number>)
-					}
-				})
-			}
-		} else {
-			bytes = bytes.concat(encoder[type as keyof typeof encoder](value as number) as Array<number>)
+	// name表必须按照严格的顺序写入数据
+	// name table must be written in strict order
+	
+	console.log('\n=== Name Table Binary Generation ===')
+	console.log(`Input: version=${table.version}, count=${table.count}, storageOffset=${table.storageOffset}`)
+	console.log(`nameRecord count: ${table.nameRecord?.length}`)
+	console.log(`stringPool size: ${table.stringPool?.length}`)
+	
+	// 1. 写入表头 (6字节)
+	// Write table header (6 bytes)
+	const versionBytes = encoder.uint16(table.version)
+	const countBytes = encoder.uint16(table.count)
+	const storageOffsetBytes = encoder.uint16(table.storageOffset)
+	
+	if (versionBytes) data = data.concat(versionBytes)
+	if (countBytes) data = data.concat(countBytes)
+	if (storageOffsetBytes) data = data.concat(storageOffsetBytes)
+	
+	// 2. 写入nameRecord数组 (每个12字节)
+	// Write nameRecord array (12 bytes each)
+	if (table.nameRecord) {
+		for (let i = 0; i < table.nameRecord.length; i++) {
+			const record = table.nameRecord[i]
+			
+			const platformIDBytes = encoder.uint16(record.platformID)
+			const encodingIDBytes = encoder.uint16(record.encodingID)
+			const languageIDBytes = encoder.uint16(record.languageID)
+			const nameIDBytes = encoder.uint16(record.nameID)
+			const lengthBytes = encoder.uint16(record.length)
+			const stringOffsetBytes = encoder.uint16(record.stringOffset)
+			
+			if (platformIDBytes) data = data.concat(platformIDBytes)
+			if (encodingIDBytes) data = data.concat(encodingIDBytes)
+			if (languageIDBytes) data = data.concat(languageIDBytes)
+			if (nameIDBytes) data = data.concat(nameIDBytes)
+			if (lengthBytes) data = data.concat(lengthBytes)
+			if (stringOffsetBytes) data = data.concat(stringOffsetBytes)
 		}
-		if (bytes) {
-			data = data.concat(bytes)
+	}
+	
+	// 3. 如果是version 1，写入langTagCount和langTagRecord
+	// If version 1, write langTagCount and langTagRecord
+	if (table.version >= 1 && table.langTagCount) {
+		const langTagCountBytes = encoder.uint16(table.langTagCount)
+		if (langTagCountBytes) data = data.concat(langTagCountBytes)
+		
+		if (table.langTagRecord) {
+			for (let i = 0; i < table.langTagRecord.length; i++) {
+				const record = table.langTagRecord[i]
+				const lengthBytes = encoder.uint16(record.length)
+				const langTagOffsetBytes = encoder.uint16(record.langTagOffset)
+				
+				if (lengthBytes) data = data.concat(lengthBytes)
+				if (langTagOffsetBytes) data = data.concat(langTagOffsetBytes)
+			}
 		}
-	})
+	}
+	
+	// 4. 写入stringPool (原始字节数组)
+	// Write stringPool (raw byte array)
+	const beforeStringPool = data.length
+	if (table.stringPool && table.stringPool.length > 0) {
+		data = data.concat(table.stringPool)
+		console.log(`StringPool added: ${data.length - beforeStringPool} bytes`)
+	} else {
+		console.log('StringPool is empty or undefined')
+	}
+	
+	console.log(`\nFinal binary size: ${data.length} bytes`)
+	console.log(`Expected: ${6 + (table.nameRecord?.length || 0) * 12 + (table.stringPool?.length || 0)} bytes`)
+	
+	if (data.length !== (6 + (table.nameRecord?.length || 0) * 12 + (table.stringPool?.length || 0))) {
+		console.error('❌ Binary size mismatch!')
+	} else {
+		console.log('✅ Binary size correct')
+	}
+	console.log('=====================================\n')
+	
 	return data
 }
 

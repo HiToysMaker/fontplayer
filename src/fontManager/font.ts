@@ -23,6 +23,12 @@ import { saveAs } from 'file-saver'
 import { convertToPinyin } from 'tiny-pinyin'
 import { encoder } from './encode'
 import { loaded, total, loading } from '../fontEditor/stores/global'
+import { createFvarTable } from './tables/fvar'
+import { createGvarTable } from './tables/gvar'
+// TODO: 实现完整的可变字体支持后取消注释
+// import { create as createGlyfTable } from './tables/glyf'
+// import { create as createLocaTable } from './tables/loca'
+// import { convertContoursToQuadratic } from './utils/cubicToQuadratic'
 
 // font对象数据类型
 // font object data type
@@ -65,6 +71,35 @@ interface ITableConfig {
 	rangeShift: number;
 }
 
+// 可变字体轴定义
+// Variation axis definition
+interface IVariationAxis {
+	tag: string;      // 轴标签，如 'wght', 'wdth'
+	name: string;     // 轴名称，如 'Weight', 'Width'
+	minValue: number;
+	defaultValue: number;
+	maxValue: number;
+	nameID?: number;  // 在name表中的ID（由createTable2自动分配）
+}
+
+// 可变字体实例定义
+// Variation font instance definition
+interface IVariationInstance {
+	subfamilyName: string;        // 实例名称，如 'Bold', 'Light'
+	coordinates: number[];        // 各轴的坐标值
+	postScriptName?: string;      // PostScript名称（可选）
+	subfamilyNameID?: number;     // 在name表中的ID（由createTable2自动分配）
+	postScriptNameID?: number;    // PostScript名称的nameID（由createTable2自动分配）
+	flags?: number;
+}
+
+// 可变字体配置
+// Variation font configuration
+interface IVariants {
+	axes: Array<IVariationAxis>;
+	instances?: Array<IVariationInstance>;
+}
+
 // font option 配置信息数据类型
 // font option data type
 interface IOption {
@@ -87,6 +122,7 @@ interface IOption {
 	descender: number;
 	createdTimestamp?: number;
 	tables?: any;
+	variants?: any;
 }
 
 const average = (vs: Array<number>) => {
@@ -541,7 +577,11 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 
 	const languageTags: Array<any> = []
 	//const nameTable = createNameTable(names, languageTags)
-	const nameTable = options.tables ? createNameTable2(options.tables.name) : createNameTable(names, languageTags)
+	
+	// 如果是可变字体，需要传入variants信息以添加axis names
+	const nameTable = options.tables ? 
+		createNameTable2(options.tables.name, options.variants) : 
+		createNameTable(names, languageTags)
 
 	const _postTable = options.tables ? options.tables.post : {}
 
@@ -582,6 +622,30 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		'hmtx': hmtxTable,
 		'CFF ': cffTable,
 	}
+
+	if (options.variants) {
+		// ========== 可变字体功能（临时禁用） ==========
+		console.log('\n⚠️ ===  Variable Font Feature Disabled ===')
+		console.log('CFF format + gvar table = INCOMPATIBLE')
+		console.log('Variable fonts require TrueType format (glyf + gvar)')
+		console.log('CFF variable fonts need CFF2 (not yet implemented)')
+		console.log('')
+		console.log('Current Status:')
+		console.log('  ✅ cubicToQuadratic conversion: IMPLEMENTED')
+		console.log('  ⚠️ IGlyfTable builder: NEEDS IMPLEMENTATION')
+		console.log('  ⚠️ ILocaTable builder: NEEDS IMPLEMENTATION')
+		console.log('')
+		console.log('Generating regular font (without variable features)...')
+		console.log('See VARIABLE_FONT_FINAL_SOLUTION.md for complete solution')
+		console.log('==========================================\n')
+		
+		// TODO: 完整实现后取消注释
+		// const fvarTable = createFvarTable(options.variants)
+		// tables['fvar'] = fvarTable
+		// const gvarTable = createGvarTable(options.variants, characters)
+		// tables['gvar'] = gvarTable
+	}
+
 	headTable.checkSumAdjustment = 0x00000000
 
 	let _font = await createFontData(tables, 'checksum')
@@ -597,14 +661,35 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 
 	const { data: fontData, tables: fontTables, tablesDataMap: fontDataMap } = _font
 
-	fontData[164] = checkSumAdjustmentData[0]
-	fontData[165] = checkSumAdjustmentData[1]
-	fontData[166] = checkSumAdjustmentData[2]
-	fontData[167] = checkSumAdjustmentData[3]
+	// 动态查找head表在文件中的位置
+	const headTableInfo = fontTables.find((t: any) => t.name === 'head')
+	if (headTableInfo) {
+		// checkSumAdjustment字段在head表中的偏移是8字节（version(4) + fontRevision(4) + checkSumAdjustment(4)）
+		const checkSumAdjustmentOffsetInFile = headTableInfo.config.offset + 8
+		
+		console.log(`\n=== Updating head.checkSumAdjustment ===`)
+		console.log(`head table offset: ${headTableInfo.config.offset}`)
+		console.log(`checkSumAdjustment offset in file: ${checkSumAdjustmentOffsetInFile}`)
+		console.log(`checkSumAdjustment value: 0x${headTable.checkSumAdjustment.toString(16).padStart(8, '0')}`)
+		console.log(`checkSumAdjustment bytes:`, checkSumAdjustmentData)
+		
+		fontData[checkSumAdjustmentOffsetInFile] = checkSumAdjustmentData[0]
+		fontData[checkSumAdjustmentOffsetInFile + 1] = checkSumAdjustmentData[1]
+		fontData[checkSumAdjustmentOffsetInFile + 2] = checkSumAdjustmentData[2]
+		fontData[checkSumAdjustmentOffsetInFile + 3] = checkSumAdjustmentData[3]
+		
+		console.log(`Updated bytes at position ${checkSumAdjustmentOffsetInFile}-${checkSumAdjustmentOffsetInFile + 3}`)
+		console.log(`=====================================\n`)
+	} else {
+		console.error('❌ head table not found in fontTables!')
+	}
 
 	// 创建字体数据
 	// create font data
 	font.bytes = fontData
+	
+	console.log(`\n=== createFont Complete ===`)
+	console.log(`font.bytes.length: ${fontData.length}`)
 
 	const keys = Object.keys(tables)
 	keys.sort((key1, key2) => {
@@ -615,6 +700,10 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		}
 	})
 	font.tables = fontTables
+	
+	console.log(`Font created with ${fontTables.length} tables`)
+	console.log(`==============================\n`)
+	
 	return font
 }
 
@@ -630,14 +719,20 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
  */
 const toArrayBuffer = (font: IFont) => {
 	if (font.bytes) {
+		console.log(`\n=== toArrayBuffer ===`)
+		console.log(`font.bytes.length: ${font.bytes.length}`)
+		
     const buffer = new ArrayBuffer(font.bytes.length)
     const intArray = new Uint8Array(buffer)
     for (let i = 0; i < font.bytes.length; i++) {
       intArray[i] = font.bytes[i]
     }
 
+		console.log(`ArrayBuffer created: ${buffer.byteLength} bytes`)
+		console.log(`===================\n`)
     return buffer
 	} else if (font.rawData) {
+		console.log(`Using rawData.buffer: ${font.rawData.buffer.byteLength} bytes`)
 		return font.rawData.buffer
 	}
 }
@@ -682,4 +777,7 @@ export type {
 	ISettings,
 	ITableConfig,
 	IOption,
+	IVariationAxis,
+	IVariationInstance,
+	IVariants,
 }

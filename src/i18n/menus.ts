@@ -31,6 +31,7 @@ const menus = {
 		export: {
 			export: '导出',
 			font: '导出字体库',
+			var_font: '导出可变字体',
 			glyph: '导出字形',
 			jpeg: '导出JPEG',
 			png: '导出PNG',
@@ -97,6 +98,7 @@ const menus = {
 		export: {
 			export: 'Export',
 			font: 'Export Font',
+			var_font: 'Export Variable Font',
 			glyph: 'Export Glyph',
 			jpeg: 'Export JPEG',
 			png: 'Export PNG',

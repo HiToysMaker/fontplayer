@@ -99,6 +99,11 @@ const parse = (data: DataView, font: IFont) => {
 	font.tableConfig = tableConfig
 	for (let i = 0; i < numTables; i++) {
 		const tableTag = decode.decoder[types['tag'] as keyof typeof decode.decoder]() as ITag
+		if (tableTag.tagStr === 'name') {
+			console.log('name tag', tableTag)
+			console.log('offset', decode.getOffset())
+			debugger
+		}
 		const checkSum = decode.decoder[types['checkSum'] as keyof typeof decode.decoder]() as number
 		const offset = decode.decoder[types['offset'] as keyof typeof decode.decoder]() as number
 		const length = decode.decoder[types['length'] as keyof typeof decode.decoder]() as number
@@ -114,6 +119,8 @@ const parse = (data: DataView, font: IFont) => {
 		};
 		(font.tables as Array<ITable>).push(table)
 	}
+	console.log("TABLES", font.tables)
+	debugger
 
 	decode.end()
 
@@ -162,7 +169,7 @@ const create = async (tables: any, mark: string = '') => {
 	const _tables = []
 	const recordMap = {}
 	const tablesDataMap = {}
-	const keys = Object.keys(tables)
+	let keys = Object.keys(tables)
 	const numTables = keys.length
 	const highestPowerOf2 = Math.pow(2, log2(numTables))
 	const searchRange = 16 * highestPowerOf2
@@ -174,71 +181,12 @@ const create = async (tables: any, mark: string = '') => {
 		rangeShift: numTables * 16 - searchRange,
 	})
 	checksum += computeCheckSum(configData)
+	checksum %= 0x100000000 // 防止溢出
+	
   let recordsData: Array<number> = []
   let tablesData: Array<number> = []
 
-  let offset = configData.length + (createRecord({tag: 'xxxx', checkSum: 0, offset: 0, length: 0}).length * numTables)
-	let count = 0
-	while (offset % 4 !== 0) {
-		offset++
-		count++
-		//recordsData = recordsData.concat(encoder.uint8(0) as Array<number>)
-	}
-	for (let i = 0; i < keys.length; i++) {
-		const t = tables[keys[i]]
-		let tableData = null
-		if (keys[i] === 'CFF ') {
-			tableData = await tableTool[keys[i]].create(t)
-		} else {
-			tableData = tableTool[keys[i]].create(t)
-		}
-
-		tablesDataMap[keys[i]] = tableData
-		let checkSum = computeCheckSum(tableData)
-		checkSum %= 0x100000000
-		if (keys[i] === 'head' && mark === 'final') {
-			const t2 = R.clone(t)
-			t2.checkSumAdjustment = 0x00000000
-			let tableData2 = null
-			if (keys[i] === 'CFF ') {
-				tableData2 = await tableTool[keys[i]].create(t)
-			} else {
-				tableData2 = tableTool[keys[i]].create(t)
-			}
-			checkSum = computeCheckSum(tableData2)
-			checkSum %= 0x100000000
-		}
-		const tableLength = tableData.length
-		const recordData = createRecord({
-			tag: keys[i],
-			checkSum,
-			offset,
-			length: tableLength,
-		})
-		_tables.push({
-			name: keys[i],
-			table: t,
-			config: {
-				tableTag: {
-					tagStr: keys[i],
-				},
-				checkSum,
-				offset,
-				length: tableLength,
-			}
-		})
-		checksum += computeCheckSum(recordData)
-		checksum += computeCheckSum(tableData)
-		recordMap[keys[i]] = recordData
-		tablesData = tablesData.concat(tableData)
-		offset += tableLength
-		while (offset % 4 !== 0) {
-			offset++
-			tablesData = tablesData.concat(encoder.uint8(0) as Array<number>)
-		}
-	}
-
-	// for tags, keys should in ascent order
+	// 第1步：先对keys排序（OpenType要求表目录按字母顺序）
 	keys.sort((key1, key2) => {
 		if (key1 > key2) {
 			return 1
@@ -246,14 +194,118 @@ const create = async (tables: any, mark: string = '') => {
 			return -1
 		}
 	})
-	for (let i = 0; i < keys.length; i++) {
-		const recordData = recordMap[keys[i]]
-		recordsData = recordsData.concat(recordData)
+
+	// 第2步：按排序后的顺序计算offset并生成数据
+  let offset = configData.length + (createRecord({tag: 'xxxx', checkSum: 0, offset: 0, length: 0}).length * numTables)
+	let count = 0
+	while (offset % 4 !== 0) {
+		offset++
+		count++
 	}
+	
+	for (let i = 0; i < keys.length; i++) {
+		const key = keys[i]
+		const t = tables[key]
+		let tableData = null
+		if (key === 'CFF ') {
+			tableData = await tableTool[key].create(t)
+		} else {
+			tableData = tableTool[key].create(t)
+		}
+
+		tablesDataMap[key] = tableData
+		let checkSum = computeCheckSum(tableData)
+		checkSum %= 0x100000000
+		
+		if (key === 'head' && mark === 'final') {
+			const t2 = R.clone(t)
+			t2.checkSumAdjustment = 0x00000000
+			// head表不是CFF，直接create
+			const tableData2 = tableTool[key].create(t2)
+			checkSum = computeCheckSum(tableData2)
+			checkSum %= 0x100000000
+		}
+		
+		const tableLength = tableData.length
+		const recordData = createRecord({
+			tag: key,
+			checkSum,
+			offset,
+			length: tableLength,
+		})
+		
+		_tables.push({
+			name: key,
+			table: t,
+			config: {
+				tableTag: {
+					tagStr: key,
+				},
+				checkSum,
+				offset,
+				length: tableLength,
+			}
+		})
+		
+		if (key === 'name') {
+			console.log('=== NAME TABLE DEBUG ===')
+			console.log('Total checksum before name:', checksum)
+			console.log('Name table offset:', offset)
+			console.log('Name table length:', tableLength)
+			console.log('Name record data:', recordData)
+			console.log('Name checksum:', checkSum)
+		}
+		
+		// 立即拼接recordData（按排序后的顺序）
+		recordsData = recordsData.concat(recordData)
+		
+		checksum += computeCheckSum(recordData)
+		checksum %= 0x100000000 // 每次累加后都做模运算，防止溢出
+		checksum += computeCheckSum(tableData)
+		checksum %= 0x100000000
+		
+		// 立即拼接tableData（按排序后的顺序）
+		tablesData = tablesData.concat(tableData)
+		offset += tableLength
+		
+		// 4字节对齐
+		while (offset % 4 !== 0) {
+			offset++
+			tablesData = tablesData.concat(encoder.uint8(0) as Array<number>)
+		}
+	}
+	
+	// 在表目录和表数据之间添加padding（如果需要）
 	for (let i = 0; i < count; i++) {
 		recordsData = recordsData.concat(encoder.uint8(0) as Array<number>)
 	}
-	//checksum %= 0x100000000
+
+	checksum %= 0x100000000 // 最终确保checksum在32位范围内
+	
+	console.log('\n=== FINAL DATA ASSEMBLY ===')
+	console.log('Config data length:', configData.length)
+	console.log('Records data length:', recordsData.length)
+	console.log('Tables data length:', tablesData.length)
+	console.log('Total:', configData.length + recordsData.length + tablesData.length)
+	
+	// 验证name record在最终数据中的位置
+	const nameRecordIndex = keys.indexOf('name')
+	if (nameRecordIndex >= 0) {
+		const nameRecordStart = configData.length + nameRecordIndex * 16
+		console.log('\n=== NAME RECORD VERIFICATION ===')
+		console.log('Name record index in sorted keys:', nameRecordIndex)
+		console.log('Name record should start at:', nameRecordStart)
+		
+		const finalData = [...configData, ...recordsData, ...tablesData]
+		console.log('Name record in final data [' + nameRecordStart + '-' + (nameRecordStart + 15) + ']:')
+		console.log(finalData.slice(nameRecordStart, nameRecordStart + 16))
+		console.log('  Tag:', finalData.slice(nameRecordStart, nameRecordStart + 4).map(b => String.fromCharCode(b)).join(''))
+		console.log('  CheckSum:', [finalData[nameRecordStart + 4], finalData[nameRecordStart + 5], finalData[nameRecordStart + 6], finalData[nameRecordStart + 7]])
+		console.log('  Offset:', (finalData[nameRecordStart + 8] << 24) | (finalData[nameRecordStart + 9] << 16) | (finalData[nameRecordStart + 10] << 8) | finalData[nameRecordStart + 11])
+		console.log('  Length:', (finalData[nameRecordStart + 12] << 24) | (finalData[nameRecordStart + 13] << 16) | (finalData[nameRecordStart + 14] << 8) | finalData[nameRecordStart + 15])
+	}
+	console.log('===============================\n')
+
 	return {
 		data: [...configData, ...recordsData, ...tablesData],
 		tables: _tables,

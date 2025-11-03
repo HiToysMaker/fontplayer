@@ -175,6 +175,20 @@ const editedCharacterUUID: Ref<string> = ref('')
 
 const glyphComponentsDialogVisible2: Ref<boolean> = ref(false)
 
+// 导出可变字体窗口
+// dialog for export var font
+const exportVarFontDialogVisible: Ref<boolean> = ref(false)
+const setExportVarFontDialogVisible = (visible: boolean) => {
+	exportVarFontDialogVisible.value = visible
+}
+
+// tauri导出可变字体窗口
+// dialog for export var font for tauri
+const exportVarFontTauriDialogVisible: Ref<boolean> = ref(false)
+const setExportVarFontTauriDialogVisible = (visible: boolean) => {
+	exportVarFontTauriDialogVisible.value = visible
+}
+
 export {
 	createFileDialogVisible,
 	fontSettingsDialogVisible,
@@ -229,4 +243,8 @@ export {
 	setExportFontTauriDialogVisible,
 	fontSettings2DialogVisible,
 	setFontSettings2DialogVisible,
+	exportVarFontDialogVisible,
+	setExportVarFontDialogVisible,
+	exportVarFontTauriDialogVisible,
+	setExportVarFontTauriDialogVisible,
 }

@@ -162,6 +162,13 @@ const web_menu: Array<IMenu> = [
 				}
 			},
 			{
+				label: tm('menus.export.var_font'),
+				key: 'export-var-font-file',
+				click: (handlers: IHandlerMap) => {
+					handlers['export-var-font-file']()
+				}
+			},
+			{
 				label: tm('menus.export.glyph'),
 				key: 'export-glyphs',
 				click: (handlers: IHandlerMap) => {

@@ -20,6 +20,8 @@ import * as hmtxTable from './tables/hmtx'
 import * as glyfTable from './tables/glyf'
 import * as locaTable from './tables/loca'
 import * as cffTable from './tables/cff'
+import * as fvarTable from './tables/fvar'
+import * as gvarTable from './tables/gvar'
 
 /**
  * 所有表的工具（通常包含parse和create方法）集合
@@ -39,6 +41,8 @@ const tableTool: any = {
 	'glyf': glyfTable,
 	'loca': locaTable,
 	'CFF ': cffTable,
+	'fvar': fvarTable,
+	'gvar': gvarTable,
 }
 
 type ITableType = 'IHeadTable | IHheaTable | IOS2Table | IMaxpTable | INameTable | IPostTable | ICmapTable | IHmtxTable | IGlyfTable | ILocaTable | ICffTable' | null
