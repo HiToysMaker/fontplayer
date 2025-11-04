@@ -978,10 +978,29 @@ const addAxisNamesToTable = (
  * @returns PostScript格式的名称（无空格，最多63字符）
  */
 const generatePostScriptName = (familyName: string, subfamilyName: string): string => {
-	// 移除空格，连接为 FamilyName-SubfamilyName 格式
-	const psName = (familyName + '-' + subfamilyName)
-		.replace(/\s/g, '')  // 移除所有空格
-		.slice(0, 63)         // 限制为63个字符
+	// PostScript Name必须只包含ASCII字符：A-Z, a-z, 0-9, 连字符(-), 下划线(_)
+	// 移除中文、空格和其他特殊字符
+	
+	const cleanFamily = familyName
+		.replace(/[^\x00-\x7F]/g, '')      // 移除非ASCII字符（包括中文）
+		.replace(/[^a-zA-Z0-9\-_]/g, '')   // 只保留字母、数字、连字符、下划线
+		.replace(/\s/g, '')                 // 移除空格
+		.trim()
+	
+	const cleanSubfamily = subfamilyName
+		.replace(/[^\x00-\x7F]/g, '')
+		.replace(/[^a-zA-Z0-9\-_]/g, '')
+		.replace(/\s/g, '')
+		.trim()
+	
+	// 如果清理后为空，使用默认值
+	const psFamily = cleanFamily || 'Untitled'
+	const psSubfamily = cleanSubfamily || 'Regular'
+	
+	// 连接为 FamilyName-SubfamilyName 格式
+	const psName = `${psFamily}-${psSubfamily}`.slice(0, 63)
+	
+	console.log(`📝 Generated PostScript Name: "${familyName}" + "${subfamilyName}" → "${psName}"`)
 	
 	return psName
 }

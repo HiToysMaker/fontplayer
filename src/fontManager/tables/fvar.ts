@@ -167,7 +167,9 @@ const create = (table: IFvarTable) => {
 	const axisCountBytes = encoder.uint16(table.axisCount || 0)
 	const axisSizeBytes = encoder.uint16(table.axisSize || 20)
 	const instanceCountBytes = encoder.uint16(table.instanceCount || 0)
-	const instanceSizeBytes = encoder.uint16(table.instanceSize || (16 + (table.axisCount || 0) * 4))
+	// instanceSize = subfamilyNameID(2) + flags(2) + coordinates(axisCount*4) + postScriptNameID(2)
+	const calculatedInstanceSize = 2 + 2 + (table.axisCount || 0) * 4 + 2
+	const instanceSizeBytes = encoder.uint16(table.instanceSize || calculatedInstanceSize)
 	
 	if (majorVersionBytes) data = data.concat(majorVersionBytes)
 	if (minorVersionBytes) data = data.concat(minorVersionBytes)
@@ -244,7 +246,6 @@ const createFvarTable = (variants: any) => {
   table.majorVersion = 1
   table.minorVersion = 0
   table.axisCount = variants.axes ? variants.axes.length : 0
-  table.instanceCount = variants.instances ? variants.instances.length : 0
   
   // 处理axes
   if (variants.axes) {
@@ -261,7 +262,10 @@ const createFvarTable = (variants: any) => {
   }
   
   // 处理instances
-  if (variants.instances) {
+  table.instances = []
+  
+  if (variants.instances && variants.instances.length > 0) {
+    // 用户提供了instances，使用用户提供的
     table.instances = variants.instances.map((instance: any) => {
       return {
         subfamilyNameID: instance.subfamilyNameID,
@@ -270,7 +274,27 @@ const createFvarTable = (variants: any) => {
         postScriptNameID: instance.postScriptNameID,
       }
     })
+  } else {
+    // 用户没有提供instances，自动创建一个默认实例
+    // Adobe应用（如Photoshop）需要至少一个instance才能显示可变字体
+    console.warn('⚠️ No instances provided. Creating default instance for Adobe app compatibility.')
+    
+    if (table.axes && table.axes.length > 0) {
+      // 创建指向所有轴默认值的实例
+      const defaultCoordinates: number[] = table.axes.map(axis => axis.defaultValue || 0)
+      
+      table.instances = [{
+        subfamilyNameID: 2,  // nameID 2 通常是 "Regular"
+        flags: 0,
+        coordinates: defaultCoordinates,  // 所有轴的默认值（数组）
+        postScriptNameID: 6,  // nameID 6 是 PostScript name
+      }]
+      
+      console.log(`✅ Created default instance: subfamilyNameID=2, coordinates=[${defaultCoordinates.join(', ')}], postScriptNameID=6`)
+    }
   }
+  
+  table.instanceCount = table.instances.length
   
   return table
 }
