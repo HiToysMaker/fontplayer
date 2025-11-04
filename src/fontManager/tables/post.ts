@@ -125,6 +125,9 @@ const parse = (data: DataView, offset: number, font: IFont) => {
  */
 const create = (table: IPostTable) => {
 	let data: Array<number> = []
+	
+	console.log(`\n=== Creating post table ===`)
+	console.log(`Version: 0x${table.version.toString(16).padStart(8, '0')} (decimal: ${table.version})`)
 
 	// 遍历table的每个键值，生成对应数据
 	// traverse table, generate data for each key

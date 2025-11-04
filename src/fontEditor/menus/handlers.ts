@@ -2004,9 +2004,25 @@ const getVarFontContours = async (options?: any) => {
  * @param axisCount 轴的数量
  * @returns 所有组合的peakTuple数组（不包括全0的默认状态）
  */
-const generateAllAxisCombinations = (axisCount: number): number[][] => {
-  const totalCombinations = Math.pow(2, axisCount)
+const generateAllAxisCombinations = (axisCount: number): any[] => {
+  if (axisCount === 0) return []
+  
   const combinations: any = []
+  
+  // 对于单轴字体，生成两个极端点（最小值和最大值）
+  if (axisCount === 1) {
+    // 最小值：tuple=[0.0]（轴在最小位置）
+    combinations.push({ tuple: [0.0], overlapRemovedContours: null })
+    
+    // 最大值：tuple=[1.0]（轴在最大位置）
+    combinations.push({ tuple: [1.0], overlapRemovedContours: null })
+    
+    console.log('📊 Single axis: generating 2 extreme points (min=0.0, max=1.0)')
+    return combinations
+  }
+  
+  // 对于多轴字体，使用二进制组合生成所有角点
+  const totalCombinations = Math.pow(2, axisCount)
   
   // 从1开始（跳过全0的默认状态）
   for (let i = 1; i < totalCombinations; i++) {
@@ -2021,6 +2037,7 @@ const generateAllAxisCombinations = (axisCount: number): number[][] => {
     combinations.push({ tuple, overlapRemovedContours: null })
   }
   
+  console.log(`📊 Multi-axis (${axisCount}): generating ${combinations.length} corner points`)
   return combinations
 }
 
