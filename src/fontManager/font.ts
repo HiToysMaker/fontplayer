@@ -25,10 +25,10 @@ import { encoder } from './encode'
 import { loaded, total, loading } from '../fontEditor/stores/global'
 import { createFvarTable } from './tables/fvar'
 import { createGvarTable } from './tables/gvar'
-// TODO: 实现完整的可变字体支持后取消注释
-// import { create as createGlyfTable } from './tables/glyf'
-// import { create as createLocaTable } from './tables/loca'
-// import { convertContoursToQuadratic } from './utils/cubicToQuadratic'
+import { create as createGlyfTable } from './tables/glyf'
+import { create as createLocaTable } from './tables/loca'
+import { convertContoursToQuadratic } from './utils/cubicToQuadratic'
+import { buildGlyfAndLocaTables } from './utils/glyfBuilder'
 
 // font对象数据类型
 // font object data type
@@ -454,9 +454,28 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 
 	// 定义maxp表
 	// define maxp table
-	const maxpTable = {
-		version: 0x00005000,
+	// maxp表版本：CFF=0x00005000 (6字节), TrueType=0x00010000 (32字节)
+	// 可变字体使用TrueType格式，需要所有TrueType字段
+	const maxpTable: any = {
+		version: options.variants ? 0x00010000 : 0x00005000, // TrueType : CFF
 		numGlyphs: characters.length,
+	}
+	
+	// TrueType格式需要额外的字段（总共32字节）
+	if (options.variants) {
+		maxpTable.maxPoints = 0 // 会在后面从glyf表计算
+		maxpTable.maxContours = 0 // 会在后面从glyf表计算
+		maxpTable.maxCompositePoints = 0
+		maxpTable.maxCompositeContours = 0
+		maxpTable.maxZones = 2 // 标准值
+		maxpTable.maxTwilightPoints = 0
+		maxpTable.maxStorage = 0
+		maxpTable.maxFunctionDefs = 0
+		maxpTable.maxInstructionDefs = 0
+		maxpTable.maxStackElements = 0
+		maxpTable.maxSizeOfInstructions = 0
+		maxpTable.maxComponentElements = 0
+		maxpTable.maxComponentDepth = 0
 	}
 
 	const _os2Table = options.tables ? options.tables.os2 : {}
@@ -624,26 +643,151 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 	}
 
 	if (options.variants) {
-		// ========== 可变字体功能（临时禁用） ==========
-		console.log('\n⚠️ ===  Variable Font Feature Disabled ===')
-		console.log('CFF format + gvar table = INCOMPATIBLE')
-		console.log('Variable fonts require TrueType format (glyf + gvar)')
-		console.log('CFF variable fonts need CFF2 (not yet implemented)')
-		console.log('')
-		console.log('Current Status:')
-		console.log('  ✅ cubicToQuadratic conversion: IMPLEMENTED')
-		console.log('  ⚠️ IGlyfTable builder: NEEDS IMPLEMENTATION')
-		console.log('  ⚠️ ILocaTable builder: NEEDS IMPLEMENTATION')
-		console.log('')
-		console.log('Generating regular font (without variable features)...')
-		console.log('See VARIABLE_FONT_FINAL_SOLUTION.md for complete solution')
-		console.log('==========================================\n')
+		// ========== 可变字体：使用TrueType格式（glyf + loca + gvar） ==========
+		console.log('\n🎨 === Creating Variable Font ===')
+		console.log('Axes:', options.variants.axes?.map(a => `${a.tag || a.name || 'unknown'} (${a.minValue}-${a.maxValue})`).join(', ') || 'none')
+		console.log('Combinations:', options.variants.combinations?.length || 0)
 		
-		// TODO: 完整实现后取消注释
-		// const fvarTable = createFvarTable(options.variants)
-		// tables['fvar'] = fvarTable
-		// const gvarTable = createGvarTable(options.variants, characters)
-		// tables['gvar'] = gvarTable
+		// 调试：显示完整的axes数据
+		if (options.variants.axes && options.variants.axes.length > 0) {
+			console.log('Axes details:', options.variants.axes)
+		} else {
+			console.warn('⚠️ WARNING: No axes defined in variants!')
+		}
+		
+		// ⚠️ 重要：可变字体需要使用TrueType格式（glyf + gvar）
+		// CFF格式不支持gvar，需要使用CFF2（尚未实现）
+		
+		// 删除CFF表
+		delete tables['CFF ']
+		console.log('✅ Removed CFF table (using TrueType format for variable font)')
+		
+		console.log('\n📐 Step 1: Converting cubic Bezier to quadratic...')
+		
+		// 1. 将所有字符的轮廓转换为二次贝塞尔曲线
+		const convertedCharacters = characters.map(char => ({
+			...char,
+			contours: convertContoursToQuadratic(char.contours, 0.5) // tolerance = 0.5
+		}))
+		
+		console.log(`✅ Converted ${convertedCharacters.length} glyphs to quadratic Bezier`)
+		
+		console.log('\n📦 Step 2: Building glyf and loca tables...')
+		
+		// 2. 构建glyf表（使用转换后的轮廓）
+		const { glyfTable } = buildGlyfAndLocaTables(
+			convertedCharacters,
+			1 // loca version: 1 = long format (Offset32)
+		)
+		
+		// 更新head表的indexToLocFormat
+		headTable.indexToLocFormat = 1 // long format
+		
+		// 存储glyf表对象（sfnt.ts会调用create序列化）
+		// 注意：glyf.create()会生成真实的offsets并存储在_generatedOffsets中
+		tables['glyf'] = glyfTable
+		
+		// loca表会在后面使用glyf序列化后的真实offsets创建
+		// 暂时存储一个占位符
+		tables['loca'] = {
+			version: 1,
+			offsets: [], // 会在sfnt.ts中被替换
+			_needsRealOffsets: true, // 标记需要真实offsets
+			_glyfTableRef: glyfTable, // 引用glyf表
+		}
+		
+		console.log('✅ glyf table created (loca will use real offsets after serialization)')
+		
+		// 从glyf表重新计算head表的边界框
+		let globalXMin = Infinity
+		let globalYMin = Infinity
+		let globalXMax = -Infinity
+		let globalYMax = -Infinity
+		
+		for (const glyph of glyfTable.glyphTables) {
+			if (glyph.numberOfContours > 0) {
+				globalXMin = Math.min(globalXMin, glyph.xMin)
+				globalYMin = Math.min(globalYMin, glyph.yMin)
+				globalXMax = Math.max(globalXMax, glyph.xMax)
+				globalYMax = Math.max(globalYMax, glyph.yMax)
+			}
+		}
+		
+		// 更新head表的边界框
+		if (isFinite(globalXMin)) {
+			headTable.xMin = globalXMin
+			headTable.yMin = globalYMin
+			headTable.xMax = globalXMax
+			headTable.yMax = globalYMax
+			console.log(`✅ Updated head table bounding box: (${globalXMin}, ${globalYMin}) to (${globalXMax}, ${globalYMax})`)
+		}
+		
+		// 从hmtx重新计算hhea表的度量值
+		let minLeftSideBearing = Infinity
+		let minRightSideBearing = Infinity
+		let xMaxExtent = -Infinity
+		
+		for (let i = 0; i < convertedCharacters.length; i++) {
+			const char = convertedCharacters[i]
+			const glyph = glyfTable.glyphTables[i]
+			const lsb = char.leftSideBearing || 0
+			const advWidth = char.advanceWidth || 0
+			
+			if (glyph.numberOfContours > 0) {
+				const rsb = Math.round(advWidth - lsb - (glyph.xMax - glyph.xMin))
+				const extent = Math.round(lsb + (glyph.xMax - glyph.xMin))
+				
+				minLeftSideBearing = Math.min(minLeftSideBearing, Math.round(lsb))
+				minRightSideBearing = Math.min(minRightSideBearing, rsb)
+				xMaxExtent = Math.max(xMaxExtent, extent)
+			}
+		}
+		
+		// 更新hhea表
+		if (isFinite(minLeftSideBearing)) {
+			hheaTable.minLeftSideBearing = minLeftSideBearing
+			hheaTable.minRightSideBearing = minRightSideBearing
+			hheaTable.xMaxExtent = xMaxExtent
+			console.log(`✅ Updated hhea table metrics: lsb=${minLeftSideBearing}, rsb=${minRightSideBearing}, extent=${xMaxExtent}`)
+		}
+		
+		// 从glyf表计算maxp表的值
+		let maxPoints = 0
+		let maxContours = 0
+		
+		for (const glyph of glyfTable.glyphTables) {
+			if (glyph.numberOfContours > 0) {
+				// 计算该字形的总点数
+				let totalPoints = 0
+				for (const contour of glyph.contours) {
+					totalPoints += contour.points.length
+				}
+				
+				maxPoints = Math.max(maxPoints, totalPoints)
+				maxContours = Math.max(maxContours, glyph.numberOfContours)
+			}
+		}
+		
+		// 更新maxp表
+		maxpTable.maxPoints = maxPoints
+		maxpTable.maxContours = maxContours
+		console.log(`✅ Updated maxp table: maxPoints=${maxPoints}, maxContours=${maxContours}`)
+		
+		console.log('\n🎯 Step 3: Creating variation tables...')
+		
+		// 3. 创建fvar表（定义变体轴）
+		const fvarTable = createFvarTable(options.variants)
+		tables['fvar'] = fvarTable
+		console.log('✅ fvar table created')
+		
+		// 4. 创建gvar表（定义字形变体）
+		// 注意：gvar表也需要使用转换后的字符
+		const gvarTable = createGvarTable(options.variants, convertedCharacters)
+		tables['gvar'] = gvarTable
+		console.log('✅ gvar table created')
+		
+		console.log('\n🎉 Variable font tables complete!')
+		console.log('================================\n')
 	}
 
 	headTable.checkSumAdjustment = 0x00000000

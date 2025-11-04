@@ -56,15 +56,19 @@ const parse = (data: DataView, offset: number, font: IFont) => {
  * @param options options
  * @returns raw data array, each entry is type of 8-bit number
  */
-const create = (table: ILocaTable, options: { version: number }) => {
+const create = (table: ILocaTable, options?: { version: number }) => {
 	let data: Array<number> = []
+	
+	// 从options或table对象中获取version
+	const version = options?.version ?? table.version ?? 1
+	
 	for (let i = 0; i < table.offsets.length; i++) {
-		if (options.version === 0) {
+		if (version === 0) {
 			const bytes = encoder['Offset16'](table.offsets[i] as number) as Array<number>
 			if (bytes) {
 				data = data.concat(bytes)
 			}
-		} else if (options.version === 1) {
+		} else if (version === 1) {
 			const bytes = encoder['Offset32'](table.offsets[i] as number) as Array<number>
 			if (bytes) {
 				data = data.concat(bytes)

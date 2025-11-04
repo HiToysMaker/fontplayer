@@ -103,7 +103,7 @@ const extractPointsFromContours = (
   contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>
 ): IPoint[] => {
   const points: IPoint[] = []
-  console.log('contours', contours)
+  
   for (const contour of contours) {
     for (const path of contour) {
       // 添加起点
@@ -113,6 +113,13 @@ const extractPointsFromContours = (
       if (path.type === PathType.QUADRATIC_BEZIER) {
         points.push({ x: path.control.x, y: path.control.y })
       } else if (path.type === PathType.CUBIC_BEZIER) {
+        // ⚠️ 警告：gvar表应该使用二次贝塞尔曲线
+        // 三次贝塞尔应该在传入前通过convertContoursToQuadratic转换
+        console.error('❌ ERROR: Cubic Bezier curve found in gvar table!')
+        console.error('   All contours should be converted to quadratic before creating gvar')
+        console.error('   This will cause point count mismatch!')
+        
+        // 为了避免崩溃，仍然添加控制点，但会导致点数不匹配
         points.push({ x: path.control1.x, y: path.control1.y })
         points.push({ x: path.control2.x, y: path.control2.y })
       }

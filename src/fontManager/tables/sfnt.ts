@@ -53,14 +53,43 @@ const createRecord = (record: IRecord) => {
 
 const createConfig = (config: ITableConfig) => {
 	let data: Array<number> = []
-	Object.keys(config).forEach((key: string) => {
+	
+	// 按OpenType规范的严格顺序输出字段
+	// 1. sfntVersion (4字节)
+	const sfntVersion = (config as any).sfntVersion
+	let sfntVersionBytes: number[] | false = false
+	
+	if (typeof sfntVersion === 'number') {
+		// TrueType格式：0x00010000
+		sfntVersionBytes = encoder.uint32(sfntVersion)
+	} else if (typeof sfntVersion === 'string') {
+		// CFF格式：'OTTO'
+		sfntVersionBytes = encoder.Tag(sfntVersion)
+	}
+	
+	if (sfntVersionBytes) {
+		data = data.concat(sfntVersionBytes)
+		console.log(`✅ sfntVersion encoded: ${sfntVersionBytes.length} bytes [${sfntVersionBytes.join(', ')}]`)
+	} else {
+		console.error('❌ Failed to encode sfntVersion:', sfntVersion)
+	}
+	
+	// 2. 其他字段按顺序
+	const fieldOrder = ['numTables', 'searchRange', 'entrySelector', 'rangeShift']
+	for (const key of fieldOrder) {
 		const type = types[key as keyof typeof types]
-		const value = config[key as keyof typeof config]
+		const value = (config as any)[key]
 		const bytes = encoder[type as keyof typeof encoder](value)
 		if (bytes) {
 			data = data.concat(bytes)
 		}
-	})
+	}
+	
+	console.log(`✅ Config header: ${data.length} bytes total (expected: 12)`)
+	if (data.length !== 12) {
+		console.error(`❌ Config header size mismatch! Got ${data.length}, expected 12`)
+	}
+	
 	return data
 }
 
@@ -173,8 +202,22 @@ const create = async (tables: any, mark: string = '') => {
 	const numTables = keys.length
 	const highestPowerOf2 = Math.pow(2, log2(numTables))
 	const searchRange = 16 * highestPowerOf2
+	
+	// 根据字体格式设置sfntVersion
+	// TrueType格式（有glyf表）：0x00010000
+	// CFF格式（有CFF表）：'OTTO'
+	const hasTrueTypeOutlines = !!tables['glyf']
+	const hasCFFOutlines = !!tables['CFF ']
+	const sfntVersion = hasTrueTypeOutlines ? 0x00010000 : 'OTTO'
+	
+	console.log(`\n=== Font Format Detection ===`)
+	console.log(`Has glyf table: ${hasTrueTypeOutlines}`)
+	console.log(`Has CFF table: ${hasCFFOutlines}`)
+	console.log(`sfntVersion: ${typeof sfntVersion === 'number' ? '0x' + sfntVersion.toString(16).padStart(8, '0') : sfntVersion} (${hasTrueTypeOutlines ? 'TrueType' : 'CFF'})`)
+	console.log(`==============================\n`)
+	
 	const configData = createConfig({
-		sfntVersion: 'OTTO',
+		sfntVersion: sfntVersion,
 		numTables,
 		searchRange,
 		entrySelector: log2(highestPowerOf2),
@@ -207,7 +250,30 @@ const create = async (tables: any, mark: string = '') => {
 		const key = keys[i]
 		const t = tables[key]
 		let tableData = null
-		if (key === 'CFF ') {
+		
+		// 特殊处理：loca表需要使用glyf序列化后的真实offsets
+		if (key === 'loca' && (t as any)._needsRealOffsets) {
+			const glyfTableRef = (t as any)._glyfTableRef
+			if (glyfTableRef && (glyfTableRef as any)._generatedOffsets) {
+				console.log('\n=== Creating loca table with real offsets ===')
+				const realOffsets = (glyfTableRef as any)._generatedOffsets
+				console.log(`Using real offsets from glyf serialization: ${realOffsets.length} entries`)
+				console.log(`First offsets: [${realOffsets.slice(0, 5).join(', ')}...]`)
+				console.log(`Last offsets: [...${realOffsets.slice(-5).join(', ')}]`)
+				
+				// 创建正确的loca表对象
+				const realLocaTable = {
+					version: (t as any).version || 1,
+					offsets: realOffsets
+				}
+				
+				tableData = tableTool[key].create(realLocaTable, { version: realLocaTable.version })
+				console.log('✅ loca table created with real offsets\n')
+			} else {
+				console.error('❌ ERROR: glyf table was not serialized yet or has no offsets!')
+				tableData = tableTool[key].create(t)
+			}
+		} else if (key === 'CFF ') {
 			tableData = await tableTool[key].create(t)
 		} else {
 			tableData = tableTool[key].create(t)

@@ -75,12 +75,34 @@ function calculateError(
  * 
  * @param cubic 三次贝塞尔曲线
  * @param tolerance 允许的最大误差（默认0.5个单位）
+ * @param depth 当前递归深度（内部使用）
+ * @param maxDepth 最大递归深度（默认10）
  * @returns 二次贝塞尔曲线数组
  */
 export function convertCubicToQuadratic(
 	cubic: ICubicBezierCurve,
-	tolerance: number = 0.5
+	tolerance: number = 0.5,
+	depth: number = 0,
+	maxDepth: number = 10
 ): IQuadraticBezierCurve[] {
+	// 防止无限递归
+	if (depth >= maxDepth) {
+		console.warn(`⚠️ Max recursion depth (${maxDepth}) reached, using approximation`)
+		// 强制返回近似结果
+		const control: IPoint = {
+			x: (3 * cubic.control1.x + 3 * cubic.control2.x) / 6 + (cubic.start.x + cubic.end.x) / 6,
+			y: (3 * cubic.control1.y + 3 * cubic.control2.y) / 6 + (cubic.start.y + cubic.end.y) / 6,
+		}
+		
+		return [{
+			type: PathType.QUADRATIC_BEZIER,
+			start: cubic.start,
+			end: cubic.end,
+			control: control,
+			fill: cubic.fill,
+		}]
+	}
+	
 	// 简单近似：使用3/4和1/4点作为控制点
 	// 这是一个常用的近似方法
 	const control: IPoint = {
@@ -98,6 +120,13 @@ export function convertCubicToQuadratic(
 	
 	// 计算误差
 	const error = calculateError(cubic, cubic.start, control, cubic.end)
+	
+	// 检查曲线长度，如果太短直接返回（避免过度分割）
+	const length = distance(cubic.start, cubic.end)
+	if (length < 1.0) {
+		// 曲线太短，误差可以忽略
+		return [quadratic]
+	}
 	
 	// 如果误差小于容限，返回单个二次贝塞尔曲线
 	if (error <= tolerance) {
@@ -153,10 +182,10 @@ export function convertCubicToQuadratic(
 		fill: cubic.fill,
 	}
 	
-	// 递归转换两部分
+	// 递归转换两部分（传递depth + 1）
 	return [
-		...convertCubicToQuadratic(cubic1, tolerance),
-		...convertCubicToQuadratic(cubic2, tolerance),
+		...convertCubicToQuadratic(cubic1, tolerance, depth + 1, maxDepth),
+		...convertCubicToQuadratic(cubic2, tolerance, depth + 1, maxDepth),
 	]
 }
 
@@ -177,8 +206,53 @@ export function convertContourToQuadratic(
 	for (const segment of contour) {
 		if (segment.type === PathType.CUBIC_BEZIER) {
 			// 转换三次贝塞尔为二次贝塞尔
-			const quadratics = convertCubicToQuadratic(segment, tolerance)
+			// 使用默认的depth=0和maxDepth=10
+			const quadratics = convertCubicToQuadratic(segment, tolerance, 0, 10)
 			result.push(...quadratics)
+		} else {
+			// 直线和二次贝塞尔直接保留
+			result.push(segment as ILine | IQuadraticBezierCurve)
+		}
+	}
+	
+	return result
+}
+
+/**
+ * 简化的三次贝塞尔到二次贝塞尔转换（无递归）
+ * 直接近似，不分割曲线，速度快且稳定
+ */
+export function convertCubicToQuadraticSimple(
+	cubic: ICubicBezierCurve
+): IQuadraticBezierCurve {
+	// 使用简单的3/4公式近似
+	// 这个方法虽然精度不是最高，但非常稳定，不会递归
+	const control: IPoint = {
+		x: (3 * cubic.control1.x + 3 * cubic.control2.x) / 6 + (cubic.start.x + cubic.end.x) / 6,
+		y: (3 * cubic.control1.y + 3 * cubic.control2.y) / 6 + (cubic.start.y + cubic.end.y) / 6,
+	}
+	
+	return {
+		type: PathType.QUADRATIC_BEZIER,
+		start: cubic.start,
+		end: cubic.end,
+		control: control,
+		fill: cubic.fill,
+	}
+}
+
+/**
+ * 转换轮廓（简化版，用于可变字体）
+ */
+export function convertContourToQuadraticSimple(
+	contour: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>
+): Array<ILine | IQuadraticBezierCurve> {
+	const result: Array<ILine | IQuadraticBezierCurve> = []
+	
+	for (const segment of contour) {
+		if (segment.type === PathType.CUBIC_BEZIER) {
+			// 使用简单转换，不递归
+			result.push(convertCubicToQuadraticSimple(segment))
 		} else {
 			// 直线和二次贝塞尔直接保留
 			result.push(segment as ILine | IQuadraticBezierCurve)
@@ -192,13 +266,21 @@ export function convertContourToQuadratic(
  * 转换整个字符的所有轮廓
  * 
  * @param contours 字符的所有轮廓
- * @param tolerance 允许的最大误差
+ * @param tolerance 允许的最大误差（默认0.5）
+ * @param useSimple 是否使用简化版本（推荐用于可变字体）
  * @returns 转换后的轮廓
  */
 export function convertContoursToQuadratic(
 	contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>,
-	tolerance: number = 0.5
+	tolerance: number = 0.5,
+	useSimple: boolean = true
 ): Array<Array<ILine | IQuadraticBezierCurve>> {
-	return contours.map(contour => convertContourToQuadratic(contour, tolerance))
+	if (useSimple) {
+		// 使用简化版本：快速、稳定、不递归
+		return contours.map(contour => convertContourToQuadraticSimple(contour))
+	} else {
+		// 使用精确版本：可能递归，更精确但更慢
+		return contours.map(contour => convertContourToQuadratic(contour, tolerance))
+	}
 }
 

@@ -3,6 +3,8 @@ import type { ILocaTable } from './loca'
 import * as decode from '../decode'
 import { ICubicBezierCurve, ILine, IQuadraticBezierCurve, PathType } from '../character'
 import * as R from 'ramda'
+import { encoder } from '../encode'
+import { serializeGlyfTable } from '../utils/glyfSerializer'
 
 // glyf表格式
 // glyf table format
@@ -405,8 +407,34 @@ const parseGlyphCoordinate = (decoder, flag, previousValue, shortVectorBitMask, 
 	return v
 }
 
+/**
+ * 序列化glyf表数据（使用完整的OpenType规范实现）
+ * @param table IGlyfTable对象
+ * @returns 原始数据数组
+ */
 const create = (table: IGlyfTable) => {
-
+	console.log('\n=== glyf.create() called ===')
+	console.log('table type:', typeof table)
+	console.log('table.glyphTables exists?', !!table.glyphTables)
+	console.log('table.glyphTables is array?', Array.isArray(table.glyphTables))
+	
+	// 验证输入
+	if (!table || !table.glyphTables || !Array.isArray(table.glyphTables)) {
+		console.error('❌ ERROR: Invalid IGlyfTable object!')
+		console.error('   table:', table)
+		return []
+	}
+	
+	// 使用完整的OpenType序列化器
+	const result = serializeGlyfTable(table.glyphTables)
+	
+	// 将生成的offsets存储到table对象中，供loca表使用
+	// 注意：这是一个临时方案，理想情况下应该重构架构
+	;(table as any)._generatedOffsets = result.offsets
+	
+	console.log('glyf.create() complete\n')
+	
+	return result.data
 }
 
 export {

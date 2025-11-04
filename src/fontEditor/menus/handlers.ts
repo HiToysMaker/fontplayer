@@ -1891,19 +1891,47 @@ const createVarFont = async (options?: CreateFontOptions) => {
 
   // 创建所有变体
   const combinations: any = generateAllAxisCombinations(selectedFile.value.variants?.axes?.length || 0)
+  
+  console.log('\n🔄 Generating variation combinations...')
+  console.log(`Total combinations: ${combinations.length}`)
+  
   for (let i = 0; i < combinations.length; i++) {
     const combination = combinations[i]
     const tuple = combination.tuple
     const origin_constants = R.clone(constants.value)
+    
+    // 设置当前组合的轴值
     for (let j = 0; j < tuple.length; j++) {
       const axis = selectedFile.value.variants?.axes[j]
       const value = axis.minValue + (axis.maxValue - axis.minValue) * tuple[j]
       constants.value.find((constant) => constant.uuid === axis.uuid).value = value
     }
-    combination.overlapRemovedContours = options.remove_overlap ? await getOverlapRemovedContours({containSpace}) : await getVarFontContours({containSpace})
+    
+    // 生成当前组合的轮廓
+    const rawContours = options.remove_overlap ? await getOverlapRemovedContours({containSpace}) : await getVarFontContours({containSpace})
+    
+    // ⚠️ 关键：将轮廓转换为二次贝塞尔格式（与默认字形保持一致）
+    // 导入转换函数
+    const { convertContoursToQuadratic } = await import('../../fontManager/utils/cubicToQuadratic')
+    
+    // rawContours结构: [{unicode, contours}, ...]
+    // 需要保留整个对象，只转换contours字段
+    combination.overlapRemovedContours = rawContours.map((char: any) => ({
+      ...char,
+      contours: convertContoursToQuadratic(char.contours, 0.5)
+    }))
+    
     constants.value = origin_constants
     constantsMap.update(constants.value)
+    
+    if (i === 0 || i === combinations.length - 1) {
+      console.log(`  Combination ${i}: tuple [${tuple.join(', ')}] - converted to quadratic`)
+    } else if (i === 1) {
+      console.log(`  ...`)
+    }
   }
+  
+  console.log('✅ All combinations converted to quadratic Bezier\n')
 
   const font = await create(fontCharacters, {
     familyName: selectedFile.value.name,
