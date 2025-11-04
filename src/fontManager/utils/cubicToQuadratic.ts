@@ -219,44 +219,117 @@ export function convertContourToQuadratic(
 }
 
 /**
- * 简化的三次贝塞尔到二次贝塞尔转换（无递归）
- * 直接近似，不分割曲线，速度快且稳定
+ * 优化的三次贝塞尔到二次贝塞尔转换（无递归）
+ * 使用 De Casteljau 算法将一个三次贝塞尔分成两个二次贝塞尔
+ * 
+ * 原理：
+ * 1. 在 t=0.5 处分割三次贝塞尔曲线
+ * 2. 每一半用一个二次贝塞尔曲线近似
+ * 3. 这样可以显著减少误差，同时保持稳定性
+ * 
+ * @param cubic 三次贝塞尔曲线
+ * @returns 两个二次贝塞尔曲线（更精确地近似原曲线）
  */
 export function convertCubicToQuadraticSimple(
 	cubic: ICubicBezierCurve
-): IQuadraticBezierCurve {
-	// 使用简单的3/4公式近似
-	// 这个方法虽然精度不是最高，但非常稳定，不会递归
-	const control: IPoint = {
-		x: (3 * cubic.control1.x + 3 * cubic.control2.x) / 6 + (cubic.start.x + cubic.end.x) / 6,
-		y: (3 * cubic.control1.y + 3 * cubic.control2.y) / 6 + (cubic.start.y + cubic.end.y) / 6,
+): IQuadraticBezierCurve[] {
+	// 使用 De Casteljau 算法在 t=0.5 处分割三次贝塞尔曲线
+	const t = 0.5
+	const mt = 1 - t  // 0.5
+	
+	// 第一层插值：在相邻控制点之间
+	const p01 = {
+		x: mt * cubic.start.x + t * cubic.control1.x,
+		y: mt * cubic.start.y + t * cubic.control1.y,
+	}
+	const p12 = {
+		x: mt * cubic.control1.x + t * cubic.control2.x,
+		y: mt * cubic.control1.y + t * cubic.control2.y,
+	}
+	const p23 = {
+		x: mt * cubic.control2.x + t * cubic.end.x,
+		y: mt * cubic.control2.y + t * cubic.end.y,
 	}
 	
-	return {
-		type: PathType.QUADRATIC_BEZIER,
-		start: cubic.start,
-		end: cubic.end,
-		control: control,
-		fill: cubic.fill,
+	// 第二层插值
+	const p012 = {
+		x: mt * p01.x + t * p12.x,
+		y: mt * p01.y + t * p12.y,
 	}
+	const p123 = {
+		x: mt * p12.x + t * p23.x,
+		y: mt * p12.y + t * p23.y,
+	}
+	
+	// 第三层插值：分割点
+	const splitPoint = {
+		x: mt * p012.x + t * p123.x,
+		y: mt * p012.y + t * p123.y,
+	}
+	
+	// 现在我们有两段三次贝塞尔：
+	// 第一段: start -> p01 -> p012 -> splitPoint
+	// 第二段: splitPoint -> p123 -> p23 -> end
+	
+	// 将每一段转换为二次贝塞尔
+	// 对于三次贝塞尔 P0-P1-P2-P3，二次贝塞尔控制点可以用：
+	// Q = (3*P1 + 3*P2 - P0 - P3) / 4
+	
+	// 第一段的二次贝塞尔控制点
+	const control1: IPoint = {
+		x: (3 * p01.x + 3 * p012.x - cubic.start.x - splitPoint.x) / 4,
+		y: (3 * p01.y + 3 * p012.y - cubic.start.y - splitPoint.y) / 4,
+	}
+	
+	// 第二段的二次贝塞尔控制点
+	const control2: IPoint = {
+		x: (3 * p123.x + 3 * p23.x - splitPoint.x - cubic.end.x) / 4,
+		y: (3 * p123.y + 3 * p23.y - splitPoint.y - cubic.end.y) / 4,
+	}
+	
+	return [
+		{
+			type: PathType.QUADRATIC_BEZIER,
+			start: cubic.start,
+			end: splitPoint,
+			control: control1,
+			fill: cubic.fill,
+		},
+		{
+			type: PathType.QUADRATIC_BEZIER,
+			start: splitPoint,
+			end: cubic.end,
+			control: control2,
+			fill: cubic.fill,
+		}
+	]
 }
 
 /**
  * 转换轮廓（简化版，用于可变字体）
+ * 使用优化的转换方法，将每个三次贝塞尔转换为两个二次贝塞尔
  */
 export function convertContourToQuadraticSimple(
 	contour: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>
 ): Array<ILine | IQuadraticBezierCurve> {
 	const result: Array<ILine | IQuadraticBezierCurve> = []
+	let cubicCount = 0
 	
 	for (const segment of contour) {
 		if (segment.type === PathType.CUBIC_BEZIER) {
-			// 使用简单转换，不递归
-			result.push(convertCubicToQuadraticSimple(segment))
+			// 使用优化的转换：一个三次贝塞尔 → 两个二次贝塞尔
+			const quadratics = convertCubicToQuadraticSimple(segment)
+			result.push(...quadratics)
+			cubicCount++
 		} else {
 			// 直线和二次贝塞尔直接保留
 			result.push(segment as ILine | IQuadraticBezierCurve)
 		}
+	}
+	
+	// 只在有很多三次贝塞尔时才打印日志
+	if (cubicCount > 20) {
+		console.log(`⚠️ Contour has ${cubicCount} cubic curves, converted to ${cubicCount * 2} quadratic curves`)
 	}
 	
 	return result

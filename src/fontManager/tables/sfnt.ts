@@ -246,8 +246,11 @@ const create = async (tables: any, mark: string = '') => {
 		count++
 	}
 	
+	console.log(`\n📋 Processing ${keys.length} tables in order: ${keys.join(', ')}\n`)
+	
 	for (let i = 0; i < keys.length; i++) {
 		const key = keys[i]
+		console.log(`⏳ [${i+1}/${keys.length}] Creating table: ${key}...`)
 		const t = tables[key]
 		let tableData = null
 		
@@ -278,10 +281,13 @@ const create = async (tables: any, mark: string = '') => {
 		} else {
 			tableData = tableTool[key].create(t)
 		}
+		console.log(`   ✅ Table ${key} created: ${tableData.length} bytes`)
 
+		console.log(`   ⏳ Computing checksum for ${key}...`)
 		tablesDataMap[key] = tableData
 		let checkSum = computeCheckSum(tableData)
 		checkSum %= 0x100000000
+		console.log(`   ✅ Checksum for ${key}: 0x${checkSum.toString(16)}`)
 		
 		if (key === 'head' && mark === 'final') {
 			const t2 = R.clone(t)

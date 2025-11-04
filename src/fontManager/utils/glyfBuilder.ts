@@ -326,7 +326,6 @@ export function buildLocaTable(
 	console.log('===========================\n')
 	
 	return {
-		version,
 		offsets,
 	}
 }

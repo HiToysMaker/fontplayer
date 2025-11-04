@@ -25,6 +25,7 @@ import { encoder } from './encode'
 import { loaded, total, loading } from '../fontEditor/stores/global'
 import { createFvarTable } from './tables/fvar'
 import { createGvarTable } from './tables/gvar'
+import { createStatTable } from './tables/STAT'
 import { create as createGlyfTable } from './tables/glyf'
 import { create as createLocaTable } from './tables/loca'
 import { convertContoursToQuadratic } from './utils/cubicToQuadratic'
@@ -782,9 +783,19 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		
 		// 4. 创建gvar表（定义字形变体）
 		// 注意：gvar表也需要使用转换后的字符
+		console.log('⏳ Creating gvar table (this may take a while for complex fonts)...')
+		console.time('gvar table creation')
 		const gvarTable = createGvarTable(options.variants, convertedCharacters)
+		console.timeEnd('gvar table creation')
 		tables['gvar'] = gvarTable
 		console.log('✅ gvar table created')
+		
+		// 5. 创建STAT表（样式属性表，macOS和PS需要）
+		const STATTable = createStatTable(fvarTable, {
+			elidedFallbackNameID: 2 // 使用 subfamily name
+		})
+		tables['STAT'] = STATTable
+		console.log('✅ STAT table created (required for macOS/Photoshop)')
 		
 		console.log('\n🎉 Variable font tables complete!')
 		console.log('================================\n')

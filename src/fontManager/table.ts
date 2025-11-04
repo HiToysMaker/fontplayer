@@ -22,6 +22,7 @@ import * as locaTable from './tables/loca'
 import * as cffTable from './tables/cff'
 import * as fvarTable from './tables/fvar'
 import * as gvarTable from './tables/gvar'
+import * as STATTable from './tables/STAT'
 
 /**
  * 所有表的工具（通常包含parse和create方法）集合
@@ -43,6 +44,7 @@ const tableTool: any = {
 	'CFF ': cffTable,
 	'fvar': fvarTable,
 	'gvar': gvarTable,
+	'STAT': STATTable,
 }
 
 type ITableType = 'IHeadTable | IHheaTable | IOS2Table | IMaxpTable | INameTable | IPostTable | ICmapTable | IHmtxTable | IGlyfTable | ILocaTable | ICffTable' | null

@@ -152,7 +152,13 @@ const calculateDeltas = (
   const variantPoints = extractPointsFromContours(variantContours)
   
   if (defaultPoints.length !== variantPoints.length) {
-    throw new Error('Default and variant glyphs must have the same number of points')
+    console.error(`❌ Point count mismatch: default=${defaultPoints.length}, variant=${variantPoints.length}`)
+    throw new Error(`Default and variant glyphs must have the same number of points (default: ${defaultPoints.length}, variant: ${variantPoints.length})`)
+  }
+  
+  // 如果点数太多，打印警告
+  if (defaultPoints.length > 500) {
+    console.warn(`⚠️ Large glyph detected: ${defaultPoints.length} points. This may be slow.`)
   }
   
   const deltas: PointDelta[] = []
@@ -597,7 +603,12 @@ const createGvarTable = (_variants, characters) => {
   }
   
   // 为每个字符创建variation data
+  console.log(`📝 Processing ${characters.length} glyphs for gvar table...`)
   for (let i = 0; i < characters.length; i++) {
+    if (i % 5 === 0) {
+      console.log(`  Processing glyph ${i}/${characters.length}...`)
+    }
+    
     const character = characters[i]
     const defaultContours = character.contours
     
@@ -631,6 +642,7 @@ const createGvarTable = (_variants, characters) => {
       })
     }
   }
+  console.log(`✅ Processed all ${characters.length} glyphs`)
   
   return table
 }
