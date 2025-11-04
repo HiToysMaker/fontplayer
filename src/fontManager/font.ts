@@ -1,7 +1,7 @@
 import type { ICharacter } from './character'
 import type { ITable } from './table'
 import { getUnicodeRange } from './tables/os_2'
-import { getMetrics } from './character'
+import { getMetrics, PathType } from './character'
 import type { IHeadTable } from './tables/head'
 import type { IHheaTable } from './tables/hhea'
 import type { IOS2Table } from './tables/os_2'
@@ -665,11 +665,36 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		
 		console.log('\n📐 Step 1: Converting cubic Bezier to quadratic...')
 		
+		// 调试：检查原始轮廓的路径类型
+		const checkGlyphPaths = (char: any, index: number) => {
+			let cubicCount = 0
+			let quadCount = 0
+			let lineCount = 0
+			for (const contour of char.contours || []) {
+				for (const path of contour) {
+					if (path.type === PathType.CUBIC_BEZIER) cubicCount++
+					else if (path.type === PathType.QUADRATIC_BEZIER) quadCount++
+					else if (path.type === PathType.LINE) lineCount++
+				}
+			}
+			return { cubicCount, quadCount, lineCount }
+		}
+		
 		// 1. 将所有字符的轮廓转换为二次贝塞尔曲线
-		const convertedCharacters = characters.map(char => ({
-			...char,
-			contours: convertContoursToQuadratic(char.contours, 0.5) // tolerance = 0.5
-		}))
+		const convertedCharacters = characters.map((char, index) => {
+			const before = checkGlyphPaths(char, index)
+			const converted = {
+				...char,
+				contours: convertContoursToQuadratic(char.contours, 0.5) // tolerance = 0.5
+			}
+			const after = checkGlyphPaths(converted, index)
+			
+			if (index === 7 || index === 11 || index === 12) {
+				console.log(`  Glyph ${index}: cubic=${before.cubicCount}, quad=${before.quadCount}, line=${before.lineCount} → quad=${after.quadCount}, line=${after.lineCount}`)
+			}
+			
+			return converted
+		})
 		
 		console.log(`✅ Converted ${convertedCharacters.length} glyphs to quadratic Bezier`)
 		
@@ -784,6 +809,13 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		// 4. 创建gvar表（定义字形变体）
 		// 注意：gvar表也需要使用转换后的字符
 		console.log('⏳ Creating gvar table (this may take a while for complex fonts)...')
+		
+		// 调试：检查传入的 variants 数据
+		console.log('🔍 Checking options.variants:')
+		console.log(`  options.variants exists: ${!!options.variants}`)
+		console.log(`  options.variants.combinations exists: ${!!options.variants?.combinations}`)
+		console.log(`  options.variants.combinations.length: ${options.variants?.combinations?.length || 0}`)
+		
 		console.time('gvar table creation')
 		const gvarTable = createGvarTable(options.variants, convertedCharacters)
 		console.timeEnd('gvar table creation')

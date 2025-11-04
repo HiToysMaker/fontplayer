@@ -105,27 +105,28 @@ const extractPointsFromContours = (
   const points: IPoint[] = []
   
   for (const contour of contours) {
-    for (const path of contour) {
-      // 添加起点
-      points.push({ x: path.start.x, y: path.start.y })
+    for (let i = 0; i < contour.length; i++) {
+      const path = contour[i]
+      
+      // 只在第一个路径添加起点，后续路径的起点和前一个路径的终点是同一个点
+      if (i === 0) {
+        points.push({ x: path.start.x, y: path.start.y })
+      }
       
       // 根据路径类型添加控制点
       if (path.type === PathType.QUADRATIC_BEZIER) {
         points.push({ x: path.control.x, y: path.control.y })
       } else if (path.type === PathType.CUBIC_BEZIER) {
         // ⚠️ 警告：gvar表应该使用二次贝塞尔曲线
-        // 三次贝塞尔应该在传入前通过convertContoursToQuadratic转换
         console.error('❌ ERROR: Cubic Bezier curve found in gvar table!')
-        console.error('   All contours should be converted to quadratic before creating gvar')
-        console.error('   This will cause point count mismatch!')
-        
-        // 为了避免崩溃，仍然添加控制点，但会导致点数不匹配
         points.push({ x: path.control1.x, y: path.control1.y })
         points.push({ x: path.control2.x, y: path.control2.y })
       }
       
-      // 添加终点
-      points.push({ x: path.end.x, y: path.end.y })
+      // 添加终点（除了最后一个路径，因为轮廓是闭合的，最后一个终点 = 第一个起点）
+      if (i < contour.length - 1) {
+        points.push({ x: path.end.x, y: path.end.y })
+      }
     }
   }
   
@@ -153,7 +154,11 @@ const calculateDeltas = (
   
   if (defaultPoints.length !== variantPoints.length) {
     console.error(`❌ Point count mismatch: default=${defaultPoints.length}, variant=${variantPoints.length}`)
-    throw new Error(`Default and variant glyphs must have the same number of points (default: ${defaultPoints.length}, variant: ${variantPoints.length})`)
+    console.error(`   → This glyph's script generates different path counts at different parameter values`)
+    console.error(`   → Skipping variation data for this glyph (it will not vary in the font)`)
+    
+    // 返回全零 deltas（字形不会变化）
+    return new Array(defaultPoints.length).fill({ xDelta: 0, yDelta: 0 })
   }
   
   // 如果点数太多，打印警告
@@ -162,14 +167,103 @@ const calculateDeltas = (
   }
   
   const deltas: PointDelta[] = []
+  let nonZeroCount = 0
+  
   for (let i = 0; i < defaultPoints.length; i++) {
-    deltas.push({
-      xDelta: Math.round(variantPoints[i].x - defaultPoints[i].x),
-      yDelta: Math.round(variantPoints[i].y - defaultPoints[i].y),
-    })
+    const xDelta = Math.round(variantPoints[i].x - defaultPoints[i].x)
+    const yDelta = Math.round(variantPoints[i].y - defaultPoints[i].y)
+    
+    if (xDelta !== 0 || yDelta !== 0) {
+      nonZeroCount++
+    }
+    
+    deltas.push({ xDelta, yDelta })
+  }
+  
+  // 调试：报告非零 delta 数量（只在第一个字形或有问题时打印）
+  if (nonZeroCount === 0 && defaultPoints.length > 0) {
+    console.warn(`⚠️ All deltas are zero! (${defaultPoints.length} points checked)`)
+    console.warn(`  First default point: (${defaultPoints[0]?.x.toFixed(2)}, ${defaultPoints[0]?.y.toFixed(2)})`)
+    console.warn(`  First variant point: (${variantPoints[0]?.x.toFixed(2)}, ${variantPoints[0]?.y.toFixed(2)})`)
   }
   
   return deltas
+}
+
+/**
+ * Encode packed deltas (OpenType format with control bytes)
+ * @param deltas array of delta values (X or Y)
+ * @returns encoded byte array
+ */
+const encodePackedDeltas = (deltas: number[]): number[] => {
+  const data: number[] = []
+  
+  // OpenType run-based encoding (fontTools format)
+  // Run header: bit 7-6 = type, bit 5-0 = count-1
+  //   00xxxxxx = int8 (bytes)
+  //   01xxxxxx = int16 (words)
+  //   10xxxxxx = zeros
+  //   11xxxxxx = int32 (longs, rarely used)
+  
+  const DELTAS_ARE_ZERO = 0x80   // 10xxxxxx
+  const DELTAS_ARE_WORDS = 0x40  // 01xxxxxx  (int16)
+  const DELTAS_ARE_BYTES = 0x00  // 00xxxxxx  (int8, default)
+  
+  let i = 0
+  while (i < deltas.length) {
+    const startDelta = deltas[i]
+    
+    // 判断这个 delta 的类型
+    let deltaFlag: number
+    if (startDelta === 0) {
+      deltaFlag = DELTAS_ARE_ZERO
+    } else if (startDelta >= -128 && startDelta <= 127) {
+      deltaFlag = DELTAS_ARE_BYTES
+    } else {
+      deltaFlag = DELTAS_ARE_WORDS
+    }
+    
+    // 找出连续的相同类型的 deltas
+    let runLength = 1
+    while (i + runLength < deltas.length && runLength < 64) {
+      const nextDelta = deltas[i + runLength]
+      let nextFlag: number
+      
+      if (nextDelta === 0) {
+        nextFlag = DELTAS_ARE_ZERO
+      } else if (nextDelta >= -128 && nextDelta <= 127) {
+        nextFlag = DELTAS_ARE_BYTES
+      } else {
+        nextFlag = DELTAS_ARE_WORDS
+      }
+      
+      if (nextFlag !== deltaFlag) break
+      runLength++
+    }
+    
+    // 写入 run header
+    const runHeader = deltaFlag | (runLength - 1)
+    data.push(runHeader)
+    
+    // 写入 deltas
+    if (deltaFlag !== DELTAS_ARE_ZERO) {
+      for (let j = 0; j < runLength; j++) {
+        const delta = deltas[i + j]
+        if (deltaFlag === DELTAS_ARE_BYTES) {
+          // int8
+          data.push(delta >= 0 ? delta : 256 + delta)
+        } else {
+          // int16
+          const bytes = encoder.int16(delta)
+          if (bytes) data.push(...bytes)
+        }
+      }
+    }
+    
+    i += runLength
+  }
+  
+  return data
 }
 
 /**
@@ -183,32 +277,27 @@ const calculateDeltas = (
  * @returns encoded byte array
  */
 const encodeDeltas = (deltas: PointDelta[]): number[] => {
+  if (deltas.length === 0) return []
+  
+  // TrueType 字形有 4 个 phantom points（用于 metrics）
+  // 需要为它们添加 zero deltas
+  const xDeltas = deltas.map(d => Math.round(d.xDelta))
+  const yDeltas = deltas.map(d => Math.round(d.yDelta))
+  
+  // 添加 4 个 phantom points 的 zero deltas
+  xDeltas.push(0, 0, 0, 0)
+  yDeltas.push(0, 0, 0, 0)
+  
+  // 使用 OpenType run-based packed deltas 格式
+  // 不设置 PRIVATE_POINT_NUMBERS flag，不编码 point numbers
+  // FontTools 会使用 sharedPoints=[] 并推断所有点都有 delta
   const data: number[] = []
   
-  // 简化版本：假设所有点都有变化
-  // 实际实现中应该优化，只编码有变化的点
+  const xDeltasEncoded = encodePackedDeltas(xDeltas)
+  data.push(...xDeltasEncoded)
   
-  for (const delta of deltas) {
-    // X delta
-    if (delta.xDelta >= -128 && delta.xDelta <= 127) {
-      // 使用1字节存储
-      data.push(delta.xDelta & 0xFF)
-    } else {
-      // 使用2字节存储
-      data.push((delta.xDelta >> 8) & 0xFF)
-      data.push(delta.xDelta & 0xFF)
-    }
-    
-    // Y delta
-    if (delta.yDelta >= -128 && delta.yDelta <= 127) {
-      // 使用1字节存储
-      data.push(delta.yDelta & 0xFF)
-    } else {
-      // 使用2字节存储
-      data.push((delta.yDelta >> 8) & 0xFF)
-      data.push(delta.yDelta & 0xFF)
-    }
-  }
+  const yDeltasEncoded = encodePackedDeltas(yDeltas)
+  data.push(...yDeltasEncoded)
   
   return data
 }
@@ -559,6 +648,15 @@ const createGlyphVariationData = (
     contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>;
   }>
 ): GlyphVariationData => {
+  // 空字形直接返回空数据
+  if (!defaultContours || defaultContours.length === 0) {
+    return {
+      tupleVariationHeaders: [],
+      pointDeltas: [],
+      serializedData: []
+    }
+  }
+  
   const gvData: GlyphVariationData = {
     tupleVariationHeaders: [],
     pointDeltas: [],
@@ -576,12 +674,87 @@ const createGlyphVariationData = (
     gvData.pointDeltas!.push(deltas)
   }
   
-  // 序列化数据（简化版本）
-  gvData.serializedData = []
-  for (const deltas of gvData.pointDeltas!) {
-    const encoded = encodeDeltas(deltas)
-    gvData.serializedData = gvData.serializedData.concat(encoded)
+  // ===== 完整的 TupleVariationStore 序列化 =====
+  // 参考: https://docs.microsoft.com/en-us/typography/opentype/spec/gvar#tuplevariationstore
+  
+  if (!gvData.tupleVariationHeaders || gvData.tupleVariationHeaders.length === 0) {
+    gvData.serializedData = []
+    return gvData
   }
+  
+  const tupleCount = gvData.tupleVariationHeaders.length
+  const axisCount = gvData.tupleVariationHeaders[0].peakTuple?.length || 0
+  
+  // 1. 计算每个 tuple 的序列化数据
+  const tuplesSerializedData: number[][] = []
+  for (let i = 0; i < gvData.pointDeltas!.length; i++) {
+    const deltas = gvData.pointDeltas![i]
+    const encoded = encodeDeltas(deltas)
+    tuplesSerializedData.push(encoded)
+  }
+  
+  // 2. 计算头部大小
+  // TupleVariationStore header: 4 bytes
+  // Each TupleVariationHeader: 4 + axisCount * 2 bytes (embedded peak tuple)
+  const headerSize = 4 + tupleCount * (4 + axisCount * 2)
+  
+  // 3. 构建序列化数据
+  const data: number[] = []
+  
+  // 3.1 TupleVariationStore header
+  // tupleVariationCount (uint16): 高4位是flag，低12位是count
+  // 0x8000 = TUPLES_SHARE_POINT_NUMBERS (所有 tuples 共享 point numbers)
+  const TUPLES_SHARE_POINT_NUMBERS = 0x8000
+  const tupleVariationCount = (tupleCount & 0x0FFF) | TUPLES_SHARE_POINT_NUMBERS
+  const tupleCountBytes = encoder.uint16(tupleVariationCount)
+  if (tupleCountBytes) data.push(...tupleCountBytes)
+  
+  // dataOffset (uint16): SerializedData（包括 sharedPointNumbers）相对于 TupleVariationStore 起始位置的偏移
+  // = 4 (header) + tupleCount * (4 + axisCount * 2) (TupleVariationHeaders)
+  // dataOffset 指向 sharedPointNumbers，fonttools 会先读取它，然后读取 deltas
+  const dataOffset = headerSize
+  const dataOffsetBytes = encoder.uint16(dataOffset)
+  if (dataOffsetBytes) data.push(...dataOffsetBytes)
+  
+  // 3.2 TupleVariationHeader (每个变体)
+  let currentOffset = 0
+  for (let i = 0; i < tupleCount; i++) {
+    const header = gvData.tupleVariationHeaders[i]
+    const tupleData = tuplesSerializedData[i]
+    
+    // variationDataSize (uint16): 此 tuple 的序列化数据大小
+    const sizeBytes = encoder.uint16(tupleData.length)
+    if (sizeBytes) data.push(...sizeBytes)
+    
+    // tupleIndex (uint16): 高4位是flag，低12位是索引
+    // 0x8000 = EMBEDDED_PEAK_TUPLE (peak tuple 嵌入在此处)
+    // 不设置 PRIVATE_POINT_NUMBERS，fonttools 会使用 sharedPoints=[] 并应用到所有点
+    const tupleIndex = 0x8000  // 只有 EMBEDDED_PEAK_TUPLE
+    const tupleIndexBytes = encoder.uint16(tupleIndex)
+    if (tupleIndexBytes) data.push(...tupleIndexBytes)
+    
+    // peakTuple (F2DOT14[axisCount]): 嵌入的 peak tuple
+    if (header.peakTuple) {
+      for (const value of header.peakTuple) {
+        const f2dot14 = floatToF2DOT14(value)
+        const bytes = encoder.int16(f2dot14)
+        if (bytes) data.push(...bytes)
+      }
+    }
+    
+    currentOffset += tupleData.length
+  }
+  
+  // 3.3 Shared Point Numbers
+  // count = 0 表示所有点都有 delta（范围 0 到 pointCount-1）
+  data.push(0)
+  
+  // 3.4 SerializedData (每个 tuple 的 delta 数据)
+  for (const tupleData of tuplesSerializedData) {
+    data.push(...tupleData)
+  }
+  
+  gvData.serializedData = data
   
   return gvData
 }
@@ -595,10 +768,16 @@ const createGvarTable = (_variants, characters) => {
   table.glyphCount = characters.length
   table.glyphVariationData = []
   
+  // 调试：检查接收到的数据
+  console.log('🔍 createGvarTable received:')
+  console.log(`  _variants: ${!!_variants}`)
+  console.log(`  _variants.combinations: ${!!_variants?.combinations}`)
+  console.log(`  _variants.combinations.length: ${_variants?.combinations?.length || 0}`)
+  
   // 检查是否有combinations数据
   if (!_variants.combinations || _variants.combinations.length === 0) {
     // 如果没有combinations，返回空的gvar表
-    console.warn('No variation combinations provided, creating empty gvar table')
+    console.warn('⚠️ No variation combinations provided, creating empty gvar table')
     return table
   }
   
@@ -611,6 +790,31 @@ const createGvarTable = (_variants, characters) => {
     
     const character = characters[i]
     const defaultContours = character.contours
+    
+    // 空字形（没有轮廓或所有轮廓都是空的）跳过 variation data
+    // 检查是否为空：无轮廓、零个轮廓、或所有轮廓都没有点
+    const isEmpty = !defaultContours || 
+                    defaultContours.length === 0 || 
+                    defaultContours.every(contour => !contour || contour.length === 0)
+    
+    if (isEmpty) {
+      console.log(`  ⏭️  Glyph ${i} (${characters[i]?.name || 'unnamed'}): Empty glyph, skipping variation data`)
+      table.glyphVariationData.push({
+        tupleVariationHeaders: [],
+        pointDeltas: [],
+        serializedData: []
+      })
+      continue
+    }
+    
+    // 调试：检查默认轮廓
+    if (i === 2) {
+      console.log(`  📍 Glyph ${i}: defaultContours has ${defaultContours?.length || 0} contours`)
+      if (defaultContours && defaultContours.length > 0) {
+        const totalPaths = defaultContours.reduce((sum, contour) => sum + contour.length, 0)
+        console.log(`     Total paths: ${totalPaths}`)
+      }
+    }
     
     // 从combinations中提取该字符的变体轮廓
     const variants = _variants.combinations.map((combination) => {

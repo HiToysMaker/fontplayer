@@ -1889,6 +1889,33 @@ const createVarFont = async (options?: CreateFontOptions) => {
     return a.unicode - b.unicode
   })
 
+  // ⚠️ 关键：在生成变体之前，确保所有轴相关的 constants 都设置为 defaultValue
+  // 这样默认字形才能与变体字形的 tuple=[0.0] 位置对应
+  if (selectedFile.value.variants?.axes) {
+    for (const axis of selectedFile.value.variants.axes) {
+      const constant = constants.value.find((c) => c.uuid === axis.uuid)
+      if (constant) {
+        console.log(`📌 Resetting ${axis.name} to defaultValue: ${constant.value} → ${axis.defaultValue}`)
+        constant.value = axis.defaultValue
+      }
+    }
+    constantsMap.update(constants.value)
+    
+    // 重新生成默认字形（使用 defaultValue）
+    console.log('🔄 Regenerating default glyphs with defaultValue...')
+    const defaultFontChars = await getVarFontContours({containSpace, forceUpdate: true})
+    
+    // 更新 fontCharacters（跳过 .notdef 和 space）
+    for (let i = 0; i < defaultFontChars.length; i++) {
+      const defaultChar = defaultFontChars[i]
+      const fontCharIndex = fontCharacters.findIndex((fc: any) => fc.unicode === defaultChar.unicode)
+      if (fontCharIndex !== -1 && fontCharacters[fontCharIndex].unicode !== 0 && fontCharacters[fontCharIndex].unicode !== 0x20) {
+        fontCharacters[fontCharIndex].contours = defaultChar.contours
+      }
+    }
+    console.log('✅ Default glyphs regenerated with defaultValue\n')
+  }
+
   // 创建所有变体
   const combinations: any = generateAllAxisCombinations(selectedFile.value.variants?.axes?.length || 0)
   
@@ -1901,37 +1928,107 @@ const createVarFont = async (options?: CreateFontOptions) => {
     const origin_constants = R.clone(constants.value)
     
     // 设置当前组合的轴值
+    // tuple 坐标是归一化的设计空间坐标：0.0 对应 defaultValue
     for (let j = 0; j < tuple.length; j++) {
       const axis = selectedFile.value.variants?.axes[j]
-      const value = axis.minValue + (axis.maxValue - axis.minValue) * tuple[j]
-      constants.value.find((constant) => constant.uuid === axis.uuid).value = value
+      const normalized = tuple[j]
+      
+      // 根据归一化坐标计算实际值
+      let value: number
+      if (normalized >= 0) {
+        // 正方向：从 defaultValue 到 maxValue
+        value = axis.defaultValue + (axis.maxValue - axis.defaultValue) * normalized
+      } else {
+        // 负方向：从 defaultValue 到 minValue
+        value = axis.defaultValue + (axis.defaultValue - axis.minValue) * normalized
+      }
+      
+      const constant = constants.value.find((constant) => constant.uuid === axis.uuid)
+      if (constant) {
+        console.log(`  🔧 Setting ${axis.name} (${axis.axisTag}): ${constant.value} → ${value}`)
+        constant.value = value
+      } else {
+        console.error(`  ❌ Constant not found for axis.uuid: ${axis.uuid}`)
+      }
     }
     
-    // 生成当前组合的轮廓
-    const rawContours = options.remove_overlap ? await getOverlapRemovedContours({containSpace}) : await getVarFontContours({containSpace})
+    // ⚠️ 关键：在生成轮廓之前，必须先更新 constantsMap！
+    constantsMap.update(constants.value)
     
+    // 调试：确认 constant 值已更新
+    const testConstant = constants.value.find((c) => c.uuid === selectedFile.value.variants?.axes[0].uuid)
+    console.log(`  📍 Before generating contours: constant value = ${testConstant?.value}`)
+    
+    // 生成当前组合的轮廓
+    // ⚠️ 对于可变字体，必须实时计算轮廓，不能使用缓存！
+    // 因为每个组合的 constant 值不同，缓存的 overlap_removed_contours 不适用
+    const rawContours = await getVarFontContours({containSpace, forceUpdate: true})
+    
+    // 调试：检查生成的第一个字形的第一个点
+    if (rawContours.length > 2 && rawContours[2].contours.length > 0) {
+      const firstPath = rawContours[2].contours[0][0]
+      console.log(`  📍 Generated contour first point: (${firstPath.start.x.toFixed(2)}, ${firstPath.start.y.toFixed(2)})`)
+    }
+    
+
     // ⚠️ 关键：将轮廓转换为二次贝塞尔格式（与默认字形保持一致）
     // 导入转换函数
     const { convertContoursToQuadratic } = await import('../../fontManager/utils/cubicToQuadratic')
     
+    // 调试：检查 cubic 曲线数量
+    const checkCubicCount = (contours: any) => {
+      let cubic = 0, quad = 0, line = 0
+      for (const contour of contours || []) {
+        for (const path of contour) {
+          if (path.type === PathType.CUBIC_BEZIER) cubic++
+          else if (path.type === PathType.QUADRATIC_BEZIER) quad++
+          else if (path.type === PathType.LINE) line++
+        }
+      }
+      return { cubic, quad, line }
+    }
+    
     // rawContours结构: [{unicode, contours}, ...]
     // 需要保留整个对象，只转换contours字段
-    combination.overlapRemovedContours = rawContours.map((char: any) => ({
-      ...char,
-      contours: convertContoursToQuadratic(char.contours, 0.5)
-    }))
+    combination.overlapRemovedContours = rawContours.map((char: any, charIndex: number) => {
+      const before = checkCubicCount(char.contours)
+      const converted = convertContoursToQuadratic(char.contours, 0.5)
+      const after = checkCubicCount(converted)
+      
+      // 打印 glyph 7, 11, 12 的信息
+      if ((charIndex === 7 || charIndex === 11 || charIndex === 12)) {
+        console.log(`    Combination ${i}, Variant char ${charIndex}: cubic=${before.cubic}, quad=${before.quad}, line=${before.line} → quad=${after.quad}, line=${after.line}`)
+      }
+      
+      return {
+        ...char,
+        contours: converted
+      }
+    })
     
+    // 恢复原始 constants
     constants.value = origin_constants
     constantsMap.update(constants.value)
     
     if (i === 0 || i === combinations.length - 1) {
-      console.log(`  Combination ${i}: tuple [${tuple.join(', ')}] - converted to quadratic`)
+      console.log(`  ✅ Combination ${i}: tuple [${tuple.join(', ')}] - ${rawContours.length} glyphs converted`)
     } else if (i === 1) {
       console.log(`  ...`)
     }
   }
   
   console.log('✅ All combinations converted to quadratic Bezier\n')
+  
+  // 调试：检查 combinations 数据
+  console.log('🔍 Checking combinations before passing to createFont:')
+  console.log(`  combinations.length: ${combinations.length}`)
+  if (combinations.length > 0) {
+    console.log(`  combinations[0].tuple: [${combinations[0].tuple.join(', ')}]`)
+    console.log(`  combinations[0].overlapRemovedContours exists: ${!!combinations[0].overlapRemovedContours}`)
+    if (combinations[0].overlapRemovedContours) {
+      console.log(`  combinations[0].overlapRemovedContours.length: ${combinations[0].overlapRemovedContours.length}`)
+    }
+  }
 
   const font = await create(fontCharacters, {
     familyName: selectedFile.value.name,
@@ -2010,28 +2107,38 @@ const generateAllAxisCombinations = (axisCount: number): any[] => {
   const combinations: any = []
   
   // 对于单轴字体，生成两个极端点（最小值和最大值）
+  // tuple 坐标是归一化的设计空间坐标，0.0 对应 defaultValue
   if (axisCount === 1) {
-    // 最小值：tuple=[0.0]（轴在最小位置）
-    combinations.push({ tuple: [0.0], overlapRemovedContours: null })
+    // 最小值：tuple=[-1.0]（轴在最小位置）
+    combinations.push({ tuple: [-1.0], overlapRemovedContours: null })
     
     // 最大值：tuple=[1.0]（轴在最大位置）
     combinations.push({ tuple: [1.0], overlapRemovedContours: null })
     
-    console.log('📊 Single axis: generating 2 extreme points (min=0.0, max=1.0)')
+    console.log('📊 Single axis: generating 2 extreme points (min=-1.0, max=1.0)')
     return combinations
   }
   
-  // 对于多轴字体，使用二进制组合生成所有角点
-  const totalCombinations = Math.pow(2, axisCount)
+  // 对于多轴字体，使用三进制组合生成所有角点（包括负方向）
+  const totalCombinations = Math.pow(3, axisCount)
   
   // 从1开始（跳过全0的默认状态）
   for (let i = 1; i < totalCombinations; i++) {
     const tuple: number[] = []
+    let tempI = i
     
-    // 将数字i的二进制表示转换为tuple
+    // 将数字i的三进制表示转换为tuple（-1.0, 0.0, 1.0）
     for (let j = 0; j < axisCount; j++) {
-      // 检查第j位是否为1
-      tuple.push((i & (1 << j)) ? 1.0 : 0.0)
+      const digit = tempI % 3
+      tempI = Math.floor(tempI / 3)
+      
+      // 0 → -1.0, 1 → 0.0, 2 → 1.0
+      tuple.push(digit === 0 ? -1.0 : (digit === 1 ? 0.0 : 1.0))
+    }
+    
+    // 跳过全0的tuple（默认状态）
+    if (tuple.every(v => v === 0.0)) {
+      continue
     }
     
     combinations.push({ tuple, overlapRemovedContours: null })
