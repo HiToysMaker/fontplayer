@@ -63,14 +63,16 @@ const encoder = {
 	},
 	Fixed: (v: IValue) => {
 		if (typeof v !== 'number') return false
-		return [(v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF]
-		// const scaledValue = Math.round(v * 0x10000);
-    // return [
-    //     (scaledValue >> 24) & 0xFF,
-    //     (scaledValue >> 16) & 0xFF,
-    //     (scaledValue >> 8) & 0xFF,
-    //     scaledValue & 0xFF
-    // ];
+		// Fixed 格式：16.16 定点数
+		// 整数部分占高 16 位，小数部分占低 16 位
+		// 例如：50.0 → 50 * 0x10000 = 3276800 = 0x00320000
+		const scaledValue = Math.round(v * 0x10000)
+		return [
+			(scaledValue >> 24) & 0xFF,
+			(scaledValue >> 16) & 0xFF,
+			(scaledValue >> 8) & 0xFF,
+			scaledValue & 0xFF
+		]
 	},
 	FWORD: (v: IValue) => {
 		if (typeof v !== 'number') return false

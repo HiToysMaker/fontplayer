@@ -935,7 +935,22 @@ const addAxisNamesToTable = (
 	
 	// 为每个axis分配nameID并添加到names
 	for (const axis of axes) {
-		if (!axis.name) continue
+		const axisTag = axis.tag || axis.axisTag || 'unkn'
+		
+		// 如果没有提供 name，使用轴标签作为默认名称
+		let axisName = axis.name
+		if (!axisName || axisName.trim() === '') {
+			// 根据常见轴标签提供默认英文名称
+			const defaultNames: { [key: string]: string } = {
+				'wght': 'Weight',
+				'wdth': 'Width',
+				'slnt': 'Slant',
+				'ital': 'Italic',
+				'opsz': 'Optical Size'
+			}
+			axisName = defaultNames[axisTag] || axisTag.toUpperCase()
+			console.warn(`⚠️ Axis '${axisTag}' has no name, using default: '${axisName}'`)
+		}
 		
 		maxNameID++
 		const axisNameID = maxNameID
@@ -943,26 +958,28 @@ const addAxisNamesToTable = (
 		// 更新axis对象的nameID（如果传入的是引用，会直接修改）
 		axis.nameID = axisNameID
 		
+		console.log(`📝 Creating axis name: tag='${axisTag}', name='${axisName}', nameID=${axisNameID}`)
+		
 		// 添加英文名称
 		names.push({
 			nameID: axisNameID,
-			nameLabel: `axis_${axis.tag || axis.axisTag}`,
+			nameLabel: `axis_${axisTag}`,
 			platformID: 3,
 			encodingID: 1,
 			langID: 0x409,  // en-US
-			value: axis.name,
+			value: axisName,
 			default: true,
 		})
 		
-		// 如果需要，也可以添加中文名称
-		// 这里暂时使用相同的名称，实际应用中可以提供中文翻译
+		// 如果名称包含中文，也添加中文版本
+		// 否则复用英文名称
 		names.push({
 			nameID: axisNameID,
-			nameLabel: `axis_${axis.tag || axis.axisTag}`,
+			nameLabel: `axis_${axisTag}_zh`,
 			platformID: 3,
 			encodingID: 1,
 			langID: 0x804,  // zh-CN
-			value: axis.name,
+			value: axisName,
 			default: true,
 		})
 	}
