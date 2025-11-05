@@ -100,6 +100,21 @@
         descender: selectedFile.value.descender,
         advanceWidth: selectedFile.value.unitsPerEm,
       }, { x: 0, y: 0 }, false, false, true)
+      console.log('renderCharacter', orderedListWithItemsForCurrentCharacterFile.value)
+      // 测试可变字体轮廓点是否一致
+      for (let i = 0; i < orderedListWithItemsForCurrentCharacterFile.value.length; i++) {
+        const component = orderedListWithItemsForCurrentCharacterFile.value[i]
+        if (component.type === 'glyph') {
+          const pen = component.value._o.components[0]
+          const glyphName = component.value.name
+          console.log('--------------------------------')
+          console.log('glyphName', i, glyphName)
+          console.log('points', pen.points.length, pen.points)
+          console.log('contour', pen.contour.length, pen.contour)
+          console.log('--------------------------------')
+        }
+      }
+      // ----------------------------
       render()
       renderRefComponents()
       tool.value === 'select' && renderSelectEditor(canvas.value)

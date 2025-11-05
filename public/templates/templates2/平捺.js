@@ -219,6 +219,9 @@ const getComponents = (skeleton) => {
     weightsVariationPower: weights_variation_power,
   })
 
+  console.log('out_na_curves', out_na_curves.length, out_na_curves)
+  console.log('in_na_curves', in_na_curves.length, in_na_curves)
+
   // 创建钢笔组件
   const pen = new FP.PenComponent()
   pen.beginPath()

@@ -5,7 +5,7 @@ import { RectangleComponent } from './RectangleComponent'
 import { Skeleton } from './Skeleton'
 import { Joint } from './Joint'
 import { Character } from './Character'
-import { fitCurve } from '../../features/fitCurve'
+import { fitCurveFixed as fitCurve } from '../../features/fitCurve'
 import { bezierCurve } from '../../features/bezierCurve'
 import * as R from 'ramda'
 
