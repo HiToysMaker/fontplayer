@@ -25,7 +25,7 @@ export interface IBackground {
 const base = ''//'/fontplayer_demo'
 
 const useSkeletonGrid = ref(false)
-
+const useFixedCurves = ref(false)
 const jointsCheckedMap = ref({})
 
 const draggable = ref(true)
@@ -186,4 +186,5 @@ export {
 	maxSegment,
 	minSegment,
 	skeletonThreshold,
+	useFixedCurves,
 }

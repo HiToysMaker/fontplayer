@@ -39,7 +39,7 @@ import {
   visibleEndIndex,
   visibleCount,
 } from '../stores/files'
-import { base, canvas, fontRenderStyle, loaded, loadingMsg, tips, total, setTool, ASCIICharSet, width } from '../stores/global'
+import { base, canvas, fontRenderStyle, loaded, loadingMsg, tips, total, setTool, ASCIICharSet, width, useFixedCurves } from '../stores/global'
 import { saveAs } from 'file-saver'
 import * as R from 'ramda'
 import { genUUID, toUnicode, resetLightIdCounter, genLightId } from '../../utils/string'
@@ -1773,6 +1773,8 @@ const createFont = async (options?: CreateFontOptions) => {
 const createVarFont = async (options?: CreateFontOptions) => {
   const _width = selectedFile.value.width
   const _height = selectedFile.value.height
+
+  useFixedCurves.value = true
   
   // 检查字符列表中是否有name为.notdef的字形
   let notdefCharacter = null
@@ -1798,7 +1800,7 @@ const createVarFont = async (options?: CreateFontOptions) => {
           unitsPerEm: selectedFile.value.fontSettings.unitsPerEm,
           descender: selectedFile.value.fontSettings.descender,
           advanceWidth: selectedFile.value.fontSettings.unitsPerEm,
-        }, {x: 0, y: 0}, false, false, false
+        }, {x: 0, y: 0}, false, false, true
       )
     }
     fontCharacters.push({
@@ -1855,7 +1857,7 @@ const createVarFont = async (options?: CreateFontOptions) => {
           unitsPerEm,
           descender,
           advanceWidth: unitsPerEm,
-        }, {x: 0, y: 0}, false, false, false
+        }, {x: 0, y: 0}, false, false, true
       )
     }
     const { text, unicode } = char.character
@@ -2043,6 +2045,7 @@ const createVarFont = async (options?: CreateFontOptions) => {
     },
     tables: selectedFile.value.fontSettings.tables || null,
   })
+  useFixedCurves.value = false
   return font
 }
 
