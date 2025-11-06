@@ -357,7 +357,7 @@
 						</el-form-item>
 					</el-form>
 				</div>
-				<div class="interactive-settings">
+				<!-- <div class="interactive-settings">
 					<div class="title">{{ t('panels.paramsPanel.interactive') }}</div>
 					<el-form
 						class="name-form"
@@ -383,7 +383,7 @@
 							</el-radio-group>
 						</el-form-item>
 					</el-form>
-				</div>
+				</div> -->
 				<div class="transform-wrap">
 					<div class="title">{{ t('panels.paramsPanel.transform.title') }}</div>
 					<el-form
