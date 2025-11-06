@@ -12,7 +12,7 @@ import {
   selectedFile,
   editCharacterFile,
 } from '../stores/files'
-import { type IBackground, type IGrid, BackgroundType, GridType, background, grid, getStrokeWidth } from '../stores/global'
+import { type IBackground, type IGrid, BackgroundType, GridType, background, grid, getStrokeWidth, fontPreviewStyle } from '../stores/global'
 import type { IPoint } from '../stores/pen'
 import {
   mapCanvasCoords,
@@ -134,9 +134,16 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       // 如果有未完成的路径，先绘制它
       if (currentPathStarted) {
         ctx.closePath()
-        if (fontRenderStyle.value === 'color' || options.fill) {
-          ctx.fillStyle = '#000'
+        if (fontRenderStyle.value === 'color') {
+          ctx.fillStyle = component.fillColor || '#000'
+          ctx.strokeStyle = component.fillColor || '#000'
           ctx.fill("nonzero")
+        } else if (fontRenderStyle.value === 'black' || options.fill) {
+          ctx.fillStyle = '#000'
+          ctx.strokeStyle = '#000'
+          ctx.fill("nonzero")
+        } else {
+          ctx.strokeStyle = '#000'
         }
         ctx.stroke()
         currentPathStarted = false
@@ -194,12 +201,23 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
 
     // 渲染字形组件 - 直接渲染，不参与路径构建
     if (component.type === 'glyph') {
+      if (component.name === '横0316') {
+        console.log(111, component)
+        debugger
+      }
       // 如果有未完成的路径，先绘制它
       if (currentPathStarted) {
         ctx.closePath()
-        if (fontRenderStyle.value === 'color' || options.fill) {
-          ctx.fillStyle = '#000'
+        if (fontRenderStyle.value === 'color') {
+          ctx.fillStyle = component.fillColor || '#000'
+          ctx.strokeStyle = component.fillColor || '#000'
           ctx.fill("nonzero")
+        } else if (fontRenderStyle.value === 'black' || options.fill) {
+          ctx.fillStyle = '#000'
+          ctx.strokeStyle = '#000'
+          ctx.fill("nonzero")
+        } else {
+          ctx.strokeStyle = '#000'
         }
         ctx.stroke()
         currentPathStarted = false
@@ -219,12 +237,12 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
         glyph.render_forceUpdate(canvas, true, {
           x: options.offset.x + (component as IGlyphComponent).ox,
           y: options.offset.y + (component as IGlyphComponent).oy,
-        }, false, scale)
+        }, false, scale, (component.value as unknown as ICustomGlyph).fillColor || '#000')
       } else {
         glyph.render(canvas, true, {
           x: options.offset.x + (component as IGlyphComponent).ox,
           y: options.offset.y + (component as IGlyphComponent).oy,
-        }, false, scale)
+        }, false, scale, (component.value as unknown as ICustomGlyph).fillColor || '#000')
       }
       return
     }
@@ -232,7 +250,7 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
     // 对于路径组件，需要检查是否需要开始新的路径
     if (component.type === 'pen' || component.type === 'polygon' || component.type === 'ellipse' || component.type === 'rectangle') {
       // 如果还没有开始路径，开始新路径
-      if (!currentPathStarted) {
+      if (!currentPathStarted && fontRenderStyle.value !== 'color') {
         ctx.beginPath()
         currentPathStarted = true
       }
@@ -252,15 +270,12 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
         points,
         closePath,
       } = component.value as unknown as IPenComponent
-      ctx.strokeStyle = strokeColor || '#000'
       ctx.lineWidth = getStrokeWidth()
-      ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
-      if (fillColor === 'none') {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0)'
+
+      if (fontRenderStyle.value === 'color') {
+        ctx.beginPath()
       }
-      // let _points = transformPoints(points, {
-      //   x, y, w, h, rotation, flipX, flipY,
-      // })
+
       let _points = transformPoints(points, {
         x, y, w, h, rotation: 0, flipX, flipY,
       })
@@ -282,6 +297,14 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
         if (i + 3 >= _points.length) break
         ctx.bezierCurveTo(_points[i + 1].x, _points[i + 1].y, _points[i + 2].x, _points[i + 2].y, _points[i + 3].x, _points[i + 3].y)
       }
+
+      if (fontRenderStyle.value === 'color') {
+        ctx.fillStyle = fillColor || '#000'
+        ctx.strokeStyle = fillColor || '#000'
+        ctx.fill()
+        ctx.stroke()
+      }
+
       ctx.setTransform(1, 0, 0, 1, 0, 0)
     }
 
@@ -311,6 +334,10 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
           y: point.y * scale,
         })
       })
+
+      if (fontRenderStyle.value === 'color') {
+        ctx.beginPath()
+      }
       ctx.translate(mapCanvasX(options.offset.x), mapCanvasY(options.offset.y))
       ctx.translate(_x + _w / 2, _y + _h / 2)
       ctx.rotate(rotation * Math.PI / 180)
@@ -320,11 +347,12 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       for (let i = 1; i < _points.length; i ++) {
         ctx.lineTo(_points[i].x, _points[i].y)
       }
-      // if (closePath && fillColor) {
-      //   ctx.fill()
-      // }
-      // ctx.stroke()
-      // ctx.closePath()
+      if (fontRenderStyle.value === 'color') {
+        ctx.fillStyle = fillColor || '#000'
+        ctx.strokeStyle = fillColor || '#000'
+        ctx.fill()
+        ctx.stroke()
+      }
       ctx.setTransform(1, 0, 0, 1, 0, 0)
     }
 
@@ -345,9 +373,12 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       const radiusY = _h / 2
       const ellipseX = _x
       const ellipseY = _y
-      ctx.strokeStyle = strokeColor || '#000'
       ctx.lineWidth = getStrokeWidth()
-      ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
+
+      if (fontRenderStyle.value === 'color') {
+        ctx.beginPath()
+      }
+
       ctx.translate(mapCanvasX(options.offset.x), mapCanvasY(options.offset.y))
       ctx.translate(_x + _w / 2, _y + _h / 2)
       ctx.rotate(rotation * Math.PI / 180)
@@ -355,9 +386,14 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       // ctx.beginPath()
       ctx.moveTo(ellipseX + 2 * radiusX, ellipseY + radiusY)
       ctx.ellipse(ellipseX + radiusX, ellipseY + radiusY, radiusX, radiusY, 0, 0, 2 * Math.PI)
-      // ctx.fill()
-      // ctx.stroke()
-      // ctx.closePath()
+      
+      if (fontRenderStyle.value === 'color') {
+        ctx.fillStyle = fillColor || '#000'
+        ctx.strokeStyle = fillColor || '#000'
+        ctx.fill()
+        ctx.stroke()
+      }
+
       ctx.setTransform(1, 0, 0, 1, 0, 0)
     }
 
@@ -378,28 +414,35 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       const rectHeight = _h
       const rectX = _x
       const rectY = _y
-      ctx.strokeStyle = strokeColor || '#000'
       ctx.lineWidth = getStrokeWidth()
-      ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
+
+      if (fontRenderStyle.value === 'color') {
+        ctx.beginPath()
+      }
+
       ctx.translate(mapCanvasX(options.offset.x), mapCanvasY(options.offset.y))
       ctx.translate(_x + _w / 2, _y + _h / 2)
       ctx.rotate(rotation * Math.PI / 180)
       ctx.translate(-(_x + _w / 2), -(_y + _h / 2))
       // ctx.beginPath()
       ctx.rect(rectX, rectY, rectWidth, rectHeight)
-      // if (fillColor) {
-      //   ctx.fill()
-      // }
-      // ctx.stroke()
-      // ctx.closePath()
+
+      if (fontRenderStyle.value === 'color') {
+        ctx.fillStyle = fillColor || '#000'
+        ctx.strokeStyle = fillColor || '#000'
+        ctx.fill()
+        ctx.stroke()
+      }
+
       ctx.setTransform(1, 0, 0, 1, 0, 0)
     }
   })
   
   // 绘制最后的路径
-  if (currentPathStarted) {
+  if (currentPathStarted && fontRenderStyle.value !== 'color') {
     ctx.closePath()
-    if (fontRenderStyle.value === 'color' || options.fill) {
+    ctx.strokeStyle = '#000'
+    if (fontRenderStyle.value === 'black' || options.fill) {
       ctx.fillStyle = '#000'
       ctx.fill("nonzero")
     }
@@ -756,15 +799,21 @@ const renderGlyph = (
   renderRefLines && glyph.renderJoints(canvas as HTMLCanvasElement)
 }
 
-const renderPreview2 = (canvas: HTMLCanvasElement, contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>) => {
+const renderPreview2 = (canvas: HTMLCanvasElement, contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>, fillColors: Array<string> = []) => {
   const ctx = canvas.getContext('2d')
   if (!ctx) return
   ctx.fillStyle = 'white'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
-  ctx.beginPath()
+
+  if (fontPreviewStyle.value === 'black') {
+    ctx.beginPath()
+  }
   for (let i = 0; i < contours.length; i++) {
     const contour = contours[i]
     if (!contour || !contour.length) continue
+    if (fontPreviewStyle.value === 'color') {
+      ctx.beginPath()
+    }
     ctx.moveTo(contour[0].start.x, contour[0].start.y)
     for (let j = 0; j < contour.length; j++) {
       const path = contour[j]
@@ -778,10 +827,17 @@ const renderPreview2 = (canvas: HTMLCanvasElement, contours: Array<Array<ILine |
         )
       }
     }
+    if (fontPreviewStyle.value === 'color') {
+      ctx.closePath()
+      ctx.fillStyle = fillColors[i] || '#000'
+      ctx.fill("nonzero")
+    }
   }
-  ctx.closePath()
-  ctx.fillStyle = '#000'
-  ctx.fill("nonzero")
+  if (fontPreviewStyle.value === 'black') {
+    ctx.closePath()
+    ctx.fillStyle = '#000'
+    ctx.fill("nonzero")
+  }
 }
 
 export {

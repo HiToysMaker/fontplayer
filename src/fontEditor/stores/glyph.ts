@@ -58,6 +58,7 @@ export interface ICustomGlyph {
 	parent_reference?: ParentInfo;
 	skeleton?: ISkeleton | null;
 	style?: string;
+	fillColor?: string;
 }
 
 interface ISkeleton {
@@ -251,6 +252,7 @@ export interface IGlyphComponent {
 	oy: number;
 	usedInCharacter: boolean;
 	opacity?: number;
+	fillColor?: string;
 }
 
 // 字形布局

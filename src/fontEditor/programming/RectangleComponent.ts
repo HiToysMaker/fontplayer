@@ -13,6 +13,7 @@ interface IOption {
   };
 	scale: number;
 	grid?: any;
+	fillColor?: string;
 }
 
 class RectangleComponent {
@@ -39,7 +40,7 @@ class RectangleComponent {
 	}) {
 		const scale = options.scale
 		const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
-		ctx.strokeStyle = '#000'
+		ctx.strokeStyle = options.fillColor || '#000'
 		ctx.lineWidth = getStrokeWidth()
 		ctx.translate(mapCanvasX(options.offset.x) * scale, mapCanvasY(options.offset.y) * scale)
 		ctx.beginPath()

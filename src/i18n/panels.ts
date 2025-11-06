@@ -144,8 +144,10 @@ const panels = {
 			render: {
 				render: '渲染',
 				style: '样式',
-				contour: '线条',
-				color: '着色',
+				contour: '线框',
+				black: '黑白',
+				color: '彩色',
+				title: '预览模式',
 			},
 		},
 		bottomBar: {
@@ -299,7 +301,9 @@ const panels = {
 				render: 'Render',
 				style: 'Style',
 				contour: 'Contour',
+				black: 'Black',
 				color: 'Color',
+				title: 'Preview Style',
 			},
 		},
 		bottomBar: {

@@ -231,7 +231,11 @@
 						advanceWidth: unitsPerEm,
 					}, { x: 0, y: 0 }, false, true)
 
-					renderPreview2(canvas, contours)
+					const fillColors = orderedListWithItemsForCharacterFile(characterFile).map((component) => {
+						return component.value.fillColor || '#000'
+					})
+
+					renderPreview2(canvas, contours, fillColors)
 					renderCache.set(`${uuid}_rendered`, true)
 					processedCount++
 					
@@ -730,7 +734,12 @@
 			grid: defaultGrid ? null : characterFile.info.gridSettings,
 			useSkeletonGrid: characterFile.info?.useSkeletonGrid || false,
 		}, { x: 0, y: 0 }, false, true, true)
-		renderPreview2(canvas, contours)
+
+		const fillColors = orderedListWithItemsForCharacterFile(characterFile).map((component) => {
+			return component.value.fillColor || '#000'
+		})
+
+		renderPreview2(canvas, contours, fillColors)
 		// loading.value = false
 	}
 

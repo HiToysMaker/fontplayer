@@ -57,7 +57,7 @@ class CustomGlyph {
 	public render (canvas: HTMLCanvasElement, renderBackground: Boolean = true, offset: {
 		x: number,
 		y: number,
-	} = { x: 0, y: 0 }, fill: boolean = false, scale: number = 1) {
+	} = { x: 0, y: 0 }, fill: boolean = false, scale: number = 1, fillColor: string = '#000') {
 		const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 		renderCanvas(orderedListWithItemsForGlyph(this._glyph), canvas, {
 			offset,
@@ -69,10 +69,14 @@ class CustomGlyph {
 			component.render(canvas, {
 				offset,
 				scale: scale,
+				fillColor: fillColor,
 			})
 		})
-		if (fontRenderStyle.value === 'color' || fill) {
+		if (fontRenderStyle.value === 'black' || fill) {
 			ctx.fillStyle = '#000'
+			ctx.fill()
+		} else if (fontRenderStyle.value === 'color') {
+			ctx.fillStyle = fillColor || '#000'
 			ctx.fill()
 		}
 	}
@@ -80,7 +84,7 @@ class CustomGlyph {
 	public render_forceUpdate (canvas: HTMLCanvasElement, renderBackground: Boolean = true, offset: {
 		x: number,
 		y: number,
-	} = { x: 0, y: 0 }, fill: boolean = false, scale: number = 1) {
+	} = { x: 0, y: 0 }, fill: boolean = false, scale: number = 1, fillColor: string = '#000') {
 		const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 		renderCanvas(orderedListWithItemsForGlyph(this._glyph), canvas, {
 			offset,
@@ -92,10 +96,14 @@ class CustomGlyph {
 			component.render(canvas, {
 				offset,
 				scale: scale,
+				fillColor: fillColor,
 			})
 		})
-		if (fontRenderStyle.value === 'color' || fill) {
+		if (fontRenderStyle.value === 'black' || fill) {
 			ctx.fillStyle = '#000'
+			ctx.fill()
+		} else if (fontRenderStyle.value === 'color') {
+			ctx.fillStyle = fillColor || '#000'
 			ctx.fill()
 		}
 	}

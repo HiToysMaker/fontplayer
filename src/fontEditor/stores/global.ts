@@ -33,7 +33,11 @@ const dragOption = ref('default')
 const checkJoints = ref(false)
 const checkRefLines = ref(false)
 
+// 'contour' or 'black' or'color'
 const fontRenderStyle: Ref<string> = ref('contour')
+
+// 'black' or 'color'
+const fontPreviewStyle: Ref<string> = ref('black')
 
 const tips = ref('')
 
@@ -187,4 +191,5 @@ export {
 	minSegment,
 	skeletonThreshold,
 	useFixedCurves,
+	fontPreviewStyle,
 }

@@ -295,8 +295,7 @@
 	}
 
 	const onFillColorChange = (color: string) => {
-		console.log('_selectedComponent.value.value.fillColor', _selectedComponent.value.value.fillColor)
-		console.log('color', color)
+		emitter.emit('renderCharacter', true)
 	}
 </script>
 

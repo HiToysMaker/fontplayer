@@ -14,6 +14,7 @@ interface IOption {
   };
 	scale?: number;
 	grid?: any;
+	fillColor?: string;
 }
 
 class PenComponent {
@@ -141,7 +142,7 @@ class PenComponent {
 		const scale = options.scale
 		if (this.points.length >= 4) {
 			const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
-			ctx.strokeStyle = '#000'
+			ctx.strokeStyle = options.fillColor || '#000'
 			ctx.lineWidth = getStrokeWidth()
 			ctx.translate(mapCanvasX(options.offset.x) * scale, mapCanvasY(options.offset.y) * scale)
 			ctx.beginPath()
