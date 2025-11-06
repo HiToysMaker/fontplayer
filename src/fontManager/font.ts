@@ -124,6 +124,7 @@ interface IOption {
 	createdTimestamp?: number;
 	tables?: any;
 	variants?: any;
+	isColorFont?: boolean;
 }
 
 const average = (vs: Array<number>) => {

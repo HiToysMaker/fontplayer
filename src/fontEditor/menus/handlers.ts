@@ -1641,9 +1641,160 @@ interface CreateFontOptions {
   is_color_font?: boolean;
 }
 
+const generateLayers = (character: ICharacterFile) => {
+  const layers = []
+  const components = orderedListWithItemsForCharacterFile(character)
+  for (let i = 0; i < components.length; i++) {
+    const component = components[i]
+    const contours = componentsToContours(component, {
+      unitsPerEm: selectedFile.value.fontSettings.unitsPerEm,
+      descender: selectedFile.value.fontSettings.descender,
+      advanceWidth: selectedFile.value.fontSettings.unitsPerEm,
+    }, {x: 0, y: 0}, false, false, false)
+    layers.push({
+      fillColor: component.fillColor,
+      contours: contours,
+      contourNum: contours.length,
+    })
+  }
+  return layers
+}
+
 const createColorFont = async (options?: CreateFontOptions) => {
-  // step 1: 对每个字符生成图层信息
-  // step 2: 创建字体对象
+  const _width = selectedFile.value.width
+  const _height = selectedFile.value.height
+  
+  // 检查字符列表中是否有name为.notdef的字形
+  let notdefCharacter = null
+  for (let i = 0; i < selectedFile.value.characterList.length; i++) {
+    const char = selectedFile.value.characterList[i]
+    if (char.character.text === '.notdef') {
+      notdefCharacter = char
+      break
+    }
+  }
+  
+  // 如果有.notdef字符，使用它；否则创建一个空的.notdef字符
+  const fontCharacters = []
+  if (notdefCharacter) {
+    // 使用现有的.notdef字符
+    let contours = [[]]
+    if (options && options.remove_overlap && notdefCharacter.overlap_removed_contours?.length) {
+      contours = notdefCharacter.overlap_removed_contours
+    } else {
+      contours = componentsToContours(
+        orderedListWithItemsForCharacterFile(notdefCharacter),
+        {
+          unitsPerEm: selectedFile.value.fontSettings.unitsPerEm,
+          descender: selectedFile.value.fontSettings.descender,
+          advanceWidth: selectedFile.value.fontSettings.unitsPerEm,
+        }, {x: 0, y: 0}, false, false, false
+      )
+    }
+    const layers = generateLayers(notdefCharacter)
+    fontCharacters.push({
+      unicode: 0,
+      name: '.notdef',
+      contours,
+      contourNum: contours.length,
+      advanceWidth: notdefCharacter.info?.metrics?.advanceWidth || Math.max(_width, _height),
+      leftSideBearing: notdefCharacter.info?.metrics?.lsb || 0,
+      layers: layers,
+    })
+  } else {
+    // 创建一个空的.notdef字符
+    fontCharacters.push({
+      unicode: 0,
+      name: '.notdef',
+      contours: [[]] as Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>,
+      contourNum: 0,
+      advanceWidth: Math.max(_width, _height),
+      leftSideBearing: 0,
+      layers: [],
+    })
+  }
+
+  // {
+  // 	unicode: 0xa0,
+  // 	name: 'no-break-space',
+  // 	contours: [[]] as Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>,
+  // 	contourNum: 0,
+  // 	advanceWidth: Math.max(_width, _height),
+  // }
+
+  let containSpace = false
+  const { unitsPerEm, ascender, descender } = selectedFile.value.fontSettings
+  for (let i = 0; i < selectedFile.value.characterList.length; i++) {
+    loaded.value++
+    if (loaded.value >= total.value) {
+      loading.value = false
+      loaded.value = 0
+      total.value = 0
+    }
+    const char: ICharacterFile = selectedFile.value.characterList[i]
+    
+    // 跳过.notdef字符，因为已经处理过了
+    if (char.character.text === '.notdef') {
+      continue
+    }
+    
+    let contours = [[]]
+    if (options && options.remove_overlap && char.overlap_removed_contours?.length) {
+      contours = char.overlap_removed_contours
+    } else {
+      contours = componentsToContours(
+        orderedListWithItemsForCharacterFile(char),
+        {
+          unitsPerEm,
+          descender,
+          advanceWidth: unitsPerEm,
+        }, {x: 0, y: 0}, false, false, false
+      )
+    }
+    const layers = generateLayers(char)
+    const { text, unicode } = char.character
+
+    fontCharacters.push({
+      name: text,
+      unicode: parseInt(unicode, 16),
+      advanceWidth: char.info?.metrics?.advanceWidth || unitsPerEm,
+      leftSideBearing: char.info?.metrics?.lsb || undefined,
+      contours,
+      contourNum: contours.length,
+      layers: layers,
+    })
+
+    if (text === ' ') {
+      containSpace = true
+    }
+  }
+
+  if (!containSpace) {
+    fontCharacters.push({
+      name: ' ',
+      unicode: parseInt('0x20', 16),
+      advanceWidth: unitsPerEm,
+      leftSideBearing: 0,
+      contours: [[]],
+      contourNum: 0,
+      layers: [],
+    })
+  }
+  
+  fontCharacters.sort((a: any, b: any) => {
+    return a.unicode - b.unicode
+  })
+
+  const font = await create(fontCharacters, {
+    familyName: selectedFile.value.name,
+    styleName: 'Regular',
+    unitsPerEm,
+    ascender,
+    descender,
+    tables: selectedFile.value.fontSettings.tables || null,
+    isColorFont: true,
+  })
+  return font
 }
 
 const createFont = async (options?: CreateFontOptions) => {

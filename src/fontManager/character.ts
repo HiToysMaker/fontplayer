@@ -20,6 +20,24 @@ interface ICharacter {
 	yMin?: number;
 	yMax?: number;
 	index?: number;
+	layers?: Array<ILayer>;
+}
+
+// 图层数据类型
+// layer data type
+interface ILayer {
+	fillColor?: string;
+	contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>;
+	contourNum: number;
+	advanceWidth?: number;
+	leftSideBearing?: number | undefined;
+	rightSideBearing?: number;
+	xMin?: number;
+	xMax?: number;
+	yMin?: number;
+	yMax?: number;
+	index?: number;
+	name?: string;
 }
 
 // point数据类型
