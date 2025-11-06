@@ -7,7 +7,7 @@
 	 */
 
   import { useI18n } from 'vue-i18n'
-  import { setExportFontDialogVisible, exportColorFontDialogVisible } from '../../stores/dialogs'
+  import { setExportColorFontDialogVisible, exportColorFontDialogVisible } from '../../stores/dialogs'
   import { ref } from 'vue'
   import saveAs from 'file-saver'
   import { IFile, selectedFile } from '../../stores/files'
@@ -22,7 +22,7 @@
   })
 
   const handleCancel = () => {
-    setExportFontDialogVisible(false)
+    setExportColorFontDialogVisible(false)
   }
 
   const handleClick = () => {
@@ -39,7 +39,7 @@
         await computeOverlapRemovedContours()
       }
       setTimeout(() => exportColorFont(options.value), 100)
-      setExportFontDialogVisible(false)
+      setExportColorFontDialogVisible(false)
     }, 100)
   }
 </script>

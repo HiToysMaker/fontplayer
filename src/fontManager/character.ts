@@ -323,6 +323,7 @@ export {
 
 export type {
 	ICharacter,
+	ILayer,
 	ILine,
 	ICubicBezierCurve,
 	IQuadraticBezierCurve,

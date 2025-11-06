@@ -2271,6 +2271,7 @@ const glyphToOps = (glyph: IGlyphTable) => {
 	ops.push({name: 'width', type: 'number', value: glyph.advanceWidth});
 	let x = 0
 	let y = 0
+	
 	for (let i = 0; i < glyph.contours.length; i ++) {
 		if (!glyph.contours[i].length) continue
 		const startPath = glyph.contours[i][0]
@@ -2378,7 +2379,7 @@ const createTable = (characters: Array<ICharacter>, options: any) => {
 		data: characterNames as Array<string>,
 	}
 	cffTable.glyphTables = characters.map((character) => {
-		return {
+		const glyph = {
 			numberOfContours: character.contourNum as number,
 			contours: character.contours,
 			advanceWidth: character.advanceWidth as number,
@@ -2389,6 +2390,13 @@ const createTable = (characters: Array<ICharacter>, options: any) => {
 			yMin: character.yMin as number,
 			yMax: character.yMax as number,
 		}
+		
+		// 保留 name 字段用于调试
+		if ((character as any).name) {
+			(glyph as any).name = (character as any).name
+		}
+		
+		return glyph
 	})
 	cffTable.stringIndex = {
 		data: strings,

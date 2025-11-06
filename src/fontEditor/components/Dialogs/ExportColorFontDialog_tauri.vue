@@ -40,7 +40,7 @@
         await computeOverlapRemovedContours()
       }
       setTimeout(() => exportColorFont(options.value), 100)
-      setExportFontDialogVisible(false)
+      setExportColorFontTauriDialogVisible(false)
     }, 100)
   }
 </script>

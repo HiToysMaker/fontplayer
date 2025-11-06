@@ -30,6 +30,8 @@ import { create as createGlyfTable } from './tables/glyf'
 import { create as createLocaTable } from './tables/loca'
 import { convertContoursToQuadratic } from './utils/cubicToQuadratic'
 import { buildGlyfAndLocaTables } from './utils/glyfBuilder'
+import { createFromCharactersV0 as createColrTable } from './tables/colr'
+import { createFromLayers as createCpalTable } from './tables/cpal'
 
 // font对象数据类型
 // font object data type
@@ -832,6 +834,129 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		
 		console.log('\n🎉 Variable font tables complete!')
 		console.log('================================\n')
+	}
+
+	// 处理彩色字体
+	if (options.isColorFont) {
+		console.log('\n🎨 === Creating Color Font ===')
+		
+		// 检查是否有字符包含图层
+		let hasLayers = false
+		for (const char of characters) {
+			if (char.layers && char.layers.length > 0) {
+				hasLayers = true
+				break
+			}
+		}
+		
+		if (hasLayers) {
+			// 彩色字体需要扩展字形数组，为每个图层创建单独的字形
+			console.log('⏳ Creating extended glyph array for color layers...')
+			
+			// 计算需要添加的图层字形数量
+			let totalLayerGlyphs = 0
+			for (const char of characters) {
+				if (char.layers && char.layers.length > 0) {
+					totalLayerGlyphs += char.layers.length
+				}
+			}
+			
+			console.log(`Original glyphs: ${characters.length}`)
+			console.log(`Layer glyphs to add: ${totalLayerGlyphs}`)
+			console.log(`Total glyphs: ${characters.length + totalLayerGlyphs}`)
+			
+			// 为图层创建字形（如果使用 CFF）
+			// 图层字形会被 COLR 表引用
+			const layerGlyphs: any[] = []
+			
+			for (const char of characters) {
+				if (char.layers && char.layers.length > 0) {
+					for (const layer of char.layers) {
+						// 确保图层有有效的轮廓数据
+						const layerContours = layer.contours || [[]]
+						const layerContourNum = layerContours.length
+						
+						// 计算图层的度量信息
+						const layerMetrics = getMetrics({
+							unicode: 0,
+							contours: layerContours,
+							contourNum: layerContourNum,
+							advanceWidth: char.advanceWidth || options.unitsPerEm,
+							leftSideBearing: undefined, // 让 getMetrics 自己计算
+						})
+						
+						// 每个图层都是一个独立的字形
+						// ⚠️ 重要：图层字形的 leftSideBearing 应该等于 xMin，这样在 CFF 表中 getXValue(x) = x - xMin + lsb = x
+						layerGlyphs.push({
+							unicode: 0, // 图层字形不需要 unicode
+							name: `layer_${layerGlyphs.length}`,
+							contours: layerContours,
+							contourNum: layerContourNum,
+							advanceWidth: char.advanceWidth || options.unitsPerEm,
+							leftSideBearing: layerMetrics.xMin, // 使用 xMin 作为 lsb，保持坐标不变
+							rightSideBearing: layerMetrics.rightSideBearing,
+							xMin: layerMetrics.xMin,
+							xMax: layerMetrics.xMax,
+							yMin: layerMetrics.yMin,
+							yMax: layerMetrics.yMax,
+							// 不需要 layers 字段
+						})
+					}
+				}
+			}
+			
+			// 创建 CPAL 表（调色板）
+			console.log('⏳ Creating CPAL table...')
+			const cpalTable = createCpalTable(characters)
+			tables['CPAL'] = cpalTable
+			console.log(`✅ CPAL table created with ${cpalTable.numColorRecords} colors`)
+			
+			// 创建 COLR 表（彩色图层定义）
+			console.log('⏳ Creating COLR table...')
+			const colrTable = createColrTable(characters, characters.length + layerGlyphs.length)
+			tables['COLR'] = colrTable
+			console.log(`✅ COLR table created with ${colrTable.numBaseGlyphRecords} base glyphs and ${colrTable.numLayerRecords} layers`)
+			
+			// 如果使用 CFF 格式，需要重新创建 CFF 表包含图层字形
+			if (tables['CFF ']) {
+				console.log('⏳ Updating CFF table with layer glyphs...')
+				const allGlyphs = [...characters, ...layerGlyphs]
+				const updatedCffTable = createCffTable(allGlyphs, {
+					version: getEnglishName('version'),
+					fullName: englishFullName,
+					familyName: englishFamilyName,
+					weightName: englishStyleName,
+					postScriptName: postScriptName,
+					unitsPerEm: font.settings.unitsPerEm,
+					fontBBox: [0, globals.yMin, globals.ascender, globals.advanceWidthMax]
+				})
+				tables['CFF '] = updatedCffTable
+				console.log(`✅ CFF table updated with ${allGlyphs.length} total glyphs`)
+				
+				// 更新 maxp 表的字形数量
+				maxpTable.numGlyphs = allGlyphs.length
+				console.log(`✅ Updated maxp.numGlyphs to ${allGlyphs.length}`)
+				
+				// 更新 hmtx 表 - 为图层字形添加度量信息
+				console.log('⏳ Updating hmtx table with layer glyph metrics...')
+				for (const layerGlyph of layerGlyphs) {
+					hmtxTable.hMetrics.push({
+						advanceWidth: layerGlyph.advanceWidth || 0,
+						lsb: Math.round(layerGlyph.leftSideBearing || 0),
+					})
+				}
+				console.log(`✅ Updated hmtx table with ${hmtxTable.hMetrics.length} total metrics`)
+				
+				// 更新 hhea 表的 numberOfHMetrics
+				hheaTable.numberOfHMetrics = hmtxTable.hMetrics.length
+				console.log(`✅ Updated hhea.numberOfHMetrics to ${hheaTable.numberOfHMetrics}`)
+			}
+			
+			console.log('\n🎉 Color font tables complete!')
+			console.log('================================\n')
+		} else {
+			console.log('⚠️ No layers found in characters, skipping color font tables')
+		}
 	}
 
 	headTable.checkSumAdjustment = 0x00000000

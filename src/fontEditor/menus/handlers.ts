@@ -1644,15 +1644,23 @@ interface CreateFontOptions {
 const generateLayers = (character: ICharacterFile) => {
   const layers = []
   const components = orderedListWithItemsForCharacterFile(character)
+  
   for (let i = 0; i < components.length; i++) {
     const component = components[i]
-    const contours = componentsToContours(component, {
+    // componentsToContours 需要一个组件数组，所以传递单个组件作为数组
+    // offset.x + component.x 的逻辑，offset 设置为 0 是正确的
+    const contours = componentsToContours([component], {
       unitsPerEm: selectedFile.value.fontSettings.unitsPerEm,
       descender: selectedFile.value.fontSettings.descender,
       advanceWidth: selectedFile.value.fontSettings.unitsPerEm,
     }, {x: 0, y: 0}, false, false, false)
+    
+    // fillColor 可能在 component.fillColor 或 component.value.fillColor 中
+    const componentFillColor = (component as any).fillColor || (component as any).value?.fillColor
+    const fillColor = componentFillColor || 'rgba(0, 0, 0, 1)'
+    
     layers.push({
-      fillColor: component.fillColor,
+      fillColor: fillColor,
       contours: contours,
       contourNum: contours.length,
     })
