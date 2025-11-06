@@ -169,6 +169,13 @@ const web_menu: Array<IMenu> = [
 				}
 			},
 			{
+				label: tm('menus.export.color_font'),
+				key: 'export-color-font',
+				click: (handlers: IHandlerMap) => {
+					handlers['export-color-font']()
+				}
+			},
+			{
 				label: tm('menus.export.glyph'),
 				key: 'export-glyphs',
 				click: (handlers: IHandlerMap) => {

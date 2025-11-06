@@ -189,6 +189,20 @@ const setExportVarFontTauriDialogVisible = (visible: boolean) => {
 	exportVarFontTauriDialogVisible.value = visible
 }
 
+// 导出彩色字体窗口
+// dialog for export color font
+const exportColorFontDialogVisible: Ref<boolean> = ref(false)
+const setExportColorFontDialogVisible = (visible: boolean) => {
+	exportColorFontDialogVisible.value = visible
+}
+
+// tauri导出彩色字体窗口
+// dialog for export color font for tauri
+const exportColorFontTauriDialogVisible: Ref<boolean> = ref(false)
+const setExportColorFontTauriDialogVisible = (visible: boolean) => {
+	exportColorFontTauriDialogVisible.value = visible
+}
+
 export {
 	createFileDialogVisible,
 	fontSettingsDialogVisible,
@@ -247,4 +261,8 @@ export {
 	setExportVarFontDialogVisible,
 	exportVarFontTauriDialogVisible,
 	setExportVarFontTauriDialogVisible,
+	exportColorFontDialogVisible,
+	setExportColorFontDialogVisible,
+	exportColorFontTauriDialogVisible,
+	setExportColorFontTauriDialogVisible,
 }

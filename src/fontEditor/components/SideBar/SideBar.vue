@@ -65,6 +65,7 @@
     'import-svg': enableAtEdit,
     'export-font-file': enable,
     'export-var-font-file': enable,
+    'export-color-font': enable,
     'export-glyphs': enableAtList,
     'export-jpeg': enableAtEdit,
     'export-png': enableAtEdit,

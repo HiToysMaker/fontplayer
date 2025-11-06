@@ -14,6 +14,8 @@ import {
   setExportFontDialogVisible,
   setExportVarFontTauriDialogVisible,
   setExportVarFontDialogVisible,
+  setExportColorFontTauriDialogVisible,
+  setExportColorFontDialogVisible,
 } from '../stores/dialogs'
 import {
   files,
@@ -632,6 +634,18 @@ const showExportFontDialog = () => {
     showExportFontDialog_tauri()
   } else {
     setExportFontDialogVisible(true)
+  }
+}
+
+const showExportColorFontDialog_tauri = () => {
+  setExportColorFontTauriDialogVisible(true)
+}
+
+const showExportColorFontDialog = () => {
+  if (ENV.value === 'tauri') {
+    showExportColorFontDialog_tauri()
+  } else {
+    setExportColorFontDialogVisible(true)
   }
 }
 
@@ -1624,6 +1638,12 @@ const exportSVG = () => {
 
 interface CreateFontOptions {
   remove_overlap?: boolean;
+  is_color_font?: boolean;
+}
+
+const createColorFont = async (options?: CreateFontOptions) => {
+  // step 1: 对每个字符生成图层信息
+  // step 2: 创建字体对象
 }
 
 const createFont = async (options?: CreateFontOptions) => {
@@ -2167,6 +2187,29 @@ const exportFont = async (options: CreateFontOptions) => {
   zip.generateAsync({type:"blob"}).then(function(content: any) {
     saveAs(content, `${selectedFile.value.name}.zip`)
     console.log(`[exportFont] ZIP saved successfully`)
+    loading.value = false
+    loaded.value = 0;
+		total.value = 0;
+    loadingMsg.value = ''
+  })
+}
+
+const exportColorFont = async (options: CreateFontOptions) => {
+  const font = await createColorFont(options)
+  loadingMsg.value = '已经处理完所有字符，正在生成压缩包，请稍候...'
+  
+  // 直接使用ArrayBuffer创建Blob，不要通过DataView
+  const arrayBuffer = toArrayBuffer(font) as ArrayBuffer
+  console.log(`[exportColorFont] ArrayBuffer size: ${arrayBuffer.byteLength} bytes`)
+  
+  const blob = new Blob([arrayBuffer], {type: 'font/opentype'})
+  console.log(`[exportColorFont] Blob size: ${blob.size} bytes`)
+  
+  var zip = new JSZip()
+  zip.file(`${selectedFile.value.name}.otf`, blob)
+  zip.generateAsync({type:"blob"}).then(function(content: any) {
+    saveAs(content, `${selectedFile.value.name}.zip`)
+    console.log(`[exportColorFont] ZIP saved successfully`)
     loading.value = false
     loaded.value = 0;
 		total.value = 0;
@@ -5346,6 +5389,7 @@ const tauri_handlers: IHandlerMap = {
   'import-svg': importSVG_tauri,
   'export-font-file': showExportFontDialog_tauri,
   'export-var-font-file': showExportVarFontDialog_tauri,
+  'export-color-font': showExportColorFontDialog_tauri,
   'export-glyphs': exportGlyphs_tauri,
   'export-jpeg': exportJPEG_tauri,
   'export-png': exportPNG_tauri,
@@ -5388,6 +5432,7 @@ const web_handlers: IHandlerMap = {
   'import-svg': importSVG,
   'export-font-file': showExportFontDialog,
   'export-var-font-file': showExportVarFontDialog,
+  'export-color-font': showExportColorFontDialog,
   'export-glyphs': exportGlyphs,
   'export-jpeg': exportJPEG,
   'export-png': exportPNG,
@@ -5437,4 +5482,5 @@ export {
   openPlayground,
   addLoaded,
   exportVarFont,
+  exportColorFont,
 }

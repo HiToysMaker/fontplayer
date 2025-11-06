@@ -221,6 +221,17 @@
           </el-form-item>
         </el-form>
       </div>
+      <div class="fill-color-wrap">
+				<div class="title">{{ t('panels.paramsPanel.fillColor.title') }}</div>
+				<el-form
+					class="name-form"
+					label-width="120px"
+				>
+					<el-form-item :label="tm('panels.paramsPanel.fillColor.label')">
+						<el-color-picker v-model="selectedComponent.value.fillColor" show-alpha/>
+					</el-form-item>
+				</el-form>
+			</div>
     </div>
   </div>
 </template>

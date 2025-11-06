@@ -293,6 +293,11 @@
 			emitter.emit('renderGlyphPreviewCanvasByUUID', glyph.uuid)
 		}
 	}
+
+	const onFillColorChange = (color: string) => {
+		console.log('_selectedComponent.value.value.fillColor', _selectedComponent.value.value.fillColor)
+		console.log('color', color)
+	}
 </script>
 
 <template>
@@ -325,7 +330,7 @@
 							v-for="key in Object.keys(_selectedComponent.value.layout.params)"
 							:label="key"
 						>
-							            <el-input-number v-model="_selectedComponent.value.layout.params[key]" @change="onLayoutChange" :precision="2"/>
+							<el-input-number v-model="_selectedComponent.value.layout.params[key]" @change="onLayoutChange" :precision="2"/>
 							<div class="ratio-item">
 								<font-awesome-icon class="ratio-icon" :class="{
 									selected: _selectedComponent.value.layout.ratioedMap && _selectedComponent.value.layout.ratioedMap[key].ratioed
@@ -755,6 +760,17 @@
 						:label="joint.name"
 						v-for="joint in (_selectedComponent.value._o? _selectedComponent.value._o?.getJoints() : [])"
 					/>
+				</el-form>
+			</div>
+			<div class="fill-color-wrap">
+				<div class="title">{{ t('panels.paramsPanel.fillColor.title') }}</div>
+				<el-form
+					class="name-form"
+					label-width="120px"
+				>
+					<el-form-item :label="tm('panels.paramsPanel.fillColor.label')">
+						<el-color-picker v-model="_selectedComponent.value.fillColor" show-alpha @change="onFillColorChange"/>
+					</el-form-item>
 				</el-form>
 			</div>
     </div>

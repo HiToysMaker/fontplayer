@@ -150,6 +150,7 @@ export interface IComponent {
 	flipY: boolean;
 	usedInCharacter: boolean;
 	opacity?: number;
+	fillColor?: string;
 }
 
 // 字符图形组件信息枚举

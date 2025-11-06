@@ -76,6 +76,10 @@ const panels = {
 			joints: {
 				title: '关键点',
 			},
+			fillColor: {
+				title: '填充颜色',
+				label: '颜色',
+			},
 			layoutEditing: '编辑结构',
 			interactive: '交互设定',
 			draggable: '可拖拽',
@@ -225,6 +229,10 @@ const panels = {
 			},
 			joints: {
 				title: 'Key Points',
+			},
+			fillColor: {
+				title: 'Fill Color',
+				label: 'Color',
 			},
 			layoutEditing: 'Layout Editing',
 			interactive: 'Interactive Settings',
