@@ -71,11 +71,22 @@ class Joint {
 }
 
 const renderJoint = (canvas, joint) => {
-	const d = 4
+	const d = getStrokeWidth() * 2
 	const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 	ctx.beginPath()
 	ctx.fillStyle = 'blue'
 	ctx.fillRect(mapCanvasX(joint.x) - d, mapCanvasY(joint.y) - d, d * 2, d * 2)
+	ctx.closePath()
+	ctx.setTransform(1, 0, 0, 1, 0, 0)
+}
+
+const renderFisrtJoint = (canvas, joint) => {
+	const d = getStrokeWidth() * 2
+	const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
+	ctx.beginPath()
+	ctx.fillStyle = 'green'
+	ctx.ellipse(mapCanvasX(joint.x), mapCanvasY(joint.y), d * 2, d * 2, 0, 0, Math.PI * 2)
+	ctx.fill()
 	ctx.closePath()
 	ctx.setTransform(1, 0, 0, 1, 0, 0)
 }
@@ -96,12 +107,19 @@ const renderJoints = (rootComponent, canvas) => {
 	const traverse = (_component, _ox, _oy) => {
 		const ox = _component.ox + _ox
 		const oy = _component.oy + _oy
-		_component.value._o?.getJoints().map((joint) => {
+		_component.value._o?.getJoints().map((joint, index) => {
 			const { x, y } = joint.getCoords()
-			renderJoint(canvas, {
-				x: x + ox,
-				y: y + oy,
-			})
+			if (index === 0) {
+				renderFisrtJoint(canvas, {
+					x: x + ox,
+					y: y + oy,
+				})
+			} else {
+				renderJoint(canvas, {
+					x: x + ox,
+					y: y + oy,
+				})
+			}
 		})
 		if (_component.type === 'glyph' && _component.value.components && _component.value.components.length) {
 			_component.value.components.map((comp) => {
