@@ -16,6 +16,7 @@ import {
   setExportVarFontDialogVisible,
   setExportColorFontTauriDialogVisible,
   setExportColorFontDialogVisible,
+  setTipsDialogVisible,
 } from '../stores/dialogs'
 import {
   files,
@@ -5058,7 +5059,7 @@ const computeOverlapRemovedContours_wasm = async () => {
 }
 
 // 优化后的removeOverlap函数
-const formatAllCharacters = () => {
+const runFormatAllCharacters = () => {
   if (!selectedFile.value) {
     return
   }
@@ -5090,7 +5091,14 @@ const formatAllCharacters = () => {
   }
 }
 
-const formatCurrentCharacter = () => {
+const formatAllCharacters = () => {
+  tips.value = '一键格式化全部字符会将字符列表中所有字符包含的字形组件格式化为普通组件，该操作不可恢复，确定进行格式化？'
+  setTipsDialogVisible(true, () => {
+    runFormatAllCharacters()
+  })
+}
+
+const runFormatCurrentCharacter = () => {
   if (editStatus.value === Status.Edit) {
     const character = editCharacterFile.value
     if (!character) {
@@ -5125,6 +5133,13 @@ const formatCurrentCharacter = () => {
       tips.value = '当前字形没有可格式化的字形组件'
     }
   }
+}
+
+const formatCurrentCharacter = () => {
+  tips.value = '一键格式化当前字符会将当前编辑中的字符所包含的全部字形组件格式化为普通组件，该操作不可恢复，确定进行格式化？'
+  setTipsDialogVisible(true, () => {
+    runFormatCurrentCharacter()
+  })
 }
 
 const removeOverlap = async () => {

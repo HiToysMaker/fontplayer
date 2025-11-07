@@ -6,12 +6,12 @@
 	 * params editing panel for pen component
 	 */
 
-import { editCharacterFile, getCharacterRatioLayout, modifyComponentForCurrentCharacterFile, selectedComponent, selectedComponentUUID, selectedFile, selectedItemByUUID, executeCharacterScript, modifySubComponent } from '../../stores/files'
+  import { editCharacterFile, getCharacterRatioLayout, modifyComponentForCurrentCharacterFile, selectedComponent, selectedComponentUUID, selectedFile, selectedItemByUUID, executeCharacterScript, modifySubComponent } from '../../stores/files'
   import { getRatioOptions, ParameterType, getConstant, IParameter, IRingParameter, IParameter2, getRatioLayout, selectedParam, selectedParamType, constantGlyphMap, ConstantType, getGlyphByUUID, GlyphType, executeScript, getRatioLayout2 } from '../../stores/glyph'
   import { editStatus, Status } from '../../stores/font'
   import { useI18n } from 'vue-i18n'
   import { canvas, dragOption, draggable, grid, GridType, checkJoints, checkRefLines, jointsCheckedMap, tips } from '../../stores/global'
-import { expandGlyphComponent } from '../../utils/formatGlyphComponents'
+  import { expandGlyphComponent } from '../../utils/formatGlyphComponents'
   import { ComputedRef, Ref, computed, onMounted, onUnmounted, ref, watch } from 'vue'
   import { emitter } from '../../Event/bus'
 	import RingController from '../../components/Widgets/RingController.vue'
