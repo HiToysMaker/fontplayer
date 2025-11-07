@@ -151,6 +151,16 @@ fn remove_overlap(app: AppHandle) {
   app.emit("remove_overlap", ()).unwrap();
 }
 
+#[tauri::command]
+fn format_all_characters(app: AppHandle) {
+  app.emit("format-all-characters", ()).unwrap();
+}
+
+#[tauri::command]
+fn format_current_character(app: AppHandle) {
+  app.emit("format-current-character", ()).unwrap();
+}
+
 fn enable(edit_status: &str) -> bool {
   true
 }
@@ -287,6 +297,14 @@ fn build_menu_enabled_map() -> HashMap<String, Box<dyn Fn(&str) -> bool>> {
       "remove-overlap".to_string(),
       Box::new(enable_at_edit) as Box<dyn Fn(&str) -> bool>,
     ),
+    (
+      "format-all-characters".to_string(),
+      Box::new(enable_at_list) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
+      "format-current-character".to_string(),
+      Box::new(enable_at_edit) as Box<dyn Fn(&str) -> bool>,
+    ),
   ]);
   menu_enabled_map
 }
@@ -415,8 +433,12 @@ pub fn run() {
           language_settings(app.app_handle().clone())
         } else if event.id() == "template-1" {
           import_template1(app.app_handle().clone())
-        } else if event.id() == "remove_overlap" {
+        } else if event.id() == "remove-overlap" || event.id() == "remove_overlap" {
           remove_overlap(app.app_handle().clone())
+        } else if event.id() == "format-all-characters" || event.id() == "format_all_characters" {
+          format_all_characters(app.app_handle().clone())
+        } else if event.id() == "format-current-character" || event.id() == "format_current_character" {
+          format_current_character(app.app_handle().clone())
         }
       });
 
@@ -579,9 +601,18 @@ pub fn run() {
             "工具",
             true,
             &[&MenuItemBuilder::with_id("remove-overlap", "去除重叠")
-              .enabled(false)
-              .build(handle)
-              .expect("Error")],
+                .enabled(false)
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("format-all-characters", "一键格式化所有字符")
+                .enabled(false)
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("format-current-character", "一键格式化当前字符")
+                .enabled(false)
+                .build(handle)
+                .expect("Error"),
+            ],
           )?,
         ],
       )

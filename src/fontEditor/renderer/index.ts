@@ -26,6 +26,7 @@ const initTauri = () => {
 	//@ts-ignore
 	if (!!window.__TAURI_INTERNALS__) {
 		ENV.value = 'tauri'
+		invoke('toggle_menu_disabled', { editStatus: editStatusToString(editStatus.value) })
 		const keys = Object.keys(tauri_handlers)
 		for (let i = 0; i < keys.length; i++) {
 			const key = keys[i]
