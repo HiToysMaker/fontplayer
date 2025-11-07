@@ -2379,6 +2379,18 @@ const exportColorFont = async (options: CreateFontOptions) => {
   })
 }
 
+const exportColorFont_tauri = async (options: CreateFontOptions) => {
+  const font = await createColorFont(options)
+  loadingMsg.value = '已经处理完所有字符，正在生成字库文件，请稍候...'
+  const buffer = toArrayBuffer(font) as ArrayBuffer
+  const filename = `${selectedFile.value.name}.otf`
+  nativeSaveBinary(buffer, filename, ['otf'])
+  loading.value = false
+  loaded.value = 0;
+	total.value = 0;
+  loadingMsg.value = ''
+}
+
 const exportVarFont = async (options: CreateFontOptions) => {
   const font = await createVarFont(options)
   loadingMsg.value = '已经处理完所有字符，正在生成压缩包，请稍候...'
@@ -2401,6 +2413,19 @@ const exportVarFont = async (options: CreateFontOptions) => {
     loadingMsg.value = ''
   })
 }
+
+const exportVarFont_tauri = async (options: CreateFontOptions) => {
+  const font = await createVarFont(options)
+  loadingMsg.value = '已经处理完所有字符，正在生成字库文件，请稍候...'
+  const buffer = toArrayBuffer(font) as ArrayBuffer
+  const filename = `${selectedFile.value.name}.otf`
+  nativeSaveBinary(buffer, filename, ['otf'])
+  loading.value = false
+  loaded.value = 0;
+	total.value = 0;
+  loadingMsg.value = ''
+}
+
 
 const addCharacter = () => {
   setAddTextDialogVisible(true)
@@ -5732,4 +5757,6 @@ export {
   addLoaded,
   exportVarFont,
   exportColorFont,
+  exportVarFont_tauri,
+  exportColorFont_tauri,
 }

@@ -117,6 +117,16 @@ fn export_svg(app: AppHandle) {
 }
 
 #[tauri::command]
+fn export_var_font_file(app: AppHandle) {
+  app.emit("export-var-font-file", ()).unwrap();
+}
+
+#[tauri::command]
+fn export_color_font(app: AppHandle) {
+  app.emit("export-color-font", ()).unwrap();
+}
+
+#[tauri::command]
 fn add_character(app: AppHandle) {
   app.emit("add-character", ()).unwrap();
 }
@@ -270,6 +280,14 @@ fn build_menu_enabled_map() -> HashMap<String, Box<dyn Fn(&str) -> bool>> {
       Box::new(enable_at_edit) as Box<dyn Fn(&str) -> bool>,
     ),
     (
+      "export-var-font-file".to_string(),
+      Box::new(enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
+      "export-color-font".to_string(),
+      Box::new(enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
       "add-character".to_string(),
       Box::new(enable_at_list) as Box<dyn Fn(&str) -> bool>,
     ),
@@ -421,6 +439,10 @@ pub fn run() {
           export_png(app.app_handle().clone())
         } else if event.id() == "export-svg" {
           export_svg(app.app_handle().clone())
+        } else if event.id() == "export-var-font-file" {
+          export_var_font_file(app.app_handle().clone())
+        } else if event.id() == "export-color-font" {
+          export_color_font(app.app_handle().clone())
         } else if event.id() == "add-character" {
           add_character(app.app_handle().clone())
         } else if event.id() == "add-icon" {
@@ -540,6 +562,12 @@ pub fn run() {
             true,
             &[
               &MenuItemBuilder::with_id("export-font-file", "导出字体库")
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("export-var-font-file", "导出可变字体")
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("export-color-font", "导出彩色字体")
                 .build(handle)
                 .expect("Error"),
               &MenuItemBuilder::with_id("export-glyphs", "导出字形")

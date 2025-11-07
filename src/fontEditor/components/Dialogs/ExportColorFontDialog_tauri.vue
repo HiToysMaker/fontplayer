@@ -7,12 +7,11 @@
 	 */
 
   import { useI18n } from 'vue-i18n'
-  import { setExportFontDialogVisible, exportColorFontTauriDialogVisible } from '../../stores/dialogs'
-  import { setExportColorFontTauriDialogVisible } from '../../stores/dialogs'
+  import { setExportColorFontDialogVisible, exportColorFontDialogVisible, setExportColorFontTauriDialogVisible, exportColorFontTauriDialogVisible } from '../../stores/dialogs'
   import { ref } from 'vue'
   import saveAs from 'file-saver'
   import { IFile, selectedFile } from '../../stores/files'
-  import { computeOverlapRemovedContours, exportColorFont, mapToObject, plainFile, plainGlyph } from '../../menus/handlers'
+  import { computeOverlapRemovedContours, exportColorFont, exportColorFont_tauri, mapToObject, plainFile, plainGlyph } from '../../menus/handlers'
   import { ICustomGlyph, comp_glyphs, constantGlyphMap, constants, glyphs, radical_glyphs, stroke_glyphs } from '../../stores/glyph'
   import { total, loaded, loading, loadingMsg } from '../../stores/global'
   const { tm, t } = useI18n()
@@ -39,7 +38,7 @@
       if (options.value.remove_overlap) {
         await computeOverlapRemovedContours()
       }
-      setTimeout(() => exportColorFont(options.value), 100)
+      setTimeout(() => exportColorFont_tauri(options.value), 100)
       setExportColorFontTauriDialogVisible(false)
     }, 100)
   }
