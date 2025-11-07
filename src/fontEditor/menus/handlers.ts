@@ -1955,6 +1955,7 @@ const createFont = async (options?: CreateFontOptions) => {
 const createVarFont = async (options?: CreateFontOptions) => {
   const _width = selectedFile.value.width
   const _height = selectedFile.value.height
+  const origin_constants = R.clone(constants.value)
 
   useFixedCurves.value = true
   
@@ -2109,7 +2110,6 @@ const createVarFont = async (options?: CreateFontOptions) => {
   for (let i = 0; i < combinations.length; i++) {
     const combination = combinations[i]
     const tuple = combination.tuple
-    const origin_constants = R.clone(constants.value)
     
     // 设置当前组合的轴值
     // tuple 坐标是归一化的设计空间坐标：0.0 对应 defaultValue
@@ -2190,10 +2190,6 @@ const createVarFont = async (options?: CreateFontOptions) => {
       }
     })
     
-    // 恢复原始 constants
-    constants.value = origin_constants
-    constantsMap.update(constants.value)
-    
     if (i === 0 || i === combinations.length - 1) {
       console.log(`  ✅ Combination ${i}: tuple [${tuple.join(', ')}] - ${rawContours.length} glyphs converted`)
     } else if (i === 1) {
@@ -2212,6 +2208,22 @@ const createVarFont = async (options?: CreateFontOptions) => {
     if (combinations[0].overlapRemovedContours) {
       console.log(`  combinations[0].overlapRemovedContours.length: ${combinations[0].overlapRemovedContours.length}`)
     }
+  }
+
+  // 恢复原始 constants
+  constants.value = origin_constants
+  constantsMap.update(constants.value)
+
+  console.log('origin constants', constants.value)
+
+  // 更新轮廓数据
+  for (let i = 0; i < selectedFile.value.characterList.length; i++) {
+    const char = selectedFile.value.characterList[i]
+    const contours = componentsToContours(orderedListWithItemsForCharacterFile(char), {
+      unitsPerEm: selectedFile.value.fontSettings.unitsPerEm,
+      descender: selectedFile.value.fontSettings.descender,
+      advanceWidth: selectedFile.value.fontSettings.unitsPerEm,
+    }, { x: 0, y: 0 }, false, false, true)
   }
 
   const font = await create(fontCharacters, {
