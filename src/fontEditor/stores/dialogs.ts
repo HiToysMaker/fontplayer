@@ -115,8 +115,10 @@ const setSelectGlobalParamDialogVisible = (visible: boolean) => {
 // tips窗口
 // dialog for tips
 const tipsDialogVisible: Ref<boolean> = ref(false)
-const setTipsDialogVisible = (visible: boolean) => {
+const tipsDialogConfirmCallback: Ref<(() => void) | null> = ref(null)
+const setTipsDialogVisible = (visible: boolean, onConfirm?: () => void) => {
 	tipsDialogVisible.value = visible
+	tipsDialogConfirmCallback.value = onConfirm || null
 }
 
 // 关闭文件tips窗口
@@ -240,6 +242,7 @@ export {
 	selectGlobalParamDialogVisible,
 	editedCharacterUUID,
 	tipsDialogVisible,
+	tipsDialogConfirmCallback,
 	setTipsDialogVisible,
 	closeFileTipDialogVisible,
 	setCloseFileTipDialogVisible,

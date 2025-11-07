@@ -76,11 +76,16 @@ const panels = {
 			joints: {
 				title: '关键点',
 			},
-			fillColor: {
-				title: '填充颜色',
-				label: '颜色',
-			},
-			layoutEditing: '编辑结构',
+		fillColor: {
+			title: '填充颜色',
+			label: '颜色',
+		},
+		formatComponent: {
+			title: '格式化组件',
+			button: '格式化字形组件',
+			confirmMsg: '格式化字形组件会将字形组件改为普通钢笔组件，失去参数化功能，不可恢复，是否进行格式化？',
+		},
+		layoutEditing: '编辑结构',
 			interactive: '交互设定',
 			draggable: '可拖拽',
 			draggableOption: '拖拽设定',
@@ -232,11 +237,16 @@ const panels = {
 			joints: {
 				title: 'Key Points',
 			},
-			fillColor: {
-				title: 'Fill Color',
-				label: 'Color',
-			},
-			layoutEditing: 'Layout Editing',
+		fillColor: {
+			title: 'Fill Color',
+			label: 'Color',
+		},
+		formatComponent: {
+			title: 'Format Component',
+			button: 'Format Glyph Component',
+			confirmMsg: 'Formatting the glyph component will convert it to a normal pen component, losing parameterization, and this action cannot be undone. Do you want to proceed with formatting?',
+		},
+		layoutEditing: 'Layout Editing',
 			interactive: 'Interactive Settings',
 			draggable: 'Draggable',
 			draggableOption: 'Option',

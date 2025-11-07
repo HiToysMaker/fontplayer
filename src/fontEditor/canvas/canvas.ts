@@ -201,10 +201,6 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
 
     // 渲染字形组件 - 直接渲染，不参与路径构建
     if (component.type === 'glyph') {
-      if (component.name === '横0316') {
-        console.log(111, component)
-        debugger
-      }
       // 如果有未完成的路径，先绘制它
       if (currentPathStarted) {
         ctx.closePath()

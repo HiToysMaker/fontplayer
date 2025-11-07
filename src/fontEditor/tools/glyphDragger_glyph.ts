@@ -208,8 +208,9 @@ const initGlyphDragger = (canvas: HTMLCanvasElement) => {
 			joints = getJoints(selectedComponentOnDragging?.value, selectedComponentOnDragging?.value.uuid)
 			glyph = selectedComponentOnDragging?.value?.value
 		}
-		if (!glyph || !glyph._o) return
+		// 过滤掉参考关键点（名称包含 _ref 的关键点）
 		joints = joints.filter(joint => !joint.name.includes('_ref'))
+		if (!glyph || !glyph._o) return
 		coords = []
 		mouseDownX = getCoord(e.offsetX)
 		mouseDownY = getCoord(e.offsetY)
@@ -344,6 +345,8 @@ const initGlyphDragger = (canvas: HTMLCanvasElement) => {
 				// 当前选中组件为根目录中组件
 				joints = getJoints(selectedComponent?.value, selectedComponent?.value.uuid)
 			}
+			// 过滤掉参考关键点（名称包含 _ref 的关键点）
+			joints = joints.filter(joint => !joint.name.includes('_ref'))
 			if (!glyph) return
 			const d = 10
 			let mark = false
