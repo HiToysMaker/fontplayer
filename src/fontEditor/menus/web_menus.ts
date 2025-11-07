@@ -339,6 +339,20 @@ const web_menu: Array<IMenu> = [
 					handlers['remove_overlap']()
 				}
 			},
+			{
+			label: tm('menus.tools.format_all_characters'),
+				key: 'format-all-characters',
+				click: (handlers: IHandlerMap) => {
+					handlers['format-all-characters']()
+				}
+			},
+			{
+			label: tm('menus.tools.format_current_character'),
+				key: 'format-current-character',
+				click: (handlers: IHandlerMap) => {
+					handlers['format-current-character']()
+				}
+			},
 		]
 	}
 ]

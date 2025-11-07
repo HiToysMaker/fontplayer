@@ -6,12 +6,12 @@
 	 * params editing panel for pen component
 	 */
 
-  import { editCharacterFile, getCharacterRatioLayout, modifyComponentForCurrentCharacterFile, selectedComponent, selectedComponentUUID, selectedFile, selectedItemByUUID, executeCharacterScript, modifySubComponent } from '../../stores/files'
+import { editCharacterFile, getCharacterRatioLayout, modifyComponentForCurrentCharacterFile, selectedComponent, selectedComponentUUID, selectedFile, selectedItemByUUID, executeCharacterScript, modifySubComponent } from '../../stores/files'
   import { getRatioOptions, ParameterType, getConstant, IParameter, IRingParameter, IParameter2, getRatioLayout, selectedParam, selectedParamType, constantGlyphMap, ConstantType, getGlyphByUUID, GlyphType, executeScript, getRatioLayout2 } from '../../stores/glyph'
   import { editStatus, Status } from '../../stores/font'
   import { useI18n } from 'vue-i18n'
   import { canvas, dragOption, draggable, grid, GridType, checkJoints, checkRefLines, jointsCheckedMap, tips } from '../../stores/global'
-  import { genUUID } from '../../../utils/string'
+import { expandGlyphComponent } from '../../utils/formatGlyphComponents'
   import { ComputedRef, Ref, computed, onMounted, onUnmounted, ref, watch } from 'vue'
   import { emitter } from '../../Event/bus'
 	import RingController from '../../components/Widgets/RingController.vue'
@@ -313,314 +313,58 @@
 			setTipsDialogVisible(true)
 			return
 		}
-		
-		// 获取字形的所有组件
-		// 1. 字形内部生成的组件（PenComponent, PolygonComponent 等类实例）
-		const glyphGeneratedComponents = _selectedComponent.value.value._o?._components || []
-		
-		// 2. 字形包含的普通组件（pen, polygon, rectangle, ellipse 等）
-		// 通过 orderedList 获取，排除掉 glyph 类型的组件（避免重复处理）
-		const glyphData = _selectedComponent.value.value
-		const glyphNormalComponents = (glyphData.orderedList || [])
-			.map(item => {
-				if (item.type === 'component') {
-					// 从 components 数组中查找
-					return glyphData.components.find(c => c.uuid === item.uuid)
-				}
-				return null
-			})
-			.filter(comp => comp !== null && comp.type !== 'glyph')
-		
-		console.log('格式化字形组件:', {
-			component: _selectedComponent.value,
-			glyphGeneratedComponents,
-			glyphGeneratedComponentsLength: glyphGeneratedComponents.length,
-			glyphNormalComponents,
-			glyphNormalComponentsLength: glyphNormalComponents.length
-		})
-		
-		if (!glyphGeneratedComponents.length && !glyphNormalComponents.length) {
-			tips.value = '该字形组件没有可转换的轮廓组件'
-			setTipsDialogVisible(true)
-			return
-		}
-		
-		// 将字形内部组件转换为普通组件格式
-		const convertComponent = (comp, ox = 0, oy = 0) => {
-			const componentData = comp.getData()
-			
-			console.log('转换单个组件:', {
-				compType: comp.type,
-				componentData,
-				ox,
-				oy,
-				hasPoints: !!componentData.points,
-				pointsLength: componentData.points?.length
-			})
-			
-			// 映射类型名称
-			const typeMap = {
-				'glyph-pen': 'pen',
-				'glyph-polygon': 'polygon',
-				'glyph-rectangle': 'rectangle',
-				'glyph-ellipse': 'ellipse',
-			}
-			const componentType = typeMap[comp.type] || 'pen'
-			
-			// 将点坐标应用偏移量（字形内部组件的坐标需要加上字形组件的偏移）
-			const applyOffset = (points, ox, oy) => {
-				if (!points) return points
-				return points.map(p => ({
-					...p,
-					x: p.x + ox,
-					y: p.y + oy,
-				}))
-			}
-			
-			// 应用偏移后的数据
-			let transformedData = { ...componentData }
-			if (componentData.points) {
-				transformedData.points = applyOffset(componentData.points, ox, oy)
-			}
-			// contour 和 preview 已经计算过 ox, oy，不需要重新应用偏移
-			
-			// 计算包围盒（使用偏移后的坐标）
-			const getBoundingBox = (data) => {
-				if (data.points && data.points.length) {
-					let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-					data.points.forEach(p => {
-						if (p.x < minX) minX = p.x
-						if (p.x > maxX) maxX = p.x
-						if (p.y < minY) minY = p.y
-						if (p.y > maxY) maxY = p.y
-					})
-					return { x: minX, y: minY, w: maxX - minX, h: maxY - minY }
-				} else if (data.width !== undefined && data.height !== undefined) {
-					// rectangle - 也需要应用偏移
-					return { x: ox, y: oy, w: data.width, h: data.height }
-				} else if (data.radiusX !== undefined && data.radiusY !== undefined) {
-					// ellipse - 也需要应用偏移
-					return { x: ox, y: oy, w: data.radiusX * 2, h: data.radiusY * 2 }
-				}
-				return { x: 0, y: 0, w: 0, h: 0 }
-			}
-			
-			const bounds = getBoundingBox(transformedData)
-			
-			// 构造普通组件格式（ox, oy 设为 0，因为偏移已经应用到坐标上）
-			const commonProps = {
-				uuid: genUUID(),
-				type: componentType,
-				name: _selectedComponent.value.name,
-				lock: false,
-				visible: true,
-				ox: 0,
-				oy: 0,
-				usedInCharacter: true,
-			}
-			
-			// 根据不同类型构造不同的 value 结构
-			if (componentType === 'pen') {
-				const result = {
-					...commonProps,
-					...bounds,
-					rotation: 0,
-					flipX: false,
-					flipY: false,
-					value: {
-						points: transformedData.points,
-						fillColor: '',
-						strokeColor: '#000',
-						closePath: true,
-						editMode: false,
-						preview: transformedData.preview,
-						contour: transformedData.contour,
-					},
-				}
-				console.log('生成的 pen 组件:', {
-					...result,
-					pointsCount: result.value.points?.length,
-					hasPreview: !!result.value.preview,
-					hasContour: !!result.value.contour,
-					bounds,
-					firstPoint: result.value.points?.[0]
-				})
-				return result
-			} else if (componentType === 'polygon') {
-				return {
-					...commonProps,
-					...bounds,
-					rotation: 0,
-					flipX: false,
-					flipY: false,
-					value: {
-						points: transformedData.points,
-						fillColor: '',
-						strokeColor: '#000',
-						closePath: true,
-						preview: transformedData.preview,
-						contour: transformedData.contour,
-					},
-				}
-			} else if (componentType === 'rectangle') {
-				return {
-					...commonProps,
-					...bounds,
-					rotation: 0,
-					flipX: false,
-					flipY: false,
-					value: {
-						width: componentData.width,
-						height: componentData.height,
-						fillColor: '',
-						strokeColor: '#000',
-						preview: componentData.preview,
-						contour: componentData.contour,
-					},
-				}
-			} else if (componentType === 'ellipse') {
-				return {
-					...commonProps,
-					...bounds,
-					rotation: 0,
-					flipX: false,
-					flipY: false,
-					value: {
-						radiusX: componentData.radiusX,
-						radiusY: componentData.radiusY,
-						fillColor: '',
-						strokeColor: '#000',
-						preview: componentData.preview,
-						contour: componentData.contour,
-					},
-				}
-			}
-			
-			// 默认返回 pen 格式
-			return {
-				...commonProps,
-				...bounds,
-				rotation: 0,
-				flipX: false,
-				flipY: false,
-				value: componentData,
-			}
-		}
-		
-		// 将字形组件替换为普通钢笔组件
-		if (editCharacterFile.value.selectedComponentsTree && editCharacterFile.value.selectedComponentsTree.length && selectedSubComponent.value) {
-			// 子组件 - 暂不支持
-			tips.value = '暂不支持格式化嵌套的子字形组件'
-			setTipsDialogVisible(true)
-			return
+	if (editCharacterFile.value.selectedComponentsTree && editCharacterFile.value.selectedComponentsTree.length && selectedSubComponent.value) {
+		// 子组件 - 暂不支持
+		tips.value = '暂不支持格式化嵌套的子字形组件'
+		setTipsDialogVisible(true)
+		return
+	}
+
+	const expanded = expandGlyphComponent(_selectedComponent.value)
+	if (!expanded.components.length) {
+		tips.value = '该字形组件没有可转换的轮廓组件'
+		setTipsDialogVisible(true)
+		return
+	}
+
+	const oldComponentUUID = selectedComponentUUID.value
+
+	// 立即清除选择状态，避免后续操作触发响应式访问已删除的组件
+	editCharacterFile.value.selectedComponentsUUIDs = []
+	editCharacterFile.value.selectedComponentsTree = []
+
+	// 删除当前字形组件，并插入转换后的组件
+	const index = editCharacterFile.value.components.findIndex(c => c.uuid === oldComponentUUID)
+	if (index !== -1) {
+		const orderIndex = editCharacterFile.value.orderedList.findIndex(item => item && item.type === 'component' && item.uuid === oldComponentUUID)
+		const newComponentsList = [
+			...editCharacterFile.value.components.slice(0, index),
+			...expanded.components,
+			...editCharacterFile.value.components.slice(index + 1)
+		]
+
+		let newOrderedList = editCharacterFile.value.orderedList
+		if (orderIndex !== -1) {
+			newOrderedList = [
+				...editCharacterFile.value.orderedList.slice(0, orderIndex),
+				...expanded.orderedItems,
+				...editCharacterFile.value.orderedList.slice(orderIndex + 1)
+			]
 		} else {
-			// 先保存所有需要的数据（因为后面会清除选择状态）
-			const oldComponentUUID = selectedComponentUUID.value
-			const oldComponentOx = _selectedComponent.value.ox
-			const oldComponentOy = _selectedComponent.value.oy
-			
-			// 顶层组件 - 先生成新组件
-			// 1. 转换字形内部生成的组件
-			const convertedComponents = glyphGeneratedComponents.map(comp => 
-				convertComponent(comp, oldComponentOx, oldComponentOy)
-			)
-			
-			// 2. 复制普通组件，应用偏移量
-			const copiedNormalComponents = glyphNormalComponents.map(comp => ({
-				...comp,
-				uuid: genUUID(), // 生成新的 UUID
-				ox: comp.ox + oldComponentOx,
-				oy: comp.oy + oldComponentOy,
-			}))
-			
-			// 合并所有组件
-			const newComponents = [...convertedComponents, ...copiedNormalComponents]
-			
-			console.log('组件转换详情:', {
-				convertedComponentsCount: convertedComponents.length,
-				copiedNormalComponentsCount: copiedNormalComponents.length,
-				totalNewComponents: newComponents.length
-			})
-			
-			// 立即清除选择状态，避免后续操作触发响应式访问已删除的组件
-			editCharacterFile.value.selectedComponentsUUIDs = []
-			editCharacterFile.value.selectedComponentsTree = []
-			
-			console.log('转换后的组件:', {
-				newComponents,
-				newComponentsLength: newComponents.length,
-				oldComponentsLength: editCharacterFile.value.components.length,
-				oldComponentUUID: oldComponentUUID,
-				hasUndefined: newComponents.some(c => c === undefined),
-				hasNull: newComponents.some(c => c === null),
-				allValid: newComponents.every(c => c && c.uuid)
-			})
-			
-			// 删除当前字形组件，并插入转换后的组件
-			const index = editCharacterFile.value.components.findIndex(c => c.uuid === oldComponentUUID)
-			console.log('找到组件索引:', index)
-			
-			if (index !== -1) {
-				// 先找到 orderedList 中的索引（使用保存的 UUID）
-				const orderIndex = editCharacterFile.value.orderedList.findIndex(item => 
-					item && item.type === 'component' && item.uuid === oldComponentUUID
-				)
-				
-				console.log('找到 orderedList 索引:', orderIndex)
-				
-				// 构建新的组件数组
-				const newComponentsList = [
-					...editCharacterFile.value.components.slice(0, index),
-					...newComponents,
-					...editCharacterFile.value.components.slice(index + 1)
-				]
-				
-				// 构建新的 orderedList
-				let newOrderedList = editCharacterFile.value.orderedList
-				if (orderIndex !== -1) {
-					const newOrderItems = newComponents.map(comp => ({
-						type: 'component',
-						uuid: comp.uuid
-					}))
-					
-					newOrderedList = [
-						...editCharacterFile.value.orderedList.slice(0, orderIndex),
-						...newOrderItems,
-						...editCharacterFile.value.orderedList.slice(orderIndex + 1)
-					]
-					
-					console.log('更新 orderedList:', {
-						orderIndex,
-						newOrderedListLength: newOrderedList.length,
-						newOrderItems
-					})
-				}
-				
-				console.log('新组件列表:', {
-					newComponentsListLength: newComponentsList.length,
-					hasNull: newComponentsList.some(c => c === null || c === undefined)
-				})
-				
-				// 同时更新两个数组（减少响应式触发次数）
-				editCharacterFile.value.orderedList = newOrderedList
-				editCharacterFile.value.components = newComponentsList
-				
-				console.log('替换后组件数量:', editCharacterFile.value.components.length)
-				console.log('检查所有组件:', editCharacterFile.value.components.map((c, i) => ({
-					index: i,
-					uuid: c?.uuid,
-					type: c?.type,
-					name: c?.name,
-					isNull: c === null,
-					isUndefined: c === undefined
-				})))
-			}
-			
-			// 然后执行脚本和渲染
-			executeCharacterScript(editCharacterFile.value)
-			emitter.emit('renderCharacter', true)
-			emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
+			newOrderedList = [
+				...editCharacterFile.value.orderedList,
+				...expanded.orderedItems,
+			]
 		}
+
+		editCharacterFile.value.orderedList = newOrderedList
+		editCharacterFile.value.components = newComponentsList
+	}
+
+	// 然后执行脚本和渲染
+	executeCharacterScript(editCharacterFile.value)
+	emitter.emit('renderCharacter', true)
+	emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
 	}
 </script>
 

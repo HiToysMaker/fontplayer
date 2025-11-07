@@ -86,6 +86,8 @@
     'template-digits': TemplateEnable,
     'template-letters': TemplateEnable,
     'remove_overlap': enableAtEdit,
+	'format-all-characters': enableAtList,
+	'format-current-character': enableAtEdit,
 	}
 
 	const web_menu_icons: IIconsMap = {

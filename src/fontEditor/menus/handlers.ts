@@ -40,6 +40,7 @@ import {
   addCharacterForCurrentFile,
   visibleEndIndex,
   visibleCount,
+  executeCharacterScript,
 } from '../stores/files'
 import { base, canvas, fontRenderStyle, loaded, loadingMsg, tips, total, setTool, ASCIICharSet, width, useFixedCurves } from '../stores/global'
 import { saveAs } from 'file-saver'
@@ -96,6 +97,7 @@ import { worker } from '../../main'
 import { WorkerEventType } from '../worker'
 import { CustomGlyph } from '../programming/CustomGlyph'
 import { Character } from '../programming/Character'
+import { formatCharacterGlyphComponents, formatGlyphGlyphComponents } from '../utils/formatGlyphComponents'
 import paper from 'paper'
 import { genPenComponent } from '../tools/pen'
 import { removeOverlapWithWasm } from '../../utils/overlap-remover'
@@ -5056,6 +5058,75 @@ const computeOverlapRemovedContours_wasm = async () => {
 }
 
 // 优化后的removeOverlap函数
+const formatAllCharacters = () => {
+  if (!selectedFile.value) {
+    return
+  }
+
+  const characters = selectedFile.value.characterList || []
+  let formattedCount = 0
+
+  characters.forEach((character: ICharacterFile) => {
+    if (!character) return
+    const changed = formatCharacterGlyphComponents(character)
+    if (changed) {
+      formattedCount += 1
+      emitter.emit('renderPreviewCanvasByUUID', character.uuid)
+    }
+  })
+
+  if (formattedCount > 0) {
+    if (editCharacterFile.value) {
+      const currentIndex = characters.findIndex((item) => item.uuid === editCharacterFile.value.uuid)
+      if (currentIndex !== -1) {
+        editCharacterFile.value = R.clone(characters[currentIndex])
+        executeCharacterScript(editCharacterFile.value)
+      }
+      emitter.emit('renderCharacter', true)
+    }
+    tips.value = `已格式化 ${formattedCount} 个字符的字形组件`
+  } else {
+    tips.value = '没有需要格式化的字形组件'
+  }
+}
+
+const formatCurrentCharacter = () => {
+  if (editStatus.value === Status.Edit) {
+    const character = editCharacterFile.value
+    if (!character) {
+      return
+    }
+    const changed = formatCharacterGlyphComponents(character)
+    if (changed) {
+      const file = selectedFile.value
+      if (file) {
+        const index = file.characterList.findIndex((item) => item.uuid === character.uuid)
+        if (index !== -1) {
+          file.characterList[index] = R.clone(character)
+          emitter.emit('renderPreviewCanvasByUUID', character.uuid)
+        }
+      }
+      emitter.emit('renderCharacter', true)
+      tips.value = `已格式化字符 ${character.character?.text ?? character.uuid} 的字形组件`
+    } else {
+      tips.value = '当前字符没有可格式化的字形组件'
+    }
+  } else if (editStatus.value === Status.Glyph) {
+    const glyph = editGlyph.value
+    if (!glyph) {
+      return
+    }
+    const changed = formatGlyphGlyphComponents(glyph)
+    if (changed) {
+      emitter.emit('renderGlyph', true)
+      emitter.emit('renderGlyphPreviewCanvasByUUID', glyph.uuid)
+      tips.value = `已格式化字形 ${glyph.name} 的字形组件`
+    } else {
+      tips.value = '当前字形没有可格式化的字形组件'
+    }
+  }
+}
+
 const removeOverlap = async () => {
   let char = editCharacterFile.value
   if (editStatus.value === Status.Glyph) {
@@ -5569,6 +5640,8 @@ const tauri_handlers: IHandlerMap = {
   'template-digits': importTemplateDigits,
   'template-letters': importTemplateLetters,
   'remove_overlap': removeOverlap,
+  'format-all-characters': formatAllCharacters,
+  'format-current-character': formatCurrentCharacter,
 }
 
 const web_handlers: IHandlerMap = {
@@ -5612,6 +5685,8 @@ const web_handlers: IHandlerMap = {
   'template-digits': importTemplateDigits,
   'template-letters': importTemplateLetters,
   'remove_overlap': removeOverlap,
+  'format-all-characters': formatAllCharacters,
+  'format-current-character': formatCurrentCharacter,
 }
 
 interface IHandlerMap {

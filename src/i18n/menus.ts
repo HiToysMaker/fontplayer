@@ -65,6 +65,8 @@ const menus = {
 		tools: {
 			remove_overlap: '去除重叠',
 			tools: '工具',
+			format_all_characters: '一键格式化所有字符',
+			format_current_character: '一键格式化当前字符',
 		},
   },
   en: {
@@ -133,6 +135,8 @@ const menus = {
 		tools: {
 			remove_overlap: 'remove_overlap',
 			tools: 'Tools',
+			format_all_characters: 'Format All Characters',
+			format_current_character: 'Format Current Character',
 		},
   },
 }
