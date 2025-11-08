@@ -106,6 +106,7 @@ interface IVariants {
 // font option 配置信息数据类型
 // font option data type
 interface IOption {
+	contourStorage?: string;
 	familyName: string;
 	styleName?: string;
 	fullName?: string;
@@ -461,12 +462,12 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 	// maxp表版本：CFF=0x00005000 (6字节), TrueType=0x00010000 (32字节)
 	// 可变字体使用TrueType格式，需要所有TrueType字段
 	const maxpTable: any = {
-		version: options.variants ? 0x00010000 : 0x00005000, // TrueType : CFF
+		version: options.variants || options.contourStorage === 'glyf' ? 0x00010000 : 0x00005000, // TrueType : CFF
 		numGlyphs: characters.length,
 	}
 	
 	// TrueType格式需要额外的字段（总共32字节）
-	if (options.variants) {
+	if (options.variants || options.contourStorage === 'glyf') {
 		maxpTable.maxPoints = 0 // 会在后面从glyf表计算
 		maxpTable.maxContours = 0 // 会在后面从glyf表计算
 		maxpTable.maxCompositePoints = 0
@@ -622,18 +623,6 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		maxMemType1: _postTable.maxMemType1 || 0,
 	}
 
-	// 定义cff表
-	// define cff table
-	const cffTable = createCffTable(characters, {
-		version: getEnglishName('version'),
-		fullName: englishFullName,
-		familyName: englishFamilyName,
-		weightName: englishStyleName,
-		postScriptName: postScriptName,
-		unitsPerEm: font.settings.unitsPerEm,
-		fontBBox: [0, globals.yMin, globals.ascender, globals.advanceWidthMax]
-	})
-
 	const tables = {
 		'head': headTable,
 		'hhea': hheaTable,
@@ -643,7 +632,154 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		'cmap': cmapTable,
 		'post': postTable,
 		'hmtx': hmtxTable,
-		'CFF ': cffTable,
+	}
+	if (options.contourStorage !== 'glyf') {
+		// 定义cff表
+		// define cff table
+		const cffTable = createCffTable(characters, {
+			version: getEnglishName('version'),
+			fullName: englishFullName,
+			familyName: englishFamilyName,
+			weightName: englishStyleName,
+			postScriptName: postScriptName,
+			unitsPerEm: font.settings.unitsPerEm,
+			fontBBox: [0, globals.yMin, globals.ascender, globals.advanceWidthMax]
+		})
+		tables['CFF '] = cffTable
+	} else {
+		// 调试：检查原始轮廓的路径类型
+		const checkGlyphPaths = (char: any, index: number) => {
+			let cubicCount = 0
+			let quadCount = 0
+			let lineCount = 0
+			for (const contour of char.contours || []) {
+				for (const path of contour) {
+					if (path.type === PathType.CUBIC_BEZIER) cubicCount++
+					else if (path.type === PathType.QUADRATIC_BEZIER) quadCount++
+					else if (path.type === PathType.LINE) lineCount++
+				}
+			}
+			return { cubicCount, quadCount, lineCount }
+		}
+		
+		// 1. 将所有字符的轮廓转换为二次贝塞尔曲线
+		const convertedCharacters = characters.map((char, index) => {
+			const before = checkGlyphPaths(char, index)
+			const converted = {
+				...char,
+				contours: convertContoursToQuadratic(char.contours, 0.5) // tolerance = 0.5
+			}
+			const after = checkGlyphPaths(converted, index)
+			
+			if (index === 7 || index === 11 || index === 12) {
+				console.log(`  Glyph ${index}: cubic=${before.cubicCount}, quad=${before.quadCount}, line=${before.lineCount} → quad=${after.quadCount}, line=${after.lineCount}`)
+			}
+			
+			return converted
+		})
+		
+		console.log(`✅ Converted ${convertedCharacters.length} glyphs to quadratic Bezier`)
+		
+		console.log('\n📦 Step 2: Building glyf and loca tables...')
+		
+		// 2. 构建glyf表（使用转换后的轮廓）
+		const { glyfTable } = buildGlyfAndLocaTables(
+			convertedCharacters,
+			1 // loca version: 1 = long format (Offset32)
+		)
+		
+		// 更新head表的indexToLocFormat
+		headTable.indexToLocFormat = 1 // long format
+		
+		// 存储glyf表对象（sfnt.ts会调用create序列化）
+		// 注意：glyf.create()会生成真实的offsets并存储在_generatedOffsets中
+		tables['glyf'] = glyfTable
+		
+		// loca表会在后面使用glyf序列化后的真实offsets创建
+		// 暂时存储一个占位符
+		tables['loca'] = {
+			version: 1,
+			offsets: [], // 会在sfnt.ts中被替换
+			_needsRealOffsets: true, // 标记需要真实offsets
+			_glyfTableRef: glyfTable, // 引用glyf表
+		}
+		
+		console.log('✅ glyf table created (loca will use real offsets after serialization)')
+		
+		// 从glyf表重新计算head表的边界框
+		let globalXMin = Infinity
+		let globalYMin = Infinity
+		let globalXMax = -Infinity
+		let globalYMax = -Infinity
+		
+		for (const glyph of glyfTable.glyphTables) {
+			if (glyph.numberOfContours > 0) {
+				globalXMin = Math.min(globalXMin, glyph.xMin)
+				globalYMin = Math.min(globalYMin, glyph.yMin)
+				globalXMax = Math.max(globalXMax, glyph.xMax)
+				globalYMax = Math.max(globalYMax, glyph.yMax)
+			}
+		}
+		
+		// 更新head表的边界框
+		if (isFinite(globalXMin)) {
+			headTable.xMin = globalXMin
+			headTable.yMin = globalYMin
+			headTable.xMax = globalXMax
+			headTable.yMax = globalYMax
+			console.log(`✅ Updated head table bounding box: (${globalXMin}, ${globalYMin}) to (${globalXMax}, ${globalYMax})`)
+		}
+		
+		// 从hmtx重新计算hhea表的度量值
+		let minLeftSideBearing = Infinity
+		let minRightSideBearing = Infinity
+		let xMaxExtent = -Infinity
+		
+		for (let i = 0; i < convertedCharacters.length; i++) {
+			const char = convertedCharacters[i]
+			const glyph = glyfTable.glyphTables[i]
+			const lsb = char.leftSideBearing || 0
+			const advWidth = char.advanceWidth || 0
+			
+			if (glyph.numberOfContours > 0) {
+				const rsb = Math.round(advWidth - lsb - (glyph.xMax - glyph.xMin))
+				const extent = Math.round(lsb + (glyph.xMax - glyph.xMin))
+				
+				minLeftSideBearing = Math.min(minLeftSideBearing, Math.round(lsb))
+				minRightSideBearing = Math.min(minRightSideBearing, rsb)
+				xMaxExtent = Math.max(xMaxExtent, extent)
+			}
+		}
+		
+		// 更新hhea表
+		if (isFinite(minLeftSideBearing)) {
+			hheaTable.minLeftSideBearing = minLeftSideBearing
+			hheaTable.minRightSideBearing = minRightSideBearing
+			hheaTable.xMaxExtent = xMaxExtent
+			console.log(`✅ Updated hhea table metrics: lsb=${minLeftSideBearing}, rsb=${minRightSideBearing}, extent=${xMaxExtent}`)
+		}
+		
+		// 从glyf表计算maxp表的值
+		let maxPoints = 0
+		let maxContours = 0
+		
+		for (const glyph of glyfTable.glyphTables) {
+			if (glyph.numberOfContours > 0) {
+				// 计算该字形的总点数
+				let totalPoints = 0
+				for (const contour of glyph.contours) {
+					totalPoints += contour.points.length
+				}
+				
+				maxPoints = Math.max(maxPoints, totalPoints)
+				maxContours = Math.max(maxContours, glyph.numberOfContours)
+			}
+		}
+		
+		// 更新maxp表
+		maxpTable.maxPoints = maxPoints
+		maxpTable.maxContours = maxContours
+
 	}
 
 	if (options.variants) {

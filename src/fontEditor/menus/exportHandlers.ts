@@ -48,6 +48,7 @@ import { removeOverlapWithWasm } from '@/utils/overlap-remover'
 import { PathType } from '../../fontManager'
 
 interface CreateFontOptions {
+  contour_storage?: string
   remove_overlap?: boolean;
   is_color_font?: boolean;
 }
@@ -638,6 +639,7 @@ const createFont = async (options?: CreateFontOptions) => {
     ascender,
     descender,
     tables: selectedFile.value.fontSettings.tables || null,
+    contourStorage: options?.contour_storage || 'cff',
   })
   return font
 }
