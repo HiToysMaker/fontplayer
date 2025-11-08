@@ -22,7 +22,7 @@ class Joint {
 	}
 
 	public render (canvas: HTMLCanvasElement) {
-		const d = 4
+		const d = getStrokeWidth() * 2
 		const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
 		ctx.beginPath()
 		ctx.fillStyle = 'blue'

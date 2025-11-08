@@ -859,6 +859,12 @@
     .set-layout-button {
       margin-left: 0;
     }
+    .layout-type-select {
+      width: 100% !important;
+      .el-input {
+        width: 100% !important;
+      }
+    }
   }
   .ratio-icon {
     position: absolute;
@@ -990,6 +996,16 @@
     .el-form-item {
       margin: 0;
       margin-bottom: 10px;
+    }
+  }
+</style>
+<style>
+  .layout-wrap {
+    .layout-type-select {
+      width: 100% !important;
+      .el-input {
+        width: 100% !important;
+      }
     }
   }
 </style>

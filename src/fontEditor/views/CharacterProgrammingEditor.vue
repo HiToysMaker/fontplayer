@@ -531,3 +531,15 @@
 		color: var(--primary-0);
 	}
 </style>
+<style>
+	.constant-item, .parameter-item {
+		margin-bottom: 10px;
+		position: relative;
+		.parameter-type-select, .parameter-value {
+			width: 100% !important;
+			.el-input {
+				width: 100% !important;
+			}
+		}
+	}
+</style>

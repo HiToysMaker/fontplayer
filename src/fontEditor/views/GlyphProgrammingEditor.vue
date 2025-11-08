@@ -3,7 +3,7 @@
 	import { useI18n } from 'vue-i18n'
 	import { IConstant, IParameter, IRingParameter, ParameterType } from '../../fontEditor/stores/glyph'
 	import { genUUID } from '../../utils/string'
-	import { Edit, SortDown, SortUp, Close } from '@element-plus/icons-vue'
+	import { Edit, SortDown, SortUp, Close, Delete } from '@element-plus/icons-vue'
 	import { emit, listen } from '@tauri-apps/api/event'
 	import { basicSetup, EditorView } from 'codemirror'
 	import { javascript } from '@codemirror/lang-javascript'
@@ -34,7 +34,26 @@
 		{
 			value: ParameterType.RingController,
 			key: 'ring',
-		}
+		},
+		{
+			value: ParameterType.Enum,
+			key: 'enum',
+		},
+	]
+
+	const constantsOptions = [
+		{
+			value: ParameterType.Number,
+			key: 'number',
+		},
+		{
+			value: ParameterType.RingController,
+			key: 'ring',
+		},
+		{
+			value: ParameterType.Enum,
+			key: 'enum',
+		},
 	]
 
 	let unlistenInitData = null
@@ -329,6 +348,20 @@
 			}
 		}
 	}
+
+	const addOption = (param) => {
+		param.options.push({
+			label: '',
+			value: 0,
+		})
+	}
+
+	const removeOption = (param, option) => {
+		const index = param.options.findIndex(item => item.value === option.value)
+		if (index !== -1) {
+			param.options.splice(index, 1)
+		}
+	}
 </script>
 
 <template>
@@ -350,7 +383,7 @@
 							</div>
 							<el-select v-model="parameter.type" class="parameter-type-select" :placeholder="tm('programming.type')" @change="onParamTypeChange(parameter)">
 								<el-option
-									v-for="item in parameterOptions"
+									v-for="item in constantsOptions"
 									:key="item.key"
 									:label="tm(`programming.${item.key}`)"
 									:value="item.value"
@@ -364,6 +397,28 @@
 								<el-form-item label="max" label-width="42px">
 									<el-input-number class="parameter-value" v-model="parameter.max" :precision="2"></el-input-number>
 								</el-form-item>
+							</div>
+							<div v-else-if="parameter.type === ParameterType.Enum" class="enum-wrap">
+								<el-select v-model="parameter.value" class="parameter-const-select" :placeholder="tm('programming.value')">
+									<el-option
+										v-for="item in parameter.options"
+										:key="item.value"
+										:label="item.label"
+										:value="item.value"
+									/>
+								</el-select>
+								<div class="options-wrap">
+									<el-button class="add-option-button" @pointerdown="addOption(parameter)">{{ t('programming.new_enum_option') }}</el-button>
+									<div class="option-item" v-for="option in parameter.options">
+										<el-form-item label="label" label-width="80px">
+											<el-input class="option-name" v-model="option.label"></el-input>
+										</el-form-item>
+										<el-form-item label="value" label-width="80px">
+										  <el-input-number class="option-value" v-model="option.value" :precision="2"></el-input-number>
+										</el-form-item>
+										<el-icon class="option-remove-btn" @pointerdown="removeOption(parameter, option)"><Delete /></el-icon>
+									</div>
+								</div>
 							</div>
 							<el-select v-model="parameter.value" class="parameter-const-select" :placeholder="tm('programming.value')" v-else-if="parameter.type === ParameterType.Constant">
 								<el-option
@@ -459,6 +514,28 @@
 								<el-form-item label="max" label-width="42px">
 									<el-input-number class="parameter-value" v-model="parameter.max" :precision="2"></el-input-number>
 								</el-form-item>
+							</div>
+							<div v-else-if="parameter.type === ParameterType.Enum" class="enum-wrap">
+								<el-select v-model="parameter.value" class="parameter-const-select" :placeholder="tm('programming.value')">
+									<el-option
+										v-for="item in parameter.options"
+										:key="item.value"
+										:label="item.label"
+										:value="item.value"
+									/>
+								</el-select>
+								<div class="options-wrap">
+									<el-button class="add-option-button" @pointerdown="addOption(parameter)">{{ t('programming.new_enum_option') }}</el-button>
+									<div class="option-item" v-for="option in parameter.options">
+										<el-form-item label="label" label-width="80px">
+											<el-input class="option-name" v-model="option.label"></el-input>
+										</el-form-item>
+										<el-form-item label="value" label-width="80px">
+										  <el-input-number class="option-value" v-model="option.value" :precision="2"></el-input-number>
+										</el-form-item>
+										<el-icon class="option-remove-btn" @pointerdown="removeOption(parameter, option)"><Delete /></el-icon>
+									</div>
+								</div>
 							</div>
 							<el-select v-model="parameter.value" class="parameter-const-select" :placeholder="tm('programming.value')" v-else-if="parameter.type === ParameterType.Constant">
 								<el-option
@@ -702,5 +779,42 @@
 	}
 	:deep(.el-tabs__item:hover) {
 		color: var(--primary-0);
+	}
+	.option-remove-btn {
+		position: absolute;
+		left: 5px;
+		top: 0;
+		bottom: 0;
+		margin: auto;
+		font-size: 18px;
+		color: var(--light-5);
+		cursor: pointer;
+		&:hover {
+			background-color: var(--danger-0);
+			color: var(--primary-0);
+		}
+	}
+</style>
+<style>
+	.constant-item, .parameter-item {
+		margin-bottom: 10px;
+		position: relative;
+		.parameter-type-select, .parameter-value {
+			width: 100% !important;
+			.el-input {
+				width: 100% !important;
+			}
+		}
+	}
+	.enum-wrap {
+		.parameter-const-select, .add-option-button {
+			width: 100% !important;
+			margin-bottom: 5px;
+		}
+		.parameter-const-select {
+			.el-input {
+				width: 100% !important;
+			}
+		}
 	}
 </style>
