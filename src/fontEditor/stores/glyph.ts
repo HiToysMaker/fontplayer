@@ -1,6 +1,6 @@
 import { Component, ICharacterFile, IComponent, addComponentForCurrentCharacterFile, editCharacterFile, selectedFile, selectedItemByUUID } from './files'
 import { ref, computed, type Ref, nextTick } from 'vue'
-import { loading, setTool, tool, total } from './global'
+import { loading, setGlyphDraggerTool, setTool, tool, total } from './global'
 import * as R from 'ramda'
 import { getBound } from '../../utils/math'
 import type { IPoint } from './pen'
@@ -1345,12 +1345,6 @@ const addComponentForGlyph = (glyphUUID: string, component: Component) => {
 		type: 'component',
 		uuid: component.uuid,
 	})
-	// if (component.type === 'glyph') {
-	// 	setTool('glyphDragger')
-	// } else {
-	// 	setTool('select')
-	// }
-	// setSelectionForCurrentGlyph(component.uuid)
 }
 
 /**
@@ -1367,11 +1361,6 @@ const addComponentForCurrentGlyph = (component: Component) => {
 		type: 'component',
 		uuid: component.uuid,
 	})
-	// if (component.type === 'glyph') {
-	// 	setTool('glyphDragger')
-	// } else {
-	// 	setTool('select')
-	// }
 	setSelectionForCurrentGlyph(component.uuid)
 }
 
@@ -1711,7 +1700,7 @@ const addSelectedGlyph = (glyph: ICustomGlyph) => {
 			addComponentForCurrentGlyph(component)
 		}
 		if (tool.value !== 'glyphDragger') {
-			setTool('glyphDragger')
+			setGlyphDraggerTool('glyphDragger')
 		}
 		glyphComponentsDialogVisible2.value = false
 	}

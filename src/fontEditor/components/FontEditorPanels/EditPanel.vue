@@ -28,7 +28,7 @@
     mapCanvasWidth,
     mapCanvasHeight,
   } from '../../../utils/canvas'
-  import { tool, grid, background, setCanvas, canvas, fontRenderStyle, width, height, setTool, checkJoints, checkRefLines, gridChanged, loading } from '../../stores/global'
+  import { tool, grid, background, setCanvas, canvas, fontRenderStyle, width, height, setTool, checkJoints, checkRefLines, gridChanged, loading, setGlyphDraggerTool, glyphDraggerTool } from '../../stores/global'
   import { initPen, renderPenEditor } from '../../tools/pen'
   import { initSelect, renderSelectEditor } from '../../tools/select/select'
   import { initEllipse, renderEllipseEditor } from '../../tools/ellipse'
@@ -70,6 +70,7 @@
 
   const mounted: Ref<boolean> = ref(false)
   let closeTool: Function | null = null
+  let closeGlyphDraggerTool: Function | null = null
   let closeLayoutResizer: Function | null = null
   const editCanvas: Ref<HTMLCanvasElement | null> = ref(null)
   const previewCanvas: Ref<HTMLCanvasElement | null> = ref(null)
@@ -129,7 +130,7 @@
     })
     await nextTick()
     if (selectedComponentUUID.value && selectedComponent.value.type === 'glyph') {
-      setTool('glyphDragger')
+      setGlyphDraggerTool('glyphDragger')
     }
     loading.value = false
   })
@@ -163,6 +164,10 @@
     if (closeLayoutResizer) {
       closeLayoutResizer()
     }
+    if (closeGlyphDraggerTool) {
+      closeGlyphDraggerTool()
+    }
+    setGlyphDraggerTool('')
     setTool('')
     updateCharacterListFromEditFile()
     // resetEditCharacterFile()
@@ -221,9 +226,18 @@
       case 'coordsViewer':
         closeTool = initCoordsViewer(canvas.value)
         break
-			case 'glyphDragger':
-				closeTool = initGlyphDragger(canvas.value)
-				break
+			// case 'glyphDragger':
+			// 	closeTool = initGlyphDragger(canvas.value)
+			// 	break
+    }
+  }
+
+  const initGlyphDraggerTool = () => {
+    if (closeGlyphDraggerTool) {
+      closeGlyphDraggerTool()
+    }
+    if (glyphDraggerTool.value === 'glyphDragger') {
+      closeGlyphDraggerTool = initGlyphDragger(canvas.value)
     }
   }
 
@@ -238,15 +252,28 @@
           renderSelectEditor(canvas.value)
         }
         break
-      case 'glyphDragger':
-        if (selectedComponentUUID.value) {
-          closeTool = initGlyphDragger(canvas.value)
-          renderGlyphSelector(canvas.value)
-        }
-        break
+      // case 'glyphDragger':
+      //   if (selectedComponentUUID.value) {
+      //     closeTool = initGlyphDragger(canvas.value)
+      //     renderGlyphSelector(canvas.value)
+      //   }
+      //   break
     }
 		renderRefComponents()
     initTool()
+  })
+
+  watch(glyphDraggerTool, () => {
+    if (!mounted) return
+    render()
+    if (glyphDraggerTool.value === 'glyphDragger') {
+      if (selectedComponentUUID.value) {
+        closeGlyphDraggerTool = initGlyphDragger(canvas.value)
+        renderGlyphSelector(canvas.value)
+      }
+    }
+    renderRefComponents()
+    initGlyphDraggerTool()
   })
 
   // editingLayout改变时重置LayoutResizer

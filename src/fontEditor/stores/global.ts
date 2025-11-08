@@ -45,6 +45,16 @@ const tool: Ref<string> = ref('')
 const width: Ref<number> = ref(500)
 const height: Ref<number> = ref(500)
 const canvas: Ref<HTMLCanvasElement | null> = ref(null)
+const glyphDraggerTool: Ref<string> = ref('')
+
+const setGlyphDraggerTool = (tool: string) => {
+	if (tool === 'glyphDragger') {
+		setTool('select')
+		checkJoints.value = true
+		checkRefLines.value = true
+	}
+	glyphDraggerTool.value = tool
+}
 
 let grid: IGrid = reactive({
 	type: GridType.None,
@@ -192,4 +202,6 @@ export {
 	skeletonThreshold,
 	useFixedCurves,
 	fontPreviewStyle,
+	glyphDraggerTool,
+	setGlyphDraggerTool,
 }

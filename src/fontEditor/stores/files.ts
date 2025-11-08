@@ -1183,11 +1183,6 @@ const addComponentForCurrentCharacterFile = (component: Component) => {
 		type: 'component',
 		uuid: component.uuid,
 	})
-	// if (component.type === 'glyph') {
-	// 	setTool('glyphDragger')
-	// } else {
-	// 	setTool('select')
-	// }
 	setSelectionForCurrentCharacterFile(component.uuid)
 }
 

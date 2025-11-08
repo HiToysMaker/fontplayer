@@ -243,6 +243,7 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = false)
 
 	const onMouseDown = (e: MouseEvent) => {
 		if (!draggable.value) return
+		if (!selectedComponent.value && !selectedSubComponent.value) return
 		editCharacterFileOnDragging.value = R.clone(editCharacterFile.value)
 		for (let i = 0; i < editCharacterFileOnDragging.value.components.length; i++) {
 			const component = editCharacterFileOnDragging.value.components[i]
@@ -303,6 +304,7 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = false)
 		// canvas.addEventListener('mousemove', onMouseMove)
 	}
 	const onMouseMove = (e: MouseEvent) => {
+		if (!selectedComponent.value && !selectedSubComponent.value) return
 		const d = 20
 		const dx = getCoord(e.offsetX) - lastX
 		const dy = getCoord(e.offsetY) - lastY
@@ -417,6 +419,19 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = false)
 		}
 	}
 	const onMouseUp = (e: MouseEvent) => {
+		if (!selectedComponent.value && !selectedSubComponent.value) {
+			mousedown = false
+			mousemove = false
+			mouseDownX = -1
+			mouseDownY = -1
+			lastX = 0
+			lastY = 0
+			putAtCoord.value = null
+			draggingJoint.value = null
+			isDraggingFirstJoint = false  // 重置第一个关键点拖拽标志
+			window.removeEventListener('mouseup', onMouseUp)
+			return
+		}
 		let glyph = null
 		if (selectedSubComponentOnDragging.value) {
 			// 当前选中组件为子字形组件

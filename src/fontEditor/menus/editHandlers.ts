@@ -7,7 +7,7 @@ import {
   selectedComponent,
   selectedComponents,
 } from '../stores/files'
-import { setTool } from '../stores/global'
+import { setGlyphDraggerTool, setTool } from '../stores/global'
 import { undo as _undo, redo as _redo } from '../stores/edit'
 import type { IComponent } from '../stores/files'
 import * as R from 'ramda'
@@ -38,7 +38,7 @@ const paste = () => {
   })
 
   if (lastComponent && lastComponent.type === 'glyph') {
-    setTool('glyphDragger')
+    setGlyphDraggerTool('glyphDragger')
   } else {
     setTool('select')
   }
