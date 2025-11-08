@@ -10,6 +10,7 @@
 	import { oneDark } from '@codemirror/theme-one-dark'
 	import { getCurrentWindow } from '@tauri-apps/api/window'
 	import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager'
+import { ElMessageBox } from 'element-plus'
   const { t, tm } = useI18n()
 
 	const constants: Ref<Array<IConstant>> = ref([])
@@ -82,8 +83,9 @@
 				// unlistenClose && unlistenClose()
 			})
 			unlistenInitData = await listen('init-data', (event) => {
-				const { __constants, __parameters, __script, __isWeb } = event.payload as any
+				const { __constants, __parameters, __script, __isWeb, __uuid } = event.payload as any
 
+				window.__uuid = __uuid
 				window.__constants = __constants
 				window.__parameters = __parameters
 				window.__script = __script
@@ -156,6 +158,7 @@
 			constants.value = window.opener['__constants']
 			parameters.value = window.opener['__parameters']
 			script.value = window.opener['__script']
+			window.__uuid = window.opener['__uuid']
 			isWeb = window.opener['__is_web']
 
 			constants.value.map((constant) => {
@@ -277,6 +280,7 @@
 		parameters,
 		script,
 	], () => {
+		console.log('sync update', constants.value)
 		syncInfo()
 	}, {
 		deep: true,
@@ -361,6 +365,29 @@
 		if (index !== -1) {
 			param.options.splice(index, 1)
 		}
+	}
+
+	const resetScript = () => {
+		// 添加confirm弹框，确认是否重置脚本
+		ElMessageBox.confirm('重置脚本会将脚本重置为初始状态，不可恢复，请谨慎操作。确定要重置脚本吗？', '提示', {
+			confirmButtonText: '确定',
+			cancelButtonText: '取消',
+			type: 'warning',
+		}).then(() => {
+			script.value = `function script_${window.__uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t//Todo something\n}`
+			// 更新代码编辑器
+			if (codeEditor) {
+				codeEditor.dispatch({
+					changes: {
+						from: 0,
+						to: codeEditor.state.doc.length,
+						insert: script.value,
+					},
+				})
+			}
+		}).catch(() => {
+			return
+		})
 	}
 </script>
 
@@ -607,7 +634,7 @@
 		<div class="right-panel">
 			<div class="codes-header">
 				<div class="codes-title">{{ t('programming.script') }}</div>
-				<el-button class="reset-btn">{{ t('programming.reset') }}</el-button>
+				<el-button type="danger" class="reset-btn" @pointerdown="resetScript()">{{ t('programming.reset') }}</el-button>
 				<el-button class="execute-btn" type="primary" @pointerdown="executeScript()">{{ t('programming.execute') }}</el-button>
 			</div>
 			<div id="codes-container"></div>

@@ -110,6 +110,7 @@
     if (ENV.value === 'web') {
       if (editStatus.value === Status.Edit) {
         window.__constants = constants.value
+        window.__uuid = editCharacterFile.value.uuid
         window.__script = editCharacterFile.value.script
         window.__is_web = ENV.value === 'web'
         window.addEventListener('message', onReceiveMessage)
@@ -129,6 +130,7 @@
       } else if (editStatus.value === Status.Glyph) {
         window.__constants = constants.value
         window.__parameters = editGlyph.value.parameters.parameters
+        window.__uuid = editGlyph.value.uuid
         window.__script = editGlyph.value.script
         window.__is_web = ENV.value === 'web'
         window.addEventListener('message', onReceiveMessage)
@@ -189,14 +191,16 @@
           await emit('init-data', {
             __constants: constants.value,
             __script: editCharacterFile.value.script,
-            __isWeb: ENV.value === 'web'
+            __isWeb: ENV.value === 'web',
+            __uuid: editCharacterFile.value.uuid
           })
         } else if (editStatus.value === Status.Glyph) {
           await emit('init-data', {
             __constants: constants.value,
             __parameters: editGlyph.value.parameters.parameters,
             __script: editGlyph.value.script,
-            __isWeb: ENV.value === 'web'
+            __isWeb: ENV.value === 'web',
+            __uuid: editGlyph.value.uuid
           })
         }
       })

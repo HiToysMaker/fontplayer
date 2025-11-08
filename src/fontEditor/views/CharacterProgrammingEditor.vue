@@ -3,13 +3,14 @@
 	import { useI18n } from 'vue-i18n'
 	import { IConstant, IRingParameter, ParameterType } from '../../fontEditor/stores/glyph'
 	import { genUUID } from '../../utils/string'
-	import { Edit, SortDown, SortUp, Close } from '@element-plus/icons-vue'
+	import { Edit, SortDown, SortUp, Close, Delete } from '@element-plus/icons-vue'
 	import { emit, listen } from '@tauri-apps/api/event'
 	import { basicSetup, EditorView } from 'codemirror'
 	import { javascript } from '@codemirror/lang-javascript'
 	import { oneDark } from '@codemirror/theme-one-dark'
 	import { getCurrentWindow } from '@tauri-apps/api/window'
 	import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager'
+import { ElMessageBox } from 'element-plus'
   const { t, tm } = useI18n()
 
 	const constants: Ref<Array<IConstant>> = ref([])
@@ -48,11 +49,12 @@
 				// unlistenClose && unlistenClose()
 			})
 			unlistenInitData = await listen('init-data', (event) => {
-				const { __constants, __script, __isWeb } = event.payload as any
+				const { __constants, __script, __isWeb, __uuid } = event.payload as any
 
 				window.__constants = __constants
 				window.__script = __script
 				window.__is_web = __isWeb
+				window.__uuid = __uuid
 
 				constants.value = __constants
 				script.value = __script
@@ -115,6 +117,7 @@
 			constants.value = window.opener['__constants']
 			script.value = window.opener['__script']
 			isWeb = window.opener['__is_web']
+			window.__uuid = window.opener['__uuid']
 
 			constants.value.map((constant) => {
 				editMap.value[constant.uuid] = false
@@ -184,6 +187,21 @@
 			value: ParameterType.RingController,
 			key: 'ring',
 		}
+	]
+
+	const constantsOptions = [
+		{
+			value: ParameterType.Number,
+			key: 'number',
+		},
+		{
+			value: ParameterType.RingController,
+			key: 'ring',
+		},
+		{
+			value: ParameterType.Enum,
+			key: 'enum',
+		},
 	]
 
 	const syncInfo = async () => {
@@ -272,6 +290,43 @@
 			}
 		}
 	}
+
+	const addOption = (param) => {
+		param.options.push({
+			label: '',
+			value: 0,
+		})
+	}
+
+	const removeOption = (param, option) => {
+		const index = param.options.findIndex(item => item.value === option.value)
+		if (index !== -1) {
+			param.options.splice(index, 1)
+		}
+	}
+
+	const resetScript = () => {
+		// 添加confirm弹框，确认是否重置脚本
+		ElMessageBox.confirm('重置脚本会将脚本重置为初始状态，不可恢复，请谨慎操作。确定要重置脚本吗？', '提示', {
+			confirmButtonText: '确定',
+			cancelButtonText: '取消',
+			type: 'warning',
+		}).then(() => {
+			script.value = `function script_${window.__uuid.replaceAll('-', '_')} (character, constants, FP) {\n\t//Todo something\n}`
+			// 更新代码编辑器
+			if (codeEditor) {
+				codeEditor.dispatch({
+					changes: {
+						from: 0,
+						to: codeEditor.state.doc.length,
+						insert: script.value,
+					},
+				})
+			}
+		}).catch(() => {
+			return
+		})
+	}
 </script>
 
 <template>
@@ -293,7 +348,7 @@
 							</div>
 							<el-select v-model="parameter.type" class="parameter-type-select" :placeholder="tm('programming.type')" @change="onParamTypeChange(parameter)">
 								<el-option
-									v-for="item in parameterOptions"
+									v-for="item in constantsOptions"
 									:key="item.key"
 									:label="tm(`programming.${item.key}`)"
 									:value="item.value"
@@ -307,6 +362,28 @@
 								<el-form-item label="max" label-width="42px">
 									<el-input-number class="parameter-value" v-model="parameter.max" :precision="2"></el-input-number>
 								</el-form-item>
+							</div>
+							<div v-else-if="parameter.type === ParameterType.Enum" class="enum-wrap">
+								<el-select v-model="parameter.value" class="parameter-const-select" :placeholder="tm('programming.value')">
+									<el-option
+										v-for="item in parameter.options"
+										:key="item.value"
+										:label="item.label"
+										:value="item.value"
+									/>
+								</el-select>
+								<div class="options-wrap">
+									<el-button class="add-option-button" @pointerdown="addOption(parameter)">{{ t('programming.new_enum_option') }}</el-button>
+									<div class="option-item" v-for="option in parameter.options">
+										<el-form-item label="label" label-width="80px">
+											<el-input class="option-name" v-model="option.label"></el-input>
+										</el-form-item>
+										<el-form-item label="value" label-width="80px">
+										  <el-input-number class="option-value" v-model="option.value" :precision="2"></el-input-number>
+										</el-form-item>
+										<el-icon class="option-remove-btn" @pointerdown="removeOption(parameter, option)"><Delete /></el-icon>
+									</div>
+								</div>
 							</div>
 							<el-select v-model="parameter.value" class="parameter-const-select" :placeholder="tm('programming.value')" v-else-if="parameter.type === ParameterType.Constant">
 								<el-option
@@ -378,7 +455,7 @@
 		<div class="right-panel">
 			<div class="codes-header">
 				<div class="codes-title">{{ t('programming.script') }}</div>
-				<el-button class="reset-btn">{{ t('programming.reset') }}</el-button>
+				<el-button type="danger" class="reset-btn" @pointerdown="resetScript()">{{ t('programming.reset') }}</el-button>
 				<el-button class="execute-btn" type="primary" @pointerdown="executeScript()">{{ t('programming.execute') }}</el-button>
 			</div>
 			<div id="codes-container"></div>
@@ -392,6 +469,15 @@
 		height: 100%;
 		display: flex;
 		flex-direction: row;
+		:deep(.el-form-item__label) {
+    	color: black;
+		}
+		.el-input-number {
+			width: 100%;
+		}
+		.el-form-item {
+			margin: 5px 0;
+		}
 		.right-panel {
 			.codes-header {
 				background-color: white;
@@ -437,7 +523,7 @@
 				.edit-icon {
     			cursor: pointer;
 				}
-				.remove-btn {
+				.remove-btn, .sort-up-btn, .sort-down-btn {
 					display: none;
 					position: absolute;
 					right: 5px;
@@ -446,8 +532,14 @@
     			color: var(--light-0);
 					cursor: pointer;
 				}
+				.sort-up-btn {
+					right: 25px;
+				}
+				.sort-down-btn {
+					right: 45px;
+				}
 				&:hover {
-					.remove-btn {
+					.remove-btn, .sort-up-btn, .sort-down-btn {
 						display: block;
 					}
 				}
@@ -455,7 +547,7 @@
 					width: 100%;
 				}
 			}
-			.parameter-item {
+			.parameter-item, .constant-item {
 				margin-bottom: 10px;
 				position: relative;
 				.parameter-name {
@@ -469,7 +561,7 @@
 				.edit-icon {
     			cursor: pointer;
 				}
-				.remove-btn {
+				.remove-btn, .sort-up-btn, .sort-down-btn {
 					display: none;
 					position: absolute;
 					right: 5px;
@@ -478,8 +570,14 @@
     			color: var(--light-0);
 					cursor: pointer;
 				}
+				.sort-up-btn {
+					right: 25px;
+				}
+				.sort-down-btn {
+					right: 45px;
+				}
 				&:hover {
-					.remove-btn {
+					.remove-btn, .sort-up-btn, .sort-down-btn {
 						display: block;
 					}
 				}
@@ -530,6 +628,20 @@
 	:deep(.el-tabs__item:hover) {
 		color: var(--primary-0);
 	}
+	.option-remove-btn {
+		position: absolute;
+		left: 5px;
+		top: 0;
+		bottom: 0;
+		margin: auto;
+		font-size: 18px;
+		color: var(--light-5);
+		cursor: pointer;
+		&:hover {
+			background-color: var(--danger-0);
+			color: var(--primary-0);
+		}
+	}
 </style>
 <style>
 	.constant-item, .parameter-item {
@@ -537,6 +649,17 @@
 		position: relative;
 		.parameter-type-select, .parameter-value {
 			width: 100% !important;
+			.el-input {
+				width: 100% !important;
+			}
+		}
+	}
+	.enum-wrap {
+		.parameter-const-select, .add-option-button {
+			width: 100% !important;
+			margin-bottom: 5px;
+		}
+		.parameter-const-select {
 			.el-input {
 				width: 100% !important;
 			}
