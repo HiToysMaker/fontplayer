@@ -1,4 +1,4 @@
-import { gridSettings, loaded, loading, setTool, total } from './global'
+import { gridSettings, loaded, loading, setGlyphDraggerTool, setTool, total } from './global'
 import { ElMessage } from 'element-plus'
 import * as R from 'ramda'
 import { ref, computed, type Ref, reactive, nextTick } from 'vue'
@@ -786,6 +786,9 @@ const setSelectionForCurrentCharacterFile = (uuid: string) => {
 			}
 		} else {
 			characterFile.selectedComponentsUUIDs = [uuid]
+			if (selectedComponent.value.type === 'glyph') {
+				setGlyphDraggerTool('glyphDragger')
+			}
 		}
 	} else {
 		characterFile.selectedComponentsUUIDs = []

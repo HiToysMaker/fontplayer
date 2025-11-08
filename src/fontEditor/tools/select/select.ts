@@ -41,10 +41,172 @@ import {
 	modifyComponentForCurrentGlyph,
 	orderedListForCurrentGlyph,
 	orderedListWithItemsForCurrentGlyph,
+	orderedListWithItemsForGlyph,
+	ICustomGlyph,
+	IGlyphComponent,
 } from '../../stores/glyph'
 import { Status, editStatus } from '../../stores/font'
 import { genEllipseContour, formatPoints, genPolygonContour, genRectangleContour, genPenContour } from '../../../features/font'
 import { getStrokeWidth } from '../../stores/global'
+
+type CanvasPoint = {
+	x: number,
+	y: number,
+}
+
+type BoundingBox = {
+	minX: number,
+	maxX: number,
+	minY: number,
+	maxY: number,
+}
+
+const getBoundingFromPoints = (points: Array<{ x: number, y: number }>, offset: CanvasPoint) => {
+	if (!points || !points.length) return null
+	let minX = Infinity
+	let maxX = -Infinity
+	let minY = Infinity
+	let maxY = -Infinity
+	for (let i = 0; i < points.length; i++) {
+		const current = points[i]
+		if (typeof current?.x !== 'number' || typeof current?.y !== 'number') continue
+		const px = current.x + offset.x
+		const py = current.y + offset.y
+		if (px < minX) minX = px
+		if (px > maxX) maxX = px
+		if (py < minY) minY = py
+		if (py > maxY) maxY = py
+	}
+	if (!Number.isFinite(minX) || !Number.isFinite(maxX) || !Number.isFinite(minY) || !Number.isFinite(maxY)) return null
+	return { minX, minY, maxX, maxY } as BoundingBox
+}
+
+const isPointInBounding = (point: CanvasPoint, bound: BoundingBox, tolerance: number) => {
+	return (
+		point.x >= bound.minX - tolerance &&
+		point.x <= bound.maxX + tolerance &&
+		point.y >= bound.minY - tolerance &&
+		point.y <= bound.maxY + tolerance
+	)
+}
+
+const toVerticesWithOffset = (points: Array<{ x: number, y: number }>, offset: CanvasPoint) => {
+	if (!points) return []
+	return points
+		.filter((point) => typeof point?.x === 'number' && typeof point?.y === 'number')
+		.map((point) => ({
+			x: point.x + offset.x,
+			y: point.y + offset.y,
+		}))
+}
+
+const pointInPolygon = (point: CanvasPoint, vertices: Array<{ x: number, y: number }>) => {
+	if (!vertices.length) return false
+	let inside = false
+	for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
+		const xi = vertices[i].x
+		const yi = vertices[i].y
+		const xj = vertices[j].x
+		const yj = vertices[j].y
+		const intersect = ((yi > point.y) !== (yj > point.y)) &&
+			(point.x < ((xj - xi) * (point.y - yi)) / ((yj - yi) || Number.EPSILON) + xi)
+		if (intersect) inside = !inside
+	}
+	return inside
+}
+
+const normalizeComponentWithOffset = (component: any, offset: CanvasPoint) => {
+	const comp = Object.assign({}, component)
+	comp.x = (typeof comp.x === 'number' ? comp.x : 0) + offset.x
+	comp.y = (typeof comp.y === 'number' ? comp.y : 0) + offset.y
+	return comp
+}
+
+const glyphValueContainsPoint = (point: CanvasPoint, glyph: ICustomGlyph, offset: CanvasPoint, tolerance: number): boolean => {
+	if (!glyph) return false
+	const components = glyph._o?.components || orderedListWithItemsForGlyph(glyph)
+	for (let i = components.length - 1; i >= 0; i--) {
+		const comp = components[i]
+		if (!comp) continue
+		if (comp.usedInCharacter === false) continue
+		if (comp.visible === false) continue
+		if (glyphItemContainsPoint(point, comp, offset, tolerance)) {
+			return true
+		}
+	}
+	return false
+}
+
+const glyphItemContainsPoint = (point: CanvasPoint, component: any, offset: CanvasPoint, tolerance: number): boolean => {
+	if (!component) return false
+	if (component.type === 'glyph') {
+		const glyphComponent = component as IGlyphComponent
+		const childOffset = {
+			x: offset.x + (glyphComponent.ox || 0),
+			y: offset.y + (glyphComponent.oy || 0),
+		}
+		return glyphComponentContainsPoint(point, glyphComponent, tolerance, childOffset)
+	}
+	if (typeof component.x === 'number' && typeof component.y === 'number' && typeof component.w === 'number' && typeof component.h === 'number') {
+		const normalizedComponent = normalizeComponentWithOffset(component, offset)
+		return inComponentBound(point, normalizedComponent, tolerance)
+	}
+	switch (component.type) {
+		case 'glyph-pen': {
+			const anchors = Array.isArray(component.points)
+				? component.points.filter((item: any) => item && item.type === 'anchor')
+				: []
+			const bound = getBoundingFromPoints(anchors.length ? anchors : component.points, offset)
+			if (!bound) return false
+			return isPointInBounding(point, bound, tolerance)
+		}
+		case 'glyph-polygon': {
+			const vertices = toVerticesWithOffset(component.points, offset)
+			if (!vertices.length) return false
+			const bound = getBoundingFromPoints(vertices, { x: 0, y: 0 })
+			if (!bound) return false
+			if (!isPointInBounding(point, bound, tolerance)) return false
+			return pointInPolygon(point, vertices)
+		}
+		case 'glyph-rectangle': {
+			const x = (component.x || 0) + offset.x
+			const y = (component.y || 0) + offset.y
+			const width = component.width || 0
+			const height = component.height || 0
+			return (
+				point.x >= x - tolerance &&
+				point.x <= x + width + tolerance &&
+				point.y >= y - tolerance &&
+				point.y <= y + height + tolerance
+			)
+		}
+		case 'glyph-ellipse': {
+			const centerX = (component.centerX || 0) + offset.x
+			const centerY = (component.centerY || 0) + offset.y
+			const radiusX = component.radiusX || 0
+			const radiusY = component.radiusY || 0
+			if (!radiusX || !radiusY) return false
+			const dx = point.x - centerX
+			const dy = point.y - centerY
+			const rx = radiusX + tolerance
+			const ry = radiusY + tolerance
+			return (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry) <= 1
+		}
+		default:
+			return false
+	}
+}
+
+const glyphComponentContainsPoint = (point: CanvasPoint, component: IGlyphComponent, tolerance: number, offset?: CanvasPoint): boolean => {
+	if (!component || !component.visible) return false
+	const glyph = component.value
+	if (!glyph) return false
+	const baseOffset = offset || {
+		x: component.ox || 0,
+		y: component.oy || 0,
+	}
+	return glyphValueContainsPoint(point, glyph, baseOffset, tolerance)
+}
 
 // 选择组件时，初始化方法
 // initializier for component selection
@@ -203,11 +365,27 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 
 	const onMouseUp = (e: MouseEvent) => {
 		if (!mousemove) {
+			const clickPoint = {
+				x: getCoord(e.offsetX),
+				y: getCoord(e.offsetY),
+			}
 			if (!glyph) {
 				for (let i = orderedListWithItemsForCurrentCharacterFile.value.length - 1; i >= 0; i--) {
 					const component = orderedListWithItemsForCurrentCharacterFile.value[i]
-					if (selectedComponentUUID.value === component.uuid && inComponentBound({ x: getCoord(e.offsetX), y: getCoord(e.offsetY) }, component, 20) && component.visible) return
-					if (inComponentBound({ x: getCoord(e.offsetX), y: getCoord(e.offsetY) }, component, 20) && component.visible) {
+					if (!component || !component.type || component.type === 'group' || component.visible === false) continue
+					if (component.type === 'glyph') {
+						const glyphComponent = component as IGlyphComponent
+						const contains = glyphComponentContainsPoint(clickPoint, glyphComponent, 20)
+						if (!contains) continue
+						if (selectedComponentUUID.value === glyphComponent.uuid) return
+						setSelectionForCurrentCharacterFile(glyphComponent.uuid)
+						mousedown = false
+						mousemove = false
+						selectControl.value = 'null'
+						return
+					}
+					if (selectedComponentUUID.value === component.uuid && inComponentBound(clickPoint, component, 20)) return
+					if (inComponentBound(clickPoint, component, 20)) {
 						setSelectionForCurrentCharacterFile(component.uuid)
 						mousedown = false
 						mousemove = false
@@ -219,8 +397,20 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 			} else {
 				for (let i = orderedListWithItemsForCurrentGlyph.value.length - 1; i >= 0; i--) {
 					const component = orderedListWithItemsForCurrentGlyph.value[i]
-					if (selectedComponentUUID_glyph.value === component.uuid && inComponentBound({ x: getCoord(e.offsetX), y: getCoord(e.offsetY) }, component, 20) && component.visible) return
-					if (inComponentBound({ x: getCoord(e.offsetX), y: getCoord(e.offsetY) }, component, 20) && component.visible) {
+					if (!component || !component.type || component.type === 'group' || component.visible === false) continue
+					if (component.type === 'glyph') {
+						const glyphComponent = component as IGlyphComponent
+						const contains = glyphComponentContainsPoint(clickPoint, glyphComponent, 20)
+						if (!contains) continue
+						if (selectedComponentUUID_glyph.value === glyphComponent.uuid) return
+						setSelectionForCurrentGlyph(glyphComponent.uuid)
+						mousedown = false
+						mousemove = false
+						selectControl.value = 'null'
+						return
+					}
+					if (selectedComponentUUID_glyph.value === component.uuid && inComponentBound(clickPoint, component, 20)) return
+					if (inComponentBound(clickPoint, component, 20)) {
 						setSelectionForCurrentGlyph(component.uuid)
 						mousedown = false
 						mousemove = false
