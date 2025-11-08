@@ -17,6 +17,7 @@
   const { tm, t } = useI18n()
 
   const options = ref({
+    contour_storage: 'cff',
     remove_overlap: false,
   })
 
@@ -50,6 +51,27 @@
     width="320px"
   >
     <div class="form-wrapper">
+      <div class="contour-group">
+        <div class="group-title">{{ t('dialogs.exportFontDialog.contourStorageTitle') }}</div>
+        <el-radio-group v-model="options.contour_storage">
+          <el-radio class="contour-radio" label="glyf">
+            <span>{{ t('dialogs.exportFontDialog.contourStorageTrueTypeLabel') }}</span>
+            <el-tooltip :content="t('dialogs.exportFontDialog.contourStorageTrueTypeTooltip')" placement="top">
+              <el-icon class="help-icon">
+                <QuestionFilled />
+              </el-icon>
+            </el-tooltip>
+          </el-radio>
+          <el-radio class="contour-radio" label="cff">
+            <span>{{ t('dialogs.exportFontDialog.contourStorageCffLabel') }}</span>
+            <el-tooltip :content="t('dialogs.exportFontDialog.contourStorageCffTooltip')" placement="top">
+              <el-icon class="help-icon">
+                <QuestionFilled />
+              </el-icon>
+            </el-tooltip>
+          </el-radio>
+        </el-radio-group>
+      </div>
       <el-checkbox
         v-model="options.remove_overlap"
         class="item-check"

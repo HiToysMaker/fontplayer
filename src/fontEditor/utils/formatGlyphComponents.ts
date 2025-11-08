@@ -99,7 +99,7 @@ const convertGeneratedComponent = (
 			...baseProps,
 			value: {
 				points: transformedPoints,
-				fillColor: '',
+				fillColor: glyphComponent.value.fillColor || '',
 				strokeColor: '#000',
 				closePath: true,
 				editMode: false,
@@ -113,7 +113,7 @@ const convertGeneratedComponent = (
 			...baseProps,
 			value: {
 				points: transformedPoints,
-				fillColor: '',
+				fillColor: glyphComponent.value.fillColor || '',
 				strokeColor: '#000',
 				closePath: true,
 				preview: componentData.preview,
@@ -127,7 +127,7 @@ const convertGeneratedComponent = (
 			value: {
 				width: componentData.width,
 				height: componentData.height,
-				fillColor: '',
+				fillColor: glyphComponent.value.fillColor || '',
 				strokeColor: '#000',
 				preview: componentData.preview,
 				contour: componentData.contour,
@@ -140,7 +140,7 @@ const convertGeneratedComponent = (
 			value: {
 				radiusX: componentData.radiusX,
 				radiusY: componentData.radiusY,
-				fillColor: '',
+				fillColor: glyphComponent.value.fillColor || '',
 				strokeColor: '#000',
 				preview: componentData.preview,
 				contour: componentData.contour,
