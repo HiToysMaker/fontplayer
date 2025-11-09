@@ -147,6 +147,9 @@
 </template>
 
 <style scoped>
+  .side-bar {
+    z-index: 9999;
+  }
   .top-bar, .top-bar-row {
     width: 100%;
   }

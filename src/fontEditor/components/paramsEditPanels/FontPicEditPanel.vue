@@ -544,6 +544,7 @@
     width: 100%;
     height: 100%;
     .tip {
+      margin-left: 50px;
       color: var(--light-4);
       display: flex;
       align-items: center;
@@ -583,5 +584,15 @@
   .content {
     padding: 20px;
     color: var(--light-4);
+  }
+</style>
+<style>
+  .global-effect {
+    .el-form-item__label {
+      width: 40px !important;
+    }
+    .el-input-number {
+      width: 120px !important;
+    }
   }
 </style>
