@@ -5,6 +5,7 @@ import { selectedFile } from '../stores/files'
 import { formatPoints, genPolygonContour, translate } from '../../features/font'
 import * as R from 'ramda'
 import { computeCoords } from '../canvas/canvas'
+import { fontRenderStyle } from '../stores/global'
 
 interface IOption {
 	offset?: {
@@ -74,6 +75,13 @@ class PolygonComponent {
 			}
 			ctx.stroke()
 			ctx.closePath()
+			if (fontRenderStyle.value === 'black') {
+				ctx.fillStyle = '#000'
+				ctx.fill()
+			} else if (fontRenderStyle.value === 'color') {
+				ctx.fillStyle = options.fillColor || '#000'
+				ctx.fill()
+			}
 			ctx.setTransform(1, 0, 0, 1, 0, 0)
 		}
 	}

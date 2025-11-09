@@ -107,9 +107,10 @@ const renderJoints = (rootComponent, canvas) => {
 	const traverse = (_component, _ox, _oy) => {
 		const ox = _component.ox + _ox
 		const oy = _component.oy + _oy
+		const firstJointIndex = _component.value._o?.getJoints().findIndex(joint => !joint.name.includes('_ref')) || 0
 		_component.value._o?.getJoints().map((joint, index) => {
 			const { x, y } = joint.getCoords()
-			if (index === 0) {
+			if (index === firstJointIndex) {
 				renderFisrtJoint(canvas, {
 					x: x + ox,
 					y: y + oy,

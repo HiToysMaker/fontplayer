@@ -4,7 +4,7 @@ import { selectedFile } from '../stores/files';
 import { formatPoints, genRectangleContour, translate } from '../../features/font';
 import * as R from 'ramda';
 import { computeCoords } from '../canvas/canvas';
-import { getStrokeWidth } from '../stores/global';
+import { fontRenderStyle, getStrokeWidth } from '../stores/global';
 
 interface IOption {
 	offset?: {
@@ -47,6 +47,13 @@ class RectangleComponent {
 		ctx.rect(mapCanvasX(this.x) * scale, mapCanvasY(this.y) * scale, mapCanvasX(this.width) * scale, mapCanvasY(this.height) * scale)
 		ctx.stroke()
 		ctx.closePath()
+		if (fontRenderStyle.value === 'black') {
+			ctx.fillStyle = '#000'
+			ctx.fill()
+		} else if (fontRenderStyle.value === 'color') {
+			ctx.fillStyle = options.fillColor || '#000'
+			ctx.fill()
+		}
 		ctx.setTransform(1, 0, 0, 1, 0, 0)
 	}
 

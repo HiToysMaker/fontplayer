@@ -41,11 +41,14 @@ const importTemplates = () => {
   setImportTemplatesDialogVisible(true)
 }
 
-const importTemplate2 = async () => {
+const importTemplate2 = async (options) => {
   for (let i = 0; i < hei_strokes.length; i++) {
     loaded.value += 1
     const stroke = hei_strokes[i]
-    const { name, params, uuid } = stroke
+    let { name, params, uuid } = stroke
+    if (!options.useDefaultUUID) {
+      uuid = genUUID()
+    }
     const parameters: Array<IParameter> = []
     for (let j = 0; j < params.length; j++) {
       const param = params[j]
@@ -181,6 +184,7 @@ const importTemplate2 = async () => {
     addGlyphTemplate(glyph, Status.StrokeGlyphList)
   }
   emitter.emit('renderStrokeGlyphPreviewCanvas')
+  setEditStatus(Status.StrokeGlyphList)
 }
 
 const importTemplate4 = async () => {
@@ -324,6 +328,7 @@ const importTemplate4 = async () => {
     addGlyphTemplate(glyph, Status.StrokeGlyphList)
   }
   emitter.emit('renderStrokeGlyphPreviewCanvas')
+  setEditStatus(Status.StrokeGlyphList)
 }
 
 const importTemplate5 = async () => {
@@ -497,6 +502,7 @@ const importTemplate5 = async () => {
     addGlyphTemplate(glyph, Status.StrokeGlyphList)
   }
   emitter.emit('renderStrokeGlyphPreviewCanvas')
+  setEditStatus(Status.StrokeGlyphList)
 }
 
 const importTemplate6 = async () => {
@@ -662,6 +668,7 @@ const importTemplate6 = async () => {
     addGlyphTemplate(glyph, Status.StrokeGlyphList)
   }
   emitter.emit('renderStrokeGlyphPreviewCanvas')
+  setEditStatus(Status.StrokeGlyphList)
 }
 
 const importTemplate7 = async () => {
@@ -827,6 +834,7 @@ const importTemplate7 = async () => {
     addGlyphTemplate(glyph, Status.StrokeGlyphList)
   }
   emitter.emit('renderStrokeGlyphPreviewCanvas')
+  setEditStatus(Status.StrokeGlyphList)
 }
 
 const importTemplate8 = async () => {
@@ -992,6 +1000,7 @@ const importTemplate8 = async () => {
     addGlyphTemplate(glyph, Status.StrokeGlyphList)
   }
   emitter.emit('renderStrokeGlyphPreviewCanvas')
+  setEditStatus(Status.StrokeGlyphList)
 }
 
 const importTemplateDigits = async () => {
@@ -1062,6 +1071,7 @@ const importTemplateDigits = async () => {
   }
   await nextTick()
   emitter.emit('renderGlyphPreviewCanvas')
+  setEditStatus(Status.GlyphList)
 }
 
 const importTemplateLetters = async () => {
@@ -1197,6 +1207,7 @@ const importTemplateLetters = async () => {
   }
   await nextTick()
   emitter.emit('renderGlyphPreviewCanvas')
+  setEditStatus(Status.GlyphList)
 }
 
 const importTemplate1 = async () => {
@@ -1586,6 +1597,7 @@ const importTemplate3 = async () => {
   loading.value = false
 
   // emitter.emit('renderStrokeGlyphPreviewCanvas')
+  setEditStatus(Status.StrokeGlyphList)
 }
 
 const parseLayout = (info) => {

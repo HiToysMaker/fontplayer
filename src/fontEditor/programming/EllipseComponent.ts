@@ -4,7 +4,7 @@ import { selectedFile } from '../stores/files';
 import { formatPoints, genEllipseContour, translate } from '../../features/font';
 import * as R from 'ramda';
 import { computeCoords } from '../canvas/canvas';
-import { getStrokeWidth } from '../stores/global';
+import { fontRenderStyle, getStrokeWidth } from '../stores/global';
 
 interface IOption {
 	offset?: {
@@ -47,6 +47,13 @@ class EllipseComponent {
 		ctx.ellipse(mapCanvasX(this.centerX) * scale, mapCanvasY(this.centerY) * scale, mapCanvasX(this.radiusX) * scale, mapCanvasY(this.radiusY) * scale, 0, 0, Math.PI * 2)
 		ctx.stroke()
 		ctx.closePath()
+		if (fontRenderStyle.value === 'black') {
+			ctx.fillStyle = '#000'
+			ctx.fill()
+		} else if (fontRenderStyle.value === 'color') {
+			ctx.fillStyle = options.fillColor || '#000'
+			ctx.fill()
+		}
 		ctx.setTransform(1, 0, 0, 1, 0, 0)
 	}
 

@@ -5,7 +5,7 @@ import { formatPoints, genPenContour, translate } from '../../features/font'
 import { selectedFile } from '../stores/files'
 import * as R from 'ramda'
 import { computeCoords } from '../canvas/canvas'
-import { getStrokeWidth } from '../stores/global'
+import { fontRenderStyle, getStrokeWidth } from '../stores/global'
 
 interface IOption {
 	offset?: {
@@ -156,6 +156,13 @@ class PenComponent {
 			}
 			ctx.stroke()
 			ctx.closePath()
+			if (fontRenderStyle.value === 'black') {
+				ctx.fillStyle = '#000'
+				ctx.fill()
+			} else if (fontRenderStyle.value === 'color') {
+				ctx.fillStyle = options.fillColor || '#000'
+				ctx.fill()
+			}
 			ctx.setTransform(1, 0, 0, 1, 0, 0)
 		}
 	}

@@ -300,7 +300,10 @@
 
   const importDefaultTemplate = async () => {
     updateGlobalConstant()
-    await importTemplate2()
+    await importTemplate2({
+      useDefaultUUID: true,
+    })
+    setEditStatus(Status.CharacterList)
     const res = base ? await fetch(base + `/templates/playground.json`) : await fetch(`templates/playground.json`)
     const data = JSON.parse(await res.text())
     const file = data.file

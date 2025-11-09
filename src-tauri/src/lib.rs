@@ -182,6 +182,13 @@ fn enable_at_edit(edit_status: &str) -> bool {
   }
 }
 
+fn enable_at_character_edit(edit_status: &str) -> bool {
+  match edit_status {
+    "edit" => true,
+    _ => false,
+  }
+}
+
 fn enable_at_list(edit_status: &str) -> bool {
   match edit_status {
     "edit" | "glyph" | "pic" => false,
@@ -313,7 +320,7 @@ fn build_menu_enabled_map() -> HashMap<String, Box<dyn Fn(&str) -> bool>> {
     ),
     (
       "remove-overlap".to_string(),
-      Box::new(enable_at_edit) as Box<dyn Fn(&str) -> bool>,
+      Box::new(enable_at_character_edit) as Box<dyn Fn(&str) -> bool>,
     ),
     (
       "format-all-characters".to_string(),
@@ -321,7 +328,7 @@ fn build_menu_enabled_map() -> HashMap<String, Box<dyn Fn(&str) -> bool>> {
     ),
     (
       "format-current-character".to_string(),
-      Box::new(enable_at_edit) as Box<dyn Fn(&str) -> bool>,
+      Box::new(enable_at_character_edit) as Box<dyn Fn(&str) -> bool>,
     ),
   ]);
   menu_enabled_map

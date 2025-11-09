@@ -31,6 +31,13 @@
 		return false
 	}
 
+  const enableAtCharacterEdit = () => {
+		if (editStatus.value === Status.Edit) {
+			return true
+		}
+		return false
+	}
+
 	const enableAtList = () => {
 		if (editStatus.value === Status.CharacterList || editStatus.value === Status.GlyphList || editStatus.value === Status.StrokeGlyphList || editStatus.value === Status.RadicalGlyphList || editStatus.value === Status.CompGlyphList) {
 			return true
@@ -85,9 +92,9 @@
     'template-8': TemplateEnable,
     'template-digits': TemplateEnable,
     'template-letters': TemplateEnable,
-    'remove_overlap': enableAtEdit,
-	'format-all-characters': enableAtList,
-	'format-current-character': enableAtEdit,
+    'remove_overlap': enableAtCharacterEdit,
+    'format-all-characters': enableAtList,
+    'format-current-character': enableAtCharacterEdit,
 	}
 
 	const web_menu_icons: IIconsMap = {
