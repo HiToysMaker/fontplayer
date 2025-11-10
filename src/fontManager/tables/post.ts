@@ -45,6 +45,18 @@ const types = {
 	offset: 'int8',
 }
 
+const baseFieldOrder = [
+	'version',
+	'italicAngle',
+	'underlinePosition',
+	'underlineThickness',
+	'isFixedPitch',
+	'minMemType42',
+	'maxMemType42',
+	'minMemType1',
+	'maxMemType1',
+] as const
+
 /**
  * 解析post表
  * @param data 字体文件DataView数据
@@ -129,38 +141,49 @@ const create = (table: IPostTable) => {
 	console.log(`\n=== Creating post table ===`)
 	console.log(`Version: 0x${table.version.toString(16).padStart(8, '0')} (decimal: ${table.version})`)
 
-	// 遍历table的每个键值，生成对应数据
-	// traverse table, generate data for each key
-	Object.keys(table).forEach((key: string) => {
-		const type = types[key as keyof typeof types]
-		const value = table[key as keyof typeof table]
-
-		// 使用encoder中的方法，根据不同键值对应的数据类型生成数据
-		// generate data use encoder according to each key's data type
-		let bytes: Array<number> = []
-		if (key === 'glyphNames') {
-			const glyphNames = value as Array<IGlyphName>
-			bytes = bytes.concat(encoder[types['numGlyphs'] as keyof typeof encoder](glyphNames.length) as Array<number>)
-			for (let i = 0; i < glyphNames.length; i++) {
-				bytes = bytes.concat(encoder[type as keyof typeof encoder](glyphNames[i].index) as Array<number>)
-			}
-			for (let i = 0; i < glyphNames.length; i++) {
-				if (glyphNames[i].index >= 258 && glyphNames[i].index < 65535)
-					bytes = bytes.concat(encoder[type as keyof typeof encoder](glyphNames[i].name as string) as Array<number>)
-			}
-		} else if (key === 'offsets') {
-			const offsets = value as Array<number>
-			bytes = bytes.concat(encoder[types['numGlyphs'] as keyof typeof encoder](offsets.length) as Array<number>)
-			for (let i = 0; i < offsets.length; i++) {
-				bytes = bytes.concat(encoder[type as keyof typeof encoder](offsets[i]) as Array<number>)
-			}
-		} else {
-			bytes = bytes.concat(encoder[type as keyof typeof encoder](value as number) as Array<number>)
-		}
+	// 按固定顺序写入基础字段
+	// write base fields in fixed order
+	for (const key of baseFieldOrder) {
+		const value = table[key]
+		const type = types[key]
+		const bytes = encoder[type as keyof typeof encoder](value)
 		if (bytes) {
 			data = data.concat(bytes)
 		}
-	})
+	}
+
+	// 根据不同版本处理附加数据
+	// handle additional data according to version
+	if (Array.isArray(table.glyphNames)) {
+		const glyphNames = table.glyphNames
+		let bytes: Array<number> = []
+		bytes = bytes.concat(encoder[types['numGlyphs'] as keyof typeof encoder](glyphNames.length) as Array<number>)
+		for (let i = 0; i < glyphNames.length; i++) {
+			bytes = bytes.concat(encoder[types['glyphNameIndex'] as keyof typeof encoder](glyphNames[i].index) as Array<number>)
+		}
+		for (let i = 0; i < glyphNames.length; i++) {
+			if (glyphNames[i].index >= 258 && glyphNames[i].index < 65535 && typeof glyphNames[i].name === 'string') {
+				const name = glyphNames[i].name as string
+				const lengthBytes = encoder.uint8(Math.min(name.length, 255)) as Array<number>
+				const charBytes: Array<number> = []
+				for (let j = 0; j < name.length && j < 255; j++) {
+					charBytes.push(name.charCodeAt(j) & 0xFF)
+				}
+				bytes = bytes.concat(lengthBytes, charBytes)
+			}
+		}
+		data = data.concat(bytes)
+	}
+
+	if (Array.isArray(table.offsets)) {
+		const offsets = table.offsets
+		let bytes: Array<number> = []
+		bytes = bytes.concat(encoder[types['numGlyphs'] as keyof typeof encoder](offsets.length) as Array<number>)
+		for (let i = 0; i < offsets.length; i++) {
+			bytes = bytes.concat(encoder[types['offset'] as keyof typeof encoder](offsets[i]) as Array<number>)
+		}
+		data = data.concat(bytes)
+	}
 	return data
 }
 

@@ -44,6 +44,24 @@ const types = {
 	maxComponentDepth: 'uint16',
 }
 
+const fieldOrder = [
+	'version',
+	'numGlyphs',
+	'maxPoints',
+	'maxContours',
+	'maxCompositePoints',
+	'maxCompositeContours',
+	'maxZones',
+	'maxTwilightPoints',
+	'maxStorage',
+	'maxFunctionDefs',
+	'maxInstructionDefs',
+	'maxStackElements',
+	'maxSizeOfInstructions',
+	'maxComponentElements',
+	'maxComponentDepth',
+] as const
+
 /**
  * 解析maxp表
  * @param data 字体文件DataView数据
@@ -65,19 +83,16 @@ const parse = (data: DataView, offset: number, font: IFont) => {
 
 	// 获取maxp表中的键值
 	// get keys in maxp table
-	const keys = Object.keys(types)
 	const table: IMaxpTable = {}
 	
 	// 启动一个新的decoder
 	// start a new decoder
 	decode.start(data, offset)
-	for (let i = 0; i < keys.length; i++) {
-		const key = keys[i]
-
+	for (const key of fieldOrder) {
 		if (version >= 1 || key === 'numGlyphs' || key === 'version') {
 			// 根据每个键值对应的数据类型，进行解析
 			// parse each key according to its data type
-			table[key as keyof typeof table] = decode.decoder[types[key as keyof typeof types] as keyof typeof decode.decoder]() as number
+			table[key] = decode.decoder[types[key] as keyof typeof decode.decoder]() as number
 		}
 	}
 	decode.end()

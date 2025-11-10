@@ -24,6 +24,8 @@ const types = {
 	leftSideBearings: 'int16',
 }
 
+const hMetricFieldOrder = ['advanceWidth', 'lsb'] as const
+
 /**
  * 解析hmtx表
  * @param data 字体文件DataView数据
@@ -87,11 +89,11 @@ const create = (table: IHmtxTable) => {
 	const hMetrics = table.hMetrics as Array<ILongHorMetric>
 	for (let i = 0; i < hMetrics.length; i++) {
 		const hMetric = hMetrics[i]
-		Object.keys(hMetric).forEach((key) => {
-			const type = types[key as keyof typeof types]
-			const value = hMetric[key as keyof typeof hMetric]
+		for (const key of hMetricFieldOrder) {
+			const type = types[key]
+			const value = hMetric[key]
 			bytes = bytes.concat(encoder[type as keyof typeof encoder](value) as Array<number>)
-		})
+		}
 	}
 	const leftSideBearings = table.leftSideBearings as Array<number>
 	if (leftSideBearings) {

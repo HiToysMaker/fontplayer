@@ -30,6 +30,8 @@ const types = {
 	offSize: 'Card8',
 }
 
+const headerFieldOrder = ['major', 'minor', 'hdrSize', 'offSize'] as const
+
 interface IGlyphTable {
 	numberOfContours: number;
 	contours: Array<Array<ILine | ICubicBezierCurve | IQuadraticBezierCurve>>;
@@ -2422,14 +2424,14 @@ const create = async(_table: ICffTable) => {
 	const header = table.header
 	let headerData: Array<number> = []
 	const glyphTables = table.glyphTables as Array<IGlyphTable>
-	Object.keys(header).forEach((key: string) => {
-		const type = types[key as keyof typeof types]
-		const value = header[key as keyof typeof header]
+	for (const key of headerFieldOrder) {
+		const value = header[key]
+		const type = types[key]
 		const bytes = encoder[type as keyof typeof encoder](value)
 		if (bytes) {
 			headerData = headerData.concat(bytes)
 		}
-	})
+	}
 	// 创建nameIndex数据
 	// create nameIndex data
 	const nameIndex = table.nameIndex

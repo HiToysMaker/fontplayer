@@ -90,6 +90,43 @@ const types = {
 	usUpperOpticalPointSize: 'uint16',
 }
 
+const baseFieldOrder = [
+	'version',
+	'xAvgCharWidth',
+	'usWeightClass',
+	'usWidthClass',
+	'fsType',
+	'ySubscriptXSize',
+	'ySubscriptYSize',
+	'ySubscriptXOffset',
+	'ySubscriptYOffset',
+	'ySuperscriptXSize',
+	'ySuperscriptYSize',
+	'ySuperscriptXOffset',
+	'ySuperscriptYOffset',
+	'yStrikeoutSize',
+	'yStrikeoutPosition',
+	'sFamilyClass',
+	'panose',
+	'ulUnicodeRange1',
+	'ulUnicodeRange2',
+	'ulUnicodeRange3',
+	'ulUnicodeRange4',
+	'achVendID',
+	'fsSelection',
+	'usFirstCharIndex',
+	'usLastCharIndex',
+	'sTypoAscender',
+	'sTypoDescender',
+	'sTypoLineGap',
+	'usWinAscent',
+	'usWinDescent',
+] as const
+
+const versionOneFields = ['ulCodePageRange1', 'ulCodePageRange2'] as const
+const versionTwoFields = ['sxHeight', 'sCapHeight', 'usDefaultChar', 'usBreakChar', 'usMaxContext'] as const
+const versionFiveFields = ['usLowerOpticalPointSize', 'usUpperOpticalPointSize'] as const
+
 // Tag数据类型
 // Tag data type
 interface ITag {
@@ -217,27 +254,60 @@ const parse = (data: DataView, offset: number, font: IFont) => {
 const create = (table: IOS2Table) => {
 	let data: Array<number> = []
 
-	// 遍历table的每个键值，生成对应数据
-	// traverse table, generate data for each key
-	Object.keys(table).forEach((key: string) => {
-		const type = types[key as keyof typeof types]
-		const value = table[key as keyof typeof table]
-
-		// 使用encoder中的方法，根据不同键值对应的数据类型生成数据
-		// generate data use encoder according to each key's data type
-		let bytes: Array<number> = []
+	for (const key of baseFieldOrder) {
+		const type = types[key]
 		if (key === 'panose') {
-			const panose = value as Array<number>
+			const panose = table.panose || new Array(10).fill(0)
 			for (let i = 0; i < panose.length; i++) {
-				bytes = bytes.concat(encoder[type as keyof typeof encoder](panose[i]) as Array<number>)
+				const bytes = encoder[type as keyof typeof encoder](panose[i])
+				if (bytes) {
+					data = data.concat(bytes)
+				}
 			}
-		} else {
-			bytes = bytes.concat(encoder[type as keyof typeof encoder](value as number) as Array<number>)
+			continue
 		}
+		const value = table[key]
+		const bytes = encoder[type as keyof typeof encoder](value)
 		if (bytes) {
 			data = data.concat(bytes)
 		}
-	})
+	}
+
+	if (table.version >= 1) {
+		for (const key of versionOneFields) {
+			const value = table[key]
+			if (value === undefined) continue
+			const type = types[key]
+			const bytes = encoder[type as keyof typeof encoder](value)
+			if (bytes) {
+				data = data.concat(bytes)
+			}
+		}
+	}
+
+	if (table.version >= 2) {
+		for (const key of versionTwoFields) {
+			const value = table[key]
+			if (value === undefined) continue
+			const type = types[key]
+			const bytes = encoder[type as keyof typeof encoder](value)
+			if (bytes) {
+				data = data.concat(bytes)
+			}
+		}
+	}
+
+	if (table.version >= 5) {
+		for (const key of versionFiveFields) {
+			const value = table[key]
+			if (value === undefined) continue
+			const type = types[key]
+			const bytes = encoder[type as keyof typeof encoder](value)
+			if (bytes) {
+				data = data.concat(bytes)
+			}
+		}
+	}
 	return data
 }
 

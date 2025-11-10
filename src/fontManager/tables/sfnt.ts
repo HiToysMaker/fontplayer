@@ -20,6 +20,8 @@ const types = {
 	length: 'uint32',
 }
 
+const recordFieldOrder = ['tag', 'checkSum', 'offset', 'length'] as const
+
 interface IRecord {
 	tag: ITag | string;
 	checkSum: number;
@@ -40,14 +42,14 @@ const log2 = (v: number) => {
 
 const createRecord = (record: IRecord) => {
 	let data: Array<number> = []
-	Object.keys(record).forEach((key: string) => {
-		const type = types[key as keyof typeof types]
-		const value = record[key as keyof typeof record]
+	for (const key of recordFieldOrder) {
+		const type = types[key]
+		const value = record[key]
 		const bytes = encoder[type as keyof typeof encoder](value)
 		if (bytes) {
 			data = data.concat(bytes)
 		}
-	})
+	}
 	return data
 }
 
@@ -198,7 +200,12 @@ const create = async (tables: any, mark: string = '') => {
 	const _tables = []
 	const recordMap = {}
 	const tablesDataMap = {}
-	let keys = Object.keys(tables)
+	const keys: Array<string> = []
+	for (const key in tables) {
+		if (Object.prototype.hasOwnProperty.call(tables, key)) {
+			keys.push(key)
+		}
+	}
 	const numTables = keys.length
 	const highestPowerOf2 = Math.pow(2, log2(numTables))
 	const searchRange = 16 * highestPowerOf2

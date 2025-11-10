@@ -66,6 +66,17 @@ const tableTypes = {
   instanceSize: 'uint16',
 }
 
+const tableFieldOrder = [
+	'majorVersion',
+	'minorVersion',
+	'axesArrayOffset',
+	'reserved',
+	'axisCount',
+	'axisSize',
+	'instanceCount',
+	'instanceSize',
+] as const
+
 const axisTypes = {
   axisTag: 'Tag',
   minValue: 'Fixed',
@@ -75,12 +86,28 @@ const axisTypes = {
   axisNameID: 'uint16',
 }
 
+const axisFieldOrder = [
+	'axisTag',
+	'minValue',
+	'defaultValue',
+	'maxValue',
+	'flags',
+	'axisNameID',
+] as const
+
 const instanceTypes = {
   subfamilyNameID: 'uint16',
   flags: 'uint16',
   coordinates: 'Fixed',
   postScriptNameID: 'uint16',
 }
+
+const instanceFieldOrder = [
+	'subfamilyNameID',
+	'flags',
+	'coordinates',
+	'postScriptNameID',
+] as const
 
 const getMacStyle = (macStyle: number) => {
 
@@ -101,42 +128,35 @@ const getMacStyle = (macStyle: number) => {
  * @returns IHeadTable object
  */
 const parse = (data: DataView, offset: number, font: IFont) => {
-	// 获取head表中的键值
-	// get keys in head table
-	const keys = Object.keys(tableTypes)
-	const table: IFvarTable = {}
+	const table: IFvarTable = {
+		axes: [],
+		instances: [],
+	}
 
 	// 启动一个新的decoder
 	// start a new decoder
 	decode.start(data, offset)
-	for (let i = 0; i < keys.length; i++) {
-		const key = keys[i]
-
-		// 根据每个键值对应的数据类型，进行解析
-		// parse each key according to its data type
-    // @ts-ignore
-    table[key as keyof typeof table] = decode.decoder[tableTypes[key as keyof typeof tableTypes] as keyof typeof decode.decoder]() as number
+	for (const key of tableFieldOrder) {
+		(table as any)[key] = decode.decoder[tableTypes[key] as keyof typeof decode.decoder]() as number
 	}
-  const axisKeys = Object.keys(axisTypes)
-  for (let i = 0; i < table.axisCount; i++) {
-    const axis = {}
-    for (let j = 0; j < axisKeys.length; j++) {
-      const key = axisKeys[j]
-      // @ts-ignore
-      axis[key as keyof typeof axis] = decode.decoder[axisTypes[key as keyof typeof axisTypes] as keyof typeof decode.decoder]() as number
-    }
-    table.axes?.push(axis)
-  }
-  const instanceKeys = Object.keys(instanceTypes)
-  for (let i = 0; i < table.instanceCount; i++) {
-    const instance = {}
-    for (let j = 0; j < instanceKeys.length; j++) {
-      const key = instanceKeys[j]
-      // @ts-ignore
-      instance[key as keyof typeof instance] = decode.decoder[instanceTypes[key as keyof typeof instanceTypes] as keyof typeof decode.decoder]() as number
-    }
-    table.instances?.push(instance)
-  }
+
+	const axisCount = table.axisCount || 0
+	for (let i = 0; i < axisCount; i++) {
+		const axis: VariationAxisRecord = {}
+		for (const key of axisFieldOrder) {
+			(axis as any)[key] = decode.decoder[axisTypes[key] as keyof typeof decode.decoder]() as number
+		}
+		table.axes?.push(axis)
+	}
+
+	const instanceCount = table.instanceCount || 0
+	for (let i = 0; i < instanceCount; i++) {
+		const instance: InstanceRecord = {}
+		for (const key of instanceFieldOrder) {
+			(instance as any)[key] = decode.decoder[instanceTypes[key] as keyof typeof decode.decoder]() as number
+		}
+		table.instances?.push(instance)
+	}
 	decode.end()
 
 	return table
