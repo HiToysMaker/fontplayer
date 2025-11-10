@@ -139,6 +139,14 @@
 				size: selectedFile.value.width,
 				default: true,
 			}
+
+			gridSettings.value = {
+				dx: 0,
+				dy: 0,
+				centerSquareSize: selectedFile.value.width / 3,
+				size: selectedFile.value.width,
+				default: true,
+			}
 		})
 	}
 	const resetGrid = () => {
