@@ -148,7 +148,7 @@
 
 <style scoped>
   .side-bar {
-    z-index: 9999;
+    z-index: 99;
   }
   .top-bar, .top-bar-row {
     width: 100%;

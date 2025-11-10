@@ -40,6 +40,7 @@ import type {
 } from '../../fontManager'
 import { editStatus, Status } from '../stores/font'
 import { editCharacterFileOnDragging } from '../stores/glyphDragger'
+import { getBound } from '../../utils/math'
 
 /**
  * 清空画布
@@ -729,6 +730,199 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
   ctx.stroke()
 }
 
+/**
+ * render grid canvas
+ * @param components components to be rendered
+ * @param canvas canvas
+ * @param options option
+ */
+const formatGridComponents = (components: Array<Component>, options: IOption = {
+  fill: false,
+  offset: { x: 0, y: 0 },
+  scale: 1,
+  forceUpdate: false,
+  grid: null,
+  useSkeletonGrid: false,
+}) => {
+  if (!options.grid) return
+  const translate = (point) => {
+    return {
+      x: options.offset.x + point.x,
+      y: options.offset.y + point.y,
+    }
+  }
+  const grid = options.grid
+  const scale = options.scale//canvas.width / (selectedFile.value.fontSettings.unitsPerEm as number)
+  const useSkeletonGrid = options.useSkeletonGrid
+
+  components.map((component, index) => {
+		// 如果组件不可见则跳过
+		// skip if in-visible
+    if (!component.visible) {
+      return
+    }
+
+		// 渲染钢笔组件
+		// render pen component
+    if (component.type === 'pen') {
+      if (useSkeletonGrid) return
+      const { x, y, w, h, rotation, flipX, flipY } = component as IComponent
+      const _x = mapCanvasX(x) * scale
+      const _y = mapCanvasY(y) * scale
+      const _w = mapCanvasWidth(w) * scale
+      const _h = mapCanvasHeight(h) * scale
+      const {
+        strokeColor,
+        fillColor,
+        points,
+        closePath,
+      } = component.value as unknown as IPenComponent
+      let _points = transformPoints(points, {
+        x, y, w, h, rotation, flipX, flipY,
+      })
+      _points = _points.map((point: IPoint) => {
+        const { x, y } = computeCoords(grid, translate(point))
+        point.x = x
+        point.y = y
+        return point
+      })
+      const bound = getBound(_points);
+      (component as IComponent).x = bound.x;
+      (component as IComponent).y = bound.y;
+      (component as IComponent).w = bound.w;
+      (component as IComponent).h = bound.h;
+      (component as IComponent).rotation = 0;
+      (component as IComponent).flipX = false;
+      (component as IComponent).flipY = false;
+      ((component as IComponent).value as unknown as IPenComponent).points = _points;
+      ((component as IComponent).value as unknown as IPenComponent).contour = null;
+      ((component as IComponent).value as unknown as IPenComponent).preview = null;
+    }
+
+		// 渲染多边形组件
+		// render polygon component
+    if (component.type === 'polygon') {
+      if (useSkeletonGrid) return
+      const { x, y, w, h, rotation, flipX, flipY } = component as IComponent
+      const _x = mapCanvasX(x) * scale
+      const _y = mapCanvasY(y) * scale
+      const _w = mapCanvasWidth(w) * scale
+      const _h = mapCanvasHeight(h) * scale
+      const {
+        strokeColor,
+        fillColor,
+        points,
+        closePath,
+      } = component.value as unknown as IPolygonComponent
+      let _points = transformPoints(points, {
+        x, y, w, h, rotation, flipX, flipY,
+      })
+      _points = _points.map((point: IPoint) => {
+        const { x, y } = computeCoords(grid, translate(point))
+        point.x = x
+        point.y = y
+        return point
+      })
+      const bound = getBound(_points);
+      (component as IComponent).x = bound.x;
+      (component as IComponent).y = bound.y;
+      (component as IComponent).w = bound.w;
+      (component as IComponent).h = bound.h;
+      (component as IComponent).rotation = 0;
+      (component as IComponent).flipX = false;
+      (component as IComponent).flipY = false;
+      ((component as IComponent).value as unknown as IPolygonComponent).points = _points;
+      ((component as IComponent).value as unknown as IPolygonComponent).contour = null;
+      ((component as IComponent).value as unknown as IPolygonComponent).preview = null;
+    }
+
+		// 渲染椭圆组件
+		// render ellipse component
+    if (component.type === 'ellipse') {
+      if (useSkeletonGrid) return
+      const { x, y, w, h, rotation } = component as IComponent
+      const radiusX = w / 2
+      const radiusY = h / 2
+      const ellipseX = x
+      const ellipseY = y
+
+      const p0 = {
+        x: ellipseX + radiusX,
+        y: ellipseY + radiusY,
+      }
+
+      const p1 = {
+        x: ellipseX + radiusX + radiusX,
+        y: ellipseY + radiusY + radiusY,
+      }
+      const points = [p0, p1]
+      let _points = transformPoints(points, {
+        x, y, w, h, rotation, flipX: false, flipY: false,
+      })
+      _points = _points.map((point: IPoint) => {
+        const { x, y } = computeCoords(grid, translate(point))
+        point.x = x
+        point.y = y
+        return point
+      })
+      const _radiusX = _points[1].x - _points[0].x
+      const _radiusY = _points[1].y - _points[0].y
+      const bound = {
+        x: _points[0].x - _radiusX,
+        y: _points[0].y - radiusY,
+        w: 2 * radiusX,
+        h: 2 * radiusY,
+      };
+      (component as IComponent).x = bound.x;
+      (component as IComponent).y = bound.y;
+      (component as IComponent).w = bound.w;
+      (component as IComponent).h = bound.h;
+      (component as IComponent).rotation = 0;
+      (component as IComponent).flipX = false;
+      (component as IComponent).flipY = false;
+      ((component as IComponent).value as unknown as IEllipseComponent).radiusX = _radiusX;
+      ((component as IComponent).value as unknown as IEllipseComponent).radiusY = _radiusY;
+      ((component as IComponent).value as unknown as IEllipseComponent).contour = null;
+      ((component as IComponent).value as unknown as IEllipseComponent).preview = null;
+    }
+
+		// 渲染长方形组件
+		// render rectangle component
+    if (component.type === 'rectangle') {
+      if (useSkeletonGrid) return
+      const { x, y, w, h, rotation } = component as IComponent
+      const p0 = {
+        x: x,
+        y: y,
+      }
+      const p1 = {
+        x: x + w,
+        y: y + h,
+      }
+      let _points = [p0, p1]
+      _points = _points.map((point: IPoint) => {
+        const { x, y } = computeCoords(grid, translate(point))
+        return {
+          x, y,
+        }
+      })
+      const width = _points[1].x - _points[0].x;
+      const height = _points[1].y - _points[0].y;
+      (component as IComponent).x = x;
+      (component as IComponent).y = y;
+      (component as IComponent).w = w;
+      (component as IComponent).h = h;
+      (component as IComponent).rotation = 0;
+      (component as IComponent).flipX = false;
+      (component as IComponent).flipY = false;
+      ((component as IComponent).value as unknown as IRectangleComponent).width = width;
+      ((component as IComponent).value as unknown as IRectangleComponent).height = height;
+      ((component as IComponent).value as unknown as IRectangleComponent).contour = null;
+      ((component as IComponent).value as unknown as IRectangleComponent).preview = null;
+    }
+  })
+}
+
 const render = (canvas: HTMLCanvasElement, renderBackground: Boolean = true, forceUpdate: boolean = false) => {
   clearCanvas(canvas as HTMLCanvasElement)
   if (renderBackground) {
@@ -847,4 +1041,5 @@ export {
   renderGlyphPreview,
   renderGridCanvas,
   computeCoords,
+  formatGridComponents,
 }

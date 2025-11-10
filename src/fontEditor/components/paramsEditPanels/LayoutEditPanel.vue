@@ -10,12 +10,14 @@
   import { ref, type Ref } from 'vue'
 	import {
 		editCharacterFile, editCharacterFileUUID, modifyCharacterFile,
+		orderedListWithItemsForCharacterFile,
 		selectedFile,
 	} from '../../stores/files'
 	import {
 		gridChanged,
 		gridSettings,
 		layoutOptions,
+		tips,
 	} from '../../stores/global'
 	import * as R from 'ramda'
 	import {
@@ -27,6 +29,10 @@
 	import { emitter } from '../../Event/bus'
 	import { ElMessage } from 'element-plus'
 	import { OpType, saveState, StoreType } from '../../stores/edit'
+  import { formatCharacterGlyphComponents } from '../../utils/formatGlyphComponents'
+	import { formatGridComponents } from '../../canvas/canvas'
+  import { setTipsDialogVisible } from '../../stores/dialogs'
+	
 	const { tm, t, locale } = useI18n()
 
 	interface LayoutNode {
@@ -88,35 +94,61 @@
 	}
 	const editingNode = ref('')
 	const confirmGridChange = () => {
-		// 保存状态
-		saveState('应用布局', [
-			StoreType.Grid,
-			StoreType.EditCharacter,
-		],
-			OpType.Undo,
-		)
-		gridChanged.value = false
-		editCharacterFile.value.info.gridSettings = {
-			dx: gridSettings.value.dx,
-			dy: gridSettings.value.dy,
-			size: gridSettings.value.size,
-			centerSquareSize: gridSettings.value.centerSquareSize,
-			default: false,
-		}
-		emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
-		ElMessage({
-			type: 'success',
-			message: tm('panels.paramsPanel.applyGridTransform'),
+		// // 保存状态
+		// saveState('应用布局', [
+		// 	StoreType.Grid,
+		// 	StoreType.EditCharacter,
+		// ],
+		// 	OpType.Undo,
+		// )
+		// gridChanged.value = false
+		// editCharacterFile.value.info.gridSettings = {
+		// 	dx: gridSettings.value.dx,
+		// 	dy: gridSettings.value.dy,
+		// 	size: gridSettings.value.size,
+		// 	centerSquareSize: gridSettings.value.centerSquareSize,
+		// 	default: false,
+		// }
+
+		tips.value = t('panels.paramsPanel.layoutEditing.applyGridConfirmMsg')
+		setTipsDialogVisible(true, () => {
+			// 格式化所有组件，并将布局变换应用到组件上
+			formatCharacterGlyphComponents(editCharacterFile.value)
+			formatGridComponents(orderedListWithItemsForCharacterFile(editCharacterFile.value), {
+				grid: {
+					dx: gridSettings.value.dx,
+					dy: gridSettings.value.dy,
+					size: gridSettings.value.size,
+					centerSquareSize: gridSettings.value.centerSquareSize,
+					default: false,
+				},
+				offset: { x: 0, y: 0 },
+			})
+
+			gridChanged.value = false
+			emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
+			ElMessage({
+				type: 'success',
+				message: tm('panels.paramsPanel.layoutEditing.applyGridTransform'),
+			})
+
+			editCharacterFile.value.info.gridSettings = {
+				dx: 0,
+				dy: 0,
+				centerSquareSize: selectedFile.value.width / 3,
+				size: selectedFile.value.width,
+				default: true,
+			}
 		})
 	}
 	const resetGrid = () => {
-		// 保存状态
-		saveState('重置布局', [
-			StoreType.Grid,
-			StoreType.EditCharacter,
-		],
-			OpType.Undo,
-		)
+		// // 保存状态
+		// saveState('重置布局', [
+		// 	StoreType.Grid,
+		// 	StoreType.EditCharacter,
+		// ],
+		// 	OpType.Undo,
+		// )
 		editCharacterFile.value.info.gridSettings = {
 			dx: 0,
 			dy: 0,
