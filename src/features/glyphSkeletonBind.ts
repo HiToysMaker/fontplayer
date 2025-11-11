@@ -45,6 +45,7 @@ interface Bone {
   start: { x: number; y: number };
   end: { x: number; y: number };
   length: number;
+  bindLength: number;
   uAxis: { x: number; y: number }; // 骨骼方向向量
   vAxis: { x: number; y: number }; // 垂直方向向量
   parent?: string;
@@ -286,12 +287,14 @@ function skeletonToBones(skeleton: any): Bone[] {
         x: start.x + (end.x - start.x) * t2,
         y: start.y + (end.y - start.y) * t2
       };
+      const length = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
       
       const bone: Bone = {
         id: `segment_${i}`,
         start: p1,
         end: p2,
-        length: Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2),
+        length,
+        bindLength: length,
         uAxis: normalize({ x: p2.x - p1.x, y: p2.y - p1.y }),
         vAxis: normalize({ x: -(p2.y - p1.y), y: p2.x - p1.x }),
         children: [],
@@ -322,12 +325,14 @@ function skeletonToBones(skeleton: any): Bone[] {
       
       const p1 = quadraticBezierPoint(start, bend, end, t1);
       const p2 = quadraticBezierPoint(start, bend, end, t2);
+      const length = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
       
       const bone: Bone = {
         id: `segment_${i}`,
         start: p1,
         end: p2,
-        length: Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2),
+        length,
+        bindLength: length,
         uAxis: normalize({ x: p2.x - p1.x, y: p2.y - p1.y }),
         vAxis: normalize({ x: -(p2.y - p1.y), y: p2.x - p1.x }),
         children: [],
@@ -356,6 +361,9 @@ function skeletonToBones(skeleton: any): Bone[] {
   
   // 计算绑定时的变换矩阵
   bones.forEach(bone => {
+    if (typeof bone.bindLength !== 'number') {
+      bone.bindLength = bone.length;
+    }
     bone.bindMatrix = calculateBoneMatrix(bone);
     bone.currentMatrix = [...bone.bindMatrix];
   });
@@ -767,12 +775,26 @@ function calculateBoneTransformationMatrix(originalBone: Bone, newBone: Bone): n
   
   const originalMatrix = originalBone.bindMatrix;
   const newMatrix = calculateBoneMatrix(newBone);
+  const bindLength = typeof originalBone.bindLength === 'number'
+    ? originalBone.bindLength
+    : originalBone.length;
+  const targetLength = typeof newBone.length === 'number'
+    ? newBone.length
+    : bindLength;
+  const scale =
+    bindLength && Math.abs(bindLength) > 0.001
+      ? targetLength / bindLength
+      : 1;
+  const scaleMatrix = [scale, 0, 0, 1, 0, 0];
   
   // 计算逆变换矩阵
   const invOriginalMatrix = invertMatrix(originalMatrix);
   
-  // 组合变换：新矩阵 * 逆原始矩阵
-  const result = multiplyMatrices(newMatrix, invOriginalMatrix);
+  // 组合变换：新矩阵（含尺度） * 逆原始矩阵
+  const result = multiplyMatrices(
+    multiplyMatrices(newMatrix, scaleMatrix),
+    invOriginalMatrix
+  );
   
   return result;
 }
@@ -861,6 +883,12 @@ function updateBoneMatrices(bones: Bone[], newSkeleton: any) {
     console.warn('Invalid skeleton:', newSkeleton);
     return;
   }
+
+  bones.forEach(bone => {
+    if (typeof bone.bindLength !== 'number') {
+      bone.bindLength = bone.length;
+    }
+  });
   
   const skeletonType = detectSkeletonType(newSkeleton);
   
@@ -1029,6 +1057,7 @@ function createDefaultBone(id: string): Bone {
     start: { x: 0, y: 0 },
     end: { x: 1, y: 0 },
     length: 1,
+    bindLength: 1,
     uAxis: { x: 1, y: 0 },
     vAxis: { x: 0, y: 1 },
     children: [],
@@ -1071,7 +1100,7 @@ function calculatePointTransformation(binding: PointBinding, bones: Bone[], orig
       console.warn('Invalid bone currentMatrix:', bone);
       return;
     }
-    
+
     // 直接使用变换矩阵变换点
     const transformedPoint = transformPointToWorld(originalPoint, bone.currentMatrix);
     

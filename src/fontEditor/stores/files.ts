@@ -786,7 +786,7 @@ const setSelectionForCurrentCharacterFile = (uuid: string) => {
 			}
 		} else {
 			characterFile.selectedComponentsUUIDs = [uuid]
-			if (selectedComponent.value.type === 'glyph') {
+			if (selectedComponent.value?.type === 'glyph') {
 				setGlyphDraggerTool('glyphDragger')
 			}
 		}

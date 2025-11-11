@@ -900,7 +900,7 @@ const setSelectionForCurrentGlyph = (uuid: string) => {
 				editGlyph.value.selectedComponentsUUIDs.splice(index, 1)
 			}
 		} else {
-			if (selectedComponent.value.type === 'glyph') {
+			if (selectedComponent.value?.type === 'glyph') {
 				setGlyphDraggerTool('glyphDragger')
 			}
 			editGlyph.value.selectedComponentsUUIDs = [uuid]

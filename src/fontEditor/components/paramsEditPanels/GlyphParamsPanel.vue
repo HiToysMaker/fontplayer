@@ -183,6 +183,7 @@
     closeWeightSelector && closeWeightSelector()
     closeWeightSelector = null
     emitter.emit('renderGlyph')
+    console.log('closeWeightSetting', editGlyph.value.skeleton)
   }
 
   const _selectedBone = computed({
@@ -981,6 +982,9 @@
   .skeleton-wrap {
     padding: 10px;
     padding-bottom: 0;
+    .skeleton-type-select {
+      width: 100% !important;
+    }
     .el-checkbox {
       margin-left: 0;
     }
@@ -1006,6 +1010,11 @@
       .el-input {
         width: 100% !important;
       }
+    }
+  }
+  .skeleton-type-select {
+    .el-input {
+      width: 100% !important;
     }
   }
 </style>
