@@ -130,11 +130,6 @@ const parse = (data: DataView, font: IFont) => {
 	font.tableConfig = tableConfig
 	for (let i = 0; i < numTables; i++) {
 		const tableTag = decode.decoder[types['tag'] as keyof typeof decode.decoder]() as ITag
-		if (tableTag.tagStr === 'name') {
-			console.log('name tag', tableTag)
-			console.log('offset', decode.getOffset())
-			debugger
-		}
 		const checkSum = decode.decoder[types['checkSum'] as keyof typeof decode.decoder]() as number
 		const offset = decode.decoder[types['offset'] as keyof typeof decode.decoder]() as number
 		const length = decode.decoder[types['length'] as keyof typeof decode.decoder]() as number
@@ -150,8 +145,6 @@ const parse = (data: DataView, font: IFont) => {
 		};
 		(font.tables as Array<ITable>).push(table)
 	}
-	console.log("TABLES", font.tables)
-	debugger
 
 	decode.end()
 
