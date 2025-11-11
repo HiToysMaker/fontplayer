@@ -916,10 +916,14 @@ function updateLinearBoneMatrices(bones: Bone[], newSkeleton: any) {
   
   // 更新所有骨骼段
   const totalLength = Math.sqrt((end.x - start.x) ** 2 + (end.y - start.y) ** 2);
-  const segmentLength = Math.max(20, totalLength / maxSegment);
-  const segments = Math.max(minSegment, Math.ceil(totalLength / segmentLength));
+  const segments = bones.length;
   
-  for (let i = 0; i < segments && i < bones.length; i++) {
+  if (segments === 0) {
+    console.warn('No bones to update in updateLinearBoneMatrices');
+    return;
+  }
+  
+  for (let i = 0; i < segments; i++) {
     const originalBone = { ...bones[i] }; // 保存原始骨骼状态
     const bone = bones[i];
     
@@ -965,8 +969,14 @@ function updateCurveBoneMatrices(bones: Bone[], newSkeleton: any) {
     return;
   }
   
-  const segments = maxSegment;
-  for (let i = 0; i < segments && i < bones.length; i++) {
+  const segments = bones.length;
+  
+  if (segments === 0) {
+    console.warn('No bones to update in updateCurveBoneMatrices');
+    return;
+  }
+  
+  for (let i = 0; i < segments; i++) {
     const t1 = i / segments;
     const t2 = (i + 1) / segments;
     
