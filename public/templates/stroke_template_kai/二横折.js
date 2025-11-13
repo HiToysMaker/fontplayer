@@ -289,7 +289,7 @@ const updateGlyphByParams = (params, global_params) => {
   } = params
   const { weight } = global_params
 
-  const _weight = weight * 1.5
+  const _weight = weight * 1.0
 
   // 横1
   let heng1_start, heng1_end
@@ -506,7 +506,7 @@ const getComponents = (skeleton, global_params) => {
     zhe2_end,
   } = skeleton
 
-  const _weight = weight * 1.5
+  const _weight = weight * 1.0
 
   // out指右侧（外侧）轮廓线
   // in指左侧（内侧）轮廓线

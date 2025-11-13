@@ -213,7 +213,7 @@ const updateGlyphByParams = (params, global_params) => {
   } = params
   const { weight } = global_params
 
-  const _weight = weight * 1.5
+  const _weight = weight * 1.0
 
   // 横
   let heng_start, heng_end
@@ -460,8 +460,8 @@ const getComponents = (skeleton) => {
 
   const turn_angle_1 = FP.degreeToRadius(10)
   const turn_angle_2 = FP.degreeToRadius(15)
-  const _tiao_weight = weight * 1.8
-  const _weight = weight * 1.5
+  const _tiao_weight = weight * 1.2
+  const _weight = weight * 1.0
 
   // out指左侧（外侧）轮廓线
   // in指右侧（内侧）轮廓线

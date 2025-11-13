@@ -216,7 +216,7 @@ const getComponents = (skeleton) => {
   const { start, bend, end } = skeleton
 
   const radius = 5
-  const _weight = weight * 1.5
+  const _weight = weight * 1.0
 
   // out指左侧（外侧）轮廓线
   // in指右侧（内侧）轮廓线

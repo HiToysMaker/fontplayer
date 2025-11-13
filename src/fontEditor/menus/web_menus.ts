@@ -256,13 +256,13 @@ const web_menu: Array<IMenu> = [
 		label: tm('menus.templates.templates'),
 		key: 'templates',
 		submenu: [
-			{
-				label: tm('menus.templates.test1'),
-				key: 'template-1',
-				click: (handlers: IHandlerMap) => {
-					handlers['template-1']()
-				}
-			},
+			// {
+			// 	label: tm('menus.templates.test1'),
+			// 	key: 'template-1',
+			// 	click: (handlers: IHandlerMap) => {
+			// 		handlers['template-1']()
+			// 	}
+			// },
 			{
 				label: tm('menus.templates.test2'),
 				key: 'template-2',
@@ -277,13 +277,13 @@ const web_menu: Array<IMenu> = [
 					handlers['template-3']()
 				}
 			},
-			{
-				label: tm('menus.templates.test4'),
-				key: 'template-4',
-				click: (handlers: IHandlerMap) => {
-					handlers['template-4']()
-				}
-			},
+			// {
+			// 	label: tm('menus.templates.test4'),
+			// 	key: 'template-4',
+			// 	click: (handlers: IHandlerMap) => {
+			// 		handlers['template-4']()
+			// 	}
+			// },
 			{
 				label: tm('menus.templates.test5'),
 				key: 'template-5',

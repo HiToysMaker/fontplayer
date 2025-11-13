@@ -100,8 +100,9 @@ const quadraticBezierPoint = (p0: any, p1: any, p2: any, t: number) => {
 const instanceBasicGlyph_heng_pie = (plainGlyph: ICustomGlyph) => {
   const glyph = new CustomGlyph(plainGlyph)
   const params = {
-    heng_length: glyph.getParam('横-长度'),
-    pie_horizonalSpan: glyph.getParam('撇-水平延伸'),
+    heng_horizontalSpan: glyph.getParam('横-水平延伸'),
+    heng_verticalSpan: glyph.getParam('横-竖直延伸'),
+    pie_horizontalSpan: glyph.getParam('撇-水平延伸'),
     pie_verticalSpan: glyph.getParam('撇-竖直延伸'),
     pie_bendCursor: glyph.getParam('撇-弯曲游标'),
     skeletonRefPos: glyph.getParam('参考位置'),
@@ -137,8 +138,9 @@ const getBend = (start, end, pie_bendCursor) => {
 
 const updateGlyphByParams = (params, glyph) => {
   const {
-    heng_length,
-    pie_horizonalSpan,
+    heng_horizontalSpan,
+    heng_verticalSpan,
+    pie_horizontalSpan,
     pie_verticalSpan,
     pie_bendCursor,
     skeletonRefPos,
@@ -158,14 +160,14 @@ const updateGlyphByParams = (params, glyph) => {
     'heng_start_ref',
     {
       x: x0,
-      y: y0,
+      y: y0 + heng_verticalSpan / 2,
     },
   )
   const heng_end_ref = new FP.Joint(
     'heng_end_ref',
     {
-      x: heng_start_ref.x + heng_length,
-      y: heng_start_ref.y,
+      x: heng_start_ref.x + heng_horizontalSpan,
+      y: heng_start_ref.y - heng_verticalSpan,
     },
   )
   if (skeletonRefPos === 1) {
@@ -232,7 +234,7 @@ const updateGlyphByParams = (params, glyph) => {
   const pie_end = new FP.Joint(
     'pie_end',
     {
-      x: pie_start.x - pie_horizonalSpan,
+      x: pie_start.x - pie_horizontalSpan,
       y: pie_start.y + pie_verticalSpan,
     },
   )
@@ -270,17 +272,20 @@ const updateGlyphByParams = (params, glyph) => {
 
 const computeParamsByJoints = (jointsMap, glyph) => {
   const { heng_start, heng_end, pie_start, pie_bend, pie_end } = jointsMap
-  const heng_length_range = glyph.getParamRange('横-长度')
-  const pie_horizonal_span_range = glyph.getParamRange('撇-水平延伸')
+  const heng_horizontalSpan_range = glyph.getParamRange('横-水平延伸')
+  const heng_verticalSpan_range = glyph.getParamRange('横-竖直延伸')
+  const pie_horizontal_span_range = glyph.getParamRange('撇-水平延伸')
   const pie_vertical_span_range = glyph.getParamRange('撇-竖直延伸')
   const pie_bend_cursor_range = glyph.getParamRange('撇-弯曲游标')
-  const heng_length = range(heng_end.x - heng_start.x, heng_length_range)
-  const pie_horizonalSpan = range(pie_start.x - pie_end.x, pie_horizonal_span_range)
+  const heng_horizontalSpan = range(heng_end.x - heng_start.x, heng_horizontalSpan_range)
+  const heng_verticalSpan = range(heng_start.y - heng_end.y, heng_verticalSpan_range)
+  const pie_horizontalSpan = range(pie_start.x - pie_end.x, pie_horizontal_span_range)
   const pie_verticalSpan = range(pie_end.y - pie_start.y, pie_vertical_span_range)
   const pie_bendCursor = range((pie_bend.y - pie_start.y) / pie_verticalSpan, pie_bend_cursor_range)
   return {
-    heng_length,
-    pie_horizonalSpan,
+    heng_horizontalSpan,
+    heng_verticalSpan,
+    pie_horizontalSpan,
     pie_verticalSpan,
     pie_bendCursor,
     skeletonRefPos: glyph.getParam('参考位置'),
@@ -294,18 +299,23 @@ const updateSkeletonListener_before_bind_heng_pie = (glyph: CustomGlyph) => {
     const jointsMap = Object.assign({}, glyph.tempData)
     switch (draggingJoint.name) {
       case 'heng_start': {
+        // 拖拽第一个joint，整体移动骨架
         const deltaX = data.deltaX
         const deltaY = data.deltaY
         
+        // 更新骨架的ox, oy
         if (glyph._glyph.skeleton) {
           glyph._glyph.skeleton.ox = (glyph.tempData.ox || 0) + deltaX
           glyph._glyph.skeleton.oy = (glyph.tempData.oy || 0) + deltaY
         }
         
+        // 更新所有joint的位置
         Object.keys(jointsMap).forEach(key => {
-          jointsMap[key] = {
-            x: glyph.tempData[key].x + deltaX,
-            y: glyph.tempData[key].y + deltaY,
+          if (glyph.tempData[key] &&glyph.tempData[key].x && glyph.tempData[key].y) {
+            jointsMap[key] = {
+              x: glyph.tempData[key].x + deltaX,
+              y: glyph.tempData[key].y + deltaY,
+            }
           }
         })
         break
@@ -313,38 +323,38 @@ const updateSkeletonListener_before_bind_heng_pie = (glyph: CustomGlyph) => {
       case 'heng_end': {
         jointsMap['heng_end'] = {
           x: glyph.tempData['heng_end'].x + deltaX,
-          y: glyph.tempData['heng_end'].y,
+          y: glyph.tempData['heng_end'].y + deltaY,
         }
         jointsMap['pie_start'] = {
           x: glyph.tempData['pie_start'].x + deltaX,
-          y: glyph.tempData['pie_start'].y,
+          y: glyph.tempData['pie_start'].y + deltaY,
         }
         jointsMap['pie_bend'] = {
           x: glyph.tempData['pie_bend'].x + deltaX,
-          y: glyph.tempData['pie_bend'].y,
+          y: glyph.tempData['pie_bend'].y + deltaY,
         }
         jointsMap['pie_end'] = {
           x: glyph.tempData['pie_end'].x + deltaX,
-          y: glyph.tempData['pie_end'].y,
+          y: glyph.tempData['pie_end'].y + deltaY,
         }
         break
       }
       case 'pie_start': {
         jointsMap['heng_end'] = {
           x: glyph.tempData['heng_end'].x + deltaX,
-          y: glyph.tempData['heng_end'].y,
+          y: glyph.tempData['heng_end'].y + deltaY,
         }
         jointsMap['pie_start'] = {
           x: glyph.tempData['pie_start'].x + deltaX,
-          y: glyph.tempData['pie_start'].y,
+          y: glyph.tempData['pie_start'].y + deltaY,
         }
         jointsMap['pie_bend'] = {
           x: glyph.tempData['pie_bend'].x + deltaX,
-          y: glyph.tempData['pie_bend'].y,
+          y: glyph.tempData['pie_bend'].y + deltaY,
         }
         jointsMap['pie_end'] = {
           x: glyph.tempData['pie_end'].x + deltaX,
-          y: glyph.tempData['pie_end'].y,
+          y: glyph.tempData['pie_end'].y + deltaY,
         }
         break
       }
@@ -401,8 +411,9 @@ const updateSkeletonListener_before_bind_heng_pie = (glyph: CustomGlyph) => {
     const jointsMap = getJointsMap(data)
     const _params = computeParamsByJoints(jointsMap, glyph)
     updateGlyphByParams(_params, glyph)
-    glyph.setParam('横-长度', _params.heng_length)
-    glyph.setParam('撇-水平延伸', _params.pie_horizonalSpan)
+    glyph.setParam('横-水平延伸', _params.heng_horizontalSpan)
+    glyph.setParam('横-竖直延伸', _params.heng_verticalSpan)
+    glyph.setParam('撇-水平延伸', _params.pie_horizontalSpan)
     glyph.setParam('撇-竖直延伸', _params.pie_verticalSpan)
     glyph.setParam('撇-弯曲游标', _params.pie_bendCursor)
     glyph.tempData = null
@@ -417,38 +428,38 @@ const updateSkeletonListener_after_bind_heng_pie = (glyph: CustomGlyph) => {
       case 'heng_end': {
         jointsMap['heng_end'] = {
           x: glyph.tempData['heng_end'].x + deltaX,
-          y: glyph.tempData['heng_end'].y,
+          y: glyph.tempData['heng_end'].y + deltaY,
         }
         jointsMap['pie_start'] = {
           x: glyph.tempData['pie_start'].x + deltaX,
-          y: glyph.tempData['pie_start'].y,
+          y: glyph.tempData['pie_start'].y + deltaY,
         }
         jointsMap['pie_bend'] = {
           x: glyph.tempData['pie_bend'].x + deltaX,
-          y: glyph.tempData['pie_bend'].y,
+          y: glyph.tempData['pie_bend'].y + deltaY,
         }
         jointsMap['pie_end'] = {
           x: glyph.tempData['pie_end'].x + deltaX,
-          y: glyph.tempData['pie_end'].y,
+          y: glyph.tempData['pie_end'].y + deltaY,
         }
         break
       }
       case 'pie_start': {
         jointsMap['heng_end'] = {
           x: glyph.tempData['heng_end'].x + deltaX,
-          y: glyph.tempData['heng_end'].y,
+          y: glyph.tempData['heng_end'].y + deltaY,
         }
         jointsMap['pie_start'] = {
           x: glyph.tempData['pie_start'].x + deltaX,
-          y: glyph.tempData['pie_start'].y,
+          y: glyph.tempData['pie_start'].y + deltaY,
         }
         jointsMap['pie_bend'] = {
           x: glyph.tempData['pie_bend'].x + deltaX,
-          y: glyph.tempData['pie_bend'].y,
+          y: glyph.tempData['pie_bend'].y + deltaY,
         }
         jointsMap['pie_end'] = {
           x: glyph.tempData['pie_end'].x + deltaX,
-          y: glyph.tempData['pie_end'].y,
+          y: glyph.tempData['pie_end'].y + deltaY,
         }
         break
       }
@@ -505,8 +516,9 @@ const updateSkeletonListener_after_bind_heng_pie = (glyph: CustomGlyph) => {
     const _params = computeParamsByJoints(jointsMap, glyph)
     updateGlyphByParams(_params, glyph)
     updateSkeletonTransformation(glyph)
-    glyph.setParam('横-长度', _params.heng_length)
-    glyph.setParam('撇-水平延伸', _params.pie_horizonalSpan)
+    glyph.setParam('横-水平延伸', _params.heng_horizontalSpan)
+    glyph.setParam('横-竖直延伸', _params.heng_verticalSpan)
+    glyph.setParam('撇-水平延伸', _params.pie_horizontalSpan)
     glyph.setParam('撇-竖直延伸', _params.pie_verticalSpan)
     glyph.setParam('撇-弯曲游标', _params.pie_bendCursor)
     glyph.tempData = null

@@ -151,7 +151,7 @@ const updateGlyphByParams = (params, global_params) => {
   } = params
   const { weight } = global_params
 
-  const _weight = weight * 1.4
+  const _weight = weight * 0.85
 
   // 竖
   let shu_start, shu_end
@@ -322,7 +322,7 @@ const getComponents = (skeleton) => {
     wan_end,
   } = skeleton
 
-  const _weight = weight * 1.4
+  const _weight = weight * 0.85
 
   // out指左侧（外侧）轮廓线
   // in指右侧（内侧）轮廓线

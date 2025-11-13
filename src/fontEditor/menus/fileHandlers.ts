@@ -33,6 +33,7 @@ import {
   constants,
   constantsMap,
   glyphs,
+  ParameterType,
   radical_glyphs,
   stroke_glyphs,
 } from '../stores/glyph'
@@ -62,6 +63,9 @@ import { ENV } from '../stores/system'
 import type { ICharacterFile, IFile, IPenComponent } from '../stores/files'
 import type { ICustomGlyph } from '../stores/glyph'
 import { i18n } from '../../i18n'
+import { kai_strokes } from '../templates/strokes_1'
+import { genUUID } from '../../utils/string'
+import { importTemplate2 } from './templatesHandlers'
 
 const plainCompnent = (comp: any) => {
   if (comp._o) {
@@ -231,7 +235,40 @@ const mapToObject = (map) => {
   return obj
 }
 
+const updateParameters = (parameters, name) => {
+  const stroke = kai_strokes.find((stroke) => stroke.name === name)
+  if (stroke) {
+    for (const param of stroke.params) {
+      if (param.originParam) {
+        const index = parameters.findIndex((p) => p.name === param.originParam)
+        const originParam = parameters.splice(index, 1)[0]
+        parameters.splice(index, 0, {
+          uuid: originParam.uuid,
+          name: param.name,
+          value: originParam.value,
+          type: ParameterType.Number,
+          min: param.min,
+          max: param.max,
+        })
+      } else {
+        const parameter = parameters.find((p) => p.name === param.name)
+        if (!parameter) {
+          parameters.push({
+            uuid: genUUID(),
+            name: param.name,
+            value: param.default,
+            type: ParameterType.Number,
+            min: param.default,
+            max: param.default,
+          })
+        }
+      }
+    }
+  }
+}
+
 const instanceGlyph = (plainGlyph, options) => {
+  // updateParameters(plainGlyph.parameters, plainGlyph.name)
   plainGlyph.parameters = new ParametersMap(plainGlyph.parameters)
   plainGlyph.joints = plainGlyph.joints.map((joint) => {
     return new Joint(joint.name, { x: joint.x, y: joint.y })
@@ -960,6 +997,7 @@ export {
   __openFile,
   _openFile,
   exportJSON,
+  updateParameters,
 }
 
 

@@ -110,7 +110,7 @@ const updateGlyphByParams = (params, global_params) => {
     skeletonRefPos,
   } = params
   const { weight } = global_params
-  const _weight = weight * 1.5
+  const _weight = weight * 1.0
 
   let start, end
   const start_ref = new FP.Joint(
@@ -239,7 +239,7 @@ const getComponents = (skeleton) => {
   // 根据骨架计算轮廓关键点
   const { start, end } = skeleton
 
-  const _weight = weight * 1.5
+  const _weight = weight * 1.0
 
   // out指左侧（外侧）轮廓线
   // in指右侧（内侧）轮廓线

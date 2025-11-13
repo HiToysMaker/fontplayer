@@ -155,7 +155,38 @@ fn language_settings(app: AppHandle) {
 fn import_template1(app: AppHandle) {
   app.emit("template-1", ()).unwrap();
 }
-
+#[tauri::command]
+fn import_template2(app: AppHandle) {
+  app.emit("template-2", ()).unwrap();
+}
+#[tauri::command]
+fn import_template3(app: AppHandle) {
+  app.emit("template-3", ()).unwrap();
+}
+#[tauri::command]
+fn import_template5(app: AppHandle) {
+  app.emit("template-5", ()).unwrap();
+}
+#[tauri::command]
+fn import_template6(app: AppHandle) {
+  app.emit("template-6", ()).unwrap();
+}
+#[tauri::command]
+fn import_template7(app: AppHandle) {
+  app.emit("template-7", ()).unwrap();
+}
+#[tauri::command]
+fn import_template8(app: AppHandle) {
+  app.emit("template-8", ()).unwrap();
+}
+#[tauri::command]
+fn import_template_digits(app: AppHandle) {
+  app.emit("template-digits", ()).unwrap();
+}
+#[tauri::command]
+fn import_template_letters(app: AppHandle) {
+  app.emit("template-letters", ()).unwrap();
+}
 #[tauri::command]
 fn remove_overlap(app: AppHandle) {
   app.emit("remove_overlap", ()).unwrap();
@@ -319,6 +350,38 @@ fn build_menu_enabled_map() -> HashMap<String, Box<dyn Fn(&str) -> bool>> {
       Box::new(template_enable) as Box<dyn Fn(&str) -> bool>,
     ),
     (
+      "template-2".to_string(),
+      Box::new(template_enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
+      "template-3".to_string(),
+      Box::new(template_enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
+      "template-5".to_string(),
+      Box::new(template_enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
+      "template-6".to_string(),
+      Box::new(template_enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
+      "template-7".to_string(),
+      Box::new(template_enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
+      "template-8".to_string(),
+      Box::new(template_enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
+      "template-digits".to_string(),
+      Box::new(template_enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
+      "template-letters".to_string(),
+      Box::new(template_enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
       "remove-overlap".to_string(),
       Box::new(enable_at_character_edit) as Box<dyn Fn(&str) -> bool>,
     ),
@@ -462,6 +525,22 @@ pub fn run() {
           language_settings(app.app_handle().clone())
         } else if event.id() == "template-1" {
           import_template1(app.app_handle().clone())
+        } else if event.id() == "template-2" {
+          import_template2(app.app_handle().clone())
+        } else if event.id() == "template-3" {
+          import_template3(app.app_handle().clone())
+        } else if event.id() == "template-5" {
+          import_template5(app.app_handle().clone())
+        } else if event.id() == "template-6" {
+          import_template6(app.app_handle().clone())
+        } else if event.id() == "template-7" {
+          import_template7(app.app_handle().clone())
+        } else if event.id() == "template-8" {
+          import_template8(app.app_handle().clone())
+        } else if event.id() == "template-digits" {
+          import_template_digits(app.app_handle().clone())
+        } else if event.id() == "template-letters" {
+          import_template_letters(app.app_handle().clone())
         } else if event.id() == "remove-overlap" || event.id() == "remove_overlap" {
           remove_overlap(app.app_handle().clone())
         } else if event.id() == "format-all-characters" || event.id() == "format_all_characters" {
@@ -627,9 +706,31 @@ pub fn run() {
             handle,
             "模板",
             true,
-            &[&MenuItemBuilder::with_id("template-1", "测试模板")
-              .build(handle)
-              .expect("Error")],
+            &[&MenuItemBuilder::with_id("template-2", "字玩标准黑体（仅笔画）")
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("template-3", "测试手绘模板（仅笔画）")
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("template-5", "字玩标准宋体（仅笔画）")
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("template-6", "字玩标准仿宋（仅笔画）")
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("template-7", "字玩标准楷体（仅笔画）")
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("template-8", "字玩标准隶书（仅笔画）")
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("template-digits", "数字模板")
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("template-letters", "字母模板")
+                .build(handle)
+                .expect("Error"),
+            ],
           )?,
           &Submenu::with_items(
             handle,

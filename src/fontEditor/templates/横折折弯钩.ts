@@ -231,13 +231,15 @@ const quadraticBezierPoint = (p0: any, p1: any, p2: any, t: number) => {
 const instanceBasicGlyph_heng_zhe_zhe_wan_gou = (plainGlyph: ICustomGlyph) => {
   const glyph = new CustomGlyph(plainGlyph)
   const params = {
-    heng_length: glyph.getParam('横-长度'),
-    zhe1_horizonalSpan: glyph.getParam('折1-水平延伸'),
+    heng_horizontalSpan: glyph.getParam('横-水平延伸'),
+    heng_verticalSpan: glyph.getParam('横-竖直延伸'),
+    zhe1_horizontalSpan: glyph.getParam('折1-水平延伸'),
     zhe1_verticalSpan: glyph.getParam('折1-竖直延伸'),
-    zhe2_length: glyph.getParam('折2-长度'),
-    wan_horizonalSpan: glyph.getParam('弯-水平延伸'),
+    zhe2_horizontalSpan: glyph.getParam('折2-水平延伸'),
+    zhe2_verticalSpan: glyph.getParam('折2-竖直延伸'),
+    wan_horizontalSpan: glyph.getParam('弯-水平延伸'),
     wan_verticalSpan: glyph.getParam('弯-竖直延伸'),
-    gou_horizonalSpan: glyph.getParam('钩-水平延伸'),
+    gou_horizontalSpan: glyph.getParam('钩-水平延伸'),
     gou_verticalSpan: glyph.getParam('钩-竖直延伸'),
     skeletonRefPos: glyph.getParam('参考位置'),
     weight: glyph.getParam('字重') || 40,
@@ -276,13 +278,15 @@ const getBend = (start, end, bendCursor, bendDegree) => {
 
 const updateGlyphByParams = (params, glyph) => {
   const {
-    heng_length,
-    zhe1_horizonalSpan,
+    heng_horizontalSpan,
+    heng_verticalSpan,
+    zhe1_horizontalSpan,
     zhe1_verticalSpan,
-    zhe2_length,
-    wan_horizonalSpan,
+    zhe2_horizontalSpan,
+    zhe2_verticalSpan,
+    wan_horizontalSpan,
     wan_verticalSpan,
-    gou_horizonalSpan,
+    gou_horizontalSpan,
     gou_verticalSpan,
     skeletonRefPos,
     weight,
@@ -295,168 +299,168 @@ const updateGlyphByParams = (params, glyph) => {
   const x0 = 325 + _ox || 0
   const y0 = 255 + _oy || 0
 
-    // 横
-    let heng_start, heng_end
-    const heng_start_ref = new FP.Joint(
-      'heng_start_ref',
+  // 横
+  let heng_start, heng_end
+  const heng_start_ref = new FP.Joint(
+    'heng_start_ref',
+    {
+      x: x0,
+      y: y0 + heng_verticalSpan / 2,
+    },
+  )
+  const heng_end_ref = new FP.Joint(
+    'heng_end_ref',
+    {
+      x: heng_start_ref.x + heng_horizontalSpan,
+      y: heng_start_ref.y - heng_verticalSpan,
+    },
+  )
+  if (skeletonRefPos === 1) {
+    // 骨架参考位置为右侧（上侧）
+    heng_start = new FP.Joint(
+      'heng_start',
       {
-        x: x0,
-        y: y0,
+        x: heng_start_ref.x,
+        y: heng_start_ref.y + weight / 2,
       },
     )
-    const heng_end_ref = new FP.Joint(
-      'heng_end_ref',
+    heng_end = new FP.Joint(
+      'heng_end',
       {
-        x: heng_start_ref.x + heng_length,
+        x: heng_end_ref.x,
+        y: heng_end_ref.y + weight / 2,
+      },
+    )
+  } else if (skeletonRefPos === 2) {
+    // 骨架参考位置为左侧（下侧）
+    heng_start = new FP.Joint(
+      'heng_start',
+      {
+        x: heng_start_ref.x,
+        y: heng_start_ref.y - weight / 2,
+      },
+    )
+    heng_end = new FP.Joint(
+      'heng_end',
+      {
+        x: heng_end_ref.x,
+        y: heng_end_ref.y - weight / 2,
+      },
+    )
+  } else {
+    // 默认骨架参考位置，即骨架参考位置为中间实际绘制的骨架位置
+    heng_start = new FP.Joint(
+      'heng_start',
+      {
+        x: heng_start_ref.x,
         y: heng_start_ref.y,
       },
     )
-    if (skeletonRefPos === 1) {
-      // 骨架参考位置为右侧（上侧）
-      heng_start = new FP.Joint(
-        'heng_start',
-        {
-          x: heng_start_ref.x,
-          y: heng_start_ref.y + weight / 2,
-        },
-      )
-      heng_end = new FP.Joint(
-        'heng_end',
-        {
-          x: heng_end_ref.x,
-          y: heng_end_ref.y + weight / 2,
-        },
-      )
-    } else if (skeletonRefPos === 2) {
-      // 骨架参考位置为左侧（下侧）
-      heng_start = new FP.Joint(
-        'heng_start',
-        {
-          x: heng_start_ref.x,
-          y: heng_start_ref.y - weight / 2,
-        },
-      )
-      heng_end = new FP.Joint(
-        'heng_end',
-        {
-          x: heng_end_ref.x,
-          y: heng_end_ref.y - weight / 2,
-        },
-      )
-    } else {
-      // 默认骨架参考位置，即骨架参考位置为中间实际绘制的骨架位置
-      heng_start = new FP.Joint(
-        'heng_start',
-        {
-          x: heng_start_ref.x,
-          y: heng_start_ref.y,
-        },
-      )
-      heng_end = new FP.Joint(
-        'heng_end',
-        {
-          x: heng_end_ref.x,
-          y: heng_end_ref.y,
-        },
-      )
-    }
-    glyph.addJoint(heng_start_ref)
-    glyph.addJoint(heng_end_ref)
-    glyph.addRefLine(refline(heng_start_ref, heng_end_ref, 'ref'))
+    heng_end = new FP.Joint(
+      'heng_end',
+      {
+        x: heng_end_ref.x,
+        y: heng_end_ref.y,
+      },
+    )
+  }
+  glyph.addJoint(heng_start_ref)
+  glyph.addJoint(heng_end_ref)
+  glyph.addRefLine(refline(heng_start_ref, heng_end_ref, 'ref'))
+
+  // 折1
+  const zhe1_start = new FP.Joint(
+    'zhe1_start',
+    {
+      x: heng_end.x,
+      y: heng_end.y,
+    },
+  )
+  const zhe1_end = new FP.Joint(
+    'zhe1_end',
+    {
+      x: zhe1_start.x - zhe1_horizontalSpan,
+      y: zhe1_start.y + zhe1_verticalSpan,
+    },
+  )
+
+  // 折2
+  const zhe2_start = new FP.Joint(
+    'zhe2_start',
+    {
+      x: zhe1_start.x - zhe1_horizontalSpan,
+      y: zhe1_start.y + zhe1_verticalSpan,
+    },
+  )
+  const zhe2_end = new FP.Joint(
+    'zhe2_end',
+    {
+      x: zhe2_start.x + zhe2_horizontalSpan,
+      y: zhe2_start.y - zhe2_verticalSpan,
+    },
+  )
+
+  // 弯
+  const wan_start = new FP.Joint(
+    'wan_start',
+    {
+      x: zhe2_end.x,
+      y: zhe2_end.y,
+    },
+  )
+  const wan_end = new FP.Joint(
+    'wan_end',
+    {
+      x: wan_start.x - wan_horizontalSpan,
+      y: wan_start.y + wan_verticalSpan,
+    },
+  )
+
+  // 钩
+  const gou_start = new FP.Joint(
+    'gou_start',
+    {
+      x: wan_start.x - wan_horizontalSpan,
+      y: wan_start.y + wan_verticalSpan,
+    },
+  )
+  const gou_end = new FP.Joint(
+    'gou_end',
+    {
+      x: gou_start.x - gou_horizontalSpan,
+      y: gou_start.y + gou_verticalSpan,
+    },
+  )
   
-    // 折1
-    const zhe1_start = new FP.Joint(
-      'zhe1_start',
-      {
-        x: heng_start.x + heng_length,
-        y: heng_start.y,
-      },
-    )
-    const zhe1_end = new FP.Joint(
-      'zhe1_end',
-      {
-        x: zhe1_start.x - zhe1_horizonalSpan,
-        y: zhe1_start.y + zhe1_verticalSpan,
-      },
-    )
-  
-    // 折2
-    const zhe2_start = new FP.Joint(
-      'zhe2_start',
-      {
-        x: zhe1_start.x - zhe1_horizonalSpan,
-        y: zhe1_start.y + zhe1_verticalSpan,
-      },
-    )
-    const zhe2_end = new FP.Joint(
-      'zhe2_end',
-      {
-        x: zhe2_start.x + zhe2_length,
-        y: zhe2_start.y,
-      },
-    )
-  
-    // 弯
-    const wan_start = new FP.Joint(
-      'wan_start',
-      {
-        x: zhe2_start.x + zhe2_length,
-        y: zhe2_start.y,
-      },
-    )
-    const wan_end = new FP.Joint(
-      'wan_end',
-      {
-        x: wan_start.x - wan_horizonalSpan,
-        y: wan_start.y + wan_verticalSpan,
-      },
-    )
-  
-    // 钩
-    const gou_start = new FP.Joint(
-      'gou_start',
-      {
-        x: wan_start.x - wan_horizonalSpan,
-        y: wan_start.y + wan_verticalSpan,
-      },
-    )
-    const gou_end = new FP.Joint(
-      'gou_end',
-      {
-        x: gou_start.x - gou_horizonalSpan,
-        y: gou_start.y + gou_verticalSpan,
-      },
-    )
-  
-    glyph.addJoint(heng_start)
-    glyph.addJoint(heng_end)
-    glyph.addJoint(zhe1_start)
-    glyph.addJoint(zhe1_end)
-    glyph.addJoint(zhe2_start)
-    glyph.addJoint(zhe2_end)
-    glyph.addJoint(wan_start)
-    glyph.addJoint(wan_end)
-    glyph.addJoint(gou_start)
-    glyph.addJoint(gou_end)
-  
-    const skeleton = {
-      heng_start,
-      heng_end,
-      zhe1_start,
-      zhe1_end,
-      zhe2_start,
-      zhe2_end,
-      wan_start,
-      wan_end,
-      gou_start,
-      gou_end,
-    }
-  
-    glyph.addRefLine(refline(heng_start, heng_end))
-    glyph.addRefLine(refline(zhe1_start, zhe1_end))
-    glyph.addRefLine(refline(zhe2_start, zhe2_end))
-    glyph.addRefLine(refline(wan_start, wan_end))
-    glyph.addRefLine(refline(gou_start, gou_end))
+  glyph.addJoint(heng_start)
+  glyph.addJoint(heng_end)
+  glyph.addJoint(zhe1_start)
+  glyph.addJoint(zhe1_end)
+  glyph.addJoint(zhe2_start)
+  glyph.addJoint(zhe2_end)
+  glyph.addJoint(wan_start)
+  glyph.addJoint(wan_end)
+  glyph.addJoint(gou_start)
+  glyph.addJoint(gou_end)
+
+  const skeleton = {
+    heng_start,
+    heng_end,
+    zhe1_start,
+    zhe1_end,
+    zhe2_start,
+    zhe2_end,
+    wan_start,
+    wan_end,
+    gou_start,
+    gou_end,
+  }
+
+  glyph.addRefLine(refline(heng_start, heng_end))
+  glyph.addRefLine(refline(zhe1_start, zhe1_end))
+  glyph.addRefLine(refline(zhe2_start, zhe2_end))
+  glyph.addRefLine(refline(wan_start, wan_end))
+  glyph.addRefLine(refline(gou_start, gou_end))
 
   glyph.getSkeleton = () => {
     return skeleton
@@ -465,30 +469,36 @@ const updateGlyphByParams = (params, glyph) => {
 
 const computeParamsByJoints = (jointsMap, glyph) => {
   const { heng_start, heng_end, zhe1_start, zhe1_end, zhe2_start, zhe2_end, wan_start, wan_end, gou_start, gou_end } = jointsMap
-  const heng_length_range = glyph.getParamRange('横-长度')
-  const zhe1_horizonal_span_range = glyph.getParamRange('折1-水平延伸')
+  const heng_horizontal_span_range = glyph.getParamRange('横-水平延伸')
+  const heng_vertical_span_range = glyph.getParamRange('横-竖直延伸')
+  const zhe1_horizontal_span_range = glyph.getParamRange('折1-水平延伸')
   const zhe1_vertical_span_range = glyph.getParamRange('折1-竖直延伸')
-  const zhe2_length_range = glyph.getParamRange('折2-长度')
-  const wan_horizonal_span_range = glyph.getParamRange('弯-水平延伸')
+  const zhe2_horizontal_span_range = glyph.getParamRange('折2-水平延伸')
+  const zhe2_vertical_span_range = glyph.getParamRange('折2-竖直延伸')
+  const wan_horizontal_span_range = glyph.getParamRange('弯-水平延伸')
   const wan_vertical_span_range = glyph.getParamRange('弯-竖直延伸')
-  const gou_horizonal_span_range = glyph.getParamRange('钩-水平延伸')
+  const gou_horizontal_span_range = glyph.getParamRange('钩-水平延伸')
   const gou_vertical_span_range = glyph.getParamRange('钩-竖直延伸')
-  const heng_length = range(heng_end.x - heng_start.x, heng_length_range)
-  const zhe1_horizonalSpan = range(zhe1_start.x - zhe1_end.x, zhe1_horizonal_span_range)
+  const heng_horizontalSpan = range(heng_end.x - heng_start.x, heng_horizontal_span_range)
+  const heng_verticalSpan = range(heng_start.y - heng_end.y, heng_vertical_span_range)
+  const zhe1_horizontalSpan = range(zhe1_start.x - zhe1_end.x, zhe1_horizontal_span_range)
   const zhe1_verticalSpan = range(zhe1_end.y - zhe1_start.y, zhe1_vertical_span_range)
-  const zhe2_length = range(zhe2_end.x - zhe2_start.x, zhe2_length_range)
-  const wan_horizonalSpan = range(wan_start.x - wan_end.x, wan_horizonal_span_range)
+  const zhe2_horizontalSpan = range(zhe2_end.x - zhe2_start.x, zhe2_horizontal_span_range)
+  const zhe2_verticalSpan = range(zhe2_start.y - zhe2_end.y, zhe2_vertical_span_range)
+  const wan_horizontalSpan = range(wan_start.x - wan_end.x, wan_horizontal_span_range)
   const wan_verticalSpan = range(wan_end.y - wan_start.y, wan_vertical_span_range)
-  const gou_horizonalSpan = range(gou_start.x - gou_end.x, gou_horizonal_span_range)
+  const gou_horizontalSpan = range(gou_start.x - gou_end.x, gou_horizontal_span_range)
   const gou_verticalSpan = range(gou_end.y - gou_start.y, gou_vertical_span_range)
   return {
-    heng_length,
-    zhe1_horizonalSpan,
+    heng_horizontalSpan,
+    heng_verticalSpan,
+    zhe1_horizontalSpan,
     zhe1_verticalSpan,
-    zhe2_length,
-    wan_horizonalSpan,
+    zhe2_horizontalSpan,
+    zhe2_verticalSpan,
+    wan_horizontalSpan,
     wan_verticalSpan,
-    gou_horizonalSpan,
+    gou_horizontalSpan,
     gou_verticalSpan,
     skeletonRefPos: glyph.getParam('参考位置'),
     weight: glyph.getParam('字重') || 40,
@@ -520,78 +530,78 @@ const updateSkeletonListener_before_bind_heng_zhe_zhe_wan_gou = (glyph: CustomGl
       case 'heng_end': {
         jointsMap['heng_end'] = {
           x: glyph.tempData['heng_end'].x + deltaX,
-          y: glyph.tempData['heng_end'].y,
+          y: glyph.tempData['heng_end'].y + deltaY,
         }
         jointsMap['zhe1_start'] = {
           x: glyph.tempData['zhe1_start'].x + deltaX,
-          y: glyph.tempData['zhe1_start'].y,
+          y: glyph.tempData['zhe1_start'].y + deltaY,
         }
         jointsMap['zhe1_end'] = {
           x: glyph.tempData['zhe1_end'].x + deltaX,
-          y: glyph.tempData['zhe1_end'].y,
+          y: glyph.tempData['zhe1_end'].y + deltaY,
         }
         jointsMap['zhe2_start'] = {
           x: glyph.tempData['zhe2_start'].x + deltaX,
-          y: glyph.tempData['zhe2_start'].y,
+          y: glyph.tempData['zhe2_start'].y + deltaY,
         }
         jointsMap['zhe2_end'] = {
           x: glyph.tempData['zhe2_end'].x + deltaX,
-          y: glyph.tempData['zhe2_end'].y,
+          y: glyph.tempData['zhe2_end'].y + deltaY,
         }
         jointsMap['wan_start'] = {
           x: glyph.tempData['wan_start'].x + deltaX,
-          y: glyph.tempData['wan_start'].y,
+          y: glyph.tempData['wan_start'].y + deltaY,
         }
         jointsMap['wan_end'] = {
           x: glyph.tempData['wan_end'].x + deltaX,
-          y: glyph.tempData['wan_end'].y,
+          y: glyph.tempData['wan_end'].y + deltaY,
         }
         jointsMap['gou_start'] = {
           x: glyph.tempData['gou_start'].x + deltaX,
-          y: glyph.tempData['gou_start'].y,
+          y: glyph.tempData['gou_start'].y + deltaY,
         }
         jointsMap['gou_end'] = {
           x: glyph.tempData['gou_end'].x + deltaX,
-          y: glyph.tempData['gou_end'].y,
+          y: glyph.tempData['gou_end'].y + deltaY,
         }
         break
       }
       case 'zhe1_start': {
         jointsMap['heng_end'] = {
           x: glyph.tempData['heng_end'].x + deltaX,
-          y: glyph.tempData['heng_end'].y,
+          y: glyph.tempData['heng_end'].y + deltaY,
         }
         jointsMap['zhe1_start'] = {
           x: glyph.tempData['zhe1_start'].x + deltaX,
-          y: glyph.tempData['zhe1_start'].y,
+          y: glyph.tempData['zhe1_start'].y + deltaY,
         }
         jointsMap['zhe1_end'] = {
           x: glyph.tempData['zhe1_end'].x + deltaX,
-          y: glyph.tempData['zhe1_end'].y,
+          y: glyph.tempData['zhe1_end'].y + deltaY,
         }
         jointsMap['zhe2_start'] = {
           x: glyph.tempData['zhe2_start'].x + deltaX,
-          y: glyph.tempData['zhe2_start'].y,
+          y: glyph.tempData['zhe2_start'].y + deltaY,
         }
         jointsMap['zhe2_end'] = {
           x: glyph.tempData['zhe2_end'].x + deltaX,
-          y: glyph.tempData['zhe2_end'].y,
+          y: glyph.tempData['zhe2_end'].y + deltaY,
         }
         jointsMap['wan_start'] = {
           x: glyph.tempData['wan_start'].x + deltaX,
-          y: glyph.tempData['wan_start'].y,
+          y: glyph.tempData['wan_start'].y + deltaY,
         }
         jointsMap['wan_end'] = {
           x: glyph.tempData['wan_end'].x + deltaX,
-          y: glyph.tempData['wan_end'].y,
+          y: glyph.tempData['wan_end'].y + deltaY,
         }
         jointsMap['gou_start'] = {
           x: glyph.tempData['gou_start'].x + deltaX,
-          y: glyph.tempData['gou_start'].y,
+          y: glyph.tempData['gou_start'].y + deltaY,
         }
         jointsMap['gou_end'] = {
           x: glyph.tempData['gou_end'].x + deltaX,
-          y: glyph.tempData['gou_end'].y,
+          y: glyph.tempData['gou_end'].y + deltaY,
         }
         break
       }
@@ -660,46 +670,46 @@ const updateSkeletonListener_before_bind_heng_zhe_zhe_wan_gou = (glyph: CustomGl
       case 'zhe2_end': {
         jointsMap['zhe2_end'] = {
           x: glyph.tempData['zhe2_end'].x + deltaX,
-          y: glyph.tempData['zhe2_end'].y,
+          y: glyph.tempData['zhe2_end'].y + deltaY,
         }
         jointsMap['wan_start'] = {
           x: glyph.tempData['wan_start'].x + deltaX,
-          y: glyph.tempData['wan_start'].y,
+          y: glyph.tempData['wan_start'].y + deltaY,
         }
         jointsMap['wan_end'] = {
           x: glyph.tempData['wan_end'].x + deltaX,
-          y: glyph.tempData['wan_end'].y,
+          y: glyph.tempData['wan_end'].y + deltaY,
         }
         jointsMap['gou_start'] = {
           x: glyph.tempData['gou_start'].x + deltaX,
-          y: glyph.tempData['gou_start'].y,
+          y: glyph.tempData['gou_start'].y + deltaY,
         }
         jointsMap['gou_end'] = {
           x: glyph.tempData['gou_end'].x + deltaX,
-          y: glyph.tempData['gou_end'].y,
+          y: glyph.tempData['gou_end'].y + deltaY,
         }
         break
       }
       case 'wan_start': {
         jointsMap['zhe2_end'] = {
           x: glyph.tempData['zhe2_end'].x + deltaX,
-          y: glyph.tempData['zhe2_end'].y,
+          y: glyph.tempData['zhe2_end'].y + deltaY,
         }
         jointsMap['wan_start'] = {
           x: glyph.tempData['wan_start'].x + deltaX,
-          y: glyph.tempData['wan_start'].y,
+          y: glyph.tempData['wan_start'].y + deltaY,
         }
         jointsMap['wan_end'] = {
           x: glyph.tempData['wan_end'].x + deltaX,
-          y: glyph.tempData['wan_end'].y,
+          y: glyph.tempData['wan_end'].y + deltaY,
         }
         jointsMap['gou_start'] = {
           x: glyph.tempData['gou_start'].x + deltaX,
-          y: glyph.tempData['gou_start'].y,
+          y: glyph.tempData['gou_start'].y + deltaY,
         }
         jointsMap['gou_end'] = {
           x: glyph.tempData['gou_end'].x + deltaX,
-          y: glyph.tempData['gou_end'].y,
+          y: glyph.tempData['gou_end'].y + deltaY,
         }
         break
       }
@@ -773,13 +783,15 @@ const updateSkeletonListener_before_bind_heng_zhe_zhe_wan_gou = (glyph: CustomGl
     const jointsMap = getJointsMap(data)
     const _params = computeParamsByJoints(jointsMap, glyph)
     updateGlyphByParams(_params, glyph)
-    glyph.setParam('横-长度', _params.heng_length)
-    glyph.setParam('折1-水平延伸', _params.zhe1_horizonalSpan)
+    glyph.setParam('横-水平延伸', _params.heng_horizontalSpan)
+    glyph.setParam('横-竖直延伸', _params.heng_verticalSpan)
+    glyph.setParam('折1-水平延伸', _params.zhe1_horizontalSpan)
     glyph.setParam('折1-竖直延伸', _params.zhe1_verticalSpan)
-    glyph.setParam('折2-长度', _params.zhe2_length)
-    glyph.setParam('弯-水平延伸', _params.wan_horizonalSpan)
+    glyph.setParam('折2-水平延伸', _params.zhe2_horizontalSpan)
+    glyph.setParam('折2-竖直延伸', _params.zhe2_verticalSpan)
+    glyph.setParam('弯-水平延伸', _params.wan_horizontalSpan)
     glyph.setParam('弯-竖直延伸', _params.wan_verticalSpan)
-    glyph.setParam('钩-水平延伸', _params.gou_horizonalSpan)
+    glyph.setParam('钩-水平延伸', _params.gou_horizontalSpan)
     glyph.setParam('钩-竖直延伸', _params.gou_verticalSpan)
     glyph.tempData = null
   }
@@ -793,78 +805,78 @@ const updateSkeletonListener_after_bind_heng_zhe_zhe_wan_gou = (glyph: CustomGly
       case 'heng_end': {
         jointsMap['heng_end'] = {
           x: glyph.tempData['heng_end'].x + deltaX,
-          y: glyph.tempData['heng_end'].y,
+          y: glyph.tempData['heng_end'].y + deltaY,
         }
         jointsMap['zhe1_start'] = {
           x: glyph.tempData['zhe1_start'].x + deltaX,
-          y: glyph.tempData['zhe1_start'].y,
+          y: glyph.tempData['zhe1_start'].y + deltaY,
         }
         jointsMap['zhe1_end'] = {
           x: glyph.tempData['zhe1_end'].x + deltaX,
-          y: glyph.tempData['zhe1_end'].y,
+          y: glyph.tempData['zhe1_end'].y + deltaY,
         }
         jointsMap['zhe2_start'] = {
           x: glyph.tempData['zhe2_start'].x + deltaX,
-          y: glyph.tempData['zhe2_start'].y,
+          y: glyph.tempData['zhe2_start'].y + deltaY,
         }
         jointsMap['zhe2_end'] = {
           x: glyph.tempData['zhe2_end'].x + deltaX,
-          y: glyph.tempData['zhe2_end'].y,
+          y: glyph.tempData['zhe2_end'].y + deltaY,
         }
         jointsMap['wan_start'] = {
           x: glyph.tempData['wan_start'].x + deltaX,
-          y: glyph.tempData['wan_start'].y,
+          y: glyph.tempData['wan_start'].y + deltaY,
         }
         jointsMap['wan_end'] = {
           x: glyph.tempData['wan_end'].x + deltaX,
-          y: glyph.tempData['wan_end'].y,
+          y: glyph.tempData['wan_end'].y + deltaY,
         }
         jointsMap['gou_start'] = {
           x: glyph.tempData['gou_start'].x + deltaX,
-          y: glyph.tempData['gou_start'].y,
+          y: glyph.tempData['gou_start'].y + deltaY,
         }
         jointsMap['gou_end'] = {
           x: glyph.tempData['gou_end'].x + deltaX,
-          y: glyph.tempData['gou_end'].y,
+          y: glyph.tempData['gou_end'].y + deltaY,
         }
         break
       }
       case 'zhe1_start': {
         jointsMap['heng_end'] = {
           x: glyph.tempData['heng_end'].x + deltaX,
-          y: glyph.tempData['heng_end'].y,
+          y: glyph.tempData['heng_end'].y + deltaY,
         }
         jointsMap['zhe1_start'] = {
           x: glyph.tempData['zhe1_start'].x + deltaX,
-          y: glyph.tempData['zhe1_start'].y,
+          y: glyph.tempData['zhe1_start'].y + deltaY,
         }
         jointsMap['zhe1_end'] = {
           x: glyph.tempData['zhe1_end'].x + deltaX,
-          y: glyph.tempData['zhe1_end'].y,
+          y: glyph.tempData['zhe1_end'].y + deltaY,
         }
         jointsMap['zhe2_start'] = {
           x: glyph.tempData['zhe2_start'].x + deltaX,
-          y: glyph.tempData['zhe2_start'].y,
+          y: glyph.tempData['zhe2_start'].y + deltaY,
         }
         jointsMap['zhe2_end'] = {
           x: glyph.tempData['zhe2_end'].x + deltaX,
-          y: glyph.tempData['zhe2_end'].y,
+          y: glyph.tempData['zhe2_end'].y + deltaY,
         }
         jointsMap['wan_start'] = {
           x: glyph.tempData['wan_start'].x + deltaX,
-          y: glyph.tempData['wan_start'].y,
+          y: glyph.tempData['wan_start'].y + deltaY,
         }
         jointsMap['wan_end'] = {
           x: glyph.tempData['wan_end'].x + deltaX,
-          y: glyph.tempData['wan_end'].y,
+          y: glyph.tempData['wan_end'].y + deltaY,
         }
         jointsMap['gou_start'] = {
           x: glyph.tempData['gou_start'].x + deltaX,
-          y: glyph.tempData['gou_start'].y,
+          y: glyph.tempData['gou_start'].y + deltaY,
         }
         jointsMap['gou_end'] = {
           x: glyph.tempData['gou_end'].x + deltaX,
-          y: glyph.tempData['gou_end'].y,
+          y: glyph.tempData['gou_end'].y + deltaY,
         }
         break
       }
@@ -933,46 +945,46 @@ const updateSkeletonListener_after_bind_heng_zhe_zhe_wan_gou = (glyph: CustomGly
       case 'zhe2_end': {
         jointsMap['zhe2_end'] = {
           x: glyph.tempData['zhe2_end'].x + deltaX,
-          y: glyph.tempData['zhe2_end'].y,
+          y: glyph.tempData['zhe2_end'].y + deltaY,
         }
         jointsMap['wan_start'] = {
           x: glyph.tempData['wan_start'].x + deltaX,
-          y: glyph.tempData['wan_start'].y,
+          y: glyph.tempData['wan_start'].y + deltaY,
         }
         jointsMap['wan_end'] = {
           x: glyph.tempData['wan_end'].x + deltaX,
-          y: glyph.tempData['wan_end'].y,
+          y: glyph.tempData['wan_end'].y + deltaY,
         }
         jointsMap['gou_start'] = {
           x: glyph.tempData['gou_start'].x + deltaX,
-          y: glyph.tempData['gou_start'].y,
+          y: glyph.tempData['gou_start'].y + deltaY,
         }
         jointsMap['gou_end'] = {
           x: glyph.tempData['gou_end'].x + deltaX,
-          y: glyph.tempData['gou_end'].y,
+          y: glyph.tempData['gou_end'].y + deltaY,
         }
         break
       }
       case 'wan_start': {
         jointsMap['zhe2_end'] = {
           x: glyph.tempData['zhe2_end'].x + deltaX,
-          y: glyph.tempData['zhe2_end'].y,
+          y: glyph.tempData['zhe2_end'].y + deltaY,
         }
         jointsMap['wan_start'] = {
           x: glyph.tempData['wan_start'].x + deltaX,
-          y: glyph.tempData['wan_start'].y,
+          y: glyph.tempData['wan_start'].y + deltaY,
         }
         jointsMap['wan_end'] = {
           x: glyph.tempData['wan_end'].x + deltaX,
-          y: glyph.tempData['wan_end'].y,
+          y: glyph.tempData['wan_end'].y + deltaY,
         }
         jointsMap['gou_start'] = {
           x: glyph.tempData['gou_start'].x + deltaX,
-          y: glyph.tempData['gou_start'].y,
+          y: glyph.tempData['gou_start'].y + deltaY,
         }
         jointsMap['gou_end'] = {
           x: glyph.tempData['gou_end'].x + deltaX,
-          y: glyph.tempData['gou_end'].y,
+          y: glyph.tempData['gou_end'].y + deltaY,
         }
         break
       }
@@ -1046,13 +1058,15 @@ const updateSkeletonListener_after_bind_heng_zhe_zhe_wan_gou = (glyph: CustomGly
     const _params = computeParamsByJoints(jointsMap, glyph)
     updateGlyphByParams(_params, glyph)
     updateSkeletonTransformation(glyph)
-    glyph.setParam('横-长度', _params.heng_length)
-    glyph.setParam('折1-水平延伸', _params.zhe1_horizonalSpan)
+    glyph.setParam('横-水平延伸', _params.heng_horizontalSpan)
+    glyph.setParam('横-竖直延伸', _params.heng_verticalSpan)
+    glyph.setParam('折1-水平延伸', _params.zhe1_horizontalSpan)
     glyph.setParam('折1-竖直延伸', _params.zhe1_verticalSpan)
-    glyph.setParam('折2-长度', _params.zhe2_length)
-    glyph.setParam('弯-水平延伸', _params.wan_horizonalSpan)
+    glyph.setParam('折2-水平延伸', _params.zhe2_horizontalSpan)
+    glyph.setParam('折2-竖直延伸', _params.zhe2_verticalSpan)
+    glyph.setParam('弯-水平延伸', _params.wan_horizontalSpan)
     glyph.setParam('弯-竖直延伸', _params.wan_verticalSpan)
-    glyph.setParam('钩-水平延伸', _params.gou_horizonalSpan)
+    glyph.setParam('钩-水平延伸', _params.gou_horizontalSpan)
     glyph.setParam('钩-竖直延伸', _params.gou_verticalSpan)
     glyph.tempData = null
   }

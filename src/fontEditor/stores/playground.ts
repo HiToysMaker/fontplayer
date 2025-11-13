@@ -12,7 +12,7 @@ import { toArrayBuffer } from "../../fontManager"
 import { create, PathType } from '../../fontManager'
 import { genUUID } from '../../utils/string'
 import { FP } from '../programming/FPUtils'
-import { strokes as hei_strokes } from '../templates/strokes_1'
+import { hei_strokes } from '../templates/strokes_1'
 import { ParametersMap } from "../programming/ParametersMap"
 import { IParameter } from "./glyph"
 import paper from 'paper'

@@ -17,7 +17,7 @@
   import { getEnName, name_data, head_data, hhea_data, os2_data, post_data } from '../../stores/settings'
   import { importTemplate2, instanceCharacter } from '../../menus/handlers'
   import { emitter } from '../../Event/bus'
-  import { strokes as hei_strokes } from '../../templates/strokes_1'
+  import { hei_strokes } from '../../templates/strokes_1'
   import { constants, constantsMap, IConstant, ParameterType } from '../../stores/glyph'
   const { tm, t } = useI18n()
 
@@ -326,6 +326,7 @@
     for (let i = 0; i < file.characterList.length; i++) {
       loaded.value += 1
       const character = file.characterList[i]
+      if (character.character.text === '.notdef') continue
 
       // 将相应参数改成全局变量
       for (let j = 0; j < character.components.length; j++) {

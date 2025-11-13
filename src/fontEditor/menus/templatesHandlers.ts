@@ -28,12 +28,12 @@ import router from '../../router'
 import { nextTick } from 'vue'
 import { loading } from '../stores/global'
 import { getEnName, name_data } from '../stores/settings'
-import { strokes as hei_strokes, kai_strokes, li_strokes } from '../templates/strokes_1'
+import { hei_strokes, kai_strokes, li_strokes } from '../templates/strokes_1'
 import { lowercaseLetters } from '../templates/lowercase_letters'
 import { capitalLetters } from '../templates/capital_letters'
 import { digits } from '../templates/digits'
 import { strokeFnMap } from '../templates/strokeFnMap'
-import { instanceGlyph } from './fileHandlers'
+import { instanceGlyph, updateParameters } from './fileHandlers'
 import { generateCharFile } from './toolsHandlers'
 import { thumbnail } from './importHandlers'
 
@@ -58,7 +58,7 @@ const importTemplate2 = async (options) => {
         type: ParameterType.Number,
         value: param.default,
         min: param.min || 0,
-        max: param.max || 1000,
+        max: param.max === 0 ? 0 : param.max || 1000,
       })
     }
     // 添加Enum参数骨架参考位置
@@ -202,7 +202,7 @@ const importTemplate4 = async () => {
         type: ParameterType.Number,
         value: param.default,
         min: param.min || 0,
-        max: param.max || 1000,
+        max: param.max === 0 ? 0 : param.max || 1000,
       })
     }
     // 添加Enum参数骨架参考位置
@@ -684,7 +684,7 @@ const importTemplate7 = async () => {
         uuid: genUUID(),
         name: param.name,
         type: ParameterType.Number,
-        value: param.name === '字重' ? 35 : param.default,
+        value: param.name === '字重' ? 60 : param.default,
         min: param.min || 0,
         max: param.max || 1000,
       })

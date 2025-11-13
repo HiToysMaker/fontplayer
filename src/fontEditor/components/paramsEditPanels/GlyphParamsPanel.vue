@@ -19,7 +19,7 @@
   import { More } from '@element-plus/icons-vue'
   import { OpType, saveState, StoreType } from '../../stores/edit'
   import { editStatus, Status } from '../../stores/font'
-  import { strokes } from '../../templates/strokes_1'
+  import { kai_strokes as strokes } from '../../templates/strokes_1'
   import { strokeFnMap } from '../../templates/strokeFnMap'
   import { onSkeletonSelect, onSkeletonBind, onSkeletonDragging, onWeightSetting, onSelectBone, selectedBone, weightValue, brushSize } from '../../stores/skeletonDragger'
   import { genUUID } from '../../../utils/string'
