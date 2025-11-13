@@ -183,7 +183,6 @@
     closeWeightSelector && closeWeightSelector()
     closeWeightSelector = null
     emitter.emit('renderGlyph')
-    console.log('closeWeightSetting', editGlyph.value.skeleton)
   }
 
   const _selectedBone = computed({

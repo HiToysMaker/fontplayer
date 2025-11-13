@@ -280,7 +280,6 @@ import { ElMessageBox } from 'element-plus'
 		parameters,
 		script,
 	], () => {
-		console.log('sync update', constants.value)
 		syncInfo()
 	}, {
 		deep: true,
