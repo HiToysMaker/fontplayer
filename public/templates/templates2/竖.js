@@ -32,10 +32,12 @@ const refline = (p1, p2, type) => {
 }
 
 const getJointsMap = (data) => {
-  const { draggingJoint, deltaX, deltaY } = data
+  let { draggingJoint, deltaX, deltaY } = data
   const jointsMap = Object.assign({}, glyph.tempData)
   switch (draggingJoint.name) {
     case 'end': {
+      const horizontal_span_range = glyph.getParamRange('水平延伸')
+      deltaX = range(deltaX, horizontal_span_range)
       jointsMap['end'] = {
         x: glyph.tempData['end'].x + deltaX,
         y: glyph.tempData['end'].y + deltaY,

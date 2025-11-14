@@ -46,6 +46,8 @@ const getJointsMap = (data) => {
   const jointsMap = Object.assign({}, glyph.tempData)
   switch (draggingJoint.name) {
     case 'heng1_end': {
+      const heng1_vertical_span_range = glyph.getParamRange('横1-竖直延伸')
+      deltaY = range(deltaY, heng1_vertical_span_range)
       jointsMap['heng1_end'] = {
         x: glyph.tempData['heng1_end'].x + deltaX,
         y: glyph.tempData['heng1_end'].y + deltaY,
@@ -77,6 +79,8 @@ const getJointsMap = (data) => {
       break
     }
     case 'zhe1_start': {
+      const zhe1_vertical_span_range = glyph.getParamRange('折1-竖直延伸')
+      deltaY = range(deltaY, zhe1_vertical_span_range)
       jointsMap['heng1_end'] = {
         x: glyph.tempData['heng1_end'].x + deltaX,
         y: glyph.tempData['heng1_end'].y + deltaY,

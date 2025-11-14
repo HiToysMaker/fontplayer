@@ -346,7 +346,7 @@ const importTemplate5 = async () => {
         type: ParameterType.Number,
         value: param.default,
         min: param.min || 0,
-        max: param.max || 1000,
+        max: param.max === 0 ? 0 : param.max || 1000,
       })
     }
     parameters.push({

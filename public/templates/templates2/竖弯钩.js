@@ -32,10 +32,12 @@ const distance = (p1, p2) => {
 }
 
 const getJointsMap = (data) => {
-  const { draggingJoint, deltaX, deltaY } = data
+  let { draggingJoint, deltaX, deltaY } = data
   const jointsMap = Object.assign({}, glyph.tempData)
   switch (draggingJoint.name) {
     case 'shu_end': {
+      const horizontal_span_range = glyph.getParamRange('竖-水平延伸')
+      deltaX = range(deltaX, horizontal_span_range)
       jointsMap['shu_end'] = {
         x: glyph.tempData['shu_end'].x + deltaX,
         y: glyph.tempData['shu_end'].y + deltaY,
@@ -59,6 +61,8 @@ const getJointsMap = (data) => {
       break
     }
     case 'wan_start': {
+      const horizontal_span_range = glyph.getParamRange('竖-水平延伸')
+      deltaX = range(deltaX, horizontal_span_range)
       jointsMap['shu_end'] = {
         x: glyph.tempData['shu_end'].x + deltaX,
         y: glyph.tempData['shu_end'].y + deltaY,

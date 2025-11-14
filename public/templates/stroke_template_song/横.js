@@ -22,10 +22,12 @@ const global_params = {
 }
 
 const getJointsMap = (data) => {
-  const { draggingJoint, deltaX, deltaY } = data
+  let { draggingJoint, deltaX, deltaY } = data
   const jointsMap = Object.assign({}, glyph.tempData)
   switch (draggingJoint.name) {
     case 'end': {
+      const vertical_span_range = glyph.getParamRange('竖直延伸')
+      deltaY = range(deltaY, vertical_span_range)
       jointsMap['end'] = {
         x: glyph.tempData['end'].x + deltaX,
         y: glyph.tempData['end'].y + deltaY,

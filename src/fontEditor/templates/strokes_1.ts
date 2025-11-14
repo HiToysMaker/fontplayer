@@ -3571,7 +3571,7 @@ const hei_strokes = [
         name: '折1-竖直延伸',
         default: 0,
         min: 0,
-        max: 200,
+        max: 0,
       },
       {
         name: '折2-水平延伸',
