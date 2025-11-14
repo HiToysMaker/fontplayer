@@ -219,6 +219,18 @@ export function convertContourToQuadratic(
 }
 
 /**
+ * 转换整个轮廓（contour）
+ * 将所有三次贝塞尔曲线转换为二次贝塞尔曲线
+ * 
+ * @param contour 原始轮廓（可能包含三次贝塞尔）
+ * @param tolerance 允许的最大误差
+ * @returns 新轮廓（只包含直线和二次贝塞尔）
+ */
+export const convertContourToQuadraticFixed = () => {
+  // TODO
+}
+
+/**
  * 优化的三次贝塞尔到二次贝塞尔转换（无递归）
  * 使用 De Casteljau 算法将一个三次贝塞尔分成两个二次贝塞尔
  * 

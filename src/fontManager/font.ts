@@ -683,7 +683,7 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		console.log('\n📦 Step 2: Building glyf and loca tables...')
 		
 		// 2. 构建glyf表（使用转换后的轮廓）
-		const { glyfTable } = buildGlyfAndLocaTables(
+		const { glyfTable } = await buildGlyfAndLocaTables(
 			convertedCharacters,
 			1 // loca version: 1 = long format (Offset32)
 		)
@@ -820,27 +820,47 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		}
 		
 		// 1. 将所有字符的轮廓转换为二次贝塞尔曲线
-		const convertedCharacters = characters.map((char, index) => {
-			const before = checkGlyphPaths(char, index)
+		const convertedCharacters = []
+		for (let i = 0; i < characters.length; i++) {
+			loaded.value++
+			if (i >= total.value) {
+				loading.value = false
+				loaded.value = 0
+				total.value = 0
+			}
+			if (i % 50 === 0) {
+				await new Promise(resolve => requestAnimationFrame(resolve))
+			}
+			const char = characters[i]
+			const before = checkGlyphPaths(char, i)
 			const converted = {
 				...char,
 				contours: convertContoursToQuadratic(char.contours, 0.5) // tolerance = 0.5
 			}
-			const after = checkGlyphPaths(converted, index)
+			const after = checkGlyphPaths(converted, i)
+			convertedCharacters.push(converted)
+		}
+		// const convertedCharacters = characters.map(async (char, index) => {
+		// 	const before = checkGlyphPaths(char, index)
+		// 	const converted = {
+		// 		...char,
+		// 		contours: convertContoursToQuadratic(char.contours, 0.5) // tolerance = 0.5
+		// 	}
+		// 	const after = checkGlyphPaths(converted, index)
 			
-			if (index === 7 || index === 11 || index === 12) {
-				console.log(`  Glyph ${index}: cubic=${before.cubicCount}, quad=${before.quadCount}, line=${before.lineCount} → quad=${after.quadCount}, line=${after.lineCount}`)
-			}
+		// 	if (index === 7 || index === 11 || index === 12) {
+		// 		console.log(`  Glyph ${index}: cubic=${before.cubicCount}, quad=${before.quadCount}, line=${before.lineCount} → quad=${after.quadCount}, line=${after.lineCount}`)
+		// 	}
 			
-			return converted
-		})
+		// 	return converted
+		// })
 		
 		console.log(`✅ Converted ${convertedCharacters.length} glyphs to quadratic Bezier`)
 		
 		console.log('\n📦 Step 2: Building glyf and loca tables...')
 		
 		// 2. 构建glyf表（使用转换后的轮廓）
-		const { glyfTable } = buildGlyfAndLocaTables(
+		const { glyfTable } = await buildGlyfAndLocaTables(
 			convertedCharacters,
 			1 // loca version: 1 = long format (Offset32)
 		)
@@ -1057,6 +1077,7 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 			if (tables['CFF ']) {
 				console.log('⏳ Updating CFF table with layer glyphs...')
 				const allGlyphs = [...characters, ...layerGlyphs]
+				total.value += allGlyphs.length
 				const updatedCffTable = createCffTable(allGlyphs, {
 					version: getEnglishName('version'),
 					fullName: englishFullName,

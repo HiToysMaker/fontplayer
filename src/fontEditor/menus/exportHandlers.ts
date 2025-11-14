@@ -363,6 +363,9 @@ const generateLayers = (character: ICharacterFile) => {
 }
 
 const createColorFont = async (options?: CreateFontOptions) => {
+  total.value = selectedFile.value.characterList.length * 3
+  loaded.value = 0
+  loading.value = true
   const _width = selectedFile.value.width
   const _height = selectedFile.value.height
   
@@ -432,6 +435,9 @@ const createColorFont = async (options?: CreateFontOptions) => {
       loading.value = false
       loaded.value = 0
       total.value = 0
+    }
+    if (i % 50 === 0) {
+      await new Promise(resolve => requestAnimationFrame(resolve))
     }
     const char: ICharacterFile = selectedFile.value.characterList[i]
     
@@ -645,6 +651,13 @@ const createFont = async (options?: CreateFontOptions) => {
 }
 
 const createVarFont = async (options?: CreateFontOptions) => {
+  // 创建所有变体
+  const combinations: any = generateAllAxisCombinations(selectedFile.value.variants?.axes?.length || 0)
+  
+  total.value = selectedFile.value.characterList.length * 3 + combinations.length * selectedFile.value.characterList.length
+  loaded.value = 0
+  loading.value = true
+
   const _width = selectedFile.value.width
   const _height = selectedFile.value.height
   const origin_constants = R.clone(constants.value)
@@ -749,6 +762,11 @@ const createVarFont = async (options?: CreateFontOptions) => {
     if (text === ' ') {
       containSpace = true
     }
+
+    // 每渲染50个字符就让出主线程，提高响应性
+    if (i % 50 === 0) {
+      await new Promise(resolve => requestAnimationFrame(resolve))
+    }
   }
 
   if (!containSpace) {
@@ -792,9 +810,6 @@ const createVarFont = async (options?: CreateFontOptions) => {
     }
     console.log('✅ Default glyphs regenerated with defaultValue\n')
   }
-
-  // 创建所有变体
-  const combinations: any = generateAllAxisCombinations(selectedFile.value.variants?.axes?.length || 0)
   
   console.log('\n🔄 Generating variation combinations...')
   console.log(`Total combinations: ${combinations.length}`)
@@ -905,17 +920,26 @@ const createVarFont = async (options?: CreateFontOptions) => {
   // 恢复原始 constants
   constants.value = origin_constants
   constantsMap.update(constants.value)
-
-  console.log('origin constants', constants.value)
+  useFixedCurves.value = false
 
   // 更新轮廓数据
   for (let i = 0; i < selectedFile.value.characterList.length; i++) {
+    loaded.value++
+    if (loaded.value >= total.value) {
+      loading.value = false
+      loaded.value = 0
+      total.value = 0
+    }
     const char = selectedFile.value.characterList[i]
     const contours = componentsToContours(orderedListWithItemsForCharacterFile(char), {
       unitsPerEm: selectedFile.value.fontSettings.unitsPerEm,
       descender: selectedFile.value.fontSettings.descender,
       advanceWidth: selectedFile.value.fontSettings.unitsPerEm,
     }, { x: 0, y: 0 }, false, false, true)
+    // 每渲染50个字符就让出主线程，提高响应性
+    if (i % 50 === 0) {
+      await new Promise(resolve => requestAnimationFrame(resolve))
+    }
   }
 
   const font = await create(fontCharacters, {
@@ -931,7 +955,6 @@ const createVarFont = async (options?: CreateFontOptions) => {
     },
     tables: selectedFile.value.fontSettings.tables || null,
   })
-  useFixedCurves.value = false
   return font
 }
 
@@ -968,6 +991,12 @@ const getVarFontContours = async (options?: any) => {
     })
   }
   for (let i = 0; i < selectedFile.value.characterList.length; i++) {
+    loaded.value++
+    if (loaded.value >= total.value) {
+      loading.value = false
+      loaded.value = 0
+      total.value = 0
+    }
     const char = selectedFile.value.characterList[i]
     let contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = componentsToContours(orderedListWithItemsForCharacterFile(char), {
       unitsPerEm: selectedFile.value.fontSettings.unitsPerEm,
@@ -978,6 +1007,11 @@ const getVarFontContours = async (options?: any) => {
       unicode: parseInt(char.character.unicode, 16),
       contours: contours,
     })
+
+    // 每渲染50个字符就让出主线程，提高响应性
+    if (i % 50 === 0) {
+      await new Promise(resolve => requestAnimationFrame(resolve))
+    }
   }
   fontCharacters.sort((a: any, b: any) => {
     return a.unicode - b.unicode
@@ -1063,6 +1097,7 @@ const exportFont = async (options: CreateFontOptions) => {
 const exportColorFont = async (options: CreateFontOptions) => {
   const font = await createColorFont(options)
   loadingMsg.value = '已经处理完所有字符，正在生成压缩包，请稍候...'
+  loading.value = true
   
   // 直接使用ArrayBuffer创建Blob，不要通过DataView
   const arrayBuffer = toArrayBuffer(font) as ArrayBuffer
@@ -1098,6 +1133,7 @@ const exportColorFont_tauri = async (options: CreateFontOptions) => {
 const exportVarFont = async (options: CreateFontOptions) => {
   const font = await createVarFont(options)
   loadingMsg.value = '已经处理完所有字符，正在生成压缩包，请稍候...'
+  loading.value = true
   
   // 直接使用ArrayBuffer创建Blob，不要通过DataView
   const arrayBuffer = toArrayBuffer(font) as ArrayBuffer

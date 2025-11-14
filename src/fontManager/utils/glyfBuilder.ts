@@ -6,6 +6,7 @@
  * For variable fonts: Build IGlyfTable and ILocaTable from ICharacter array
  */
 
+import { loaded, loading, total } from '../../fontEditor/stores/global'
 import type { ICharacter } from '../character'
 import { PathType } from '../character'
 import type { IGlyfTable } from '../tables/glyf'
@@ -162,13 +163,23 @@ function convertContourToGlyfFormat(contour: any[]): IContour {
  * @param characters 字符数组（轮廓必须已转换为二次贝塞尔）
  * @returns IGlyfTable
  */
-export function buildGlyfTable(characters: ICharacter[]): IGlyfTable {
+export async function buildGlyfTable(characters: ICharacter[]): Promise<IGlyfTable> {
 	console.log('\n=== Building glyf Table ===')
 	console.log(`Processing ${characters.length} glyphs...`)
 	
 	const glyphTables: IGlyphTable[] = []
 	
 	for (let i = 0; i < characters.length; i++) {
+		loaded.value++
+		if (i >= total.value) {
+			loading.value = false
+			loaded.value = 0
+			total.value = 0
+		}
+		if (i % 50 === 0) {
+			await new Promise(resolve => requestAnimationFrame(resolve))
+		}
+
 		const char = characters[i]
 		const bbox = calculateBoundingBox(char)
 		
@@ -333,14 +344,11 @@ export function buildLocaTable(
 /**
  * 便捷函数：同时构建glyf和loca表
  */
-export function buildGlyfAndLocaTables(
+export async function buildGlyfAndLocaTables(
 	characters: ICharacter[],
 	locaVersion: number = 1
-): {
-	glyfTable: IGlyfTable
-	locaTable: ILocaTable
-} {
-	const glyfTable = buildGlyfTable(characters)
+): Promise<{ glyfTable: IGlyfTable; locaTable: ILocaTable }> {
+	const glyfTable = await buildGlyfTable(characters)
 	const locaTable = buildLocaTable(glyfTable, locaVersion)
 	
 	return {

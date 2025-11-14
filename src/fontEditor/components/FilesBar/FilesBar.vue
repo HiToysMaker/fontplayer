@@ -64,7 +64,7 @@
           高级编辑
         </el-button>
       </span>
-      <div class="style-selection-wrap" style="margin-left: 10px;">
+      <div class="style-selection-wrap" style="margin-left: 10px;" v-show="files.value.length > 0">
         <span class="style-selection-title">{{ t('panels.settingsPanel.render.title') }}</span>
         <el-radio-group v-model="fontPreviewStyle" id="renderStyle" size="small" @change="handlePreviewStyleChange">
           <!-- <el-radio-button label="contour">{{ t('panels.settingsPanel.render.contour') }}</el-radio-button> -->
