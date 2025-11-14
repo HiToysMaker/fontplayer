@@ -219,6 +219,126 @@ export function convertContourToQuadratic(
 }
 
 /**
+ * 将单个三次贝塞尔曲线转换为一个或多个二次贝塞尔曲线
+ * 使用误差容限来决定是否需要分割
+ * 
+ * @param cubic 三次贝塞尔曲线
+ * @param tolerance 允许的最大误差（默认0.5个单位）
+ * @param depth 当前递归深度（内部使用）
+ * @param maxDepth 最大递归深度（默认10）
+ * @returns 二次贝塞尔曲线数组
+ */
+export function convertCubicToQuadraticFixed(
+	cubic: ICubicBezierCurve,
+	tolerance: number = 0.5,
+	depth: number = 0,
+	totalDepth: number = 2
+): IQuadraticBezierCurve[] {
+	// 防止无限递归
+	if (depth >= totalDepth) {
+		console.warn(`⚠️ Max recursion depth (${totalDepth}) reached, using approximation`)
+		// 强制返回近似结果
+		const control: IPoint = {
+			x: (3 * cubic.control1.x + 3 * cubic.control2.x) / 6 + (cubic.start.x + cubic.end.x) / 6,
+			y: (3 * cubic.control1.y + 3 * cubic.control2.y) / 6 + (cubic.start.y + cubic.end.y) / 6,
+		}
+		
+		return [{
+			type: PathType.QUADRATIC_BEZIER,
+			start: cubic.start,
+			end: cubic.end,
+			control: control,
+			fill: cubic.fill,
+		}]
+	}
+	
+	// 简单近似：使用3/4和1/4点作为控制点
+	// 这是一个常用的近似方法
+	const control: IPoint = {
+		x: (3 * cubic.control1.x + 3 * cubic.control2.x) / 6 + (cubic.start.x + cubic.end.x) / 6,
+		y: (3 * cubic.control1.y + 3 * cubic.control2.y) / 6 + (cubic.start.y + cubic.end.y) / 6,
+	}
+	
+	const quadratic: IQuadraticBezierCurve = {
+		type: PathType.QUADRATIC_BEZIER,
+		start: cubic.start,
+		end: cubic.end,
+		control: control,
+		fill: cubic.fill,
+	}
+	
+	// 计算误差
+	const error = calculateError(cubic, cubic.start, control, cubic.end)
+	
+	// 检查曲线长度，如果太短直接返回（避免过度分割）
+	const length = distance(cubic.start, cubic.end)
+	if (length < 1.0) {
+		// 曲线太短，误差可以忽略
+		return [quadratic]
+	}
+	
+	// 如果误差小于容限，返回单个二次贝塞尔曲线
+	if (depth >= totalDepth) {
+		return [quadratic]
+	}
+	
+	// 如果误差太大，在中点分割三次贝塞尔曲线
+	const t = 0.5
+	const mt = 1 - t
+	
+	// De Casteljau算法分割三次贝塞尔曲线
+	const p01 = {
+		x: mt * cubic.start.x + t * cubic.control1.x,
+		y: mt * cubic.start.y + t * cubic.control1.y,
+	}
+	const p12 = {
+		x: mt * cubic.control1.x + t * cubic.control2.x,
+		y: mt * cubic.control1.y + t * cubic.control2.y,
+	}
+	const p23 = {
+		x: mt * cubic.control2.x + t * cubic.end.x,
+		y: mt * cubic.control2.y + t * cubic.end.y,
+	}
+	const p012 = {
+		x: mt * p01.x + t * p12.x,
+		y: mt * p01.y + t * p12.y,
+	}
+	const p123 = {
+		x: mt * p12.x + t * p23.x,
+		y: mt * p12.y + t * p23.y,
+	}
+	const p0123 = {
+		x: mt * p012.x + t * p123.x,
+		y: mt * p012.y + t * p123.y,
+	}
+	
+	// 创建两个三次贝塞尔曲线
+	const cubic1: ICubicBezierCurve = {
+		type: PathType.CUBIC_BEZIER,
+		start: cubic.start,
+		control1: p01,
+		control2: p012,
+		end: p0123,
+		fill: cubic.fill,
+	}
+	
+	const cubic2: ICubicBezierCurve = {
+		type: PathType.CUBIC_BEZIER,
+		start: p0123,
+		control1: p123,
+		control2: p23,
+		end: cubic.end,
+		fill: cubic.fill,
+	}
+	
+	// 递归转换两部分（传递depth + 1）
+	return [
+		...convertCubicToQuadraticFixed(cubic1, tolerance, depth + 1, totalDepth),
+		...convertCubicToQuadraticFixed(cubic2, tolerance, depth + 1, totalDepth),
+	]
+}
+
+/**
  * 转换整个轮廓（contour）
  * 将所有三次贝塞尔曲线转换为二次贝塞尔曲线
  * 
@@ -226,8 +346,25 @@ export function convertContourToQuadratic(
  * @param tolerance 允许的最大误差
  * @returns 新轮廓（只包含直线和二次贝塞尔）
  */
-export const convertContourToQuadraticFixed = () => {
-  // TODO
+export const convertContourToQuadraticFixed = (
+	contour: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>,
+	tolerance: number = 0.5
+): Array<ILine | IQuadraticBezierCurve> => {
+	const result: Array<ILine | IQuadraticBezierCurve> = []
+	
+	for (const segment of contour) {
+		if (segment.type === PathType.CUBIC_BEZIER) {
+			// 转换三次贝塞尔为二次贝塞尔
+			// 使用默认的depth=0和maxDepth=10
+			const quadratics = convertCubicToQuadraticFixed(segment, tolerance, 0, 2)
+			result.push(...quadratics)
+		} else {
+			// 直线和二次贝塞尔直接保留
+			result.push(segment as ILine | IQuadraticBezierCurve)
+		}
+	}
+	
+	return result
 }
 
 /**
@@ -363,9 +500,9 @@ export function convertContoursToQuadratic(
 	if (useSimple) {
 		// 使用简化版本：快速、稳定、不递归
 		return contours.map(contour => convertContourToQuadraticSimple(contour))
+		// return contours.map(contour => convertContourToQuadraticFixed(contour, tolerance))
 	} else {
 		// 使用精确版本：可能递归，更精确但更慢
 		return contours.map(contour => convertContourToQuadratic(contour, tolerance))
 	}
 }
-

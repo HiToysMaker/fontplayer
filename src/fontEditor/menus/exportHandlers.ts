@@ -888,6 +888,16 @@ const createVarFont = async (options?: CreateFontOptions) => {
       const before = checkCubicCount(char.contours)
       const converted = convertContoursToQuadratic(char.contours, 0.5)
       const after = checkCubicCount(converted)
+
+      // if (!checkContours(fontCharacters[charIndex].contours, converted)) {
+      //   console.log(`[convertContoursToQuadratic] Contours mismatch for character ${char.unicode}`)
+      //   // console.log(`[convertContoursToQuadratic] Contours1: ${char.contours.length}`)
+      //   // console.log(`[convertContoursToQuadratic] Contours2: ${converted.length}`)
+      //   // console.log(`[convertContoursToQuadratic] Contours1: ${char.contours.join(', ')}`)
+      //   // console.log(`[convertContoursToQuadratic] Contours2: ${converted.join(', ')}`)
+      //   debugger
+      //   breakFlag = true
+      // }
       
       // 打印 glyph 7, 11, 12 的信息
       if ((charIndex === 7 || charIndex === 11 || charIndex === 12)) {
@@ -924,6 +934,11 @@ const createVarFont = async (options?: CreateFontOptions) => {
   constants.value = origin_constants
   constantsMap.update(constants.value)
   useFixedCurves.value = false
+
+  // if (breakFlag) {
+  //   console.log('❌ Break flag is true, exiting...')
+  //   return null
+  // }
 
   // 更新轮廓数据
   for (let i = 0; i < selectedFile.value.characterList.length; i++) {
@@ -984,6 +999,25 @@ const getOverlapRemovedContours = async (options?: any) => {
   return fontCharacters
 }
 
+const checkContours = (contours1, contours2) => {
+  if (contours1.length !== contours2.length) {
+    return false
+  }
+  for (let i = 0; i < contours1.length; i++) {
+    if (contours1[i].length !== contours2[i].length) {
+      return false
+    }
+    for (let j = 0; j < contours1[i].length; j++) {
+      if (contours1[i][j].type !== contours2[i][j].type) {
+        return false
+      }
+    }
+  }
+  return true
+}
+
+let breakFlag = false
+
 const getVarFontContours = async (options?: any) => {
   const{ containSpace } = options
   const fontCharacters = []
@@ -1006,6 +1040,7 @@ const getVarFontContours = async (options?: any) => {
       descender: selectedFile.value.fontSettings.descender,
       advanceWidth: selectedFile.value.fontSettings.unitsPerEm,
     }, { x: 0, y: 0 }, false, false, options.forceUpdate)
+
     fontCharacters.push({
       unicode: parseInt(char.character.unicode, 16),
       contours: contours,
@@ -1019,6 +1054,18 @@ const getVarFontContours = async (options?: any) => {
   fontCharacters.sort((a: any, b: any) => {
     return a.unicode - b.unicode
   })
+
+  // for (let i = 0; i < fontCharacters.length; i++) {
+  //   if (!checkContours(fontCharacters[i].contours, options.originCharacters[i].contours)) {
+  //     console.log(`[getVarFontContours] Contours mismatch for character ${fontCharacters[i].unicode}`)
+  //     // console.log(`[getVarFontContours] Contours1: ${fontCharacters[i].contours.length}`)
+  //     // console.log(`[getVarFontContours] Contours2: ${options.originCharacters[i].contours.length}`)
+  //     // console.log(`[getVarFontContours] Contours1: ${fontCharacters[i].contours.join(', ')}`)
+  //     // console.log(`[getVarFontContours] Contours2: ${options.originCharacters[i].contours.join(', ')}`)
+  //     debugger
+  //     breakFlag = true
+  //   }
+  // }
   return fontCharacters
 }
 

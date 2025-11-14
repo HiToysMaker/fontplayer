@@ -824,11 +824,6 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		const convertedCharacters = []
 		for (let i = 0; i < characters.length; i++) {
 			loaded.value++
-			if (i >= total.value) {
-				loading.value = false
-				loaded.value = 0
-				total.value = 0
-			}
 			if (i % 50 === 0) {
 				await new Promise(resolve => requestAnimationFrame(resolve))
 			}
