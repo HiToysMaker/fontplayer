@@ -19,11 +19,14 @@ interface IVector {
 	y: number;
 }
 
-const _fitCurve = (points: Array<IPoint>, maxError: number, curvesNum: number = 5) => {
+const _fitCurve = (points: Array<IPoint>, maxError: number, curvesNum: number = 4) => {
 	if (useFixedCurves.value) {
-		return fitCurveFixed(points, maxError, curvesNum)
+		// return fitCurveFixed(points, maxError, curvesNum)
+		const beziers = fitCurveFixed2(points, maxError, curvesNum)
+		return beziers
 	}
 	return fitCurve(points, maxError)
+	// return fitCurveFixed2(points, maxError, curvesNum)
 }
 
 /**
@@ -240,6 +243,114 @@ const fitSegment = (segment: any, maxError: number) => {
 	segment.splitPoint = errorResult.splitPoint
 }
 
+const fitCurveFixed2 = (points: Array<IPoint>, _maxError: number, count: number) => {
+	const maxError = _maxError
+	//const simplifiedPoints = rdp(points, 2)
+	// const leftTangent = normalize({
+	// 	x: simplifiedPoints[1].x - simplifiedPoints[0].x,
+	// 	y: simplifiedPoints[1].y - simplifiedPoints[0].y,
+	// })
+	// const rightTangent = normalize({
+	// 	x: simplifiedPoints[simplifiedPoints.length - 2].x - simplifiedPoints[simplifiedPoints.length - 1].x,
+	// 	y: simplifiedPoints[simplifiedPoints.length - 2].y - simplifiedPoints[simplifiedPoints.length - 1].y,
+	// })
+	// return fitCubic(
+	// 	simplifiedPoints,
+	// 	leftTangent,
+	// 	rightTangent,
+	// 	maxError,
+	// )
+	const leftTangent = normalize({
+		x: points[1].x - points[0].x,
+		y: points[1].y - points[0].y,
+	})
+	const rightTangent = normalize({
+		x: points[points.length - 2].x - points[points.length - 1].x,
+		y: points[points.length - 2].y - points[points.length - 1].y,
+	})
+	return fitCubicFixed2(
+		points,
+		leftTangent,
+		rightTangent,
+		maxError,
+		count,
+	)
+}
+
+const fitCubicFixed2: (
+	points: Array<IPoint>,
+	leftTangent: IVector,
+	rightTangent: IVector,
+	error: number,
+	count: number,
+) => Array<any> = (
+	points: Array<IPoint>,
+	leftTangent: IVector,
+	rightTangent: IVector,
+	error: number,
+	count: number,
+) => {
+	if (points.length === 2) {
+		const dist = norm({
+			x: points[1].x - points[0].x,
+			y: points[1].y - points[0].y,
+		}) / 3.0
+		const bezCurve = [
+			points[0],
+			{
+				x: points[0].x + leftTangent.x * dist,
+				y: points[0].y + leftTangent.y * dist,
+			},
+			{
+				x: points[1].x + rightTangent.x * dist,
+				y: points[1].y + rightTangent.y * dist,
+			},
+			points[1],
+		]
+		return [bezCurve]
+	}
+
+	let u = chordLengthParamerize(points)
+	let bezCurve = generateBezier(points, u, leftTangent, rightTangent) as Array<IPoint>
+	let { maxDist: maxError, splitPoint } = computeMaxError(points, bezCurve, u) as {
+		maxDist: number,
+		splitPoint: number,
+	}
+
+	if (count <= 1 && maxError < error) {
+		return [bezCurve]
+	}
+
+	if (maxError < Math.pow(error, 2)) {
+		for (let i = 0; i < 20; i++) {
+			const uPrime = reparameterize(bezCurve, points, u)
+			bezCurve = generateBezier(points, uPrime, leftTangent, rightTangent) as Array<IPoint>
+			const { maxDist: maxError, splitPoint: _splitPoint } = computeMaxError(points, bezCurve, u) as {
+				maxDist: number,
+				splitPoint: number,
+			}
+			splitPoint = _splitPoint
+			if (maxError < error && count <= 1) {
+				return [bezCurve]
+			}
+			u = uPrime
+		}
+	}
+
+	const beziers = []
+	const centerTangent_l = normalize({
+		x: points[splitPoint - 1].x - points[splitPoint + 1].x,
+		y: points[splitPoint - 1].y - points[splitPoint + 1].y,
+	})
+	const centerTangent_r = {
+		x: -centerTangent_l.x,
+		y: -centerTangent_l.y
+	}
+	beziers.push(...fitCubicFixed2(points.slice(0, splitPoint + 1), leftTangent, centerTangent_l, error, count / 2 ))
+	beziers.push(...fitCubicFixed2(points.slice(splitPoint), centerTangent_r, rightTangent, error, count / 2))
+	return beziers
+}
+
 const fitCurve = (points: Array<IPoint>, _maxError: number) => {
 	const maxError = _maxError
 	//const simplifiedPoints = rdp(points, 2)
@@ -306,7 +417,7 @@ const fitCubic: (
 
 	let u = chordLengthParamerize(points)
 	let bezCurve = generateBezier(points, u, leftTangent, rightTangent) as Array<IPoint>
-	const { maxDist: maxError, splitPoint } = computeMaxError(points, bezCurve, u) as {
+	let { maxDist: maxError, splitPoint } = computeMaxError(points, bezCurve, u) as {
 		maxDist: number,
 		splitPoint: number,
 	}
@@ -319,10 +430,11 @@ const fitCubic: (
 		for (let i = 0; i < 20; i++) {
 			const uPrime = reparameterize(bezCurve, points, u)
 			bezCurve = generateBezier(points, uPrime, leftTangent, rightTangent) as Array<IPoint>
-			const { maxDist: maxError, splitPoint } = computeMaxError(points, bezCurve, u) as {
+			const { maxDist: maxError, splitPoint: _splitPoint } = computeMaxError(points, bezCurve, u) as {
 				maxDist: number,
 				splitPoint: number,
 			}
+			splitPoint = _splitPoint
 			if (maxError < error) {
 				return [bezCurve]
 			}
