@@ -22,6 +22,7 @@ const dialogs = {
 			contourStorageTrueTypeTooltip: '使用glyf表存储轮廓数据，导出字库为otf格式',
 			contourStorageCffLabel: 'PostScript轮廓(CFF)',
 			contourStorageCffTooltip: '使用CFF表存储轮廓数据，导出字库为otf格式',
+			removeAxis: '删除轴',
 		},
 		saveDialog: {
 			title: '保存工程',
@@ -169,6 +170,7 @@ const dialogs = {
 			contourStorageTrueTypeTooltip: 'Use the glyf table to store outline data and export the font as OTF.',
 			contourStorageCffLabel: 'PostScript outlines (CFF table)',
 			contourStorageCffTooltip: 'Use the CFF table to store outline data and export the font as OTF.',
+			removeAxis: 'Remove Axis',
 		},
 		saveDialog: {
 			title: 'Save Project',

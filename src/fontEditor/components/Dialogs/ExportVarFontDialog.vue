@@ -68,6 +68,10 @@
     onSelectConstant.value = false
     selectedConstant.value = ''
   }
+
+  const removeAxis = (axis) => {
+    axes.value = axes.value.filter((a) => a.uuid !== axis.uuid)
+  }
 </script>
 
 <template>
@@ -102,6 +106,7 @@
           <el-form-item label="maxValue">
             <el-input-number v-model="axis.maxValue" />
           </el-form-item>
+          <el-button class="remove-axis-button" type="danger" @pointerdown="removeAxis(axis)">{{ t('dialogs.exportFontDialog.removeAxis') }}</el-button>
         </div>
       </div>
     </el-scrollbar>
@@ -130,6 +135,10 @@
     .axis-item {
       margin-bottom: 20px;
       border-bottom: 1px solid var(--light-5);
+      .remove-axis-button {
+        margin-bottom: 10px;
+        width: 100%;
+      }
     }
   }
 </style>
