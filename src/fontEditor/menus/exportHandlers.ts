@@ -36,7 +36,7 @@ import {
   editStatus,
 } from '../stores/font'
 import { render } from '../canvas/canvas'
-import { addComponentForCurrentGlyph, comp_glyphs, constantGlyphMap, constants, constantsMap, editGlyph, executeScript, glyphs, radical_glyphs, stroke_glyphs } from '../stores/glyph'
+import { addComponentForCurrentGlyph, comp_glyphs, constantGlyphMap, constants, constantsMap, editGlyph, executeScript, glyphs, ICustomGlyph, IGlyphComponent, radical_glyphs, stroke_glyphs } from '../stores/glyph'
 import { loading } from '../stores/global'
 import paper from 'paper'
 import { ENV } from '../stores/system'
@@ -459,7 +459,10 @@ const createColorFont = async (options?: CreateFontOptions) => {
         }, {x: 0, y: 0}, false, false, false
       )
     }
-    const layers = generateLayers(char)
+    let layers = []
+    if (char.components.find((component: IComponent) => (component.value as unknown as IGlyphComponent)?.fillColor)) {
+      layers = generateLayers(char)
+    }
     const { text, unicode } = char.character
 
     fontCharacters.push({
