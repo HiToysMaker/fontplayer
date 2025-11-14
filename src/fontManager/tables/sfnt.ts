@@ -7,6 +7,7 @@ import type { IFont } from '../font'
 import type { ITable } from '../table'
 import * as decode from '../decode'
 import * as R from 'ramda'
+import { incrementProgress, reserveProgressBudget, setProgressMessage, yieldToEventLoop } from '../utils/progress'
 
 const types = {
 	sfntVersion: 'Tag',
@@ -247,12 +248,16 @@ const create = async (tables: any, mark: string = '') => {
 	}
 	
 	console.log(`\n📋 Processing ${keys.length} tables in order: ${keys.join(', ')}\n`)
+	reserveProgressBudget(keys.length + 1)
+	setProgressMessage('序列化 SFNT 表中…')
 	
 	for (let i = 0; i < keys.length; i++) {
 		const key = keys[i]
 		console.log(`⏳ [${i+1}/${keys.length}] Creating table: ${key}...`)
 		const t = tables[key]
 		let tableData = null
+		const tableStart = Date.now()
+		setProgressMessage(`序列化 ${key} 表 (${i + 1}/${keys.length})`)
 		
 		// 特殊处理：loca表需要使用glyf序列化后的真实offsets
 		if (key === 'loca' && (t as any)._needsRealOffsets) {
@@ -280,6 +285,9 @@ const create = async (tables: any, mark: string = '') => {
 			tableData = await tableTool[key].create(t)
 		} else {
 			tableData = tableTool[key].create(t)
+		}
+		if (tableData && typeof (tableData as any).then === 'function') {
+			tableData = await tableData
 		}
 		console.log(`   ✅ Table ${key} created: ${tableData.length} bytes`)
 
@@ -331,6 +339,9 @@ const create = async (tables: any, mark: string = '') => {
 		// 立即拼接recordData（按排序后的顺序）
 		recordsData = recordsData.concat(recordData)
 		
+		const tableDuration = Date.now() - tableStart
+		console.log(`   ⏱ ${key} table serialized in ${tableDuration}ms`)
+
 		checksum += computeCheckSum(recordData)
 		checksum %= 0x100000000 // 每次累加后都做模运算，防止溢出
 		checksum += computeCheckSum(tableData)
@@ -345,6 +356,8 @@ const create = async (tables: any, mark: string = '') => {
 			offset++
 			tablesData = tablesData.concat(encoder.uint8(0) as Array<number>)
 		}
+		incrementProgress(undefined, 1)
+		await yieldToEventLoop(i + 1, 1)
 	}
 	
 	// 在表目录和表数据之间添加padding（如果需要）
@@ -377,6 +390,7 @@ const create = async (tables: any, mark: string = '') => {
 		console.log('  Length:', (finalData[nameRecordStart + 12] << 24) | (finalData[nameRecordStart + 13] << 16) | (finalData[nameRecordStart + 14] << 8) | finalData[nameRecordStart + 15])
 	}
 	console.log('===============================\n')
+	incrementProgress('合并 SFNT 数据', 1)
 
 	return {
 		data: [...configData, ...recordsData, ...tablesData],

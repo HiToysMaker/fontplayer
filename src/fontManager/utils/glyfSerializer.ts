@@ -6,6 +6,7 @@
  */
 
 import { encoder } from '../encode'
+import { incrementProgress, reserveProgressBudget, setProgressMessage, yieldToEventLoop } from './progress'
 
 interface IPoint {
 	x?: number
@@ -232,16 +233,26 @@ export function serializeSimpleGlyph(glyph: IGlyphTable): number[] {
 /**
  * 序列化整个glyf表
  */
-export function serializeGlyfTable(glyphTables: IGlyphTable[]): {
+export async function serializeGlyfTable(
+	glyphTables: IGlyphTable[],
+	options?: {
+		chunkSize?: number
+		progressLabel?: string
+	}
+): Promise<{
 	data: number[]
 	offsets: number[]
-} {
+}> {
 	console.log('\n=== Serializing glyf Table (OpenType compliant) ===')
 	console.log(`Processing ${glyphTables.length} glyphs...`)
 	
 	const allData: number[] = []
 	const offsets: number[] = []
 	let currentOffset = 0
+	const chunkSize = options?.chunkSize ?? 80
+
+	reserveProgressBudget(glyphTables.length)
+	setProgressMessage(options?.progressLabel || '序列化 glyf 表数据…')
 	
 	for (let i = 0; i < glyphTables.length; i++) {
 		const glyph = glyphTables[i]
@@ -257,6 +268,8 @@ export function serializeGlyfTable(glyphTables: IGlyphTable[]): {
 			} else if (i === 3) {
 				console.log(`  ...`)
 			}
+			incrementProgress(undefined, 1)
+			await yieldToEventLoop(i + 1, chunkSize)
 			continue
 		}
 		
@@ -268,13 +281,19 @@ export function serializeGlyfTable(glyphTables: IGlyphTable[]): {
 			glyphData.push(0)
 		}
 		
-		if (i < 3 || i >= glyphTables.length - 1) {
+		if (glyph.contours?.length) {
 			const totalPoints = glyph.contours.reduce((sum, c) => sum + c.points.length, 0)
-			console.log(`  Glyph ${i}: ${glyphData.length} bytes, ${totalPoints} points, offset ${currentOffset}`)
+			if (i < 3 || i >= glyphTables.length - 1) {
+				console.log(`  Glyph ${i}: ${glyphData.length} bytes, ${totalPoints} points, offset ${currentOffset}`)
+			} else if (i === 3) {
+				console.log('  ...')
+			}
 		}
 		
 		allData.push(...glyphData)
 		currentOffset += glyphData.length
+		incrementProgress(undefined, 1)
+		await yieldToEventLoop(i + 1, chunkSize)
 	}
 	
 	// 最后一个offset（指向表末尾）

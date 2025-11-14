@@ -412,7 +412,7 @@ const parseGlyphCoordinate = (decoder, flag, previousValue, shortVectorBitMask, 
  * @param table IGlyfTable对象
  * @returns 原始数据数组
  */
-const create = (table: IGlyfTable) => {
+const create = async (table: IGlyfTable) => {
 	console.log('\n=== glyf.create() called ===')
 	console.log('table type:', typeof table)
 	console.log('table.glyphTables exists?', !!table.glyphTables)
@@ -426,7 +426,9 @@ const create = (table: IGlyfTable) => {
 	}
 	
 	// 使用完整的OpenType序列化器
-	const result = serializeGlyfTable(table.glyphTables)
+	const result = await serializeGlyfTable(table.glyphTables, {
+		progressLabel: '序列化 glyf 表数据…',
+	})
 	
 	// 将生成的offsets存储到table对象中，供loca表使用
 	// 注意：这是一个临时方案，理想情况下应该重构架构

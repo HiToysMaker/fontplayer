@@ -23,6 +23,7 @@ import { saveAs } from 'file-saver'
 import { convertToPinyin } from 'tiny-pinyin'
 import { encoder } from './encode'
 import { loaded, total, loading } from '../fontEditor/stores/global'
+import { incrementProgress, reserveProgressBudget, setProgressMessage, yieldToEventLoop } from './utils/progress'
 import { createFvarTable } from './tables/fvar'
 import { createGvarTable } from './tables/gvar'
 import { createStatTable } from './tables/STAT'
@@ -1024,6 +1025,9 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 			// 为图层创建字形（如果使用 CFF）
 			// 图层字形会被 COLR 表引用
 			const layerGlyphs: any[] = []
+			let processedLayerGlyphs = 0
+			reserveProgressBudget(totalLayerGlyphs + 5)
+			setProgressMessage('扩展彩色字体图层…')
 			
 			for (const char of characters) {
 				if (char.layers && char.layers.length > 0) {
@@ -1057,6 +1061,9 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 							yMax: layerMetrics.yMax,
 							// 不需要 layers 字段
 						})
+						processedLayerGlyphs++
+						incrementProgress(undefined, 1)
+						await yieldToEventLoop(processedLayerGlyphs, 50)
 					}
 				}
 			}
@@ -1066,12 +1073,14 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 			const cpalTable = createCpalTable(characters)
 			tables['CPAL'] = cpalTable
 			console.log(`✅ CPAL table created with ${cpalTable.numColorRecords} colors`)
+			incrementProgress('创建 CPAL 表…', 1)
 			
 			// 创建 COLR 表（彩色图层定义）
 			console.log('⏳ Creating COLR table...')
 			const colrTable = createColrTable(characters, characters.length + layerGlyphs.length)
 			tables['COLR'] = colrTable
 			console.log(`✅ COLR table created with ${colrTable.numBaseGlyphRecords} base glyphs and ${colrTable.numLayerRecords} layers`)
+			incrementProgress('创建 COLR 表…', 1)
 			
 			// 如果使用 CFF 格式，需要重新创建 CFF 表包含图层字形
 			if (tables['CFF ']) {
@@ -1108,6 +1117,7 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 				hheaTable.numberOfHMetrics = hmtxTable.hMetrics.length
 				console.log(`✅ Updated hhea.numberOfHMetrics to ${hheaTable.numberOfHMetrics}`)
 			}
+			incrementProgress('更新彩色字体表完成', 1)
 			
 			console.log('\n🎉 Color font tables complete!')
 			console.log('================================\n')
