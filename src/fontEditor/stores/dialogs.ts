@@ -115,8 +115,10 @@ const setSelectGlobalParamDialogVisible = (visible: boolean) => {
 // tips窗口
 // dialog for tips
 const tipsDialogVisible: Ref<boolean> = ref(false)
-const setTipsDialogVisible = (visible: boolean) => {
+const tipsDialogConfirmCallback: Ref<(() => void) | null> = ref(null)
+const setTipsDialogVisible = (visible: boolean, onConfirm?: () => void) => {
 	tipsDialogVisible.value = visible
+	tipsDialogConfirmCallback.value = onConfirm || null
 }
 
 // 关闭文件tips窗口
@@ -175,6 +177,34 @@ const editedCharacterUUID: Ref<string> = ref('')
 
 const glyphComponentsDialogVisible2: Ref<boolean> = ref(false)
 
+// 导出可变字体窗口
+// dialog for export var font
+const exportVarFontDialogVisible: Ref<boolean> = ref(false)
+const setExportVarFontDialogVisible = (visible: boolean) => {
+	exportVarFontDialogVisible.value = visible
+}
+
+// tauri导出可变字体窗口
+// dialog for export var font for tauri
+const exportVarFontTauriDialogVisible: Ref<boolean> = ref(false)
+const setExportVarFontTauriDialogVisible = (visible: boolean) => {
+	exportVarFontTauriDialogVisible.value = visible
+}
+
+// 导出彩色字体窗口
+// dialog for export color font
+const exportColorFontDialogVisible: Ref<boolean> = ref(false)
+const setExportColorFontDialogVisible = (visible: boolean) => {
+	exportColorFontDialogVisible.value = visible
+}
+
+// tauri导出彩色字体窗口
+// dialog for export color font for tauri
+const exportColorFontTauriDialogVisible: Ref<boolean> = ref(false)
+const setExportColorFontTauriDialogVisible = (visible: boolean) => {
+	exportColorFontTauriDialogVisible.value = visible
+}
+
 export {
 	createFileDialogVisible,
 	fontSettingsDialogVisible,
@@ -212,6 +242,7 @@ export {
 	selectGlobalParamDialogVisible,
 	editedCharacterUUID,
 	tipsDialogVisible,
+	tipsDialogConfirmCallback,
 	setTipsDialogVisible,
 	closeFileTipDialogVisible,
 	setCloseFileTipDialogVisible,
@@ -229,4 +260,12 @@ export {
 	setExportFontTauriDialogVisible,
 	fontSettings2DialogVisible,
 	setFontSettings2DialogVisible,
+	exportVarFontDialogVisible,
+	setExportVarFontDialogVisible,
+	exportVarFontTauriDialogVisible,
+	setExportVarFontTauriDialogVisible,
+	exportColorFontDialogVisible,
+	setExportColorFontDialogVisible,
+	exportColorFontTauriDialogVisible,
+	setExportColorFontTauriDialogVisible,
 }

@@ -4,7 +4,7 @@ import { PathType } from '../character'
 import { encoder } from '../encode'
 import * as decode from '../decode'
 import * as R from 'ramda'
-import { loaded, total, loading } from '../../fontEditor/stores/global'
+import { incrementProgress, reserveProgressBudget, setProgressMessage, yieldToEventLoop } from '../utils/progress'
 
 // cff表格式
 // cff table format
@@ -29,6 +29,8 @@ const types = {
 	hdrSize: 'Card8',
 	offSize: 'Card8',
 }
+
+const headerFieldOrder = ['major', 'minor', 'hdrSize', 'offSize'] as const
 
 interface IGlyphTable {
 	numberOfContours: number;
@@ -2125,11 +2127,13 @@ const parse = (data: DataView, offset: number, font: IFont) => {
 	}
 }
 
-const createIndex = (indexData: Array<any>) => {
+const createIndex = async (indexData: Array<any>) => {
 	let offset = 1
 	const offsets = [offset]
 	let data: Array<number> = []
 	for (let i = 0; i < indexData.length; i += 1) {
+		incrementProgress(undefined, 1)
+		await yieldToEventLoop(i + 1, 50)
 		const type = indexData[i].type
 		const value = indexData[i].value
 		const v = encoder[type as keyof typeof encoder](value)
@@ -2271,6 +2275,7 @@ const glyphToOps = (glyph: IGlyphTable) => {
 	ops.push({name: 'width', type: 'number', value: glyph.advanceWidth});
 	let x = 0
 	let y = 0
+	
 	for (let i = 0; i < glyph.contours.length; i ++) {
 		if (!glyph.contours[i].length) continue
 		const startPath = glyph.contours[i][0]
@@ -2378,7 +2383,7 @@ const createTable = (characters: Array<ICharacter>, options: any) => {
 		data: characterNames as Array<string>,
 	}
 	cffTable.glyphTables = characters.map((character) => {
-		return {
+		const glyph = {
 			numberOfContours: character.contourNum as number,
 			contours: character.contours,
 			advanceWidth: character.advanceWidth as number,
@@ -2389,6 +2394,13 @@ const createTable = (characters: Array<ICharacter>, options: any) => {
 			yMin: character.yMin as number,
 			yMax: character.yMax as number,
 		}
+		
+		// 保留 name 字段用于调试
+		if ((character as any).name) {
+			(glyph as any).name = (character as any).name
+		}
+		
+		return glyph
 	})
 	cffTable.stringIndex = {
 		data: strings,
@@ -2414,18 +2426,20 @@ const create = async(_table: ICffTable) => {
 	const header = table.header
 	let headerData: Array<number> = []
 	const glyphTables = table.glyphTables as Array<IGlyphTable>
-	Object.keys(header).forEach((key: string) => {
-		const type = types[key as keyof typeof types]
-		const value = header[key as keyof typeof header]
+	for (const key of headerFieldOrder) {
+		const value = header[key]
+		const type = types[key]
 		const bytes = encoder[type as keyof typeof encoder](value)
 		if (bytes) {
 			headerData = headerData.concat(bytes)
 		}
-	})
+	}
 	// 创建nameIndex数据
 	// create nameIndex data
 	const nameIndex = table.nameIndex
-	const nameIndexData = createIndex(nameIndex.data.map((item) => {
+	reserveProgressBudget(nameIndex.data.length)
+	setProgressMessage('构建 Name Index…')
+	const nameIndexData = await createIndex(nameIndex.data.map((item) => {
 		return {
 			type: 'Name',
 			value: item
@@ -2440,10 +2454,14 @@ const create = async(_table: ICffTable) => {
 	let charsetsData: Array<number> = []
 	//charsetsData = charsetsData.concat(encoder.Card8(2) as Array<number>)
 	charsetsData = charsetsData.concat(encoder.Card8(0) as Array<number>)
+	reserveProgressBudget(charsets.length + glyphTables.length + 1)
+	setProgressMessage('构建 CFF charset…')
 	for (let i = 0; i < charsets.length; i += 1) {
 		const glyphSID = i + 1//encodeString(glyphName, strings)
 		charsetsData = charsetsData.concat(encoder.SID(glyphSID) as Array<number>)
 		//charsetsData = charsetsData.concat(encoder.Card16(0) as Array<number>)
+		incrementProgress(undefined, 1)
+		await yieldToEventLoop(i + 1, 50)
 	}
 	// 创建charstrings数据
 	// create charstrings data
@@ -2499,21 +2517,23 @@ const create = async(_table: ICffTable) => {
 	// const charStringsIndexData = createIndex(charStringsIndexRawData)
 
 	// 替换掉递归方案，用显式批处理
-	const batchSize = 100;
-	const totalGlyphs = glyphTables.length;
+	setProgressMessage('生成 CFF CharStrings…')
+	const batchSize = 120
+	const totalGlyphs = glyphTables.length
 	for (let start = 0; start < totalGlyphs; start += batchSize) {
-		const end = Math.min(start + batchSize, totalGlyphs);
+		const end = Math.min(start + batchSize, totalGlyphs)
 		for (let i = start; i < end; i++) {
-			loaded.value++
 			const glyph = glyphTables[i]
 			const ops = glyphToOps(glyph)
 			charStringsIndexRawData.push({ type: 'CharString', value: ops })
+			incrementProgress(undefined, 1)
+			await yieldToEventLoop(i + 1, 50)
 		}
-		// 让出事件循环，更新进度条
-		await new Promise(resolve => setTimeout(resolve, 0))
 	}
 	// 全部 glyph 已收集，安全创建索引
-	const charStringsIndexData = createIndex(charStringsIndexRawData)
+	reserveProgressBudget(charStringsIndexRawData.length)
+	setProgressMessage('构建 Charstring Index…')
+	const charStringsIndexData = await createIndex(charStringsIndexRawData)
 
 	const _fd: any = {
 		private: [0, 0],
@@ -2523,13 +2543,18 @@ const create = async(_table: ICffTable) => {
 		weight: table.topDict.weight,
 	}
 	let fd = createDict(FONT_DICT_META, _fd, strings)
-	let fdIndex = createIndex([{type: 'raw', value: fd}])
+
+	reserveProgressBudget(1)
+	setProgressMessage('构建 fdIndex Index…')
+	let fdIndex = await createIndex([{type: 'raw', value: fd}])
 	const fdselect = createFDSelect(glyphTables)
 
 	// 创建topDictIndex数据
 	// create topDictIndex data
 	let topDict = createDict(TOP_DICT_META, table.topDict, strings)
-	let topDictIndexData = createIndex([{type: 'raw', value: topDict}])
+	reserveProgressBudget(1)
+	setProgressMessage('构建 topDictIndex Index…')
+	let topDictIndexData = await createIndex([{type: 'raw', value: topDict}])
 
 	const _privateDict = {
 		BlueValues: [-16, 0 - (-16), 800, 816 - 800],
@@ -2552,7 +2577,9 @@ const create = async(_table: ICffTable) => {
 	// 创建stringIndex数据
 	// create stringIndex data
 	const stringIndex = table.stringIndex as IStringIndex
-	const stringIndexData = createIndex(strings.map((item: string) => {
+	reserveProgressBudget(strings.length)
+	setProgressMessage('构建 String Index…')
+	const stringIndexData = await createIndex(strings.map((item: string) => {
 		return {
 			type: 'Name',
 			value: item
@@ -2573,10 +2600,14 @@ const create = async(_table: ICffTable) => {
 	_fd.private[0] = privateDict.length
 	_fd.private[1] = table.topDict.charStrings + charStringsIndexData.length + fdIndex.length
 	fd = createDict(FONT_DICT_META, _fd, strings)
-	fdIndex = createIndex([{type: 'raw', value: fd}])
+	reserveProgressBudget(1)
+	setProgressMessage('构建 fdIndex Index…')
+	fdIndex = await createIndex([{type: 'raw', value: fd}])
 
 	topDict = createDict(TOP_DICT_META, table.topDict, strings)
-	topDictIndexData = createIndex([{type: 'raw', value: topDict}])
+	reserveProgressBudget(1)
+	setProgressMessage('构建 topDictIndex Index…')
+	topDictIndexData = await createIndex([{type: 'raw', value: topDict}])
 	const data: Array<number> = [
 		...headerData,
 		...nameIndexData,

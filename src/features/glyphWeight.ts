@@ -51,8 +51,8 @@ const updateGlyphWeight = (glyph: ICustomGlyph) => {
 const getDiscretePoints = (points) => {
   const discrete_points = []
   const n = 100
-  if (points.length < 4) return points
-  for (let i = 0; i < points.length - 1; i+=3) {
+  if (points.length <= 4) return points
+  for (let i = 0; i < points.length - 3; i+=3) {
     const bezier = [points[i], points[i+1], points[i+2], points[i+3]]
     for (let j = 0; j < n; j++) {
       const t = j / n

@@ -513,8 +513,8 @@ const getComponents = (skeleton) => {
   const turn_angle_1 = FP.degreeToRadius(10)
   const turn_angle_2 = FP.degreeToRadius(15)
   const end_length = 10
-  const _weight = weight * 1.5
-  const _weight_2 = weight * 1.35
+  const _weight = weight * 1.0
+  const _weight_2 = weight * 0.95
 
   // out指右侧（外侧）轮廓线
   // in指左侧（内侧）轮廓线

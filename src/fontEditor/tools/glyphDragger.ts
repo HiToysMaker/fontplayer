@@ -210,6 +210,7 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = false)
 	let mouseDownX = -1
 	let mouseDownY = -1
 	let coords = []
+	let isDraggingFirstJoint = false  // 标记是否拖拽第一个关键点
 
 	// 创建时间节流函数，16ms ≈ 60fps
 	const throttledRender_skeletonDrag = throttle((glyph, joint, dx, dy) => {
@@ -242,6 +243,7 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = false)
 
 	const onMouseDown = (e: MouseEvent) => {
 		if (!draggable.value) return
+		if (!selectedComponent.value && !selectedSubComponent.value) return
 		editCharacterFileOnDragging.value = R.clone(editCharacterFile.value)
 		for (let i = 0; i < editCharacterFileOnDragging.value.components.length; i++) {
 			const component = editCharacterFileOnDragging.value.components[i]
@@ -262,6 +264,7 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = false)
 			glyph = selectedComponentOnDragging?.value?.value
 		}
 		if (!glyph || !glyph._o) return
+		joints = joints.filter(joint => !joint.name.includes('_ref'))
 		coords = []
 		getLayoutCoords(editCharacterFileOnDragging.value.info.layoutTree, coords)
 		mouseDownX = getCoord(e.offsetX)
@@ -273,8 +276,10 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = false)
 				if (distance(x, y, mouseDownX, mouseDownY) <= d) {
 					// 拖拽关键点
 					draggingJoint.value = joints[i]
-					// 如果设置了onSkeletonDragStart，则骨架可拖拽
-					if (glyph._o.onSkeletonDragStart) {
+					// 如果是第一个关键点，标记为移动整个组件
+					isDraggingFirstJoint = (i === 0)
+					// 如果不是第一个关键点，且设置了onSkeletonDragStart，则骨架可拖拽
+					if (i !== 0 && glyph._o.onSkeletonDragStart) {
 						glyph._o.onSkeletonDragStart({
 							draggingJoint: draggingJoint.value,
 							deltaX: 0,
@@ -299,6 +304,7 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = false)
 		// canvas.addEventListener('mousemove', onMouseMove)
 	}
 	const onMouseMove = (e: MouseEvent) => {
+		if (!selectedComponent.value && !selectedSubComponent.value) return
 		const d = 20
 		const dx = getCoord(e.offsetX) - lastX
 		const dy = getCoord(e.offsetY) - lastY
@@ -318,8 +324,8 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = false)
 		}
 		mousemove = true
 		if (mousedown) {
-			// 没有拖拽joint节点
-			if (!draggingJoint.value) {
+			// 没有拖拽joint节点，或者拖拽的是第一个关键点（移动整个组件）
+			if (!draggingJoint.value || isDraggingFirstJoint) {
 				putAtCoord.value = {
 					x: ox + dx + unitsPerEm / 2,
 					y: oy + dy + unitsPerEm / 2,
@@ -395,6 +401,8 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = false)
 				// 当前选中组件为根目录中组件
 				joints = getJoints(selectedComponent?.value, selectedComponent?.value.uuid)
 			}
+			// 过滤掉参考关键点（名称包含 _ref 的关键点）
+			joints = joints.filter(joint => !joint.name.includes('_ref'))
 			if (!glyph) return
 			const d = 10
 			let mark = false
@@ -411,6 +419,19 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = false)
 		}
 	}
 	const onMouseUp = (e: MouseEvent) => {
+		if (!selectedComponent.value && !selectedSubComponent.value) {
+			mousedown = false
+			mousemove = false
+			mouseDownX = -1
+			mouseDownY = -1
+			lastX = 0
+			lastY = 0
+			putAtCoord.value = null
+			draggingJoint.value = null
+			isDraggingFirstJoint = false  // 重置第一个关键点拖拽标志
+			window.removeEventListener('mouseup', onMouseUp)
+			return
+		}
 		let glyph = null
 		if (selectedSubComponentOnDragging.value) {
 			// 当前选中组件为子字形组件
@@ -421,7 +442,8 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = false)
 		}
 		const dx = getCoord(e.offsetX) - lastX
 		const dy = getCoord(e.offsetY) - lastY
-		if (glyph._o?.onSkeletonDragEnd && mousedown) {
+		// 只有拖拽非第一个关键点且设置了onSkeletonDragEnd时，才调用骨架拖拽结束
+		if (glyph._o?.onSkeletonDragEnd && mousedown && !isDraggingFirstJoint) {
 			// 如果设置了onSkeletonDragEnd，则骨架可拖拽
 			glyph._o.onSkeletonDragEnd({
 				draggingJoint: draggingJoint.value,
@@ -443,6 +465,7 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = false)
 		lastY = 0
 		putAtCoord.value = null
 		draggingJoint.value = null
+		isDraggingFirstJoint = false  // 重置第一个关键点拖拽标志
 		editCharacterFile.value.glyph_script = R.clone(editCharacterFileOnDragging.value.glyph_script)
 		editCharacterFile.value.components = R.clone(editCharacterFileOnDragging.value.components)
 		editCharacterFileOnDragging.value = null
@@ -454,6 +477,7 @@ const initGlyphDragger = (canvas: HTMLCanvasElement, editGlyph: boolean = false)
 		canvas.removeEventListener('mousedown', onMouseDown)
 		canvas.removeEventListener('mousemove', onMouseMove)
 		editCharacterFileOnDragging.value = null
+		isDraggingFirstJoint = false  // 清理时重置标志
 		setEditing(false)
 	}
 	return closeGlyphDragger

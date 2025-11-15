@@ -219,7 +219,7 @@ const getComponents = (skeleton, global_params) => {
   const stress_ratio = 3
   const serif_size = 2.0
   const radius = 10
-  const _dian_weight = weight * 1.8
+  const _dian_weight = weight * 1.2
   const dian_diameter = Math.min(FP.distance(bend, end), _dian_weight)
 
   // out指右侧（外侧）轮廓线

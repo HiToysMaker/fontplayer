@@ -79,6 +79,23 @@
 
   --el-menu-text-color: var(--light-0) !important;
 
+  .el-radio-button {
+    --el-radio-button-checked-border-color: var(--primary-0) !important;
+    --el-radio-button-checked-bg-color: var(--primary-0) !important;
+    border-radius: 0;
+    .el-radio-button__inner {
+      border-radius: 0;
+    }
+    .el-radio-button__inner:hover {
+      color: var(--primary-0);
+    }
+    &.is-active {
+      .el-radio-button__inner:hover {
+        color: var(--light-0);
+      }
+    }
+  }
+
   .el-checkbox {
     --el-checkbox-checked-text-color: var(--light-3) !important;
     --el-checkbox-checked-input-border-color: var(--primary-0) !important;
@@ -364,4 +381,8 @@ label {
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
+}
+
+.el-color-picker {
+	margin: 0;
 }

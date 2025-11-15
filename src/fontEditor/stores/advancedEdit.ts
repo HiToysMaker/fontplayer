@@ -863,22 +863,22 @@ const process_character_fangsong = (characterFile) => {
           }
         }
       })
-      const stroke = kai_strokes.find(stroke => stroke.name === glyph.name)
-      if (stroke) {
-        stroke.params.map((param) => {
-          const _param = glyph.parameters.parameters.find(parameter => parameter.name === param.name)
-          if (param.originParam) {
-            const __param = glyph.parameters.parameters.find(parameter => parameter.name === param.originParam)
-            __param.name = param.name
-            __param.min = param.min
-            __param.max = param.max
-          } else if (!_param) {
-            const __param = addParam(glyph, param.name, param.default, ParameterType.Number)
-            __param.min = param.min
-            __param.max = param.max
-          }
-        })
-      }
+      // const stroke = kai_strokes.find(stroke => stroke.name === glyph.name)
+      // if (stroke) {
+      //   stroke.params.map((param) => {
+      //     const _param = glyph.parameters.parameters.find(parameter => parameter.name === param.name)
+      //     if (param.originParam) {
+      //       const __param = glyph.parameters.parameters.find(parameter => parameter.name === param.originParam)
+      //       __param.name = param.name
+      //       __param.min = param.min
+      //       __param.max = param.max
+      //     } else if (!_param) {
+      //       const __param = addParam(glyph, param.name, param.default, ParameterType.Number)
+      //       __param.min = param.min
+      //       __param.max = param.max
+      //     }
+      //   })
+      // }
     }
   }
 }
@@ -908,22 +908,22 @@ const process_character_kai = (characterFile) => {
           }
         }
       })
-      const stroke = kai_strokes.find(stroke => stroke.name === glyph.name)
-      if (stroke) {
-        stroke.params.map((param) => {
-          const _param = glyph.parameters.parameters.find(parameter => parameter.name === param.name)
-          if (param.originParam) {
-            const __param = glyph.parameters.parameters.find(parameter => parameter.name === param.originParam)
-            __param.name = param.name
-            __param.min = param.min
-            __param.max = param.max
-          } else if (!_param) {
-            const __param = addParam(glyph, param.name, param.default, ParameterType.Number)
-            __param.min = param.min
-            __param.max = param.max
-          }
-        })
-      }
+      // const stroke = kai_strokes.find(stroke => stroke.name === glyph.name)
+      // if (stroke) {
+      //   stroke.params.map((param) => {
+      //     const _param = glyph.parameters.parameters.find(parameter => parameter.name === param.name)
+      //     if (param.originParam) {
+      //       const __param = glyph.parameters.parameters.find(parameter => parameter.name === param.originParam)
+      //       __param.name = param.name
+      //       __param.min = param.min
+      //       __param.max = param.max
+      //     } else if (!_param) {
+      //       const __param = addParam(glyph, param.name, param.default, ParameterType.Number)
+      //       __param.min = param.min
+      //       __param.max = param.max
+      //     }
+      //   })
+      // }
     }
   }
 }
@@ -954,26 +954,26 @@ const process_character_li = (characterFile) => {
         }
       })
       if (glyph.name === '横') {
-        if (glyph.parameters.parameters.find(parameter => parameter.name === '长度').value >= 500) {
+        if (glyph.parameters.parameters.find(parameter => parameter.name === '水平延伸').value >= 500) {
           glyph.name = '横波'
         }
       }
-      const stroke = li_strokes.find(stroke => stroke.name === glyph.name)
-      if (stroke) {
-        stroke.params.map((param) => {
-          const _param = glyph.parameters.parameters.find(parameter => parameter.name === param.name)
-          if (param.originParam) {
-            const __param = glyph.parameters.parameters.find(parameter => parameter.name === param.originParam)
-            __param.name = param.name
-            __param.min = param.min
-            __param.max = param.max
-          } else if (!_param) {
-            const __param = addParam(glyph, param.name, param.default, ParameterType.Number)
-            __param.min = param.min
-            __param.max = param.max
-          }
-        })
-      }
+      // const stroke = li_strokes.find(stroke => stroke.name === glyph.name)
+      // if (stroke) {
+      //   stroke.params.map((param) => {
+      //     const _param = glyph.parameters.parameters.find(parameter => parameter.name === param.name)
+      //     if (param.originParam) {
+      //       const __param = glyph.parameters.parameters.find(parameter => parameter.name === param.originParam)
+      //       __param.name = param.name
+      //       __param.min = param.min
+      //       __param.max = param.max
+      //     } else if (!_param) {
+      //       const __param = addParam(glyph, param.name, param.default, ParameterType.Number)
+      //       __param.min = param.min
+      //       __param.max = param.max
+      //     }
+      //   })
+      // }
     }
   }
 }

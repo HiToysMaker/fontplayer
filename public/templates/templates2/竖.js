@@ -3,13 +3,16 @@ const oy = 500
 const x0 = 500
 const y0 = 250
 const params = {
-  length: glyph.getParam('长度'),
+  horizontalSpan: glyph.getParam('水平延伸'),
+  verticalSpan: glyph.getParam('竖直延伸'),
   skeletonRefPos: glyph.getParam('参考位置'),
 }
 const global_params = {
   weights_variation_power: glyph.getParam('字重变化'),
   start_style_type: glyph.getParam('起笔风格'),
   start_style_value: glyph.getParam('起笔数值'),
+  end_style_type: glyph.getParam('收笔风格'),
+  end_style_value: glyph.getParam('收笔数值'),
   turn_style_type: glyph.getParam('转角风格'),
   turn_style_value: glyph.getParam('转角数值'),
   bending_degree: glyph.getParam('弯曲程度'),
@@ -29,12 +32,14 @@ const refline = (p1, p2, type) => {
 }
 
 const getJointsMap = (data) => {
-  const { draggingJoint, deltaX, deltaY } = data
+  let { draggingJoint, deltaX, deltaY } = data
   const jointsMap = Object.assign({}, glyph.tempData)
   switch (draggingJoint.name) {
     case 'end': {
+      const horizontal_span_range = glyph.getParamRange('水平延伸')
+      deltaX = range(deltaX, horizontal_span_range)
       jointsMap['end'] = {
-        x: glyph.tempData['end'].x,
+        x: glyph.tempData['end'].x + deltaX,
         y: glyph.tempData['end'].y + deltaY,
       }
       break
@@ -73,7 +78,8 @@ glyph.onSkeletonDragEnd = (data) => {
   const jointsMap = getJointsMap(data)
   const _params = computeParamsByJoints(jointsMap)
   updateGlyphByParams(_params, global_params)
-  glyph.setParam('长度', _params.length)
+  glyph.setParam('水平延伸', _params.horizontalSpan)
+  glyph.setParam('竖直延伸', _params.verticalSpan)
   glyph.tempData = null
 }
 
@@ -88,17 +94,21 @@ const range = (value, range) => {
 
 const computeParamsByJoints = (jointsMap) => {
   const { start, end } = jointsMap
-  const length_range = glyph.getParamRange('长度')
-  const length = range(end.y - start.y, length_range)
+  const horizontal_span_range = glyph.getParamRange('水平延伸')
+  const vertical_span_range = glyph.getParamRange('竖直延伸')
+  const horizontalSpan = range(end.x - start.x, horizontal_span_range)
+  const verticalSpan = range(end.y - start.y, vertical_span_range)
   return {
-    length,
+    horizontalSpan,
+    verticalSpan,
     skeletonRefPos: glyph.getParam('参考位置'),
   }
 }
 
 const updateGlyphByParams = (params, global_params) => {
   const {
-    length,
+    horizontalSpan,
+    verticalSpan,
     skeletonRefPos,
   } = params
   const { weight } = global_params
@@ -114,8 +124,8 @@ const updateGlyphByParams = (params, global_params) => {
   const end_ref = new FP.Joint(
     'end_ref',
     {
-      x: start_ref.x,
-      y: start_ref.y + length,
+      x: start_ref.x + horizontalSpan,
+      y: start_ref.y + verticalSpan,
     },
   )
   if (skeletonRefPos === 1) {

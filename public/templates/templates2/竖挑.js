@@ -3,7 +3,8 @@ const oy = 500
 const x0 = 420
 const y0 = 250
 const params = {
-  shu_length: glyph.getParam('竖-长度'),
+  shu_horizontalSpan: glyph.getParam('竖-水平延伸'),
+  shu_verticalSpan: glyph.getParam('竖-竖直延伸'),
   tiao_horizontalSpan: glyph.getParam('挑-水平延伸'),
   tiao_verticalSpan: glyph.getParam('挑-竖直延伸'),
   skeletonRefPos: glyph.getParam('参考位置'),
@@ -35,35 +36,39 @@ const distance = (p1, p2) => {
 }
 
 const getJointsMap = (data) => {
-  const { draggingJoint, deltaX, deltaY } = data
+  let { draggingJoint, deltaX, deltaY } = data
   const jointsMap = Object.assign({}, glyph.tempData)
   switch (draggingJoint.name) {
     case 'shu_end': {
+      const horizontal_span_range = glyph.getParamRange('竖-水平延伸')
+      deltaX = range(deltaX, horizontal_span_range)
       jointsMap['shu_end'] = {
-        x: glyph.tempData['shu_end'].x,
+        x: glyph.tempData['shu_end'].x + deltaX,
         y: glyph.tempData['shu_end'].y + deltaY,
       }
       jointsMap['tiao_start'] = {
-        x: glyph.tempData['tiao_start'].x,
+        x: glyph.tempData['tiao_start'].x + deltaX,
         y: glyph.tempData['tiao_start'].y + deltaY,
       }
       jointsMap['tiao_end'] = {
-        x: glyph.tempData['tiao_end'].x,
+        x: glyph.tempData['tiao_end'].x + deltaX,
         y: glyph.tempData['tiao_end'].y + deltaY,
       }
       break
     }
     case 'tiao_start': {
+      const horizontal_span_range = glyph.getParamRange('竖-水平延伸')
+      deltaX = range(deltaX, horizontal_span_range)
       jointsMap['shu_end'] = {
-        x: glyph.tempData['shu_end'].x,
+        x: glyph.tempData['shu_end'].x + deltaX,
         y: glyph.tempData['shu_end'].y + deltaY,
       }
       jointsMap['tiao_start'] = {
-        x: glyph.tempData['tiao_start'].x,
+        x: glyph.tempData['tiao_start'].x + deltaX,
         y: glyph.tempData['tiao_start'].y + deltaY,
       }
       jointsMap['tiao_end'] = {
-        x: glyph.tempData['tiao_end'].x,
+        x: glyph.tempData['tiao_end'].x + deltaX,
         y: glyph.tempData['tiao_end'].y + deltaY,
       }
       break
@@ -109,7 +114,8 @@ glyph.onSkeletonDragEnd = (data) => {
   const jointsMap = getJointsMap(data)
   const _params = computeParamsByJoints(jointsMap)
   updateGlyphByParams(_params, global_params)
-  glyph.setParam('竖-长度', _params.shu_length)
+  glyph.setParam('竖-水平延伸', _params.shu_horizontalSpan)
+  glyph.setParam('竖-竖直延伸', _params.shu_verticalSpan)
   glyph.setParam('挑-水平延伸', _params.tiao_horizontalSpan)
   glyph.setParam('挑-竖直延伸', _params.tiao_verticalSpan)
   glyph.tempData = null
@@ -126,14 +132,17 @@ const range = (value, range) => {
 
 const computeParamsByJoints = (jointsMap) => {
   const { shu_start, shu_end, tiao_start, tiao_end } = jointsMap
-  const shu_length_range = glyph.getParamRange('竖-长度')
+  const shu_horizontal_span_range = glyph.getParamRange('竖-水平延伸')
+  const shu_vertical_span_range = glyph.getParamRange('竖-竖直延伸')
   const tiao_horizontal_span_range = glyph.getParamRange('挑-水平延伸')
   const tiao_vertical_span_range = glyph.getParamRange('挑-竖直延伸')
-  const shu_length = range(shu_end.y - shu_start.y, shu_length_range)
+  const shu_horizontalSpan = range(shu_end.x - shu_start.x, shu_horizontal_span_range)
+  const shu_verticalSpan = range(shu_end.y - shu_start.y, shu_vertical_span_range)
   const tiao_horizontalSpan = range(tiao_end.x - tiao_start.x, tiao_horizontal_span_range)
   const tiao_verticalSpan = range(tiao_start.y - tiao_end.y, tiao_vertical_span_range)
   return {
-    shu_length,
+    shu_horizontalSpan,
+    shu_verticalSpan,
     tiao_horizontalSpan,
     tiao_verticalSpan,
     skeletonRefPos: glyph.getParam('参考位置'),
@@ -142,7 +151,8 @@ const computeParamsByJoints = (jointsMap) => {
 
 const updateGlyphByParams = (params, global_params) => {
   const {
-    shu_length,
+    shu_horizontalSpan,
+    shu_verticalSpan,
     tiao_horizontalSpan,
     tiao_verticalSpan,
     skeletonRefPos,
@@ -161,8 +171,8 @@ const updateGlyphByParams = (params, global_params) => {
   const shu_end_ref = new FP.Joint(
     'shu_end_ref',
     {
-      x: shu_start_ref.x,
-      y: shu_start_ref.y + shu_length,
+      x: shu_start_ref.x + shu_horizontalSpan,
+      y: shu_start_ref.y + shu_verticalSpan,
     },
   )
   if (skeletonRefPos === 1) {
@@ -222,8 +232,8 @@ const updateGlyphByParams = (params, global_params) => {
   const tiao_start = new FP.Joint(
     'tiao_start',
     {
-      x: shu_start.x,
-      y: shu_start.y + shu_length,
+      x: shu_end.x,
+      y: shu_end.y,
     },
   )
   const tiao_end = new FP.Joint(

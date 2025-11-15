@@ -154,7 +154,7 @@ const updateGlyphByParams = (params, global_params) => {
     skeletonRefPos,
   } = params
   const { weight } = global_params
-  const _weight = weight * 1.5
+  const _weight = weight * 1.0
 
   // 竖
   let shu_start, shu_end
@@ -323,7 +323,7 @@ const getComponents = (skeleton) => {
     gou_end,
   } = skeleton
 
-  const _weight = weight * 1.5
+  const _weight = weight * 1.0
 
   // out指右侧（外侧）轮廓线
   // in指左侧（内侧）轮廓线

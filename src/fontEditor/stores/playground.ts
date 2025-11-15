@@ -12,7 +12,7 @@ import { toArrayBuffer } from "../../fontManager"
 import { create, PathType } from '../../fontManager'
 import { genUUID } from '../../utils/string'
 import { FP } from '../programming/FPUtils'
-import { strokes as hei_strokes } from '../templates/strokes_1'
+import { hei_strokes } from '../templates/strokes_1'
 import { ParametersMap } from "../programming/ParametersMap"
 import { IParameter } from "./glyph"
 import paper from 'paper'
@@ -439,12 +439,18 @@ const exportFont = async () => {
     nativeSaveBinary(buffer, filename, ['otf'])
     loading.value = false
   } else {
-    const dataView = new DataView(toArrayBuffer(font) as ArrayBuffer)
-    const blob = new Blob([dataView], {type: 'font/opentype'})
+    // 直接使用ArrayBuffer创建Blob，不要通过DataView
+    const arrayBuffer = toArrayBuffer(font) as ArrayBuffer
+    console.log(`[playground exportFont] ArrayBuffer size: ${arrayBuffer.byteLength} bytes`)
+    
+    const blob = new Blob([arrayBuffer], {type: 'font/opentype'})
+    console.log(`[playground exportFont] Blob size: ${blob.size} bytes`)
+    
     var zip = new JSZip()
     zip.file(`登鹳雀楼.otf`, blob)
     zip.generateAsync({type:"blob"}).then(function(content: any) {
       saveAs(content, `登鹳雀楼.zip`)
+      console.log(`[playground exportFont] ZIP saved successfully`)
       loading.value = false
     })
   }

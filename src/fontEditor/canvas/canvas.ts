@@ -12,7 +12,7 @@ import {
   selectedFile,
   editCharacterFile,
 } from '../stores/files'
-import { type IBackground, type IGrid, BackgroundType, GridType, background, grid, getStrokeWidth } from '../stores/global'
+import { type IBackground, type IGrid, BackgroundType, GridType, background, grid, getStrokeWidth, fontPreviewStyle } from '../stores/global'
 import type { IPoint } from '../stores/pen'
 import {
   mapCanvasCoords,
@@ -40,6 +40,7 @@ import type {
 } from '../../fontManager'
 import { editStatus, Status } from '../stores/font'
 import { editCharacterFileOnDragging } from '../stores/glyphDragger'
+import { getBound } from '../../utils/math'
 
 /**
  * 清空画布
@@ -134,9 +135,16 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       // 如果有未完成的路径，先绘制它
       if (currentPathStarted) {
         ctx.closePath()
-        if (fontRenderStyle.value === 'color' || options.fill) {
-          ctx.fillStyle = '#000'
+        if (fontRenderStyle.value === 'color') {
+          ctx.fillStyle = component.fillColor || '#000'
+          ctx.strokeStyle = component.fillColor || '#000'
           ctx.fill("nonzero")
+        } else if (fontRenderStyle.value === 'black' || options.fill) {
+          ctx.fillStyle = '#000'
+          ctx.strokeStyle = '#000'
+          ctx.fill("nonzero")
+        } else {
+          ctx.strokeStyle = '#000'
         }
         ctx.stroke()
         currentPathStarted = false
@@ -197,9 +205,16 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       // 如果有未完成的路径，先绘制它
       if (currentPathStarted) {
         ctx.closePath()
-        if (fontRenderStyle.value === 'color' || options.fill) {
-          ctx.fillStyle = '#000'
+        if (fontRenderStyle.value === 'color') {
+          ctx.fillStyle = component.fillColor || '#000'
+          ctx.strokeStyle = component.fillColor || '#000'
           ctx.fill("nonzero")
+        } else if (fontRenderStyle.value === 'black' || options.fill) {
+          ctx.fillStyle = '#000'
+          ctx.strokeStyle = '#000'
+          ctx.fill("nonzero")
+        } else {
+          ctx.strokeStyle = '#000'
         }
         ctx.stroke()
         currentPathStarted = false
@@ -219,12 +234,12 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
         glyph.render_forceUpdate(canvas, true, {
           x: options.offset.x + (component as IGlyphComponent).ox,
           y: options.offset.y + (component as IGlyphComponent).oy,
-        }, false, scale)
+        }, false, scale, (component.value as unknown as ICustomGlyph).fillColor || '#000')
       } else {
         glyph.render(canvas, true, {
           x: options.offset.x + (component as IGlyphComponent).ox,
           y: options.offset.y + (component as IGlyphComponent).oy,
-        }, false, scale)
+        }, false, scale, (component.value as unknown as ICustomGlyph).fillColor || '#000')
       }
       return
     }
@@ -232,7 +247,7 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
     // 对于路径组件，需要检查是否需要开始新的路径
     if (component.type === 'pen' || component.type === 'polygon' || component.type === 'ellipse' || component.type === 'rectangle') {
       // 如果还没有开始路径，开始新路径
-      if (!currentPathStarted) {
+      if (!currentPathStarted && fontRenderStyle.value !== 'color') {
         ctx.beginPath()
         currentPathStarted = true
       }
@@ -252,15 +267,12 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
         points,
         closePath,
       } = component.value as unknown as IPenComponent
-      ctx.strokeStyle = strokeColor || '#000'
       ctx.lineWidth = getStrokeWidth()
-      ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
-      if (fillColor === 'none') {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0)'
+
+      if (fontRenderStyle.value === 'color') {
+        ctx.beginPath()
       }
-      // let _points = transformPoints(points, {
-      //   x, y, w, h, rotation, flipX, flipY,
-      // })
+
       let _points = transformPoints(points, {
         x, y, w, h, rotation: 0, flipX, flipY,
       })
@@ -282,6 +294,14 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
         if (i + 3 >= _points.length) break
         ctx.bezierCurveTo(_points[i + 1].x, _points[i + 1].y, _points[i + 2].x, _points[i + 2].y, _points[i + 3].x, _points[i + 3].y)
       }
+
+      if (fontRenderStyle.value === 'color') {
+        ctx.fillStyle = fillColor || '#000'
+        ctx.strokeStyle = fillColor || '#000'
+        ctx.fill()
+        ctx.stroke()
+      }
+
       ctx.setTransform(1, 0, 0, 1, 0, 0)
     }
 
@@ -311,6 +331,10 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
           y: point.y * scale,
         })
       })
+
+      if (fontRenderStyle.value === 'color') {
+        ctx.beginPath()
+      }
       ctx.translate(mapCanvasX(options.offset.x), mapCanvasY(options.offset.y))
       ctx.translate(_x + _w / 2, _y + _h / 2)
       ctx.rotate(rotation * Math.PI / 180)
@@ -320,11 +344,12 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       for (let i = 1; i < _points.length; i ++) {
         ctx.lineTo(_points[i].x, _points[i].y)
       }
-      // if (closePath && fillColor) {
-      //   ctx.fill()
-      // }
-      // ctx.stroke()
-      // ctx.closePath()
+      if (fontRenderStyle.value === 'color') {
+        ctx.fillStyle = fillColor || '#000'
+        ctx.strokeStyle = fillColor || '#000'
+        ctx.fill()
+        ctx.stroke()
+      }
       ctx.setTransform(1, 0, 0, 1, 0, 0)
     }
 
@@ -345,9 +370,12 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       const radiusY = _h / 2
       const ellipseX = _x
       const ellipseY = _y
-      ctx.strokeStyle = strokeColor || '#000'
       ctx.lineWidth = getStrokeWidth()
-      ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
+
+      if (fontRenderStyle.value === 'color') {
+        ctx.beginPath()
+      }
+
       ctx.translate(mapCanvasX(options.offset.x), mapCanvasY(options.offset.y))
       ctx.translate(_x + _w / 2, _y + _h / 2)
       ctx.rotate(rotation * Math.PI / 180)
@@ -355,9 +383,14 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       // ctx.beginPath()
       ctx.moveTo(ellipseX + 2 * radiusX, ellipseY + radiusY)
       ctx.ellipse(ellipseX + radiusX, ellipseY + radiusY, radiusX, radiusY, 0, 0, 2 * Math.PI)
-      // ctx.fill()
-      // ctx.stroke()
-      // ctx.closePath()
+      
+      if (fontRenderStyle.value === 'color') {
+        ctx.fillStyle = fillColor || '#000'
+        ctx.strokeStyle = fillColor || '#000'
+        ctx.fill()
+        ctx.stroke()
+      }
+
       ctx.setTransform(1, 0, 0, 1, 0, 0)
     }
 
@@ -378,28 +411,35 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       const rectHeight = _h
       const rectX = _x
       const rectY = _y
-      ctx.strokeStyle = strokeColor || '#000'
       ctx.lineWidth = getStrokeWidth()
-      ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
+
+      if (fontRenderStyle.value === 'color') {
+        ctx.beginPath()
+      }
+
       ctx.translate(mapCanvasX(options.offset.x), mapCanvasY(options.offset.y))
       ctx.translate(_x + _w / 2, _y + _h / 2)
       ctx.rotate(rotation * Math.PI / 180)
       ctx.translate(-(_x + _w / 2), -(_y + _h / 2))
       // ctx.beginPath()
       ctx.rect(rectX, rectY, rectWidth, rectHeight)
-      // if (fillColor) {
-      //   ctx.fill()
-      // }
-      // ctx.stroke()
-      // ctx.closePath()
+
+      if (fontRenderStyle.value === 'color') {
+        ctx.fillStyle = fillColor || '#000'
+        ctx.strokeStyle = fillColor || '#000'
+        ctx.fill()
+        ctx.stroke()
+      }
+
       ctx.setTransform(1, 0, 0, 1, 0, 0)
     }
   })
   
   // 绘制最后的路径
-  if (currentPathStarted) {
+  if (currentPathStarted && fontRenderStyle.value !== 'color') {
     ctx.closePath()
-    if (fontRenderStyle.value === 'color' || options.fill) {
+    ctx.strokeStyle = '#000'
+    if (fontRenderStyle.value === 'black' || options.fill) {
       ctx.fillStyle = '#000'
       ctx.fill("nonzero")
     }
@@ -690,6 +730,199 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
   ctx.stroke()
 }
 
+/**
+ * render grid canvas
+ * @param components components to be rendered
+ * @param canvas canvas
+ * @param options option
+ */
+const formatGridComponents = (components: Array<Component>, options: IOption = {
+  fill: false,
+  offset: { x: 0, y: 0 },
+  scale: 1,
+  forceUpdate: false,
+  grid: null,
+  useSkeletonGrid: false,
+}) => {
+  if (!options.grid) return
+  const translate = (point) => {
+    return {
+      x: options.offset.x + point.x,
+      y: options.offset.y + point.y,
+    }
+  }
+  const grid = options.grid
+  const scale = options.scale//canvas.width / (selectedFile.value.fontSettings.unitsPerEm as number)
+  const useSkeletonGrid = options.useSkeletonGrid
+
+  components.map((component, index) => {
+		// 如果组件不可见则跳过
+		// skip if in-visible
+    if (!component.visible) {
+      return
+    }
+
+		// 渲染钢笔组件
+		// render pen component
+    if (component.type === 'pen') {
+      if (useSkeletonGrid) return
+      const { x, y, w, h, rotation, flipX, flipY } = component as IComponent
+      const _x = mapCanvasX(x) * scale
+      const _y = mapCanvasY(y) * scale
+      const _w = mapCanvasWidth(w) * scale
+      const _h = mapCanvasHeight(h) * scale
+      const {
+        strokeColor,
+        fillColor,
+        points,
+        closePath,
+      } = component.value as unknown as IPenComponent
+      let _points = transformPoints(points, {
+        x, y, w, h, rotation, flipX, flipY,
+      })
+      _points = _points.map((point: IPoint) => {
+        const { x, y } = computeCoords(grid, translate(point))
+        point.x = x
+        point.y = y
+        return point
+      })
+      const bound = getBound(_points);
+      (component as IComponent).x = bound.x;
+      (component as IComponent).y = bound.y;
+      (component as IComponent).w = bound.w;
+      (component as IComponent).h = bound.h;
+      (component as IComponent).rotation = 0;
+      (component as IComponent).flipX = false;
+      (component as IComponent).flipY = false;
+      ((component as IComponent).value as unknown as IPenComponent).points = _points;
+      ((component as IComponent).value as unknown as IPenComponent).contour = null;
+      ((component as IComponent).value as unknown as IPenComponent).preview = null;
+    }
+
+		// 渲染多边形组件
+		// render polygon component
+    if (component.type === 'polygon') {
+      if (useSkeletonGrid) return
+      const { x, y, w, h, rotation, flipX, flipY } = component as IComponent
+      const _x = mapCanvasX(x) * scale
+      const _y = mapCanvasY(y) * scale
+      const _w = mapCanvasWidth(w) * scale
+      const _h = mapCanvasHeight(h) * scale
+      const {
+        strokeColor,
+        fillColor,
+        points,
+        closePath,
+      } = component.value as unknown as IPolygonComponent
+      let _points = transformPoints(points, {
+        x, y, w, h, rotation, flipX, flipY,
+      })
+      _points = _points.map((point: IPoint) => {
+        const { x, y } = computeCoords(grid, translate(point))
+        point.x = x
+        point.y = y
+        return point
+      })
+      const bound = getBound(_points);
+      (component as IComponent).x = bound.x;
+      (component as IComponent).y = bound.y;
+      (component as IComponent).w = bound.w;
+      (component as IComponent).h = bound.h;
+      (component as IComponent).rotation = 0;
+      (component as IComponent).flipX = false;
+      (component as IComponent).flipY = false;
+      ((component as IComponent).value as unknown as IPolygonComponent).points = _points;
+      ((component as IComponent).value as unknown as IPolygonComponent).contour = null;
+      ((component as IComponent).value as unknown as IPolygonComponent).preview = null;
+    }
+
+		// 渲染椭圆组件
+		// render ellipse component
+    if (component.type === 'ellipse') {
+      if (useSkeletonGrid) return
+      const { x, y, w, h, rotation } = component as IComponent
+      const radiusX = w / 2
+      const radiusY = h / 2
+      const ellipseX = x
+      const ellipseY = y
+
+      const p0 = {
+        x: ellipseX + radiusX,
+        y: ellipseY + radiusY,
+      }
+
+      const p1 = {
+        x: ellipseX + radiusX + radiusX,
+        y: ellipseY + radiusY + radiusY,
+      }
+      const points = [p0, p1]
+      let _points = transformPoints(points, {
+        x, y, w, h, rotation, flipX: false, flipY: false,
+      })
+      _points = _points.map((point: IPoint) => {
+        const { x, y } = computeCoords(grid, translate(point))
+        point.x = x
+        point.y = y
+        return point
+      })
+      const _radiusX = _points[1].x - _points[0].x
+      const _radiusY = _points[1].y - _points[0].y
+      const bound = {
+        x: _points[0].x - _radiusX,
+        y: _points[0].y - radiusY,
+        w: 2 * radiusX,
+        h: 2 * radiusY,
+      };
+      (component as IComponent).x = bound.x;
+      (component as IComponent).y = bound.y;
+      (component as IComponent).w = bound.w;
+      (component as IComponent).h = bound.h;
+      (component as IComponent).rotation = 0;
+      (component as IComponent).flipX = false;
+      (component as IComponent).flipY = false;
+      ((component as IComponent).value as unknown as IEllipseComponent).radiusX = _radiusX;
+      ((component as IComponent).value as unknown as IEllipseComponent).radiusY = _radiusY;
+      ((component as IComponent).value as unknown as IEllipseComponent).contour = null;
+      ((component as IComponent).value as unknown as IEllipseComponent).preview = null;
+    }
+
+		// 渲染长方形组件
+		// render rectangle component
+    if (component.type === 'rectangle') {
+      if (useSkeletonGrid) return
+      const { x, y, w, h, rotation } = component as IComponent
+      const p0 = {
+        x: x,
+        y: y,
+      }
+      const p1 = {
+        x: x + w,
+        y: y + h,
+      }
+      let _points = [p0, p1]
+      _points = _points.map((point: IPoint) => {
+        const { x, y } = computeCoords(grid, translate(point))
+        return {
+          x, y,
+        }
+      })
+      const width = _points[1].x - _points[0].x;
+      const height = _points[1].y - _points[0].y;
+      (component as IComponent).x = x;
+      (component as IComponent).y = y;
+      (component as IComponent).w = w;
+      (component as IComponent).h = h;
+      (component as IComponent).rotation = 0;
+      (component as IComponent).flipX = false;
+      (component as IComponent).flipY = false;
+      ((component as IComponent).value as unknown as IRectangleComponent).width = width;
+      ((component as IComponent).value as unknown as IRectangleComponent).height = height;
+      ((component as IComponent).value as unknown as IRectangleComponent).contour = null;
+      ((component as IComponent).value as unknown as IRectangleComponent).preview = null;
+    }
+  })
+}
+
 const render = (canvas: HTMLCanvasElement, renderBackground: Boolean = true, forceUpdate: boolean = false) => {
   clearCanvas(canvas as HTMLCanvasElement)
   if (renderBackground) {
@@ -756,15 +989,21 @@ const renderGlyph = (
   renderRefLines && glyph.renderJoints(canvas as HTMLCanvasElement)
 }
 
-const renderPreview2 = (canvas: HTMLCanvasElement, contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>) => {
+const renderPreview2 = (canvas: HTMLCanvasElement, contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>, fillColors: Array<string> = []) => {
   const ctx = canvas.getContext('2d')
   if (!ctx) return
   ctx.fillStyle = 'white'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
-  ctx.beginPath()
+
+  if (fontPreviewStyle.value === 'black') {
+    ctx.beginPath()
+  }
   for (let i = 0; i < contours.length; i++) {
     const contour = contours[i]
     if (!contour || !contour.length) continue
+    if (fontPreviewStyle.value === 'color') {
+      ctx.beginPath()
+    }
     ctx.moveTo(contour[0].start.x, contour[0].start.y)
     for (let j = 0; j < contour.length; j++) {
       const path = contour[j]
@@ -778,10 +1017,17 @@ const renderPreview2 = (canvas: HTMLCanvasElement, contours: Array<Array<ILine |
         )
       }
     }
+    if (fontPreviewStyle.value === 'color') {
+      ctx.closePath()
+      ctx.fillStyle = fillColors[i] || '#000'
+      ctx.fill("nonzero")
+    }
   }
-  ctx.closePath()
-  ctx.fillStyle = '#000'
-  ctx.fill("nonzero")
+  if (fontPreviewStyle.value === 'black') {
+    ctx.closePath()
+    ctx.fillStyle = '#000'
+    ctx.fill("nonzero")
+  }
 }
 
 export {
@@ -795,4 +1041,5 @@ export {
   renderGlyphPreview,
   renderGridCanvas,
   computeCoords,
+  formatGridComponents,
 }

@@ -10,7 +10,8 @@
   import { getRatioOptions, ParameterType, getConstant, IParameter, IRingParameter, IParameter2, getRatioLayout, selectedParam, selectedParamType, constantGlyphMap, ConstantType, getGlyphByUUID, GlyphType, executeScript, getRatioLayout2 } from '../../stores/glyph'
   import { editStatus, Status } from '../../stores/font'
   import { useI18n } from 'vue-i18n'
-  import { canvas, dragOption, draggable, grid, GridType, checkJoints, checkRefLines, jointsCheckedMap } from '../../stores/global'
+  import { canvas, dragOption, draggable, grid, GridType, checkJoints, checkRefLines, jointsCheckedMap, tips } from '../../stores/global'
+  import { expandGlyphComponent } from '../../utils/formatGlyphComponents'
   import { ComputedRef, Ref, computed, onMounted, onUnmounted, ref, watch } from 'vue'
   import { emitter } from '../../Event/bus'
 	import RingController from '../../components/Widgets/RingController.vue'
@@ -21,7 +22,7 @@
     selectedSubComponent,
 		type IComponent,
   } from '../../stores/files'
-	import { setSelectGlobalParamDialogVisible, setSetAsGlobalParamDialogVisible } from '../../stores/dialogs'
+	import { setSelectGlobalParamDialogVisible, setSetAsGlobalParamDialogVisible, setTipsDialogVisible } from '../../stores/dialogs'
 	import { More } from '@element-plus/icons-vue'
 	import { OpType, saveState, StoreType } from '../../stores/edit'
   const { tm, t } = useI18n()
@@ -69,7 +70,7 @@
 	]
   const size = ref(150)
 
-  _selectedComponent.value.value._o?.getJoints().map((joint) => {
+  _selectedComponent.value?.value?._o?.getJoints()?.map((joint) => {
 		if (joint) {
 			jointsCheckedMap.value[joint.name] = false
 		}
@@ -77,7 +78,7 @@
 
   watch([_selectedComponent, selectedComponent], () => {
     jointsCheckedMap.value = {}
-    _selectedComponent.value.value._o?.getJoints().map((joint) => {
+    _selectedComponent.value?.value?._o?.getJoints()?.map((joint) => {
 			if (joint) {
 				jointsCheckedMap.value[joint.name] = false
 			}
@@ -198,7 +199,7 @@
     } else if (editStatus.value === Status.Glyph) {
       emitter.emit('renderGlyph')
     }
-    _selectedComponent.value.value._o?.renderJoints(canvas.value, {
+    _selectedComponent.value?.value?._o?.renderJoints(canvas.value, {
       type: 'selected',
       joints: Object.keys(jointsCheckedMap.value).filter((name) => !!jointsCheckedMap.value[name]),
     })
@@ -293,6 +294,78 @@
 			emitter.emit('renderGlyphPreviewCanvasByUUID', glyph.uuid)
 		}
 	}
+
+	const onFillColorChange = (color: string) => {
+		emitter.emit('renderCharacter', true)
+	}
+
+	const handleFormatGlyphComponent = () => {
+		tips.value = t('panels.paramsPanel.formatComponent.confirmMsg')
+		setTipsDialogVisible(true, () => {
+			// 执行格式化逻辑
+			formatGlyphComponent()
+		})
+	}
+
+	const formatGlyphComponent = () => {
+		if (!_selectedComponent.value || _selectedComponent.value.type !== 'glyph') {
+			tips.value = '请先选择一个字形组件'
+			setTipsDialogVisible(true)
+			return
+		}
+	if (editCharacterFile.value.selectedComponentsTree && editCharacterFile.value.selectedComponentsTree.length && selectedSubComponent.value) {
+		// 子组件 - 暂不支持
+		tips.value = '暂不支持格式化嵌套的子字形组件'
+		setTipsDialogVisible(true)
+		return
+	}
+
+	const expanded = expandGlyphComponent(_selectedComponent.value)
+	if (!expanded.components.length) {
+		tips.value = '该字形组件没有可转换的轮廓组件'
+		setTipsDialogVisible(true)
+		return
+	}
+
+	const oldComponentUUID = selectedComponentUUID.value
+
+	// 立即清除选择状态，避免后续操作触发响应式访问已删除的组件
+	editCharacterFile.value.selectedComponentsUUIDs = []
+	editCharacterFile.value.selectedComponentsTree = []
+
+	// 删除当前字形组件，并插入转换后的组件
+	const index = editCharacterFile.value.components.findIndex(c => c.uuid === oldComponentUUID)
+	if (index !== -1) {
+		const orderIndex = editCharacterFile.value.orderedList.findIndex(item => item && item.type === 'component' && item.uuid === oldComponentUUID)
+		const newComponentsList = [
+			...editCharacterFile.value.components.slice(0, index),
+			...expanded.components,
+			...editCharacterFile.value.components.slice(index + 1)
+		]
+
+		let newOrderedList = editCharacterFile.value.orderedList
+		if (orderIndex !== -1) {
+			newOrderedList = [
+				...editCharacterFile.value.orderedList.slice(0, orderIndex),
+				...expanded.orderedItems,
+				...editCharacterFile.value.orderedList.slice(orderIndex + 1)
+			]
+		} else {
+			newOrderedList = [
+				...editCharacterFile.value.orderedList,
+				...expanded.orderedItems,
+			]
+		}
+
+		editCharacterFile.value.orderedList = newOrderedList
+		editCharacterFile.value.components = newComponentsList
+	}
+
+	// 然后执行脚本和渲染
+	executeCharacterScript(editCharacterFile.value)
+	emitter.emit('renderCharacter', true)
+	emitter.emit('renderPreviewCanvasByUUID', editCharacterFile.value.uuid)
+	}
 </script>
 
 <template>
@@ -325,7 +398,7 @@
 							v-for="key in Object.keys(_selectedComponent.value.layout.params)"
 							:label="key"
 						>
-							            <el-input-number v-model="_selectedComponent.value.layout.params[key]" @change="onLayoutChange" :precision="2"/>
+							<el-input-number v-model="_selectedComponent.value.layout.params[key]" @change="onLayoutChange" :precision="2"/>
 							<div class="ratio-item">
 								<font-awesome-icon class="ratio-icon" :class="{
 									selected: _selectedComponent.value.layout.ratioedMap && _selectedComponent.value.layout.ratioedMap[key].ratioed
@@ -353,7 +426,7 @@
 						</el-form-item>
 					</el-form>
 				</div>
-				<div class="interactive-settings">
+				<!-- <div class="interactive-settings">
 					<div class="title">{{ t('panels.paramsPanel.interactive') }}</div>
 					<el-form
 						class="name-form"
@@ -379,7 +452,7 @@
 							</el-radio-group>
 						</el-form-item>
 					</el-form>
-				</div>
+				</div> -->
 				<div class="transform-wrap">
 					<div class="title">{{ t('panels.paramsPanel.transform.title') }}</div>
 					<el-form
@@ -757,6 +830,23 @@
 					/>
 				</el-form>
 			</div>
+			<div class="fill-color-wrap">
+				<div class="title">{{ t('panels.paramsPanel.fillColor.title') }}</div>
+				<el-form
+					class="name-form"
+					label-width="120px"
+				>
+					<el-form-item :label="tm('panels.paramsPanel.fillColor.label')">
+						<el-color-picker v-model="_selectedComponent.value.fillColor" show-alpha @change="onFillColorChange"/>
+					</el-form-item>
+				</el-form>
+			</div>
+			<div class="format-component-wrap" v-if="_selectedComponent.type === 'glyph'">
+				<div class="title">{{ t('panels.paramsPanel.formatComponent.title') }}</div>
+				<el-button class="format-button" type="warning" @pointerdown="handleFormatGlyphComponent">
+					{{ t('panels.paramsPanel.formatComponent.button') }}
+				</el-button>
+			</div>
     </div>
   </div>
 </template>
@@ -769,6 +859,14 @@
       width: 150px;
     }
   }
+
+	.format-component-wrap {
+		.format-button {
+			width: calc(100% - 20px);
+			margin: 10px 10px;
+			margin-bottom: 20px;
+		}
+	}
 
 	.ratio-item {
 		margin-top: 5px;

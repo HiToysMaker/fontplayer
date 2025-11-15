@@ -31,7 +31,7 @@
   import { ref, type Ref, reactive } from 'vue'
   import { genUUID } from '../../../utils/string'
   import { useI18n } from 'vue-i18n'
-	import { setTool } from '../../stores/global'
+	import { checkJoints, checkRefLines, setGlyphDraggerTool, setTool } from '../../stores/global'
   import { CircleCheck, CircleClose, Unlock, Lock, View, Hide } from '@element-plus/icons-vue'
   const { t } = useI18n()
 
@@ -100,7 +100,7 @@
       }
     }
     if (component.type === 'glyph') {
-      setTool('glyphDragger')
+      setGlyphDraggerTool('glyphDragger')
     }
   }
 
@@ -223,7 +223,7 @@
     
     // 设置正确的工具，确保可以拖拽编辑
     if (lastComponent && lastComponent.type === 'glyph') {
-      setTool('glyphDragger')
+      setGlyphDraggerTool('glyphDragger')
     } else {
       setTool('select')
     }

@@ -110,7 +110,8 @@ const quadraticBezierPoint = (p0: any, p1: any, p2: any, t: number) => {
 const instanceBasicGlyph_shu_wan = (plainGlyph: ICustomGlyph) => {
   const glyph = new CustomGlyph(plainGlyph)
   const params = {
-    shu_length: glyph.getParam('竖-长度'),
+    shu_horizontalSpan: glyph.getParam('竖-水平延伸'),
+    shu_verticalSpan: glyph.getParam('竖-竖直延伸'),
     wan_length: glyph.getParam('弯-长度'),
     skeletonRefPos: glyph.getParam('参考位置'),
     weight: glyph.getParam('字重') || 40,
@@ -149,7 +150,8 @@ const getBend = (start, end, bendCursor, bendDegree) => {
 
 const updateGlyphByParams = (params, glyph) => {
   const {
-    shu_length,
+    shu_horizontalSpan,
+    shu_verticalSpan,
     wan_length,
     skeletonRefPos,
     weight,
@@ -174,8 +176,8 @@ const updateGlyphByParams = (params, glyph) => {
   const shu_end_ref = new FP.Joint(
     'shu_end_ref',
     {
-      x: shu_start_ref.x,
-      y: shu_start_ref.y + shu_length,
+      x: shu_start_ref.x + shu_horizontalSpan,
+      y: shu_start_ref.y + shu_verticalSpan,
     },
   )
   if (skeletonRefPos === 1) {
@@ -235,8 +237,8 @@ const updateGlyphByParams = (params, glyph) => {
   const wan_start = new FP.Joint(
     'wan_start',
     {
-      x: shu_start.x,
-      y: shu_start.y + shu_length,
+      x: shu_end.x,
+      y: shu_end.y,
     },
   )
   const wan_end = new FP.Joint(
@@ -269,12 +271,15 @@ const updateGlyphByParams = (params, glyph) => {
 
 const computeParamsByJoints = (jointsMap, glyph) => {
   const { shu_start, shu_end, wan_start, wan_end } = jointsMap
-  const shu_length_range = glyph.getParamRange('竖-长度')
+  const shu_horizontal_span_range = glyph.getParamRange('竖-水平延伸')
+  const shu_vertical_span_range = glyph.getParamRange('竖-竖直延伸')
   const wan_length_range = glyph.getParamRange('弯-长度')
-  const shu_length = range(shu_end.y - shu_start.y, shu_length_range)
+  const shu_horizontalSpan = range(shu_end.x - shu_start.x, shu_horizontal_span_range)
+  const shu_verticalSpan = range(shu_end.y - shu_start.y, shu_vertical_span_range)
   const wan_length = range(wan_end.x - wan_start.x, wan_length_range)
   return {
-    shu_length,
+    shu_horizontalSpan,
+    shu_verticalSpan,
     wan_length,
     skeletonRefPos: glyph.getParam('参考位置'),
     weight: glyph.getParam('字重') || 40,
@@ -296,39 +301,41 @@ const updateSkeletonListener_before_bind_shu_wan = (glyph: CustomGlyph) => {
         }
         
         Object.keys(jointsMap).forEach(key => {
-          jointsMap[key] = {
-            x: glyph.tempData[key].x + deltaX,
-            y: glyph.tempData[key].y + deltaY,
+          if (glyph.tempData[key] && glyph.tempData[key].x && glyph.tempData[key].y) {
+            jointsMap[key] = {
+              x: glyph.tempData[key].x + deltaX,
+              y: glyph.tempData[key].y + deltaY,
+            }
           }
         })
         break
       }
       case 'shu_end': {
         jointsMap['shu_end'] = {
-          x: glyph.tempData['shu_end'].x,
+          x: glyph.tempData['shu_end'].x + deltaX,
           y: glyph.tempData['shu_end'].y + deltaY,
         }
         jointsMap['wan_start'] = {
-          x: glyph.tempData['wan_start'].x,
+          x: glyph.tempData['wan_start'].x + deltaX,
           y: glyph.tempData['wan_start'].y + deltaY,
         }
         jointsMap['wan_end'] = {
-          x: glyph.tempData['wan_end'].x,
+          x: glyph.tempData['wan_end'].x + deltaX,
           y: glyph.tempData['wan_end'].y + deltaY,
         }
         break
       }
       case 'wan_start': {
         jointsMap['shu_end'] = {
-          x: glyph.tempData['shu_end'].x,
+          x: glyph.tempData['shu_end'].x + deltaX,
           y: glyph.tempData['shu_end'].y + deltaY,
         }
         jointsMap['wan_start'] = {
-          x: glyph.tempData['wan_start'].x,
+          x: glyph.tempData['wan_start'].x + deltaX,
           y: glyph.tempData['wan_start'].y + deltaY,
         }
         jointsMap['wan_end'] = {
-          x: glyph.tempData['wan_end'].x,
+          x: glyph.tempData['wan_end'].x + deltaX,
           y: glyph.tempData['wan_end'].y + deltaY,
         }
         break
@@ -373,7 +380,8 @@ const updateSkeletonListener_before_bind_shu_wan = (glyph: CustomGlyph) => {
     const jointsMap = getJointsMap(data)
     const _params = computeParamsByJoints(jointsMap, glyph)
     updateGlyphByParams(_params, glyph)
-    glyph.setParam('竖-长度', _params.shu_length)
+    glyph.setParam('竖-水平延伸', _params.shu_horizontalSpan)
+    glyph.setParam('竖-竖直延伸', _params.shu_verticalSpan)
     glyph.setParam('弯-长度', _params.wan_length)
     glyph.tempData = null
   }
@@ -386,30 +394,30 @@ const updateSkeletonListener_after_bind_shu_wan = (glyph: CustomGlyph) => {
     switch (draggingJoint.name) {
       case 'shu_end': {
         jointsMap['shu_end'] = {
-          x: glyph.tempData['shu_end'].x,
+          x: glyph.tempData['shu_end'].x + deltaX,
           y: glyph.tempData['shu_end'].y + deltaY,
         }
         jointsMap['wan_start'] = {
-          x: glyph.tempData['wan_start'].x,
+          x: glyph.tempData['wan_start'].x + deltaX,
           y: glyph.tempData['wan_start'].y + deltaY,
         }
         jointsMap['wan_end'] = {
-          x: glyph.tempData['wan_end'].x,
+          x: glyph.tempData['wan_end'].x + deltaX,
           y: glyph.tempData['wan_end'].y + deltaY,
         }
         break
       }
       case 'wan_start': {
         jointsMap['shu_end'] = {
-          x: glyph.tempData['shu_end'].x,
+          x: glyph.tempData['shu_end'].x + deltaX,
           y: glyph.tempData['shu_end'].y + deltaY,
         }
         jointsMap['wan_start'] = {
-          x: glyph.tempData['wan_start'].x,
+          x: glyph.tempData['wan_start'].x + deltaX,
           y: glyph.tempData['wan_start'].y + deltaY,
         }
         jointsMap['wan_end'] = {
-          x: glyph.tempData['wan_end'].x,
+          x: glyph.tempData['wan_end'].x + deltaX,
           y: glyph.tempData['wan_end'].y + deltaY,
         }
         break
@@ -454,7 +462,8 @@ const updateSkeletonListener_after_bind_shu_wan = (glyph: CustomGlyph) => {
     const _params = computeParamsByJoints(jointsMap, glyph)
     updateGlyphByParams(_params, glyph)
     updateSkeletonTransformation(glyph)
-    glyph.setParam('竖-长度', _params.shu_length)
+    glyph.setParam('竖-水平延伸', _params.shu_horizontalSpan)
+    glyph.setParam('竖-竖直延伸', _params.shu_verticalSpan)
     glyph.setParam('弯-长度', _params.wan_length)
     glyph.tempData = null
   }

@@ -194,7 +194,7 @@ const updateGlyphByParams = (params, global_params) => {
   } = params
   const { weight } = global_params
 
-  const _weight = weight * 1.5
+  const _weight = weight * 1.0
 
   // 横
   let heng_start, heng_end
@@ -375,8 +375,8 @@ const getComponents = (skeleton) => {
     pie_bend,
   } = skeleton
 
-  const _pie_weight = weight * 1.8
-  const _weight = weight * 1.5
+  const _pie_weight = weight * 1.2
+  const _weight = weight * 1.0
   const turn_angle_1 = FP.degreeToRadius(10)
   const turn_angle_2 = FP.degreeToRadius(30)
 

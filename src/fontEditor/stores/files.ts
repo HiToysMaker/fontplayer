@@ -1,4 +1,4 @@
-import { gridSettings, loaded, loading, setTool, total } from './global'
+import { gridSettings, loaded, loading, setGlyphDraggerTool, setTool, total } from './global'
 import { ElMessage } from 'element-plus'
 import * as R from 'ramda'
 import { ref, computed, type Ref, reactive, nextTick } from 'vue'
@@ -39,6 +39,31 @@ export interface IFile {
 	stroke_glyphs?: Array<ICustomGlyph>;
 	radical_glyphs?: Array<ICustomGlyph>;
 	comp_glyphs?: Array<ICustomGlyph>;
+	variants?: IVariants;
+}
+
+interface IVariants {
+	axes: Array<IVariationAxis>;
+	instances: Array<IInstance>;
+}
+
+interface IVariationAxis {
+	axisTag: string;
+	minValue: number;
+	defaultValue: number;
+	maxValue: number;
+	flags: number;
+	name: string;
+	nameID?: number;
+	uuid: string;
+}
+
+interface IInstance {
+	subfamilyNameID?: number;
+	subfamilyName?: string;
+	flags: number;
+	coordinates: number;
+	postScriptNameID?: number;
 }
 
 // 字体设置数据结构
@@ -125,6 +150,7 @@ export interface IComponent {
 	flipY: boolean;
 	usedInCharacter: boolean;
 	opacity?: number;
+	fillColor?: string;
 }
 
 // 字符图形组件信息枚举
@@ -760,6 +786,9 @@ const setSelectionForCurrentCharacterFile = (uuid: string) => {
 			}
 		} else {
 			characterFile.selectedComponentsUUIDs = [uuid]
+			if (selectedComponent.value?.type === 'glyph') {
+				setGlyphDraggerTool('glyphDragger')
+			}
 		}
 	} else {
 		characterFile.selectedComponentsUUIDs = []
@@ -1157,11 +1186,6 @@ const addComponentForCurrentCharacterFile = (component: Component) => {
 		type: 'component',
 		uuid: component.uuid,
 	})
-	// if (component.type === 'glyph') {
-	// 	setTool('glyphDragger')
-	// } else {
-	// 	setTool('select')
-	// }
 	setSelectionForCurrentCharacterFile(component.uuid)
 }
 

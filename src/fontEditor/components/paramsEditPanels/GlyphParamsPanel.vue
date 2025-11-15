@@ -19,7 +19,7 @@
   import { More } from '@element-plus/icons-vue'
   import { OpType, saveState, StoreType } from '../../stores/edit'
   import { editStatus, Status } from '../../stores/font'
-  import { strokes } from '../../templates/strokes_1'
+  import { kai_strokes as strokes } from '../../templates/strokes_1'
   import { strokeFnMap } from '../../templates/strokeFnMap'
   import { onSkeletonSelect, onSkeletonBind, onSkeletonDragging, onWeightSetting, onSelectBone, selectedBone, weightValue, brushSize } from '../../stores/skeletonDragger'
   import { genUUID } from '../../../utils/string'
@@ -859,6 +859,12 @@
     .set-layout-button {
       margin-left: 0;
     }
+    .layout-type-select {
+      width: 100% !important;
+      .el-input {
+        width: 100% !important;
+      }
+    }
   }
   .ratio-icon {
     position: absolute;
@@ -975,6 +981,9 @@
   .skeleton-wrap {
     padding: 10px;
     padding-bottom: 0;
+    .skeleton-type-select {
+      width: 100% !important;
+    }
     .el-checkbox {
       margin-left: 0;
     }
@@ -990,6 +999,21 @@
     .el-form-item {
       margin: 0;
       margin-bottom: 10px;
+    }
+  }
+</style>
+<style>
+  .layout-wrap {
+    .layout-type-select {
+      width: 100% !important;
+      .el-input {
+        width: 100% !important;
+      }
+    }
+  }
+  .skeleton-type-select {
+    .el-input {
+      width: 100% !important;
     }
   }
 </style>

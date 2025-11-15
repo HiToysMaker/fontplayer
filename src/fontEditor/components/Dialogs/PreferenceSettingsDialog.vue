@@ -118,9 +118,10 @@
           label-width="80px"
         >
           <div class="form-item">
-            <div class="form-label"> {{ t('panels.settingsPanel.render.style') }} </div>
+            <div class="form-label"> {{ t('panels.settingsPanel.render.title') }} </div>
             <el-radio-group v-model="fontRenderStyle" id="renderStyle">
               <el-radio label="contour">{{ t('panels.settingsPanel.render.contour') }}</el-radio>
+              <el-radio label="black">{{ t('panels.settingsPanel.render.black') }}</el-radio>
               <el-radio label="color">{{ t('panels.settingsPanel.render.color') }}</el-radio>
             </el-radio-group>
           </div>

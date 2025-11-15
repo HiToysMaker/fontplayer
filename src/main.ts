@@ -68,6 +68,7 @@ declare global {
 		__parameters: any;
 		__script: any;
 		__is_web: boolean;
+		__uuid: string;
   }
 }
 

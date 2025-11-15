@@ -31,6 +31,13 @@
 		return false
 	}
 
+  const enableAtCharacterEdit = () => {
+		if (editStatus.value === Status.Edit) {
+			return true
+		}
+		return false
+	}
+
 	const enableAtList = () => {
 		if (editStatus.value === Status.CharacterList || editStatus.value === Status.GlyphList || editStatus.value === Status.StrokeGlyphList || editStatus.value === Status.RadicalGlyphList || editStatus.value === Status.CompGlyphList) {
 			return true
@@ -64,6 +71,8 @@
     'import-pic': enableAtEdit,
     'import-svg': enableAtEdit,
     'export-font-file': enable,
+    'export-var-font-file': enable,
+    'export-color-font': enable,
     'export-glyphs': enableAtList,
     'export-jpeg': enableAtEdit,
     'export-png': enableAtEdit,
@@ -83,7 +92,9 @@
     'template-8': TemplateEnable,
     'template-digits': TemplateEnable,
     'template-letters': TemplateEnable,
-    'remove_overlap': enableAtEdit,
+    'remove_overlap': enableAtCharacterEdit,
+    'format-all-characters': enableAtList,
+    'format-current-character': enableAtCharacterEdit,
 	}
 
 	const web_menu_icons: IIconsMap = {
@@ -136,6 +147,9 @@
 </template>
 
 <style scoped>
+  .side-bar {
+    z-index: 99;
+  }
   .top-bar, .top-bar-row {
     width: 100%;
   }

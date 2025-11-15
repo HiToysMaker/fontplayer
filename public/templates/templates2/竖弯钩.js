@@ -3,7 +3,8 @@ const oy = 500
 const x0 = 370
 const y0 = 250
 const params = {
-  shu_length: glyph.getParam('竖-长度'),
+  shu_horizontalSpan: glyph.getParam('竖-水平延伸'),
+  shu_verticalSpan: glyph.getParam('竖-竖直延伸'),
   wan_length: glyph.getParam('弯-长度'),
   gou_horizontalSpan: glyph.getParam('钩-水平延伸'),
   gou_verticalSpan: glyph.getParam('钩-竖直延伸'),
@@ -31,51 +32,55 @@ const distance = (p1, p2) => {
 }
 
 const getJointsMap = (data) => {
-  const { draggingJoint, deltaX, deltaY } = data
+  let { draggingJoint, deltaX, deltaY } = data
   const jointsMap = Object.assign({}, glyph.tempData)
   switch (draggingJoint.name) {
     case 'shu_end': {
+      const horizontal_span_range = glyph.getParamRange('竖-水平延伸')
+      deltaX = range(deltaX, horizontal_span_range)
       jointsMap['shu_end'] = {
-        x: glyph.tempData['shu_end'].x,
+        x: glyph.tempData['shu_end'].x + deltaX,
         y: glyph.tempData['shu_end'].y + deltaY,
       }
       jointsMap['wan_start'] = {
-        x: glyph.tempData['wan_start'].x,
+        x: glyph.tempData['wan_start'].x + deltaX,
         y: glyph.tempData['wan_start'].y + deltaY,
       }
       jointsMap['wan_end'] = {
-        x: glyph.tempData['wan_end'].x,
+        x: glyph.tempData['wan_end'].x + deltaX,
         y: glyph.tempData['wan_end'].y + deltaY,
       }
       jointsMap['gou_start'] = {
-        x: glyph.tempData['gou_start'].x,
+        x: glyph.tempData['gou_start'].x + deltaX,
         y: glyph.tempData['gou_start'].y + deltaY,
       }
       jointsMap['gou_end'] = {
-        x: glyph.tempData['gou_end'].x,
+        x: glyph.tempData['gou_end'].x + deltaX,
         y: glyph.tempData['gou_end'].y + deltaY,
       }
       break
     }
     case 'wan_start': {
+      const horizontal_span_range = glyph.getParamRange('竖-水平延伸')
+      deltaX = range(deltaX, horizontal_span_range)
       jointsMap['shu_end'] = {
-        x: glyph.tempData['shu_end'].x,
+        x: glyph.tempData['shu_end'].x + deltaX,
         y: glyph.tempData['shu_end'].y + deltaY,
       }
       jointsMap['wan_start'] = {
-        x: glyph.tempData['wan_start'].x,
+        x: glyph.tempData['wan_start'].x + deltaX,
         y: glyph.tempData['wan_start'].y + deltaY,
       }
       jointsMap['wan_end'] = {
-        x: glyph.tempData['wan_end'].x,
+        x: glyph.tempData['wan_end'].x + deltaX,
         y: glyph.tempData['wan_end'].y + deltaY,
       }
       jointsMap['gou_start'] = {
-        x: glyph.tempData['gou_start'].x,
+        x: glyph.tempData['gou_start'].x + deltaX,
         y: glyph.tempData['gou_start'].y + deltaY,
       }
       jointsMap['gou_end'] = {
-        x: glyph.tempData['gou_end'].x,
+        x: glyph.tempData['gou_end'].x + deltaX,
         y: glyph.tempData['gou_end'].y + deltaY,
       }
       break
@@ -151,7 +156,8 @@ glyph.onSkeletonDragEnd = (data) => {
   const jointsMap = getJointsMap(data)
   const _params = computeParamsByJoints(jointsMap)
   updateGlyphByParams(_params, global_params)
-  glyph.setParam('竖-长度', _params.shu_length)
+  glyph.setParam('竖-水平延伸', _params.shu_horizontalSpan)
+  glyph.setParam('竖-竖直延伸', _params.shu_verticalSpan)
   glyph.setParam('弯-长度', _params.wan_length)
   glyph.setParam('钩-水平延伸', _params.gou_horizontalSpan)
   glyph.setParam('钩-竖直延伸', _params.gou_verticalSpan)
@@ -169,16 +175,19 @@ const range = (value, range) => {
 
 const computeParamsByJoints = (jointsMap) => {
   const { shu_start, shu_end, wan_start, wan_end, gou_start, gou_end } = jointsMap
-  const shu_length_range = glyph.getParamRange('竖-长度')
+  const shu_horizontal_span_range = glyph.getParamRange('竖-水平延伸')
+  const shu_vertical_span_range = glyph.getParamRange('竖-竖直延伸')
   const wan_length_range = glyph.getParamRange('弯-长度')
   const gou_horizontal_span_range = glyph.getParamRange('钩-水平延伸')
   const gou_vertical_span_range = glyph.getParamRange('钩-竖直延伸')
-  const shu_length = range(shu_end.y - shu_start.y, shu_length_range)
+  const shu_horizontalSpan = range(shu_end.x - shu_start.x, shu_horizontal_span_range)
+  const shu_verticalSpan = range(shu_end.y - shu_start.y, shu_vertical_span_range)
   const wan_length = range(wan_end.x - wan_start.x, wan_length_range)
   const gou_horizontalSpan = range(gou_end.x - gou_start.x, gou_horizontal_span_range)
   const gou_verticalSpan = range(gou_start.y - gou_end.y, gou_vertical_span_range)
   return {
-    shu_length,
+    shu_horizontalSpan,
+    shu_verticalSpan,
     wan_length,
     gou_horizontalSpan,
     gou_verticalSpan,
@@ -187,7 +196,8 @@ const computeParamsByJoints = (jointsMap) => {
 
 const updateGlyphByParams = (params, global_params) => {
   const {
-    shu_length,
+    shu_horizontalSpan,
+    shu_verticalSpan,
     wan_length,
     gou_horizontalSpan,
     gou_verticalSpan,
@@ -204,8 +214,8 @@ const updateGlyphByParams = (params, global_params) => {
   const shu_end = new FP.Joint(
     'shu_end',
     {
-      x: shu_start.x,
-      y: shu_start.y + shu_length,
+      x: shu_start.x + shu_horizontalSpan,
+      y: shu_start.y + shu_verticalSpan,
     },
   )
 
@@ -213,8 +223,8 @@ const updateGlyphByParams = (params, global_params) => {
   const wan_start = new FP.Joint(
     'wan_start',
     {
-      x: shu_start.x,
-      y: shu_start.y + shu_length,
+      x: shu_end.x,
+      y: shu_end.y,
     },
   )
   const wan_end = new FP.Joint(

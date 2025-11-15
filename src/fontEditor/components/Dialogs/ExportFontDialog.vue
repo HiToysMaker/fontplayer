@@ -10,6 +10,7 @@
   import { setExportFontDialogVisible, exportFontDialogVisible } from '../../stores/dialogs'
   import { ref } from 'vue'
   import saveAs from 'file-saver'
+  import { QuestionFilled } from '@element-plus/icons-vue'
   import { IFile, selectedFile } from '../../stores/files'
   import { computeOverlapRemovedContours, exportFont, mapToObject, plainFile, plainGlyph } from '../../menus/handlers'
   import { ICustomGlyph, comp_glyphs, constantGlyphMap, constants, glyphs, radical_glyphs, stroke_glyphs } from '../../stores/glyph'
@@ -17,6 +18,7 @@
   const { tm, t } = useI18n()
 
   const options = ref({
+    contour_storage: 'cff',
     remove_overlap: false,
   })
 
@@ -50,6 +52,27 @@
     width="320px"
   >
     <div class="form-wrapper">
+      <div class="contour-group">
+        <div class="group-title">{{ t('dialogs.exportFontDialog.contourStorageTitle') }}</div>
+        <el-radio-group v-model="options.contour_storage">
+          <el-radio class="contour-radio" label="glyf">
+            <span>{{ t('dialogs.exportFontDialog.contourStorageTrueTypeLabel') }}</span>
+            <el-tooltip :content="t('dialogs.exportFontDialog.contourStorageTrueTypeTooltip')" placement="top">
+              <el-icon class="help-icon">
+                <QuestionFilled />
+              </el-icon>
+            </el-tooltip>
+          </el-radio>
+          <el-radio class="contour-radio" label="cff">
+            <span>{{ t('dialogs.exportFontDialog.contourStorageCffLabel') }}</span>
+            <el-tooltip :content="t('dialogs.exportFontDialog.contourStorageCffTooltip')" placement="top">
+              <el-icon class="help-icon">
+                <QuestionFilled />
+              </el-icon>
+            </el-tooltip>
+          </el-radio>
+        </el-radio-group>
+      </div>
       <el-checkbox
         v-model="options.remove_overlap"
         class="item-check"
@@ -70,6 +93,34 @@
 
 <style scoped>
   .form-wrapper {
-    color: var(--light-2) !important
+    color: var(--light-2) !important;
+    .el-checkbox {
+      color: var(--light-2) !important;
+    }
+  }
+
+  .contour-group {
+    margin-bottom: 25px;
+  }
+
+  .group-title {
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+
+  .contour-radio {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .contour-radio:last-of-type {
+    margin-bottom: 0;
+  }
+
+  .help-icon {
+    margin-left: 6px;
+    color: var(--el-color-info);
+    cursor: pointer;
   }
 </style>

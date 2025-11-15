@@ -1,7 +1,7 @@
 import type { ICharacter } from './character'
 import type { ITable } from './table'
 import { getUnicodeRange } from './tables/os_2'
-import { getMetrics } from './character'
+import { getMetrics, PathType } from './character'
 import type { IHeadTable } from './tables/head'
 import type { IHheaTable } from './tables/hhea'
 import type { IOS2Table } from './tables/os_2'
@@ -23,6 +23,16 @@ import { saveAs } from 'file-saver'
 import { convertToPinyin } from 'tiny-pinyin'
 import { encoder } from './encode'
 import { loaded, total, loading } from '../fontEditor/stores/global'
+import { incrementProgress, reserveProgressBudget, setProgressMessage, yieldToEventLoop } from './utils/progress'
+import { createFvarTable } from './tables/fvar'
+import { createGvarTable } from './tables/gvar'
+import { createStatTable } from './tables/STAT'
+import { create as createGlyfTable } from './tables/glyf'
+import { create as createLocaTable } from './tables/loca'
+import { convertContoursToQuadratic } from './utils/cubicToQuadratic'
+import { buildGlyfAndLocaTables } from './utils/glyfBuilder'
+import { createFromCharactersV0 as createColrTable } from './tables/colr'
+import { createFromLayers as createCpalTable } from './tables/cpal'
 
 // font对象数据类型
 // font object data type
@@ -65,9 +75,39 @@ interface ITableConfig {
 	rangeShift: number;
 }
 
+// 可变字体轴定义
+// Variation axis definition
+interface IVariationAxis {
+	tag: string;      // 轴标签，如 'wght', 'wdth'
+	name: string;     // 轴名称，如 'Weight', 'Width'
+	minValue: number;
+	defaultValue: number;
+	maxValue: number;
+	nameID?: number;  // 在name表中的ID（由createTable2自动分配）
+}
+
+// 可变字体实例定义
+// Variation font instance definition
+interface IVariationInstance {
+	subfamilyName: string;        // 实例名称，如 'Bold', 'Light'
+	coordinates: number[];        // 各轴的坐标值
+	postScriptName?: string;      // PostScript名称（可选）
+	subfamilyNameID?: number;     // 在name表中的ID（由createTable2自动分配）
+	postScriptNameID?: number;    // PostScript名称的nameID（由createTable2自动分配）
+	flags?: number;
+}
+
+// 可变字体配置
+// Variation font configuration
+interface IVariants {
+	axes: Array<IVariationAxis>;
+	instances?: Array<IVariationInstance>;
+}
+
 // font option 配置信息数据类型
 // font option data type
 interface IOption {
+	contourStorage?: string;
 	familyName: string;
 	styleName?: string;
 	fullName?: string;
@@ -87,6 +127,8 @@ interface IOption {
 	descender: number;
 	createdTimestamp?: number;
 	tables?: any;
+	variants?: any;
+	isColorFont?: boolean;
 }
 
 const average = (vs: Array<number>) => {
@@ -418,9 +460,28 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 
 	// 定义maxp表
 	// define maxp table
-	const maxpTable = {
-		version: 0x00005000,
+	// maxp表版本：CFF=0x00005000 (6字节), TrueType=0x00010000 (32字节)
+	// 可变字体使用TrueType格式，需要所有TrueType字段
+	const maxpTable: any = {
+		version: options.variants || options.contourStorage === 'glyf' ? 0x00010000 : 0x00005000, // TrueType : CFF
 		numGlyphs: characters.length,
+	}
+	
+	// TrueType格式需要额外的字段（总共32字节）
+	if (options.variants || options.contourStorage === 'glyf') {
+		maxpTable.maxPoints = 0 // 会在后面从glyf表计算
+		maxpTable.maxContours = 0 // 会在后面从glyf表计算
+		maxpTable.maxCompositePoints = 0
+		maxpTable.maxCompositeContours = 0
+		maxpTable.maxZones = 2 // 标准值
+		maxpTable.maxTwilightPoints = 0
+		maxpTable.maxStorage = 0
+		maxpTable.maxFunctionDefs = 0
+		maxpTable.maxInstructionDefs = 0
+		maxpTable.maxStackElements = 0
+		maxpTable.maxSizeOfInstructions = 0
+		maxpTable.maxComponentElements = 0
+		maxpTable.maxComponentDepth = 0
 	}
 
 	const _os2Table = options.tables ? options.tables.os2 : {}
@@ -541,7 +602,11 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 
 	const languageTags: Array<any> = []
 	//const nameTable = createNameTable(names, languageTags)
-	const nameTable = options.tables ? createNameTable2(options.tables.name) : createNameTable(names, languageTags)
+	
+	// 如果是可变字体，需要传入variants信息以添加axis names
+	const nameTable = options.tables ? 
+		createNameTable2(options.tables.name, options.variants) : 
+		createNameTable(names, languageTags)
 
 	const _postTable = options.tables ? options.tables.post : {}
 
@@ -559,18 +624,6 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		maxMemType1: _postTable.maxMemType1 || 0,
 	}
 
-	// 定义cff表
-	// define cff table
-	const cffTable = createCffTable(characters, {
-		version: getEnglishName('version'),
-		fullName: englishFullName,
-		familyName: englishFamilyName,
-		weightName: englishStyleName,
-		postScriptName: postScriptName,
-		unitsPerEm: font.settings.unitsPerEm,
-		fontBBox: [0, globals.yMin, globals.ascender, globals.advanceWidthMax]
-	})
-
 	const tables = {
 		'head': headTable,
 		'hhea': hheaTable,
@@ -580,8 +633,494 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		'cmap': cmapTable,
 		'post': postTable,
 		'hmtx': hmtxTable,
-		'CFF ': cffTable,
 	}
+	if (options.contourStorage !== 'glyf') {
+		// 定义cff表
+		// define cff table
+		const cffTable = createCffTable(characters, {
+			version: getEnglishName('version'),
+			fullName: englishFullName,
+			familyName: englishFamilyName,
+			weightName: englishStyleName,
+			postScriptName: postScriptName,
+			unitsPerEm: font.settings.unitsPerEm,
+			fontBBox: [0, globals.yMin, globals.ascender, globals.advanceWidthMax]
+		})
+		tables['CFF '] = cffTable
+	} else {
+		// 调试：检查原始轮廓的路径类型
+		const checkGlyphPaths = (char: any, index: number) => {
+			let cubicCount = 0
+			let quadCount = 0
+			let lineCount = 0
+			for (const contour of char.contours || []) {
+				for (const path of contour) {
+					if (path.type === PathType.CUBIC_BEZIER) cubicCount++
+					else if (path.type === PathType.QUADRATIC_BEZIER) quadCount++
+					else if (path.type === PathType.LINE) lineCount++
+				}
+			}
+			return { cubicCount, quadCount, lineCount }
+		}
+		
+		// 1. 将所有字符的轮廓转换为二次贝塞尔曲线
+		const convertedCharacters = characters.map((char, index) => {
+			const before = checkGlyphPaths(char, index)
+			const converted = {
+				...char,
+				contours: convertContoursToQuadratic(char.contours, 0.5) // tolerance = 0.5
+			}
+			const after = checkGlyphPaths(converted, index)
+			
+			if (index === 7 || index === 11 || index === 12) {
+				console.log(`  Glyph ${index}: cubic=${before.cubicCount}, quad=${before.quadCount}, line=${before.lineCount} → quad=${after.quadCount}, line=${after.lineCount}`)
+			}
+			
+			return converted
+		})
+		
+		console.log(`✅ Converted ${convertedCharacters.length} glyphs to quadratic Bezier`)
+		
+		console.log('\n📦 Step 2: Building glyf and loca tables...')
+		
+		// 2. 构建glyf表（使用转换后的轮廓）
+		const { glyfTable } = await buildGlyfAndLocaTables(
+			convertedCharacters,
+			1 // loca version: 1 = long format (Offset32)
+		)
+		
+		// 更新head表的indexToLocFormat
+		headTable.indexToLocFormat = 1 // long format
+		
+		// 存储glyf表对象（sfnt.ts会调用create序列化）
+		// 注意：glyf.create()会生成真实的offsets并存储在_generatedOffsets中
+		tables['glyf'] = glyfTable
+		
+		// loca表会在后面使用glyf序列化后的真实offsets创建
+		// 暂时存储一个占位符
+		tables['loca'] = {
+			version: 1,
+			offsets: [], // 会在sfnt.ts中被替换
+			_needsRealOffsets: true, // 标记需要真实offsets
+			_glyfTableRef: glyfTable, // 引用glyf表
+		}
+		
+		console.log('✅ glyf table created (loca will use real offsets after serialization)')
+		
+		// 从glyf表重新计算head表的边界框
+		let globalXMin = Infinity
+		let globalYMin = Infinity
+		let globalXMax = -Infinity
+		let globalYMax = -Infinity
+		
+		for (const glyph of glyfTable.glyphTables) {
+			if (glyph.numberOfContours > 0) {
+				globalXMin = Math.min(globalXMin, glyph.xMin)
+				globalYMin = Math.min(globalYMin, glyph.yMin)
+				globalXMax = Math.max(globalXMax, glyph.xMax)
+				globalYMax = Math.max(globalYMax, glyph.yMax)
+			}
+		}
+		
+		// 更新head表的边界框
+		if (isFinite(globalXMin)) {
+			headTable.xMin = globalXMin
+			headTable.yMin = globalYMin
+			headTable.xMax = globalXMax
+			headTable.yMax = globalYMax
+			console.log(`✅ Updated head table bounding box: (${globalXMin}, ${globalYMin}) to (${globalXMax}, ${globalYMax})`)
+		}
+		
+		// 从hmtx重新计算hhea表的度量值
+		let minLeftSideBearing = Infinity
+		let minRightSideBearing = Infinity
+		let xMaxExtent = -Infinity
+		
+		for (let i = 0; i < convertedCharacters.length; i++) {
+			const char = convertedCharacters[i]
+			const glyph = glyfTable.glyphTables[i]
+			const lsb = char.leftSideBearing || 0
+			const advWidth = char.advanceWidth || 0
+			
+			if (glyph.numberOfContours > 0) {
+				const rsb = Math.round(advWidth - lsb - (glyph.xMax - glyph.xMin))
+				const extent = Math.round(lsb + (glyph.xMax - glyph.xMin))
+				
+				minLeftSideBearing = Math.min(minLeftSideBearing, Math.round(lsb))
+				minRightSideBearing = Math.min(minRightSideBearing, rsb)
+				xMaxExtent = Math.max(xMaxExtent, extent)
+			}
+		}
+		
+		// 更新hhea表
+		if (isFinite(minLeftSideBearing)) {
+			hheaTable.minLeftSideBearing = minLeftSideBearing
+			hheaTable.minRightSideBearing = minRightSideBearing
+			hheaTable.xMaxExtent = xMaxExtent
+			console.log(`✅ Updated hhea table metrics: lsb=${minLeftSideBearing}, rsb=${minRightSideBearing}, extent=${xMaxExtent}`)
+		}
+		
+		// 从glyf表计算maxp表的值
+		let maxPoints = 0
+		let maxContours = 0
+		
+		for (const glyph of glyfTable.glyphTables) {
+			if (glyph.numberOfContours > 0) {
+				// 计算该字形的总点数
+				let totalPoints = 0
+				for (const contour of glyph.contours) {
+					totalPoints += contour.points.length
+				}
+				
+				maxPoints = Math.max(maxPoints, totalPoints)
+				maxContours = Math.max(maxContours, glyph.numberOfContours)
+			}
+		}
+		
+		// 更新maxp表
+		maxpTable.maxPoints = maxPoints
+		maxpTable.maxContours = maxContours
+
+	}
+
+	if (options.variants) {
+		// ========== 可变字体：使用TrueType格式（glyf + loca + gvar） ==========
+		console.log('\n🎨 === Creating Variable Font ===')
+		console.log('Axes:', options.variants.axes?.map(a => `${a.tag || a.name || 'unknown'} (${a.minValue}-${a.maxValue})`).join(', ') || 'none')
+		console.log('Combinations:', options.variants.combinations?.length || 0)
+		
+		// 调试：显示完整的axes数据
+		if (options.variants.axes && options.variants.axes.length > 0) {
+			console.log('Axes details:', options.variants.axes)
+		} else {
+			console.warn('⚠️ WARNING: No axes defined in variants!')
+		}
+		
+		// ⚠️ 重要：可变字体需要使用TrueType格式（glyf + gvar）
+		// CFF格式不支持gvar，需要使用CFF2（尚未实现）
+		
+		// 删除CFF表
+		delete tables['CFF ']
+		console.log('✅ Removed CFF table (using TrueType format for variable font)')
+		
+		console.log('\n📐 Step 1: Converting cubic Bezier to quadratic...')
+		
+		// 调试：检查原始轮廓的路径类型
+		const checkGlyphPaths = (char: any, index: number) => {
+			let cubicCount = 0
+			let quadCount = 0
+			let lineCount = 0
+			for (const contour of char.contours || []) {
+				for (const path of contour) {
+					if (path.type === PathType.CUBIC_BEZIER) cubicCount++
+					else if (path.type === PathType.QUADRATIC_BEZIER) quadCount++
+					else if (path.type === PathType.LINE) lineCount++
+				}
+			}
+			return { cubicCount, quadCount, lineCount }
+		}
+		
+		// 1. 将所有字符的轮廓转换为二次贝塞尔曲线
+		const convertedCharacters = []
+		for (let i = 0; i < characters.length; i++) {
+			loaded.value++
+			if (i % 50 === 0) {
+				await new Promise(resolve => requestAnimationFrame(resolve))
+			}
+			const char = characters[i]
+			const before = checkGlyphPaths(char, i)
+			const converted = {
+				...char,
+				contours: convertContoursToQuadratic(char.contours, 0.5) // tolerance = 0.5
+			}
+			const after = checkGlyphPaths(converted, i)
+			convertedCharacters.push(converted)
+		}
+		// const convertedCharacters = characters.map(async (char, index) => {
+		// 	const before = checkGlyphPaths(char, index)
+		// 	const converted = {
+		// 		...char,
+		// 		contours: convertContoursToQuadratic(char.contours, 0.5) // tolerance = 0.5
+		// 	}
+		// 	const after = checkGlyphPaths(converted, index)
+			
+		// 	if (index === 7 || index === 11 || index === 12) {
+		// 		console.log(`  Glyph ${index}: cubic=${before.cubicCount}, quad=${before.quadCount}, line=${before.lineCount} → quad=${after.quadCount}, line=${after.lineCount}`)
+		// 	}
+			
+		// 	return converted
+		// })
+		
+		console.log(`✅ Converted ${convertedCharacters.length} glyphs to quadratic Bezier`)
+		
+		console.log('\n📦 Step 2: Building glyf and loca tables...')
+		
+		// 2. 构建glyf表（使用转换后的轮廓）
+		const { glyfTable } = await buildGlyfAndLocaTables(
+			convertedCharacters,
+			1 // loca version: 1 = long format (Offset32)
+		)
+		
+		// 更新head表的indexToLocFormat
+		headTable.indexToLocFormat = 1 // long format
+		
+		// 存储glyf表对象（sfnt.ts会调用create序列化）
+		// 注意：glyf.create()会生成真实的offsets并存储在_generatedOffsets中
+		tables['glyf'] = glyfTable
+		
+		// loca表会在后面使用glyf序列化后的真实offsets创建
+		// 暂时存储一个占位符
+		tables['loca'] = {
+			version: 1,
+			offsets: [], // 会在sfnt.ts中被替换
+			_needsRealOffsets: true, // 标记需要真实offsets
+			_glyfTableRef: glyfTable, // 引用glyf表
+		}
+		
+		console.log('✅ glyf table created (loca will use real offsets after serialization)')
+		
+		// 从glyf表重新计算head表的边界框
+		let globalXMin = Infinity
+		let globalYMin = Infinity
+		let globalXMax = -Infinity
+		let globalYMax = -Infinity
+		
+		for (const glyph of glyfTable.glyphTables) {
+			if (glyph.numberOfContours > 0) {
+				globalXMin = Math.min(globalXMin, glyph.xMin)
+				globalYMin = Math.min(globalYMin, glyph.yMin)
+				globalXMax = Math.max(globalXMax, glyph.xMax)
+				globalYMax = Math.max(globalYMax, glyph.yMax)
+			}
+		}
+		
+		// 更新head表的边界框
+		if (isFinite(globalXMin)) {
+			headTable.xMin = globalXMin
+			headTable.yMin = globalYMin
+			headTable.xMax = globalXMax
+			headTable.yMax = globalYMax
+			console.log(`✅ Updated head table bounding box: (${globalXMin}, ${globalYMin}) to (${globalXMax}, ${globalYMax})`)
+		}
+		
+		// 从hmtx重新计算hhea表的度量值
+		let minLeftSideBearing = Infinity
+		let minRightSideBearing = Infinity
+		let xMaxExtent = -Infinity
+		
+		for (let i = 0; i < convertedCharacters.length; i++) {
+			const char = convertedCharacters[i]
+			const glyph = glyfTable.glyphTables[i]
+			const lsb = char.leftSideBearing || 0
+			const advWidth = char.advanceWidth || 0
+			
+			if (glyph.numberOfContours > 0) {
+				const rsb = Math.round(advWidth - lsb - (glyph.xMax - glyph.xMin))
+				const extent = Math.round(lsb + (glyph.xMax - glyph.xMin))
+				
+				minLeftSideBearing = Math.min(minLeftSideBearing, Math.round(lsb))
+				minRightSideBearing = Math.min(minRightSideBearing, rsb)
+				xMaxExtent = Math.max(xMaxExtent, extent)
+			}
+		}
+		
+		// 更新hhea表
+		if (isFinite(minLeftSideBearing)) {
+			hheaTable.minLeftSideBearing = minLeftSideBearing
+			hheaTable.minRightSideBearing = minRightSideBearing
+			hheaTable.xMaxExtent = xMaxExtent
+			console.log(`✅ Updated hhea table metrics: lsb=${minLeftSideBearing}, rsb=${minRightSideBearing}, extent=${xMaxExtent}`)
+		}
+		
+		// 从glyf表计算maxp表的值
+		let maxPoints = 0
+		let maxContours = 0
+		
+		for (const glyph of glyfTable.glyphTables) {
+			if (glyph.numberOfContours > 0) {
+				// 计算该字形的总点数
+				let totalPoints = 0
+				for (const contour of glyph.contours) {
+					totalPoints += contour.points.length
+				}
+				
+				maxPoints = Math.max(maxPoints, totalPoints)
+				maxContours = Math.max(maxContours, glyph.numberOfContours)
+			}
+		}
+		
+		// 更新maxp表
+		maxpTable.maxPoints = maxPoints
+		maxpTable.maxContours = maxContours
+		console.log(`✅ Updated maxp table: maxPoints=${maxPoints}, maxContours=${maxContours}`)
+		
+		console.log('\n🎯 Step 3: Creating variation tables...')
+		
+		// 3. 创建fvar表（定义变体轴）
+		const fvarTable = createFvarTable(options.variants)
+		tables['fvar'] = fvarTable
+		console.log('✅ fvar table created')
+		
+		// 4. 创建gvar表（定义字形变体）
+		// 注意：gvar表也需要使用转换后的字符
+		console.log('⏳ Creating gvar table (this may take a while for complex fonts)...')
+		
+		// 调试：检查传入的 variants 数据
+		console.log('🔍 Checking options.variants:')
+		console.log(`  options.variants exists: ${!!options.variants}`)
+		console.log(`  options.variants.combinations exists: ${!!options.variants?.combinations}`)
+		console.log(`  options.variants.combinations.length: ${options.variants?.combinations?.length || 0}`)
+		
+		console.time('gvar table creation')
+		const gvarTable = createGvarTable(options.variants, convertedCharacters)
+		console.timeEnd('gvar table creation')
+		tables['gvar'] = gvarTable
+		console.log('✅ gvar table created')
+		
+		// 5. 创建STAT表（样式属性表，macOS和PS需要）
+		const STATTable = createStatTable(fvarTable, {
+			elidedFallbackNameID: 2 // 使用 subfamily name
+		})
+		tables['STAT'] = STATTable
+		console.log('✅ STAT table created (required for macOS/Photoshop)')
+		
+		console.log('\n🎉 Variable font tables complete!')
+		console.log('================================\n')
+	}
+
+	// 处理彩色字体
+	if (options.isColorFont) {
+		console.log('\n🎨 === Creating Color Font ===')
+		
+		// 检查是否有字符包含图层
+		let hasLayers = false
+		for (const char of characters) {
+			if (char.layers && char.layers.length > 0) {
+				hasLayers = true
+				break
+			}
+		}
+		
+		if (hasLayers) {
+			// 彩色字体需要扩展字形数组，为每个图层创建单独的字形
+			console.log('⏳ Creating extended glyph array for color layers...')
+			
+			// 计算需要添加的图层字形数量
+			let totalLayerGlyphs = 0
+			for (const char of characters) {
+				if (char.layers && char.layers.length > 0) {
+					totalLayerGlyphs += char.layers.length
+				}
+			}
+			
+			console.log(`Original glyphs: ${characters.length}`)
+			console.log(`Layer glyphs to add: ${totalLayerGlyphs}`)
+			console.log(`Total glyphs: ${characters.length + totalLayerGlyphs}`)
+			
+			// 为图层创建字形（如果使用 CFF）
+			// 图层字形会被 COLR 表引用
+			const layerGlyphs: any[] = []
+			let processedLayerGlyphs = 0
+			reserveProgressBudget(totalLayerGlyphs + 5)
+			setProgressMessage('扩展彩色字体图层…')
+			
+			for (const char of characters) {
+				if (char.layers && char.layers.length > 0) {
+					for (const layer of char.layers) {
+						// 确保图层有有效的轮廓数据
+						const layerContours = layer.contours || [[]]
+						const layerContourNum = layerContours.length
+						
+						// 计算图层的度量信息
+						const layerMetrics = getMetrics({
+							unicode: 0,
+							contours: layerContours,
+							contourNum: layerContourNum,
+							advanceWidth: char.advanceWidth || options.unitsPerEm,
+							leftSideBearing: undefined, // 让 getMetrics 自己计算
+						})
+						
+						// 每个图层都是一个独立的字形
+						// ⚠️ 重要：图层字形的 leftSideBearing 应该等于 xMin，这样在 CFF 表中 getXValue(x) = x - xMin + lsb = x
+						layerGlyphs.push({
+							unicode: 0, // 图层字形不需要 unicode
+							name: `layer_${layerGlyphs.length}`,
+							contours: layerContours,
+							contourNum: layerContourNum,
+							advanceWidth: char.advanceWidth || options.unitsPerEm,
+							leftSideBearing: layerMetrics.xMin, // 使用 xMin 作为 lsb，保持坐标不变
+							rightSideBearing: layerMetrics.rightSideBearing,
+							xMin: layerMetrics.xMin,
+							xMax: layerMetrics.xMax,
+							yMin: layerMetrics.yMin,
+							yMax: layerMetrics.yMax,
+							// 不需要 layers 字段
+						})
+						processedLayerGlyphs++
+						incrementProgress(undefined, 1)
+						await yieldToEventLoop(processedLayerGlyphs, 50)
+					}
+				}
+			}
+			
+			// 创建 CPAL 表（调色板）
+			console.log('⏳ Creating CPAL table...')
+			const cpalTable = createCpalTable(characters)
+			tables['CPAL'] = cpalTable
+			console.log(`✅ CPAL table created with ${cpalTable.numColorRecords} colors`)
+			incrementProgress('创建 CPAL 表…', 1)
+			
+			// 创建 COLR 表（彩色图层定义）
+			console.log('⏳ Creating COLR table...')
+			const colrTable = createColrTable(characters, characters.length + layerGlyphs.length)
+			tables['COLR'] = colrTable
+			console.log(`✅ COLR table created with ${colrTable.numBaseGlyphRecords} base glyphs and ${colrTable.numLayerRecords} layers`)
+			incrementProgress('创建 COLR 表…', 1)
+			
+			// 如果使用 CFF 格式，需要重新创建 CFF 表包含图层字形
+			if (tables['CFF ']) {
+				console.log('⏳ Updating CFF table with layer glyphs...')
+				const allGlyphs = [...characters, ...layerGlyphs]
+				total.value += allGlyphs.length
+				const updatedCffTable = createCffTable(allGlyphs, {
+					version: getEnglishName('version'),
+					fullName: englishFullName,
+					familyName: englishFamilyName,
+					weightName: englishStyleName,
+					postScriptName: postScriptName,
+					unitsPerEm: font.settings.unitsPerEm,
+					fontBBox: [0, globals.yMin, globals.ascender, globals.advanceWidthMax]
+				})
+				tables['CFF '] = updatedCffTable
+				console.log(`✅ CFF table updated with ${allGlyphs.length} total glyphs`)
+				
+				// 更新 maxp 表的字形数量
+				maxpTable.numGlyphs = allGlyphs.length
+				console.log(`✅ Updated maxp.numGlyphs to ${allGlyphs.length}`)
+				
+				// 更新 hmtx 表 - 为图层字形添加度量信息
+				console.log('⏳ Updating hmtx table with layer glyph metrics...')
+				for (const layerGlyph of layerGlyphs) {
+					hmtxTable.hMetrics.push({
+						advanceWidth: layerGlyph.advanceWidth || 0,
+						lsb: Math.round(layerGlyph.leftSideBearing || 0),
+					})
+				}
+				console.log(`✅ Updated hmtx table with ${hmtxTable.hMetrics.length} total metrics`)
+				
+				// 更新 hhea 表的 numberOfHMetrics
+				hheaTable.numberOfHMetrics = hmtxTable.hMetrics.length
+				console.log(`✅ Updated hhea.numberOfHMetrics to ${hheaTable.numberOfHMetrics}`)
+			}
+			incrementProgress('更新彩色字体表完成', 1)
+			
+			console.log('\n🎉 Color font tables complete!')
+			console.log('================================\n')
+		} else {
+			console.log('⚠️ No layers found in characters, skipping color font tables')
+		}
+	}
+
 	headTable.checkSumAdjustment = 0x00000000
 
 	let _font = await createFontData(tables, 'checksum')
@@ -597,14 +1136,35 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 
 	const { data: fontData, tables: fontTables, tablesDataMap: fontDataMap } = _font
 
-	fontData[164] = checkSumAdjustmentData[0]
-	fontData[165] = checkSumAdjustmentData[1]
-	fontData[166] = checkSumAdjustmentData[2]
-	fontData[167] = checkSumAdjustmentData[3]
+	// 动态查找head表在文件中的位置
+	const headTableInfo = fontTables.find((t: any) => t.name === 'head')
+	if (headTableInfo) {
+		// checkSumAdjustment字段在head表中的偏移是8字节（version(4) + fontRevision(4) + checkSumAdjustment(4)）
+		const checkSumAdjustmentOffsetInFile = headTableInfo.config.offset + 8
+		
+		console.log(`\n=== Updating head.checkSumAdjustment ===`)
+		console.log(`head table offset: ${headTableInfo.config.offset}`)
+		console.log(`checkSumAdjustment offset in file: ${checkSumAdjustmentOffsetInFile}`)
+		console.log(`checkSumAdjustment value: 0x${headTable.checkSumAdjustment.toString(16).padStart(8, '0')}`)
+		console.log(`checkSumAdjustment bytes:`, checkSumAdjustmentData)
+		
+		fontData[checkSumAdjustmentOffsetInFile] = checkSumAdjustmentData[0]
+		fontData[checkSumAdjustmentOffsetInFile + 1] = checkSumAdjustmentData[1]
+		fontData[checkSumAdjustmentOffsetInFile + 2] = checkSumAdjustmentData[2]
+		fontData[checkSumAdjustmentOffsetInFile + 3] = checkSumAdjustmentData[3]
+		
+		console.log(`Updated bytes at position ${checkSumAdjustmentOffsetInFile}-${checkSumAdjustmentOffsetInFile + 3}`)
+		console.log(`=====================================\n`)
+	} else {
+		console.error('❌ head table not found in fontTables!')
+	}
 
 	// 创建字体数据
 	// create font data
 	font.bytes = fontData
+	
+	console.log(`\n=== createFont Complete ===`)
+	console.log(`font.bytes.length: ${fontData.length}`)
 
 	const keys = Object.keys(tables)
 	keys.sort((key1, key2) => {
@@ -615,6 +1175,10 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		}
 	})
 	font.tables = fontTables
+	
+	console.log(`Font created with ${fontTables.length} tables`)
+	console.log(`==============================\n`)
+	
 	return font
 }
 
@@ -630,14 +1194,20 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
  */
 const toArrayBuffer = (font: IFont) => {
 	if (font.bytes) {
+		console.log(`\n=== toArrayBuffer ===`)
+		console.log(`font.bytes.length: ${font.bytes.length}`)
+		
     const buffer = new ArrayBuffer(font.bytes.length)
     const intArray = new Uint8Array(buffer)
     for (let i = 0; i < font.bytes.length; i++) {
       intArray[i] = font.bytes[i]
     }
 
+		console.log(`ArrayBuffer created: ${buffer.byteLength} bytes`)
+		console.log(`===================\n`)
     return buffer
 	} else if (font.rawData) {
+		console.log(`Using rawData.buffer: ${font.rawData.buffer.byteLength} bytes`)
 		return font.rawData.buffer
 	}
 }
@@ -682,4 +1252,7 @@ export type {
 	ISettings,
 	ITableConfig,
 	IOption,
+	IVariationAxis,
+	IVariationInstance,
+	IVariants,
 }

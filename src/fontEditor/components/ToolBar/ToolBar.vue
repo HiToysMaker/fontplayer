@@ -28,21 +28,21 @@
   // 切换工具
   // switch tool
   const switchTool = async (_tool: string) => {
-    if (tool.value === 'grid' && _tool !== 'grid') {
-      if (locale.value === 'zh') {
-        ElMessageBox.alert(
-          '为方便用户进行组件编辑操作，离开布局编辑界面会恢复默认布局。如果您已经应用布局变换，预览及导出字体库会使用应用变换后的布局，但是在其他编辑操作时，界面仍使用默认布局。',
-          '提示：您已经离开布局编辑界面', {
-          confirmButtonText: '确定',
-        })
-      } else if (locale.value === 'en') {
-        ElMessageBox.alert(
-          'For user convenience in component editing operations, the default layout will be restored when leaving the layout editing interface. If you have applied layout transformations, the transformed layout will be used for previewing and exporting the font library. However, the default layout will still be used for other editing operations.',
-          'Note: You have left the layout editing interface', {
-          confirmButtonText: 'Confirm',
-        })
-      }
-		}
+    // if (tool.value === 'grid' && _tool !== 'grid') {
+    //   if (locale.value === 'zh') {
+    //     ElMessageBox.alert(
+    //       '为方便用户进行组件编辑操作，离开布局编辑界面会恢复默认布局。如果您已经应用布局变换，预览及导出字体库会使用应用变换后的布局，但是在其他编辑操作时，界面仍使用默认布局。',
+    //       '提示：您已经离开布局编辑界面', {
+    //       confirmButtonText: '确定',
+    //     })
+    //   } else if (locale.value === 'en') {
+    //     ElMessageBox.alert(
+    //       'For user convenience in component editing operations, the default layout will be restored when leaving the layout editing interface. If you have applied layout transformations, the transformed layout will be used for previewing and exporting the font library. However, the default layout will still be used for other editing operations.',
+    //       'Note: You have left the layout editing interface', {
+    //       confirmButtonText: 'Confirm',
+    //     })
+    //   }
+		// }
     if (_tool !== 'picture') {
       saveState('选择工具', [StoreType.Tools], OpType.Undo)
       setTool(_tool)
@@ -110,6 +110,7 @@
     if (ENV.value === 'web') {
       if (editStatus.value === Status.Edit) {
         window.__constants = constants.value
+        window.__uuid = editCharacterFile.value.uuid
         window.__script = editCharacterFile.value.script
         window.__is_web = ENV.value === 'web'
         window.addEventListener('message', onReceiveMessage)
@@ -129,6 +130,7 @@
       } else if (editStatus.value === Status.Glyph) {
         window.__constants = constants.value
         window.__parameters = editGlyph.value.parameters.parameters
+        window.__uuid = editGlyph.value.uuid
         window.__script = editGlyph.value.script
         window.__is_web = ENV.value === 'web'
         window.addEventListener('message', onReceiveMessage)
@@ -189,14 +191,16 @@
           await emit('init-data', {
             __constants: constants.value,
             __script: editCharacterFile.value.script,
-            __isWeb: ENV.value === 'web'
+            __isWeb: ENV.value === 'web',
+            __uuid: editCharacterFile.value.uuid
           })
         } else if (editStatus.value === Status.Glyph) {
           await emit('init-data', {
             __constants: constants.value,
             __parameters: editGlyph.value.parameters.parameters,
             __script: editGlyph.value.script,
-            __isWeb: ENV.value === 'web'
+            __isWeb: ENV.value === 'web',
+            __uuid: editGlyph.value.uuid
           })
         }
       })

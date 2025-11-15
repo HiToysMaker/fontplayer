@@ -69,7 +69,8 @@ const quadraticBezierPoint = (p0: any, p1: any, p2: any, t: number) => {
 const instanceBasicGlyph_heng = (plainGlyph: ICustomGlyph) => {
   const glyph = new CustomGlyph(plainGlyph)
   const params = {
-    length: glyph.getParam('长度'),
+    horizontalSpan: glyph.getParam('水平延伸'),
+    verticalSpan: glyph.getParam('竖直延伸'),
     skeletonRefPos: glyph.getParam('参考位置'),
     weight: glyph.getParam('字重') || 40,
   }
@@ -87,7 +88,7 @@ const bindSkeletonGlyph_heng = (plainGlyph: ICustomGlyph) => {
 }
 
 const updateGlyphByParams = (params, glyph) => {
-  const { length, skeletonRefPos, weight } = params
+  const { horizontalSpan, verticalSpan, skeletonRefPos, weight } = params
 
   const { ox : _ox, oy : _oy } = glyph._glyph.skeleton
 
@@ -101,14 +102,14 @@ const updateGlyphByParams = (params, glyph) => {
     'start_ref',
     {
       x: x0,
-      y: y0,
+      y: y0 + verticalSpan / 2,
     },
   )
   const end_ref = new FP.Joint(
     'end_ref',
     {
-      x: start_ref.x + length,
-      y: start_ref.y,
+      x: start_ref.x + horizontalSpan,
+      y: start_ref.y - verticalSpan,
     },
   )
   if (skeletonRefPos === 1) {
@@ -160,9 +161,9 @@ const updateGlyphByParams = (params, glyph) => {
       },
     )
   }
-  glyph.addJoint(start_ref)
-  glyph.addJoint(end_ref)
-  glyph.addRefLine(refline(start_ref, end_ref, 'ref'))
+  // glyph.addJoint(start_ref)
+  // glyph.addJoint(end_ref)
+  // glyph.addRefLine(refline(start_ref, end_ref, 'ref'))
   
   glyph.addJoint(start)
   glyph.addJoint(end)
@@ -179,12 +180,16 @@ const updateGlyphByParams = (params, glyph) => {
   }
 }
 
+
 const computeParamsByJoints = (jointsMap, glyph) => {
   const { start, end } = jointsMap
-  const length_range = glyph.getParamRange('长度')
-  const length = range(end.x - start.x, length_range)
+  const horizontalSpan_range = glyph.getParamRange('水平延伸')
+  const verticalSpan_range = glyph.getParamRange('竖直延伸')
+  const horizontalSpan = range(end.x - start.x, horizontalSpan_range)
+  const verticalSpan = range(start.y - end.y, verticalSpan_range)
   return {
-    length,
+    horizontalSpan,
+    verticalSpan,
     skeletonRefPos: glyph.getParam('参考位置'),
     weight: glyph.getParam('字重') || 40,
   }
@@ -208,9 +213,11 @@ const updateSkeletonListener_before_bind_heng = (glyph: CustomGlyph) => {
         
         // 更新所有joint的位置
         Object.keys(jointsMap).forEach(key => {
-          jointsMap[key] = {
-            x: glyph.tempData[key].x + deltaX,
-            y: glyph.tempData[key].y + deltaY,
+          if (glyph.tempData[key] &&glyph.tempData[key].x && glyph.tempData[key].y) {
+            jointsMap[key] = {
+              x: glyph.tempData[key].x + deltaX,
+              y: glyph.tempData[key].y + deltaY,
+            }
           }
         })
         break
@@ -218,7 +225,7 @@ const updateSkeletonListener_before_bind_heng = (glyph: CustomGlyph) => {
       case 'end': {
         jointsMap['end'] = {
           x: glyph.tempData['end'].x + deltaX,
-          y: glyph.tempData['end'].y,
+          y: glyph.tempData['end'].y + deltaY,
         }
         break
       }
@@ -260,7 +267,8 @@ const updateSkeletonListener_before_bind_heng = (glyph: CustomGlyph) => {
     const _params = computeParamsByJoints(jointsMap, glyph)
     updateGlyphByParams(_params, glyph)
     //updateSkeletonTransformation(glyph)
-    glyph.setParam('长度', _params.length)
+    glyph.setParam('水平延伸', _params.horizontalSpan)
+    glyph.setParam('竖直延伸', _params.verticalSpan)
     glyph.tempData = null
   }
 }
@@ -273,7 +281,7 @@ const updateSkeletonListener_after_bind_heng = (glyph: CustomGlyph) => {
       case 'end': {
         jointsMap['end'] = {
           x: glyph.tempData['end'].x + deltaX,
-          y: glyph.tempData['end'].y,
+          y: glyph.tempData['end'].y + deltaY,
         }
         break
       }
@@ -313,7 +321,8 @@ const updateSkeletonListener_after_bind_heng = (glyph: CustomGlyph) => {
     const _params = computeParamsByJoints(jointsMap, glyph)
     updateGlyphByParams(_params, glyph)
     updateSkeletonTransformation(glyph)
-    glyph.setParam('长度', _params.length)
+    glyph.setParam('水平延伸', _params.horizontalSpan)
+    glyph.setParam('竖直延伸', _params.verticalSpan)
     glyph.tempData = null
   }
 }

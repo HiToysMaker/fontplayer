@@ -31,6 +31,8 @@ const menus = {
 		export: {
 			export: '导出',
 			font: '导出字体库',
+			var_font: '导出可变字体',
+			color_font: '导出彩色字体',
 			glyph: '导出字形',
 			jpeg: '导出JPEG',
 			png: '导出PNG',
@@ -63,6 +65,8 @@ const menus = {
 		tools: {
 			remove_overlap: '去除重叠',
 			tools: '工具',
+			format_all_characters: '一键格式化所有字符',
+			format_current_character: '一键格式化当前字符',
 		},
   },
   en: {
@@ -97,6 +101,8 @@ const menus = {
 		export: {
 			export: 'Export',
 			font: 'Export Font',
+			var_font: 'Export Variable Font',
+			color_font: 'Export Color Font',
 			glyph: 'Export Glyph',
 			jpeg: 'Export JPEG',
 			png: 'Export PNG',
@@ -129,6 +135,8 @@ const menus = {
 		tools: {
 			remove_overlap: 'remove_overlap',
 			tools: 'Tools',
+			format_all_characters: 'Format All Characters',
+			format_current_character: 'Format Current Character',
 		},
   },
 }

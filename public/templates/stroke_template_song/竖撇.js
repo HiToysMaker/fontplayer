@@ -10,6 +10,7 @@ const params = {
   skeletonRefPos: glyph.getParam('参考位置'),
 }
 const global_params = {
+  stress_ratio: glyph.getParam('竖横比'),
   weights_variation_power: glyph.getParam('字重变化'),
   start_style_type: glyph.getParam('起笔风格'),
   start_style_value: glyph.getParam('起笔数值'),

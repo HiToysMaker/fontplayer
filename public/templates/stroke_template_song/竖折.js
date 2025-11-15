@@ -5,7 +5,8 @@ const y0 = 250
 const params = {
   shu_horizontalSpan: glyph.getParam('竖-水平延伸'),
   shu_verticalSpan: glyph.getParam('竖-竖直延伸'),
-  zhe_length: glyph.getParam('折-长度'),
+  zhe_horizontalSpan: glyph.getParam('折-水平延伸'),
+  zhe_verticalSpan: glyph.getParam('折-竖直延伸'),
   skeletonRefPos: glyph.getParam('参考位置'),
 }
 const global_params = {
@@ -38,7 +39,7 @@ const distance = (p1, p2) => {
 }
 
 const getJointsMap = (data) => {
-  const { draggingJoint, deltaX, deltaY } = data
+  let { draggingJoint, deltaX, deltaY } = data
   const jointsMap = Object.assign({}, glyph.tempData)
   switch (draggingJoint.name) {
     case 'shu_end': {
@@ -72,9 +73,11 @@ const getJointsMap = (data) => {
       break
     }
     case 'zhe_end': {
+      const vertical_span_range = glyph.getParamRange('折-竖直延伸')
+      deltaY = range(deltaY, vertical_span_range)
       jointsMap['zhe_end'] = {
         x: glyph.tempData['zhe_end'].x + deltaX,
-        y: glyph.tempData['zhe_end'].y,
+        y: glyph.tempData['zhe_end'].y + deltaY,
       }
       break
     }
@@ -114,7 +117,8 @@ glyph.onSkeletonDragEnd = (data) => {
   updateGlyphByParams(_params, global_params)
   glyph.setParam('竖-水平延伸', _params.shu_horizontalSpan)
   glyph.setParam('竖-竖直延伸', _params.shu_verticalSpan)
-  glyph.setParam('折-长度', _params.zhe_length)
+  glyph.setParam('折-水平延伸', _params.zhe_horizontalSpan)
+  glyph.setParam('折-竖直延伸', _params.zhe_verticalSpan)
   glyph.tempData = null
 }
 
@@ -131,14 +135,17 @@ const computeParamsByJoints = (jointsMap) => {
   const { shu_start, shu_end, zhe_start, zhe_end } = jointsMap
   const shu_horizontal_span_range = glyph.getParamRange('竖-水平延伸')
   const shu_vertical_span_range = glyph.getParamRange('竖-竖直延伸')
-  const zhe_length_range = glyph.getParamRange('折-长度')
+  const zhe_horizontal_span_range = glyph.getParamRange('折-水平延伸')
+  const zhe_vertical_span_range = glyph.getParamRange('折-竖直延伸')
   const shu_horizontalSpan = range(shu_end.x - shu_start.x, shu_horizontal_span_range)
   const shu_verticalSpan = range(shu_end.y - shu_start.y, shu_vertical_span_range)
-  const zhe_length = range(zhe_end.x - zhe_start.x, zhe_length_range)
+  const zhe_horizontalSpan = range(zhe_end.x - zhe_start.x, zhe_horizontal_span_range)
+  const zhe_verticalSpan = range(zhe_start.y - zhe_end.y, zhe_vertical_span_range)
   return {
     shu_horizontalSpan,
     shu_verticalSpan,
-    zhe_length,
+    zhe_horizontalSpan,
+    zhe_verticalSpan,
     skeletonRefPos: glyph.getParam('参考位置'),
   }
 }
@@ -147,11 +154,11 @@ const updateGlyphByParams = (params, global_params) => {
   const {
     shu_horizontalSpan,
     shu_verticalSpan,
-    zhe_length,
+    zhe_horizontalSpan,
+    zhe_verticalSpan,
     skeletonRefPos,
   } = params
-  const { weight, stress_ratio } = global_params
-  const _weight = weight / stress_ratio
+  const { weight } = global_params
 
   // 竖
   const shu_start = new FP.Joint(
@@ -181,8 +188,8 @@ const updateGlyphByParams = (params, global_params) => {
   const zhe_end_ref = new FP.Joint(
     'zhe_end_ref',
     {
-      x: zhe_start_ref.x + zhe_length,
-      y: zhe_start_ref.y,
+      x: zhe_start_ref.x + zhe_horizontalSpan,
+      y: zhe_start_ref.y - zhe_verticalSpan,
     },
   )
   if (skeletonRefPos === 1) {
@@ -191,14 +198,14 @@ const updateGlyphByParams = (params, global_params) => {
       'zhe_start',
       {
         x: zhe_start_ref.x,
-        y: zhe_start_ref.y + _weight / 2,
+        y: zhe_start_ref.y + weight / 2,
       },
     )
     zhe_end = new FP.Joint(
       'zhe_end',
       {
         x: zhe_end_ref.x,
-        y: zhe_end_ref.y + _weight / 2,
+        y: zhe_end_ref.y + weight / 2,
       },
     )
   } else if (skeletonRefPos === 2) {
@@ -207,14 +214,14 @@ const updateGlyphByParams = (params, global_params) => {
       'zhe_start',
       {
         x: zhe_start_ref.x,
-        y: zhe_start_ref.y - _weight / 2,
+        y: zhe_start_ref.y - weight / 2,
       },
     )
     zhe_end = new FP.Joint(
       'zhe_end',
       {
         x: zhe_end_ref.x,
-        y: zhe_end_ref.y - _weight / 2,
+        y: zhe_end_ref.y - weight / 2,
       },
     )
   } else {

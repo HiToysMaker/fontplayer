@@ -5,6 +5,7 @@ import { selectedFile } from '../stores/files'
 import { formatPoints, genPolygonContour, translate } from '../../features/font'
 import * as R from 'ramda'
 import { computeCoords } from '../canvas/canvas'
+import { fontRenderStyle } from '../stores/global'
 
 interface IOption {
 	offset?: {
@@ -13,6 +14,7 @@ interface IOption {
   };
 	scale?: number;
 	grid?: any;
+	fillColor?: string;
 }
 
 class PolygonComponent {
@@ -64,7 +66,7 @@ class PolygonComponent {
 		const scale = options.scale
 		if (this.points.length >= 4) {
 			const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
-			ctx.strokeStyle = '#000'
+			ctx.strokeStyle = options.fillColor || '#000'
 			ctx.translate(mapCanvasX(options.offset.x) * scale, mapCanvasY(options.offset.y) * scale)
 			ctx.beginPath()
 			ctx.moveTo(mapCanvasX(this.points[0].x) * scale, mapCanvasY(this.points[0].y) * scale)
@@ -73,6 +75,13 @@ class PolygonComponent {
 			}
 			ctx.stroke()
 			ctx.closePath()
+			if (fontRenderStyle.value === 'black') {
+				ctx.fillStyle = '#000'
+				ctx.fill()
+			} else if (fontRenderStyle.value === 'color') {
+				ctx.fillStyle = options.fillColor || '#000'
+				ctx.fill()
+			}
 			ctx.setTransform(1, 0, 0, 1, 0, 0)
 		}
 	}

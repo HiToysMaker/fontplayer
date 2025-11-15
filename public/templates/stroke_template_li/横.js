@@ -110,6 +110,8 @@ const updateGlyphByParams = (params, global_params) => {
   const { weight } = global_params
   const length = Math.sqrt(horizontalSpan * horizontalSpan + verticalSpan * verticalSpan)
 
+  const _weight = weight * 1.5
+
   let start, end
   const start_ref = new FP.Joint(
     'start_ref',
@@ -131,14 +133,14 @@ const updateGlyphByParams = (params, global_params) => {
       'start',
       {
         x: start_ref.x,
-        y: start_ref.y + weight / 2,
+        y: start_ref.y + _weight / 2,
       },
     )
     end = new FP.Joint(
       'end',
       {
         x: end_ref.x,
-        y: end_ref.y + weight / 2,
+        y: end_ref.y + _weight / 2,
       },
     )
   } else if (skeletonRefPos === 2) {
@@ -147,14 +149,14 @@ const updateGlyphByParams = (params, global_params) => {
       'start',
       {
         x: start_ref.x,
-        y: start_ref.y - weight / 2,
+        y: start_ref.y - _weight / 2,
       },
     )
     end = new FP.Joint(
       'end',
       {
         x: end_ref.x,
-        y: end_ref.y - weight / 2,
+        y: end_ref.y - _weight / 2,
       },
     )
   } else {

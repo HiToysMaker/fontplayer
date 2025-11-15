@@ -25,7 +25,7 @@ export interface IBackground {
 const base = ''//'/fontplayer_demo'
 
 const useSkeletonGrid = ref(false)
-
+const useFixedCurves = ref(false)
 const jointsCheckedMap = ref({})
 
 const draggable = ref(true)
@@ -33,7 +33,11 @@ const dragOption = ref('default')
 const checkJoints = ref(false)
 const checkRefLines = ref(false)
 
+// 'contour' or 'black' or'color'
 const fontRenderStyle: Ref<string> = ref('contour')
+
+// 'black' or 'color'
+const fontPreviewStyle: Ref<string> = ref('black')
 
 const tips = ref('')
 
@@ -41,6 +45,16 @@ const tool: Ref<string> = ref('')
 const width: Ref<number> = ref(500)
 const height: Ref<number> = ref(500)
 const canvas: Ref<HTMLCanvasElement | null> = ref(null)
+const glyphDraggerTool: Ref<string> = ref('')
+
+const setGlyphDraggerTool = (tool: string) => {
+	if (tool === 'glyphDragger') {
+		setTool('select')
+		checkJoints.value = true
+		checkRefLines.value = true
+	}
+	glyphDraggerTool.value = tool
+}
 
 let grid: IGrid = reactive({
 	type: GridType.None,
@@ -104,7 +118,7 @@ export const ASCIICharSet = '1234567890-=！@#￥%……&*()~:"{}[]|\?/<>,.;\'+a
 
 // 线条宽度相关常量
 const strokeWidthRatio = 2.0 // 显示系数
-const strokeWidth = 2.0 // 基础线条宽度
+const strokeWidth = 5.0 // 基础线条宽度
 
 // 获取当前设备的线条宽度
 const getStrokeWidth = () => {
@@ -186,4 +200,8 @@ export {
 	maxSegment,
 	minSegment,
 	skeletonThreshold,
+	useFixedCurves,
+	fontPreviewStyle,
+	glyphDraggerTool,
+	setGlyphDraggerTool,
 }

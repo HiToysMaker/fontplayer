@@ -48,6 +48,27 @@ const types = {
 	numberOfHMetrics: 'uint16',
 }
 
+const fieldOrder = [
+	'majorVersion',
+	'minorVersion',
+	'ascender',
+	'descender',
+	'lineGap',
+	'advanceWidthMax',
+	'minLeftSideBearing',
+	'minRightSideBearing',
+	'xMaxExtent',
+	'caretSlopeRise',
+	'caretSlopeRun',
+	'caretOffset',
+	'reserved0',
+	'reserved1',
+	'reserved2',
+	'reserved3',
+	'metricDataFormat',
+	'numberOfHMetrics',
+] as const
+
 /**
  * 解析hhea表
  * @param data 字体文件DataView数据
@@ -65,18 +86,15 @@ const types = {
 const parse = (data: DataView, offset: number, font: IFont) => {
 	// 获取head表中的键值
 	// get keys in hhea table
-	const keys = Object.keys(types)
 	const table: IHheaTable = {}
 
 	// 启动一个新的decoder
 	// start a new decoder
 	decode.start(data, offset)
-	for (let i = 0; i < keys.length; i++) {
-		const key = keys[i]
-
+	for (const key of fieldOrder) {
 		// 根据每个键值对应的数据类型，进行解析
 		// parse each key according to its data type
-		table[key as keyof typeof table] = decode.decoder[types[key as keyof typeof types] as keyof typeof decode.decoder]() as number
+		table[key] = decode.decoder[types[key] as keyof typeof decode.decoder]() as number
 	}
 	decode.end()
 
@@ -102,16 +120,17 @@ const create = (table: IHheaTable) => {
 
 	// 遍历table的每个键值，生成对应数据
 	// traverse table, generate data for each key
-	Object.keys(table).forEach((key: string) => {
-		const type = types[key as keyof typeof types]
-		const value = table[key as keyof typeof table]
+	for (const key of fieldOrder) {
+		const value = table[key]
+		if (value === undefined) continue
+		const type = types[key]
 		// 使用encoder中的方法，根据不同键值对应的数据类型生成数据
 		// generate data use encoder according to each key's data type
 		const bytes = encoder[type as keyof typeof encoder](value as number)
 		if (bytes) {
 			data = data.concat(bytes)
 		}
-	})
+	}
 
 	return data
 }

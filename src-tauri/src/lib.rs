@@ -117,6 +117,16 @@ fn export_svg(app: AppHandle) {
 }
 
 #[tauri::command]
+fn export_var_font_file(app: AppHandle) {
+  app.emit("export-var-font-file", ()).unwrap();
+}
+
+#[tauri::command]
+fn export_color_font(app: AppHandle) {
+  app.emit("export-color-font", ()).unwrap();
+}
+
+#[tauri::command]
 fn add_character(app: AppHandle) {
   app.emit("add-character", ()).unwrap();
 }
@@ -145,10 +155,51 @@ fn language_settings(app: AppHandle) {
 fn import_template1(app: AppHandle) {
   app.emit("template-1", ()).unwrap();
 }
-
+#[tauri::command]
+fn import_template2(app: AppHandle) {
+  app.emit("template-2", ()).unwrap();
+}
+#[tauri::command]
+fn import_template3(app: AppHandle) {
+  app.emit("template-3", ()).unwrap();
+}
+#[tauri::command]
+fn import_template5(app: AppHandle) {
+  app.emit("template-5", ()).unwrap();
+}
+#[tauri::command]
+fn import_template6(app: AppHandle) {
+  app.emit("template-6", ()).unwrap();
+}
+#[tauri::command]
+fn import_template7(app: AppHandle) {
+  app.emit("template-7", ()).unwrap();
+}
+#[tauri::command]
+fn import_template8(app: AppHandle) {
+  app.emit("template-8", ()).unwrap();
+}
+#[tauri::command]
+fn import_template_digits(app: AppHandle) {
+  app.emit("template-digits", ()).unwrap();
+}
+#[tauri::command]
+fn import_template_letters(app: AppHandle) {
+  app.emit("template-letters", ()).unwrap();
+}
 #[tauri::command]
 fn remove_overlap(app: AppHandle) {
   app.emit("remove_overlap", ()).unwrap();
+}
+
+#[tauri::command]
+fn format_all_characters(app: AppHandle) {
+  app.emit("format-all-characters", ()).unwrap();
+}
+
+#[tauri::command]
+fn format_current_character(app: AppHandle) {
+  app.emit("format-current-character", ()).unwrap();
 }
 
 fn enable(edit_status: &str) -> bool {
@@ -158,6 +209,13 @@ fn enable(edit_status: &str) -> bool {
 fn enable_at_edit(edit_status: &str) -> bool {
   match edit_status {
     "edit" | "glyph" => true,
+    _ => false,
+  }
+}
+
+fn enable_at_character_edit(edit_status: &str) -> bool {
+  match edit_status {
+    "edit" => true,
     _ => false,
   }
 }
@@ -260,6 +318,14 @@ fn build_menu_enabled_map() -> HashMap<String, Box<dyn Fn(&str) -> bool>> {
       Box::new(enable_at_edit) as Box<dyn Fn(&str) -> bool>,
     ),
     (
+      "export-var-font-file".to_string(),
+      Box::new(enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
+      "export-color-font".to_string(),
+      Box::new(enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
       "add-character".to_string(),
       Box::new(enable_at_list) as Box<dyn Fn(&str) -> bool>,
     ),
@@ -284,8 +350,48 @@ fn build_menu_enabled_map() -> HashMap<String, Box<dyn Fn(&str) -> bool>> {
       Box::new(template_enable) as Box<dyn Fn(&str) -> bool>,
     ),
     (
+      "template-2".to_string(),
+      Box::new(template_enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
+      "template-3".to_string(),
+      Box::new(template_enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
+      "template-5".to_string(),
+      Box::new(template_enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
+      "template-6".to_string(),
+      Box::new(template_enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
+      "template-7".to_string(),
+      Box::new(template_enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
+      "template-8".to_string(),
+      Box::new(template_enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
+      "template-digits".to_string(),
+      Box::new(template_enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
+      "template-letters".to_string(),
+      Box::new(template_enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
       "remove-overlap".to_string(),
-      Box::new(enable_at_edit) as Box<dyn Fn(&str) -> bool>,
+      Box::new(enable_at_character_edit) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
+      "format-all-characters".to_string(),
+      Box::new(enable_at_list) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
+      "format-current-character".to_string(),
+      Box::new(enable_at_character_edit) as Box<dyn Fn(&str) -> bool>,
     ),
   ]);
   menu_enabled_map
@@ -403,6 +509,10 @@ pub fn run() {
           export_png(app.app_handle().clone())
         } else if event.id() == "export-svg" {
           export_svg(app.app_handle().clone())
+        } else if event.id() == "export-var-font-file" {
+          export_var_font_file(app.app_handle().clone())
+        } else if event.id() == "export-color-font" {
+          export_color_font(app.app_handle().clone())
         } else if event.id() == "add-character" {
           add_character(app.app_handle().clone())
         } else if event.id() == "add-icon" {
@@ -415,8 +525,28 @@ pub fn run() {
           language_settings(app.app_handle().clone())
         } else if event.id() == "template-1" {
           import_template1(app.app_handle().clone())
-        } else if event.id() == "remove_overlap" {
+        } else if event.id() == "template-2" {
+          import_template2(app.app_handle().clone())
+        } else if event.id() == "template-3" {
+          import_template3(app.app_handle().clone())
+        } else if event.id() == "template-5" {
+          import_template5(app.app_handle().clone())
+        } else if event.id() == "template-6" {
+          import_template6(app.app_handle().clone())
+        } else if event.id() == "template-7" {
+          import_template7(app.app_handle().clone())
+        } else if event.id() == "template-8" {
+          import_template8(app.app_handle().clone())
+        } else if event.id() == "template-digits" {
+          import_template_digits(app.app_handle().clone())
+        } else if event.id() == "template-letters" {
+          import_template_letters(app.app_handle().clone())
+        } else if event.id() == "remove-overlap" || event.id() == "remove_overlap" {
           remove_overlap(app.app_handle().clone())
+        } else if event.id() == "format-all-characters" || event.id() == "format_all_characters" {
+          format_all_characters(app.app_handle().clone())
+        } else if event.id() == "format-current-character" || event.id() == "format_current_character" {
+          format_current_character(app.app_handle().clone())
         }
       });
 
@@ -520,6 +650,12 @@ pub fn run() {
               &MenuItemBuilder::with_id("export-font-file", "导出字体库")
                 .build(handle)
                 .expect("Error"),
+              &MenuItemBuilder::with_id("export-var-font-file", "导出可变字体")
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("export-color-font", "导出彩色字体")
+                .build(handle)
+                .expect("Error"),
               &MenuItemBuilder::with_id("export-glyphs", "导出字形")
                 .build(handle)
                 .expect("Error"),
@@ -570,18 +706,49 @@ pub fn run() {
             handle,
             "模板",
             true,
-            &[&MenuItemBuilder::with_id("template-1", "测试模板")
-              .build(handle)
-              .expect("Error")],
+            &[&MenuItemBuilder::with_id("template-2", "字玩标准黑体（仅笔画）")
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("template-3", "测试手绘模板（仅笔画）")
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("template-5", "字玩标准宋体（仅笔画）")
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("template-6", "字玩标准仿宋（仅笔画）")
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("template-7", "字玩标准楷体（仅笔画）")
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("template-8", "字玩标准隶书（仅笔画）")
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("template-digits", "数字模板")
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("template-letters", "字母模板")
+                .build(handle)
+                .expect("Error"),
+            ],
           )?,
           &Submenu::with_items(
             handle,
             "工具",
             true,
             &[&MenuItemBuilder::with_id("remove-overlap", "去除重叠")
-              .enabled(false)
-              .build(handle)
-              .expect("Error")],
+                .enabled(false)
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("format-all-characters", "一键格式化所有字符")
+                .enabled(false)
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("format-current-character", "一键格式化当前字符")
+                .enabled(false)
+                .build(handle)
+                .expect("Error"),
+            ],
           )?,
         ],
       )

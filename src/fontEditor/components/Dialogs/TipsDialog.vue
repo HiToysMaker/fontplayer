@@ -8,7 +8,7 @@
 
   import { useI18n } from 'vue-i18n'
   import { tips } from '../../stores/global'
-  import { setTipsDialogVisible, tipsDialogVisible } from '../../stores/dialogs'
+  import { setTipsDialogVisible, tipsDialogVisible, tipsDialogConfirmCallback } from '../../stores/dialogs'
   const { tm, t } = useI18n()
 
   const handleCancel = () => {
@@ -17,6 +17,9 @@
   }
 
   const handleClick = () => {
+    if (tipsDialogConfirmCallback.value) {
+      tipsDialogConfirmCallback.value()
+    }
     tips.value = ''
     setTipsDialogVisible(false)
   }

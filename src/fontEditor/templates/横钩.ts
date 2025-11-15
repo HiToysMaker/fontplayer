@@ -96,8 +96,9 @@ const createIdentityMatrix = () => [1, 0, 0, 1, 0, 0];
 const instanceBasicGlyph_heng_gou = (plainGlyph: ICustomGlyph) => {
   const glyph = new CustomGlyph(plainGlyph)
   const params = {
-    heng_length: glyph.getParam('横-长度'),
-    gou_horizonalSpan: glyph.getParam('钩-水平延伸'),
+    heng_horizontalSpan: glyph.getParam('横-水平延伸'),
+    heng_verticalSpan: glyph.getParam('横-竖直延伸'),
+    gou_horizontalSpan: glyph.getParam('钩-水平延伸'),
     gou_verticalSpan: glyph.getParam('钩-竖直延伸'),
     skeletonRefPos: glyph.getParam('参考位置'),
     weight: glyph.getParam('字重') || 40,
@@ -117,8 +118,9 @@ const bindSkeletonGlyph_heng_gou = (plainGlyph: ICustomGlyph) => {
 
 const updateGlyphByParams = (params, glyph) => {
   const {
-    heng_length,
-    gou_horizonalSpan,
+    heng_horizontalSpan,
+    heng_verticalSpan,
+    gou_horizontalSpan,
     gou_verticalSpan,
     skeletonRefPos,
     weight,
@@ -137,14 +139,14 @@ const updateGlyphByParams = (params, glyph) => {
     'heng_start_ref',
     {
       x: x0,
-      y: y0,
+      y: y0 + heng_verticalSpan / 2,
     },
   )
   const heng_end_ref = new FP.Joint(
     'heng_end_ref',
     {
-      x: heng_start_ref.x + heng_length,
-      y: heng_start_ref.y,
+      x: heng_start_ref.x + heng_horizontalSpan,
+      y: heng_start_ref.y - heng_verticalSpan,
     },
   )
   if (skeletonRefPos === 1) {
@@ -204,14 +206,14 @@ const updateGlyphByParams = (params, glyph) => {
   const gou_start = new FP.Joint(
     'gou_start',
     {
-      x: heng_start.x + heng_length,
-      y: heng_start.y,
+      x: heng_start.x + heng_horizontalSpan,
+      y: heng_start.y - heng_verticalSpan,
     },
   )
   const gou_end = new FP.Joint(
     'gou_end',
     {
-      x: gou_start.x - gou_horizonalSpan,
+      x: gou_start.x - gou_horizontalSpan,
       y: gou_start.y + gou_verticalSpan,
     },
   )
@@ -238,15 +240,18 @@ const updateGlyphByParams = (params, glyph) => {
 
 const computeParamsByJoints = (jointsMap, glyph) => {
   const { heng_start, heng_end, gou_start, gou_end } = jointsMap
-  const heng_length_range = glyph.getParamRange('横-长度')
-  const gou_horizonal_span_range = glyph.getParamRange('钩-水平延伸')
+  const heng_horizontalSpan_range = glyph.getParamRange('横-水平延伸')
+  const heng_verticalSpan_range = glyph.getParamRange('横-竖直延伸')
+  const gou_horizontal_span_range = glyph.getParamRange('钩-水平延伸')
   const gou_vertical_span_range = glyph.getParamRange('钩-竖直延伸')
-  const heng_length = range(heng_end.x - heng_start.x, heng_length_range)
-  const gou_horizonalSpan = range(gou_start.x - gou_end.x, gou_horizonal_span_range)
+  const heng_horizontalSpan = range(heng_end.x - heng_start.x, heng_horizontalSpan_range)
+  const heng_verticalSpan = range(heng_start.y - heng_end.y, heng_verticalSpan_range)
+  const gou_horizontalSpan = range(gou_start.x - gou_end.x, gou_horizontal_span_range)
   const gou_verticalSpan = range(gou_end.y - gou_start.y, gou_vertical_span_range)
   return {
-    heng_length,
-    gou_horizonalSpan,
+    heng_horizontalSpan,
+    heng_verticalSpan,
+    gou_horizontalSpan,
     gou_verticalSpan,
     skeletonRefPos: glyph.getParam('参考位置'),
     weight: glyph.getParam('字重') || 40,
@@ -259,18 +264,23 @@ const updateSkeletonListener_before_bind_heng_gou = (glyph: CustomGlyph) => {
     const jointsMap = Object.assign({}, glyph.tempData)
     switch (draggingJoint.name) {
       case 'heng_start': {
+        // 拖拽第一个joint，整体移动骨架
         const deltaX = data.deltaX
         const deltaY = data.deltaY
         
+        // 更新骨架的ox, oy
         if (glyph._glyph.skeleton) {
           glyph._glyph.skeleton.ox = (glyph.tempData.ox || 0) + deltaX
           glyph._glyph.skeleton.oy = (glyph.tempData.oy || 0) + deltaY
         }
         
+        // 更新所有joint的位置
         Object.keys(jointsMap).forEach(key => {
-          jointsMap[key] = {
-            x: glyph.tempData[key].x + deltaX,
-            y: glyph.tempData[key].y + deltaY,
+          if (glyph.tempData[key] &&glyph.tempData[key].x && glyph.tempData[key].y) {
+            jointsMap[key] = {
+              x: glyph.tempData[key].x + deltaX,
+              y: glyph.tempData[key].y + deltaY,
+            }
           }
         })
         break
@@ -278,30 +288,30 @@ const updateSkeletonListener_before_bind_heng_gou = (glyph: CustomGlyph) => {
       case 'heng_end': {
         jointsMap['heng_end'] = {
           x: glyph.tempData['heng_end'].x + deltaX,
-          y: glyph.tempData['heng_end'].y,
+          y: glyph.tempData['heng_end'].y + deltaY,
         }
         jointsMap['gou_start'] = {
           x: glyph.tempData['gou_start'].x + deltaX,
-          y: glyph.tempData['gou_start'].y,
+          y: glyph.tempData['gou_start'].y + deltaY,
         }
         jointsMap['gou_end'] = {
           x: glyph.tempData['gou_end'].x + deltaX,
-          y: glyph.tempData['gou_end'].y,
+          y: glyph.tempData['gou_end'].y + deltaY,
         }
         break
       }
       case 'gou_start': {
         jointsMap['heng_end'] = {
           x: glyph.tempData['heng_end'].x + deltaX,
-          y: glyph.tempData['heng_end'].y,
+          y: glyph.tempData['heng_end'].y + deltaY,
         }
         jointsMap['gou_start'] = {
           x: glyph.tempData['gou_start'].x + deltaX,
-          y: glyph.tempData['gou_start'].y,
+          y: glyph.tempData['gou_start'].y + deltaY,
         }
         jointsMap['gou_end'] = {
           x: glyph.tempData['gou_end'].x + deltaX,
-          y: glyph.tempData['gou_end'].y,
+          y: glyph.tempData['gou_end'].y + deltaY,
         }
         break
       }
@@ -345,8 +355,9 @@ const updateSkeletonListener_before_bind_heng_gou = (glyph: CustomGlyph) => {
     const jointsMap = getJointsMap(data)
     const _params = computeParamsByJoints(jointsMap, glyph)
     updateGlyphByParams(_params, glyph)
-    glyph.setParam('横-长度', _params.heng_length)
-    glyph.setParam('钩-水平延伸', _params.gou_horizonalSpan)
+    glyph.setParam('横-水平延伸', _params.heng_horizontalSpan)
+    glyph.setParam('横-竖直延伸', _params.heng_verticalSpan)
+    glyph.setParam('钩-水平延伸', _params.gou_horizontalSpan)
     glyph.setParam('钩-竖直延伸', _params.gou_verticalSpan)
     glyph.tempData = null
   }
@@ -360,30 +371,30 @@ const updateSkeletonListener_after_bind_heng_gou = (glyph: CustomGlyph) => {
       case 'heng_end': {
         jointsMap['heng_end'] = {
           x: glyph.tempData['heng_end'].x + deltaX,
-          y: glyph.tempData['heng_end'].y,
+          y: glyph.tempData['heng_end'].y + deltaY,
         }
         jointsMap['gou_start'] = {
           x: glyph.tempData['gou_start'].x + deltaX,
-          y: glyph.tempData['gou_start'].y,
+          y: glyph.tempData['gou_start'].y + deltaY,
         }
         jointsMap['gou_end'] = {
           x: glyph.tempData['gou_end'].x + deltaX,
-          y: glyph.tempData['gou_end'].y,
+          y: glyph.tempData['gou_end'].y + deltaY,
         }
         break
       }
       case 'gou_start': {
         jointsMap['heng_end'] = {
           x: glyph.tempData['heng_end'].x + deltaX,
-          y: glyph.tempData['heng_end'].y,
+          y: glyph.tempData['heng_end'].y + deltaY,
         }
         jointsMap['gou_start'] = {
           x: glyph.tempData['gou_start'].x + deltaX,
-          y: glyph.tempData['gou_start'].y,
+          y: glyph.tempData['gou_start'].y + deltaY,
         }
         jointsMap['gou_end'] = {
           x: glyph.tempData['gou_end'].x + deltaX,
-          y: glyph.tempData['gou_end'].y,
+          y: glyph.tempData['gou_end'].y + deltaY,
         }
         break
       }
@@ -427,8 +438,9 @@ const updateSkeletonListener_after_bind_heng_gou = (glyph: CustomGlyph) => {
     const _params = computeParamsByJoints(jointsMap, glyph)
     updateGlyphByParams(_params, glyph)
     updateSkeletonTransformation(glyph)
-    glyph.setParam('横-长度', _params.heng_length)
-    glyph.setParam('钩-水平延伸', _params.gou_horizonalSpan)
+    glyph.setParam('横-水平延伸', _params.heng_horizontalSpan)
+    glyph.setParam('横-竖直延伸', _params.heng_verticalSpan)
+    glyph.setParam('钩-水平延伸', _params.gou_horizontalSpan)
     glyph.setParam('钩-竖直延伸', _params.gou_verticalSpan)
     glyph.tempData = null
   }

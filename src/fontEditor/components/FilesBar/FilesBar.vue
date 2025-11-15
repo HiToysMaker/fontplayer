@@ -11,7 +11,9 @@
   import { setEditStatus, editStatus, Status } from '../../stores/font'
   import { setCloseFileTipDialogVisible, setFontSettingsDialogVisible } from '../../stores/dialogs'
   import { Close, Search, InfoFilled, Tools } from '@element-plus/icons-vue'
+  import { fontRenderStyle, fontPreviewStyle } from '../../stores/global'
   import { useI18n } from 'vue-i18n'
+  import { emitter } from '../../Event/bus'
   const { tm, t, locale } = useI18n()
 
   // 关闭文件
@@ -25,6 +27,10 @@
   // select file
   const selectFile = (uuid: string) => {
     setSelectedFileUUID(uuid)
+  }
+
+  const handlePreviewStyleChange = (value: string) => {
+    emitter.emit('renderPreviewCanvas')
   }
 </script>
 
@@ -58,6 +64,14 @@
           高级编辑
         </el-button>
       </span>
+      <div class="style-selection-wrap" style="margin-left: 10px;" v-show="files.value.length > 0">
+        <span class="style-selection-title">{{ t('panels.settingsPanel.render.title') }}</span>
+        <el-radio-group v-model="fontPreviewStyle" id="renderStyle" size="small" @change="handlePreviewStyleChange">
+          <!-- <el-radio-button label="contour">{{ t('panels.settingsPanel.render.contour') }}</el-radio-button> -->
+          <el-radio-button label="black">{{ t('panels.settingsPanel.render.black') }}</el-radio-button>
+          <el-radio-button label="color">{{ t('panels.settingsPanel.render.color') }}</el-radio-button>
+        </el-radio-group>
+      </div>
       <div class="right-btns" v-if="selectedFile" style="margin-left: auto;">
         <el-icon class="right-btn"><Search /></el-icon>
         <el-popover
@@ -116,6 +130,14 @@
           </span>
         </span>
       </span>
+      <div class="style-selection-wrap">
+        <span class="style-selection-title">{{ t('panels.settingsPanel.render.title') }}</span>
+        <el-radio-group v-model="fontRenderStyle" id="renderStyle" size="small">
+          <el-radio-button label="contour">{{ t('panels.settingsPanel.render.contour') }}</el-radio-button>
+          <el-radio-button label="black">{{ t('panels.settingsPanel.render.black') }}</el-radio-button>
+          <el-radio-button label="color">{{ t('panels.settingsPanel.render.color') }}</el-radio-button>
+        </el-radio-group>
+      </div>
 		</el-row>
     <el-row class="files-bar-row" v-else-if="editStatus === Status.Glyph">
 			<span
@@ -130,6 +152,13 @@
           </span>
         </span>
       </span>
+      <div class="style-selection-wrap">
+        <span class="style-selection-title">{{ t('panels.settingsPanel.render.title') }}</span>
+        <el-radio-group v-model="fontRenderStyle" id="renderStyle" size="small">
+          <el-radio-button label="contour">{{ t('panels.settingsPanel.render.contour') }}</el-radio-button>
+          <el-radio-button label="black">{{ t('panels.settingsPanel.render.black') }}</el-radio-button>
+        </el-radio-group>
+      </div>
 		</el-row>
   </div>
 </template>
@@ -210,6 +239,10 @@
     box-sizing: border-box;
     .files-bar-row {
       width: 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
       .file-tag {
         display: flex;
         min-width: 120px;
@@ -254,6 +287,14 @@
           flex: 0 0 10px;
           margin-right: 5px;
         }
+      }
+    }
+    .style-selection-wrap {
+      margin-left: auto;
+      margin-right: 10px;
+      .style-selection-title {
+        margin-right: 10px;
+        color: var(--primary-0);
       }
     }
   }

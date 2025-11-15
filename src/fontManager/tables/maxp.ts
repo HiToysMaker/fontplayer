@@ -44,6 +44,24 @@ const types = {
 	maxComponentDepth: 'uint16',
 }
 
+const fieldOrder = [
+	'version',
+	'numGlyphs',
+	'maxPoints',
+	'maxContours',
+	'maxCompositePoints',
+	'maxCompositeContours',
+	'maxZones',
+	'maxTwilightPoints',
+	'maxStorage',
+	'maxFunctionDefs',
+	'maxInstructionDefs',
+	'maxStackElements',
+	'maxSizeOfInstructions',
+	'maxComponentElements',
+	'maxComponentDepth',
+] as const
+
 /**
  * 解析maxp表
  * @param data 字体文件DataView数据
@@ -65,19 +83,16 @@ const parse = (data: DataView, offset: number, font: IFont) => {
 
 	// 获取maxp表中的键值
 	// get keys in maxp table
-	const keys = Object.keys(types)
 	const table: IMaxpTable = {}
 	
 	// 启动一个新的decoder
 	// start a new decoder
 	decode.start(data, offset)
-	for (let i = 0; i < keys.length; i++) {
-		const key = keys[i]
-
+	for (const key of fieldOrder) {
 		if (version >= 1 || key === 'numGlyphs' || key === 'version') {
 			// 根据每个键值对应的数据类型，进行解析
 			// parse each key according to its data type
-			table[key as keyof typeof table] = decode.decoder[types[key as keyof typeof types] as keyof typeof decode.decoder]() as number
+			table[key] = decode.decoder[types[key] as keyof typeof decode.decoder]() as number
 		}
 	}
 	decode.end()
@@ -99,19 +114,57 @@ const parse = (data: DataView, offset: number, font: IFont) => {
  */
 const create = (table: IMaxpTable) => {
 	let data: Array<number> = []
-
-	// 遍历table的每个键值，生成对应数据
-	// traverse table, generate data for each key
-	Object.keys(table).forEach((key: string) => {
-		const type = types[key as keyof typeof types]
-		const value = table[key as keyof typeof table] as IValue
-		// 使用encoder中的方法，根据不同键值对应的数据类型生成数据
-		// generate data use encoder according to each key's data type
-		const bytes = encoder[type as keyof typeof encoder](value)
-		if (bytes) {
-			data = data.concat(bytes)
+	
+	// 检测版本
+	const version = table.version || 0x00005000
+	const isTrueType = version === 0x00010000
+	
+	console.log(`\n=== Creating maxp table ===`)
+	console.log(`Version: 0x${version.toString(16).padStart(8, '0')} (${isTrueType ? 'TrueType' : 'CFF'})`)
+	
+	// 按照OpenType规范的严格字段顺序输出
+	// 1. version (4字节)
+	const versionBytes = encoder.Version16Dot16(version)
+	if (versionBytes) data = data.concat(versionBytes)
+	
+	// 2. numGlyphs (2字节)
+	const numGlyphsBytes = encoder.uint16(table.numGlyphs || 0)
+	if (numGlyphsBytes) data = data.concat(numGlyphsBytes)
+	
+	// 如果是TrueType版本，输出额外字段
+	if (isTrueType) {
+		const uint16Fields = [
+			'maxPoints',
+			'maxContours',
+			'maxCompositePoints',
+			'maxCompositeContours',
+			'maxZones',
+			'maxTwilightPoints',
+			'maxStorage',
+			'maxFunctionDefs',
+			'maxInstructionDefs',
+			'maxStackElements',
+			'maxSizeOfInstructions',
+			'maxComponentElements',
+			'maxComponentDepth',
+		]
+		
+		for (const field of uint16Fields) {
+			const value = (table as any)[field] || 0
+			const bytes = encoder.uint16(value)
+			if (bytes) data = data.concat(bytes)
 		}
-	})
+		
+		console.log(`TrueType maxp: ${data.length} bytes`)
+		console.log(`  numGlyphs: ${table.numGlyphs}`)
+		console.log(`  maxPoints: ${table.maxPoints || 0}`)
+		console.log(`  maxContours: ${table.maxContours || 0}`)
+	} else {
+		console.log(`CFF maxp: ${data.length} bytes`)
+	}
+	
+	console.log(`===========================\n`)
+	
 	return data
 }
 

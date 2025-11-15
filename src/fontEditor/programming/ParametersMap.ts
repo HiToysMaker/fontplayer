@@ -22,7 +22,7 @@ class ParametersMap {
 			if (this.parameters[i].name === name) {
 				return {
 					min: this.parameters[i].min || 0,
-					max: this.parameters[i].max || 1000,
+					max: this.parameters[i].max === 0 ? 0 : this.parameters[i].max || 1000,
 				}
 			}
 		}

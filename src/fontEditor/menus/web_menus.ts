@@ -162,6 +162,20 @@ const web_menu: Array<IMenu> = [
 				}
 			},
 			{
+				label: tm('menus.export.var_font'),
+				key: 'export-var-font-file',
+				click: (handlers: IHandlerMap) => {
+					handlers['export-var-font-file']()
+				}
+			},
+			{
+				label: tm('menus.export.color_font'),
+				key: 'export-color-font',
+				click: (handlers: IHandlerMap) => {
+					handlers['export-color-font']()
+				}
+			},
+			{
 				label: tm('menus.export.glyph'),
 				key: 'export-glyphs',
 				click: (handlers: IHandlerMap) => {
@@ -242,13 +256,13 @@ const web_menu: Array<IMenu> = [
 		label: tm('menus.templates.templates'),
 		key: 'templates',
 		submenu: [
-			{
-				label: tm('menus.templates.test1'),
-				key: 'template-1',
-				click: (handlers: IHandlerMap) => {
-					handlers['template-1']()
-				}
-			},
+			// {
+			// 	label: tm('menus.templates.test1'),
+			// 	key: 'template-1',
+			// 	click: (handlers: IHandlerMap) => {
+			// 		handlers['template-1']()
+			// 	}
+			// },
 			{
 				label: tm('menus.templates.test2'),
 				key: 'template-2',
@@ -263,13 +277,13 @@ const web_menu: Array<IMenu> = [
 					handlers['template-3']()
 				}
 			},
-			{
-				label: tm('menus.templates.test4'),
-				key: 'template-4',
-				click: (handlers: IHandlerMap) => {
-					handlers['template-4']()
-				}
-			},
+			// {
+			// 	label: tm('menus.templates.test4'),
+			// 	key: 'template-4',
+			// 	click: (handlers: IHandlerMap) => {
+			// 		handlers['template-4']()
+			// 	}
+			// },
 			{
 				label: tm('menus.templates.test5'),
 				key: 'template-5',
@@ -323,6 +337,20 @@ const web_menu: Array<IMenu> = [
 				key: 'remove_overlap',
 				click: (handlers: IHandlerMap) => {
 					handlers['remove_overlap']()
+				}
+			},
+			{
+			label: tm('menus.tools.format_all_characters'),
+				key: 'format-all-characters',
+				click: (handlers: IHandlerMap) => {
+					handlers['format-all-characters']()
+				}
+			},
+			{
+			label: tm('menus.tools.format_current_character'),
+				key: 'format-current-character',
+				click: (handlers: IHandlerMap) => {
+					handlers['format-current-character']()
 				}
 			},
 		]

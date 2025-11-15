@@ -20,7 +20,7 @@
   import * as R from 'ramda'
   import { ref, type Ref, reactive } from 'vue'
   import { useI18n } from 'vue-i18n'
-	import { setTool } from '../../stores/global'
+	import { setGlyphDraggerTool, setTool } from '../../stores/global'
   import { ArrowLeftBold, Lock, Unlock, Hide, View } from '@element-plus/icons-vue'
   const { t } = useI18n()
 
@@ -65,7 +65,7 @@
         editGlyph.value.selectedComponentsTree.push('null')
       }
     } else if (component.type === 'glyph') {
-      setTool('glyphDragger')
+      setGlyphDraggerTool('glyphDragger')
     }
   }
 

@@ -358,7 +358,7 @@ const getComponents = (skeleton) => {
   } = skeleton
 
   const radius = 15
-  const _weight = weight * 1.5
+  const _weight = weight * 1.0
   const dian_diameter = Math.min(FP.distance(dian_bend, dian_end), _weight)
 
   // out指左侧（外侧）轮廓线

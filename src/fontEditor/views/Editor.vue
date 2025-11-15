@@ -38,6 +38,10 @@
   import exportFileDialog from '../../fontEditor/components/Dialogs/ExportFileDialog.vue'
   import exportFontDialog from '../../fontEditor/components/Dialogs/ExportFontDialog.vue'
   import exportFontTauriDialog from '../components/Dialogs/ExportFontDialog_tauri.vue'
+  import exportVarFontDialog from '../components/Dialogs/ExportVarFontDialog.vue'
+  import exportVarFontTauriDialog from '../components/Dialogs/ExportVarFontDialog_tauri.vue'
+  import exportColorFontDialog from '../components/Dialogs/ExportColorFontDialog.vue'
+  import exportColorFontTauriDialog from '../components/Dialogs/ExportColorFontDialog_tauri.vue'
   import AdvancedEditPanel from './AdvancedEditPanel/AdvancedEditPanel.vue'
   import { editStatus, Status } from '../../fontEditor/stores/font'
   import { ENV } from '../../fontEditor/stores/system'
@@ -149,6 +153,10 @@
     <export-file-dialog></export-file-dialog>
     <export-font-dialog></export-font-dialog>
     <export-font-tauri-dialog></export-font-tauri-dialog>
+    <export-var-font-dialog></export-var-font-dialog>
+    <export-var-font-tauri-dialog></export-var-font-tauri-dialog>
+    <export-color-font-dialog></export-color-font-dialog>
+    <export-color-font-tauri-dialog></export-color-font-tauri-dialog>
     <div class="outer-wrapper"
       v-loading="loading"
       :element-loading-text="``"

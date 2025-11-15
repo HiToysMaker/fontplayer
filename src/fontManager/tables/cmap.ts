@@ -45,6 +45,27 @@ const types = {
 	glyphIdArray: 'uint16',
 }
 
+const tableFieldOrder = ['version', 'numTables', 'encodingRecords'] as const
+const encodingRecordFieldOrder = ['platformID', 'encodingID', 'subtableOffset'] as const
+const format4HeaderOrder = ['format', 'length', 'language', 'segCount', 'searchRange', 'entrySelector', 'rangeShift'] as const
+const format12HeaderOrder = ['format', 'reserved', 'length', 'language', 'groupCount'] as const
+const format4FieldTypes = {
+	format: 'uint16',
+	length: 'uint16',
+	language: 'uint16',
+	segCount: 'uint16',
+	searchRange: 'uint16',
+	entrySelector: 'uint16',
+	rangeShift: 'uint16',
+} as const
+const format12FieldTypes = {
+	format: 'uint16',
+	reserved: 'uint16',
+	length: 'uint32',
+	language: 'uint32',
+	groupCount: 'uint32',
+} as const
+
 /**
  * 解析cmap表
  * @param data 字体文件DataView数据
@@ -511,42 +532,39 @@ const createTable = (characters: Array<ICharacter>) => {
 const create = (table: ICmapTable) => {
 	let data: Array<number> = []
 
-	// 遍历table的每个键值，生成对应数据
-	// traverse table, generate data for each key
-	Object.keys(table).forEach((key: string) => {
-		const type = types[key as keyof typeof types]
-		const value = table[key as keyof typeof table]
-
-		// 使用encoder中的方法，根据不同键值对应的数据类型生成数据
-		// generate data use encoder according to each key's data type
-		let bytes: Array<number> = []
+	for (const key of tableFieldOrder) {
 		if (key === 'encodingRecords') {
-			const encodingRecords = value as Array<IEncodingRecords>
-			for (let i = 0; i < encodingRecords.length; i++) {
-				const record = encodingRecords[i]
-				Object.keys(record).forEach((key) => {
-					if (key !== 'subTable') {
-						const type = types[key as keyof typeof types]
-						const value = record[key as keyof typeof record]
-						bytes = bytes.concat(encoder[type as keyof typeof encoder](value) as Array<number>)
+			const encodingRecords = table.encodingRecords || []
+			const recordBytes: Array<number> = []
+			const subTableBytes: Array<number> = []
+
+			for (const record of encodingRecords) {
+				for (const field of encodingRecordFieldOrder) {
+					const type = types[field]
+					const value = record[field]
+					const bytes = encoder[type as keyof typeof encoder](value)
+					if (bytes) {
+						recordBytes.push(...bytes)
 					}
-				})
+				}
 			}
-			for (let i = 0; i < encodingRecords.length; i++) {
-				const subTable = encodingRecords[i].subTable
+
+			for (const record of encodingRecords) {
+				const subTable = record.subTable
+				if (!subTable) continue
 				if (subTable.format === 4) {
-					Object.keys(subTable).forEach((key) => {
-						if (key === 'segCount') {
-							const type = types['segCountX2']
-							const value = subTable[key as keyof typeof subTable] * 2
-							bytes = bytes.concat(encoder[type as keyof typeof encoder](value) as Array<number>)
-						} else if (key !== 'glyphIndexMap' && key !== 'segments') {
-							const type = types[key as keyof typeof types]
-							const value = subTable[key as keyof typeof subTable]
+					let bytes: Array<number> = []
+					for (const field of format4HeaderOrder) {
+						if (field === 'segCount') {
+							const segCount = subTable.segCount || 0
+							bytes = bytes.concat(encoder[format4FieldTypes[field] as keyof typeof encoder](segCount * 2) as Array<number>)
+						} else {
+							const type = format4FieldTypes[field]
+							const value = subTable[field]
 							bytes = bytes.concat(encoder[type as keyof typeof encoder](value) as Array<number>)
 						}
-					})
-					const segments = subTable.segments
+					}
+					const segments = subTable.segments || []
 					const offset = bytes.length
 					setByesAt(bytes, encoder['uint16' as keyof typeof encoder](0) as Array<number>, offset + segments.length * 2)
 					for (let i = 0; i < segments.length; i++) {
@@ -563,26 +581,35 @@ const create = (table: ICmapTable) => {
 							}
 						}
 					}
+					subTableBytes.push(...bytes)
 				} else if (subTable.format === 12) {
-					bytes = bytes.concat(encoder['uint16' as keyof typeof encoder](subTable.format) as Array<number>)
-					bytes = bytes.concat(encoder['uint16' as keyof typeof encoder](subTable.reserved) as Array<number>)
-					bytes = bytes.concat(encoder['uint32' as keyof typeof encoder](subTable.length) as Array<number>)
-					bytes = bytes.concat(encoder['uint32' as keyof typeof encoder](subTable.language) as Array<number>)
-					bytes = bytes.concat(encoder['uint32' as keyof typeof encoder](subTable.groupCount) as Array<number>)
-					for (let i = 0; i < subTable.groupCount; i++) {
-						bytes = bytes.concat(encoder['uint32' as keyof typeof encoder](subTable.groups.startCharCode) as Array<number>)
-						bytes = bytes.concat(encoder['uint32' as keyof typeof encoder](subTable.groups.endCharCode) as Array<number>)
-						bytes = bytes.concat(encoder['uint32' as keyof typeof encoder](subTable.groups.startGlyphId) as Array<number>)
+					let bytes: Array<number> = []
+					for (const field of format12HeaderOrder) {
+						const type = format12FieldTypes[field]
+						const value = subTable[field]
+						bytes = bytes.concat(encoder[type as keyof typeof encoder](value) as Array<number>)
 					}
+					const groups = subTable.groups || []
+					for (let i = 0; i < groups.length; i++) {
+						const group = groups[i]
+						bytes = bytes.concat(encoder['uint32' as keyof typeof encoder](group.startCharCode) as Array<number>)
+						bytes = bytes.concat(encoder['uint32' as keyof typeof encoder](group.endCharCode) as Array<number>)
+						bytes = bytes.concat(encoder['uint32' as keyof typeof encoder](group.startGlyphId) as Array<number>)
+					}
+					subTableBytes.push(...bytes)
 				}
 			}
+
+			data = data.concat(recordBytes, subTableBytes)
 		} else {
-			bytes = bytes.concat(encoder[type as keyof typeof encoder](value as number) as Array<number>)
+			const type = types[key]
+			const value = table[key]
+			const bytes = encoder[type as keyof typeof encoder](value)
+			if (bytes) {
+				data = data.concat(bytes)
+			}
 		}
-		if (bytes) {
-			data = data.concat(bytes)
-		}
-	})
+	}
 	return data
 }
 
