@@ -1,3 +1,4 @@
+
 ![GitHub stars](https://img.shields.io/github/stars/HiToysmaker/fontplayer?style=for-the-badge?logoWidth=40&labelWidth=100)
 ![GitHub forks](https://img.shields.io/github/forks/HiToysmaker/fontplayer?style=for-the-badge?logoWidth=40&labelWidth=100)
 ![Gitee stars](https://gitee.com/toysmaker/fontplayer/badge/star.svg?theme=white)
@@ -61,9 +62,9 @@ npx tauri build
   4. 允许用户上传手绘笔画形状，通过骨架绑定的方式绑定现有骨架参数。从而允许用户一键将7000字字库的笔画修改成个性手绘笔画
 
 接下来，字玩还有更多创意正在探索中：
-  2. TODO:整理汉字结构，实现参数化结构调整
-  3. TODO:增加ASCII部分(数字字母符号)的参数化字形模板设计
-  4. TODO:丰富中文笔画模板，提供更多风格的笔画供用户调参
+  1. TODO:整理汉字结构，实现参数化结构调整
+  2. TODO:增加ASCII部分(数字字母符号)的参数化字形模板设计
+  3. TODO:丰富中文笔画模板，提供更多风格的笔画供用户调参
 
 ### 使用指南
 #### 笔画模板与字形组装
