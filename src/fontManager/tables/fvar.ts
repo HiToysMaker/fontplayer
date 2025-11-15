@@ -18,7 +18,10 @@ interface IFvarTable {
 }
 
 interface VariationAxisRecord {
-  axisTag?: number;
+  axisTag?: string | {
+    tagArr: Array<number>;
+    tagStr: string;
+  };
   minValue?: number;
   defaultValue?: number;
   maxValue?: number;
@@ -29,7 +32,7 @@ interface VariationAxisRecord {
 interface InstanceRecord {
   subfamilyNameID?: number;
   flags?: number;
-  coordinates?: number;
+  coordinates?: number | Array<number>;
   postScriptNameID?: number;
 }
 

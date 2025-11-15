@@ -4,7 +4,7 @@
  */
 
 import { PathType } from '../character'
-import type { ILine, ICubicBezierCurve } from '../character'
+import type { ILine, IQuadraticBezierCurve, ICubicBezierCurve } from '../character'
 import {
   calculateDeltas,
   applyDeltas,
@@ -20,7 +20,7 @@ import {
 export function createWeightVariationExample() {
   // 定义默认字形（正常粗细）- 一个简单的"I"字形
   // Define default glyph (normal weight) - a simple "I" shape
-  const defaultContours: Array<Array<ILine | ICubicBezierCurve>> = [
+  const defaultContours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = [
     [
       {
         type: PathType.LINE,
@@ -47,7 +47,7 @@ export function createWeightVariationExample() {
 
   // 定义粗体变体（wght轴最大值）
   // Define bold variant (wght axis maximum)
-  const boldContours: Array<Array<ILine | ICubicBezierCurve>> = [
+  const boldContours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = [
     [
       {
         type: PathType.LINE,
@@ -125,7 +125,7 @@ export function interpolationExample() {
  */
 export function multiAxisVariationExample() {
   // 默认字形
-  const defaultContours: Array<Array<ILine | ICubicBezierCurve>> = [
+  const defaultContours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = [
     [
       {
         type: PathType.LINE,
@@ -151,7 +151,7 @@ export function multiAxisVariationExample() {
   ]
 
   // 只有粗细变化（wght=1.0, wdth=0.0）
-  const boldContours: Array<Array<ILine | ICubicBezierCurve>> = [
+  const boldContours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = [
     [
       {
         type: PathType.LINE,
@@ -177,7 +177,7 @@ export function multiAxisVariationExample() {
   ]
 
   // 只有宽度变化（wght=0.0, wdth=1.0）
-  const wideContours: Array<Array<ILine | ICubicBezierCurve>> = [
+  const wideContours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = [
     [
       {
         type: PathType.LINE,
@@ -203,7 +203,7 @@ export function multiAxisVariationExample() {
   ]
 
   // 粗细和宽度都变化（wght=1.0, wdth=1.0）
-  const boldWideContours: Array<Array<ILine | ICubicBezierCurve>> = [
+  const boldWideContours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = [
     [
       {
         type: PathType.LINE,
@@ -253,10 +253,10 @@ export function multiAxisVariationExample() {
  */
 export function createCompleteGvarTable(
   glyphContours: Array<{
-    default: Array<Array<ILine | ICubicBezierCurve>>,
+    default: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>,
     variants: Array<{
       peakTuple: number[],
-      contours: Array<Array<ILine | ICubicBezierCurve>>
+      contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>
     }>
   }>,
   axisCount: number
@@ -298,7 +298,7 @@ export function createCompleteGvarTable(
  */
 export function curveVariationExample() {
   // 默认字形 - 使用三次贝塞尔曲线
-  const defaultContours: Array<Array<ILine | ICubicBezierCurve>> = [
+  const defaultContours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = [
     [
       {
         type: PathType.LINE,
@@ -321,7 +321,7 @@ export function curveVariationExample() {
   ]
 
   // 粗体变体 - 曲线更圆润
-  const boldContours: Array<Array<ILine | ICubicBezierCurve>> = [
+  const boldContours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> = [
     [
       {
         type: PathType.LINE,
@@ -359,10 +359,10 @@ export function curveVariationExample() {
  * Utility: Get glyph at specific axis position
  */
 export function getGlyphAtPosition(
-  defaultContours: Array<Array<ILine | ICubicBezierCurve>>,
+  defaultContours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>,
   deltas: PointDelta[],
   position: number // 0.0 到 1.0
-): Array<Array<ILine | ICubicBezierCurve>> {
+): Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> {
   const scaledDeltas = deltas.map(delta => ({
     xDelta: Math.round(delta.xDelta * position),
     yDelta: Math.round(delta.yDelta * position),
@@ -376,10 +376,10 @@ export function getGlyphAtPosition(
  * Utility: Multi-axis position interpolation
  */
 export function getGlyphAtMultiAxisPosition(
-  defaultContours: Array<Array<ILine | ICubicBezierCurve>>,
+  defaultContours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>,
   axisDeltas: PointDelta[][],  // 每个轴的deltas
   positions: number[]           // 每个轴的位置（0.0到1.0）
-): Array<Array<ILine | ICubicBezierCurve>> {
+): Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>> {
   // 计算组合deltas
   const combinedDeltas: PointDelta[] = []
   

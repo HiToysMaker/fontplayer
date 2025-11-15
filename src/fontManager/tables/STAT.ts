@@ -8,7 +8,6 @@
  */
 
 import { encoder } from '../encode'
-import type { ITable } from '../font'
 import type { IFvarTable } from './fvar'
 
 /**
@@ -25,7 +24,7 @@ import type { IFvarTable } from './fvar'
  * - uint16: elidedFallbackNameID
  */
 
-export interface ISTATTable extends ITable {
+export interface ISTATTable {
 	majorVersion: number
 	minorVersion: number
 	designAxisSize: number
@@ -69,10 +68,15 @@ export function createStatTable(
 	const axisValues: ISTATTable['axisValues'] = []
 	
 	// 从 fvar 表复制轴信息
-	fvarTable.axes.forEach((axis, index) => {
+	const sourceAxes = fvarTable.axes ?? []
+	sourceAxes.forEach((axis, index) => {
+		const axisTag = typeof axis.axisTag === 'string'
+			? axis.axisTag
+			: axis.axisTag?.tagStr || 'unkn'
+
 		axes.push({
-			axisTag: axis.axisTag,
-			axisNameID: axis.axisNameID,
+			axisTag,
+			axisNameID: axis.axisNameID ?? 0,
 			axisOrdering: index,
 		})
 		
@@ -81,13 +85,12 @@ export function createStatTable(
 			format: 1, // Format 1: Axis Value without linked value
 			axisIndex: index,
 			flags: 0,
-			valueNameID: axis.axisNameID, // 使用轴名称作为值名称
-			value: axis.defaultValue,
+			valueNameID: axis.axisNameID ?? 0, // 使用轴名称作为值名称
+			value: axis.defaultValue ?? axis.minValue ?? 0,
 		})
 	})
 	
 	return {
-		tag: 'STAT',
 		majorVersion: 1,
 		minorVersion: 2,
 		designAxisSize: 8, // 每个轴记录 8 字节
@@ -110,20 +113,20 @@ export function create(table: ISTATTable, options?: any): number[] {
 	const data: number[] = []
 	
 	// === 表头（Version 1.2: 20 bytes）===
-	data.push(...encoder.uint16(table.majorVersion)) // 0
-	data.push(...encoder.uint16(table.minorVersion)) // 2
-	data.push(...encoder.uint16(table.designAxisSize)) // 4
-	data.push(...encoder.uint16(table.designAxisCount)) // 6
-	data.push(...encoder.uint32(table.designAxesOffset)) // 8
-	data.push(...encoder.uint16(table.axisValueCount)) // 12
-	data.push(...encoder.uint32(table.offsetToAxisValueOffsets)) // 14
-	data.push(...encoder.uint16(table.elidedFallbackNameID)) // 18
+	data.push(...(encoder.uint16(table.majorVersion) || [])) // 0
+	data.push(...(encoder.uint16(table.minorVersion) || [])) // 2
+	data.push(...(encoder.uint16(table.designAxisSize) || [])) // 4
+	data.push(...(encoder.uint16(table.designAxisCount) || [])) // 6
+	data.push(...(encoder.uint32(table.designAxesOffset) || [])) // 8
+	data.push(...(encoder.uint16(table.axisValueCount) || [])) // 12
+	data.push(...(encoder.uint32(table.offsetToAxisValueOffsets) || [])) // 14
+	data.push(...(encoder.uint16(table.elidedFallbackNameID) || [])) // 18
 	
 	// === Design Axes Array（每个 8 bytes）===
 	for (const axis of table.axes) {
-		data.push(...encoder.Tag(axis.axisTag)) // 0-3: axisTag
-		data.push(...encoder.uint16(axis.axisNameID)) // 4-5: axisNameID
-		data.push(...encoder.uint16(axis.axisOrdering)) // 6-7: axisOrdering
+		data.push(...(encoder.Tag(axis.axisTag) || [])) // 0-3: axisTag
+		data.push(...(encoder.uint16(axis.axisNameID) || [])) // 4-5: axisNameID
+		data.push(...(encoder.uint16(axis.axisOrdering) || [])) // 6-7: axisOrdering
 	}
 	
 	// === Axis Value Offsets Array（每个 2 bytes）===
@@ -133,16 +136,16 @@ export function create(table: ISTATTable, options?: any): number[] {
 	for (let i = 0; i < table.axisValueCount; i++) {
 		// Format 1 记录: format(2) + axisIndex(2) + flags(2) + valueNameID(2) + value(4) = 12 bytes
 		const offset = axisValueTableStart + i * 12
-		data.push(...encoder.uint16(offset - table.offsetToAxisValueOffsets))
+		data.push(...(encoder.uint16(offset - table.offsetToAxisValueOffsets) || []))
 	}
 	
 	// === Axis Value Tables（Format 1: 每个 12 bytes）===
 	for (const axisValue of table.axisValues) {
-		data.push(...encoder.uint16(axisValue.format)) // 0-1: format
-		data.push(...encoder.uint16(axisValue.axisIndex)) // 2-3: axisIndex
-		data.push(...encoder.uint16(axisValue.flags)) // 4-5: flags
-		data.push(...encoder.uint16(axisValue.valueNameID)) // 6-7: valueNameID
-		data.push(...encoder.Fixed(axisValue.value)) // 8-11: value (4 bytes)
+		data.push(...(encoder.uint16(axisValue.format) || [])) // 0-1: format
+		data.push(...(encoder.uint16(axisValue.axisIndex) || [])) // 2-3: axisIndex
+		data.push(...(encoder.uint16(axisValue.flags) || [])) // 4-5: flags
+		data.push(...(encoder.uint16(axisValue.valueNameID) || [])) // 6-7: valueNameID
+		data.push(...(encoder.Fixed(axisValue.value) || [])) // 8-11: value (4 bytes)
 	}
 	
 	console.log(`📊 STAT table created:`)
