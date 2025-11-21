@@ -326,6 +326,13 @@ const web_menu: Array<IMenu> = [
 					handlers['template-letters']()
 				}
 			},
+			{
+				label: tm('menus.templates.symbols'),
+				key: 'template-symbols',
+				click: (handlers: IHandlerMap) => {
+					handlers['template-symbols']()
+				}
+			},
 		]
 	},
 	{

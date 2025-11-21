@@ -188,6 +188,10 @@ fn import_template_letters(app: AppHandle) {
   app.emit("template-letters", ()).unwrap();
 }
 #[tauri::command]
+fn import_template_symbols(app: AppHandle) {
+  app.emit("template-symbols", ()).unwrap();
+}
+#[tauri::command]
 fn remove_overlap(app: AppHandle) {
   app.emit("remove_overlap", ()).unwrap();
 }
@@ -382,6 +386,10 @@ fn build_menu_enabled_map() -> HashMap<String, Box<dyn Fn(&str) -> bool>> {
       Box::new(template_enable) as Box<dyn Fn(&str) -> bool>,
     ),
     (
+      "template-symbols".to_string(),
+      Box::new(template_enable) as Box<dyn Fn(&str) -> bool>,
+    ),
+    (
       "remove-overlap".to_string(),
       Box::new(enable_at_character_edit) as Box<dyn Fn(&str) -> bool>,
     ),
@@ -541,6 +549,8 @@ pub fn run() {
           import_template_digits(app.app_handle().clone())
         } else if event.id() == "template-letters" {
           import_template_letters(app.app_handle().clone())
+        } else if event.id() == "template-symbols" {
+          import_template_symbols(app.app_handle().clone())
         } else if event.id() == "remove-overlap" || event.id() == "remove_overlap" {
           remove_overlap(app.app_handle().clone())
         } else if event.id() == "format-all-characters" || event.id() == "format_all_characters" {
@@ -728,6 +738,9 @@ pub fn run() {
                 .build(handle)
                 .expect("Error"),
               &MenuItemBuilder::with_id("template-letters", "字母模板")
+                .build(handle)
+                .expect("Error"),
+              &MenuItemBuilder::with_id("template-symbols", "符号模板")
                 .build(handle)
                 .expect("Error"),
             ],
