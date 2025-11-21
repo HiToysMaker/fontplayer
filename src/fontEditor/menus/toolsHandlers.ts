@@ -325,21 +325,49 @@ const removeOverlap = async () => {
       if (path.curves && path.curves.length > 0) {
         let points = []
         
+        // 获取第一个曲线段的起点
+        let startX = path.curves[0].points[0].x
+        let startY = path.curves[0].points[0].y
+        
         // 添加起始点
         points.push({
           uuid: genUUID(),
           type: 'anchor',
-          x: path.curves[0].points[0].x,
-          y: path.curves[0].points[0].y,
+          x: startX,
+          y: startY,
           origin: null,
           isShow: true,
         })
         
         // 处理所有曲线段
+        let lastCurveEndX = null
+        let lastCurveEndY = null
         for (let j = 0; j < path.curves.length; j++) {
           const curve = path.curves[j]
           
           if (curve.points.length >= 4) {
+            // 获取当前曲线段的起点和终点
+            let curveStartX = curve.points[0].x
+            let curveStartY = curve.points[0].y
+            let endX = curve.points[3].x
+            let endY = curve.points[3].y
+            
+            // 保存原始终点坐标（用于闭合时的切线调整）
+            lastCurveEndX = endX
+            lastCurveEndY = endY
+            
+            // 确保路径段正确连接：当前段的起点应该等于前一段的终点
+            if (j > 0 && points.length > 0) {
+              const prevEndPoint = points[points.length - 1]
+              // 如果前一段的终点与当前段的起点不重合，使用前一段的终点作为当前段的起点
+              const dx = Math.abs(prevEndPoint.x - curveStartX)
+              const dy = Math.abs(prevEndPoint.y - curveStartY)
+              if (dx > 0.001 || dy > 0.001) {
+                curveStartX = prevEndPoint.x
+                curveStartY = prevEndPoint.y
+              }
+            }
+            
             const control1 = {
               uuid: genUUID(),
               type: 'control',
@@ -360,12 +388,40 @@ const removeOverlap = async () => {
             const end = {
               uuid: uuid,
               type: 'anchor',
-              x: curve.points[3].x,
-              y: curve.points[3].y,
+              x: endX,
+              y: endY,
               origin: null,
               isShow: true,
             }
             points.push(control1, control2, end)
+          }
+        }
+        
+        // 如果路径是闭合的，确保最后一个点的坐标精确等于第一个点的坐标
+        if (points.length > 0 && path.closed) {
+          const firstPoint = points[0]
+          const lastPoint = points[points.length - 1]
+          // 强制最后一个点的坐标等于第一个点的坐标（不考虑容差，确保精确闭合）
+          if (lastPoint.x !== firstPoint.x || lastPoint.y !== firstPoint.y) {
+            // 修正最后一个点的坐标，使其精确等于第一个点的坐标
+            lastPoint.x = firstPoint.x
+            lastPoint.y = firstPoint.y
+            
+            // 如果最后一个点有对应的控制点（倒数第二个点），调整它以保持切线方向
+            // 在pen组件中，点的顺序是：anchor, control1, control2, anchor, ...
+            // 所以最后一个anchor的前一个点应该是control2
+            if (points.length >= 4 && lastCurveEndX !== null && lastCurveEndY !== null) {
+              const lastControl2 = points[points.length - 2] // 最后一个anchor的前一个点（control2）
+              if (lastControl2 && lastControl2.type === 'control') {
+                // 计算原始control2到最后一个anchor的方向向量
+                const origControl2ToEndX = lastCurveEndX - lastControl2.x
+                const origControl2ToEndY = lastCurveEndY - lastControl2.y
+                
+                // 调整control2，使新的control2到新的end的方向保持不变
+                lastControl2.x = firstPoint.x - origControl2ToEndX
+                lastControl2.y = firstPoint.y - origControl2ToEndY
+              }
+            }
           }
         }
         

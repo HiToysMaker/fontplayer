@@ -755,20 +755,20 @@ const genEllipseContour = (points) => {
 			contour.push({
 				type: PathType.CUBIC_BEZIER,
 				start: {
-					x: curve[0].x,
-					y: curve[0].y,
+					x: Math.floor(curve[0].x),
+					y: Math.floor(curve[0].y),
 				},
 				end: {
-					x: curve[3].x,
-					y: curve[3].y,
+					x: Math.floor(curve[3].x),
+					y: Math.floor(curve[3].y),
 				},
 				control1: {
-					x: curve[1].x,
-					y: curve[1].y,
+					x: Math.floor(curve[1].x),
+					y: Math.floor(curve[1].y),
 				},
 				control2: {
-					x: curve[2].x,
-					y: curve[2].y,
+					x: Math.floor(curve[2].x),
+					y: Math.floor(curve[2].y),
 				},
 			})
 		}
@@ -782,12 +782,12 @@ const genRectangleContour = (points) => {
 		contour.push({
 			type: PathType.LINE,
 			start: {
-				x: points[i].x,
-				y: points[i].y,
+				x: Math.floor(points[i].x),
+				y: Math.floor(points[i].y),
 			},
 			end: {
-				x: points[i + 1].x,
-				y: points[i + 1].y,
+				x: Math.floor(points[i + 1].x),
+				y: Math.floor(points[i + 1].y),
 			},
 		})
 	}
@@ -801,20 +801,20 @@ const genPenContour = (points, fill: boolean = false) => {
 			contour.push({
 				type: PathType.CUBIC_BEZIER,
 				start: {
-					x: points[i].x,
-					y: points[i].y,
+					x: Math.floor(points[i].x),
+					y: Math.floor(points[i].y),
 				},
 				end: {
-					x: points[i + 3].x,
-					y: points[i + 3].y,
+					x: Math.floor(points[i + 3].x),
+					y: Math.floor(points[i + 3].y),
 				},
 				control1: {
-					x: points[i + 1].x,
-					y: points[i + 1].y,
+					x: Math.floor(points[i + 1].x),
+					y: Math.floor(points[i + 1].y),
 				},
 				control2: {
-					x: points[i + 2].x,
-					y: points[i + 2].y,
+					x: Math.floor(points[i + 2].x),
+					y: Math.floor(points[i + 2].y),
 				},
 				fill,
 			})
@@ -828,12 +828,12 @@ const genPolygonContour = (points) => {
 		contour.push({
 			type: PathType.LINE,
 			start: {
-				x: points[i].x,
-				y: points[i].y,
+				x: Math.floor(points[i].x),
+				y: Math.floor(points[i].y),
 			},
 			end: {
-				x: points[i + 1].x,
-				y: points[i + 1].y,
+				x: Math.floor(points[i + 1].x),
+				y: Math.floor(points[i + 1].y),
 			},
 		})
 	}
