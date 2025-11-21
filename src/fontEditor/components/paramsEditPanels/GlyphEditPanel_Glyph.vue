@@ -8,7 +8,7 @@
   import { parameterCompKey, modifyComponentForCurrentGlyph, editGlyph, selectedComponent, selectedComponentUUID, getRatioOptions, ParameterType, getConstant, IParameter, executeScript, IRingParameter, IParameter2, getRatioLayout, getRatioLayout2, selectedParam, selectedParamType, constantGlyphMap, ConstantType, getGlyphByUUID, GlyphType } from '../../stores/glyph'
 	import { editStatus, Status } from '../../stores/font'
   import { useI18n } from 'vue-i18n'
-  import { canvas, dragOption, draggable, checkJoints, checkRefLines, tips } from '../../stores/global'
+  import { canvas, dragOption, draggable, checkJoints, checkRefLines, tips, setGlyphDraggerTool } from '../../stores/global'
   import { expandGlyphComponent } from '../../utils/formatGlyphComponents'
   import { ComputedRef, computed, onMounted, onUnmounted, ref, watch } from 'vue'
   import { emitter } from '../../Event/bus'
@@ -24,6 +24,7 @@
   } from '../../stores/glyph'
 	import { OpType, saveState, StoreType } from '../../stores/edit'
 	import { More } from '@element-plus/icons-vue'
+  import { editGlyphOnDragging } from '../../stores/glyphDragger_glyph'
 	const { tm, t } = useI18n()
 
 	const saveGlyphEditState = (options) => {
@@ -351,6 +352,11 @@
 		editGlyph.value.orderedList = newOrderedList
 		editGlyph.value.components = newComponentsList
 	}
+
+	// 清理拖拽状态，因为字形组件已被转换为普通组件
+	// Clear dragging state since glyph components have been converted to normal components
+	editGlyphOnDragging.value = null
+	setGlyphDraggerTool('')
 
 	// 然后执行脚本和渲染
 	executeScript(editGlyph.value)

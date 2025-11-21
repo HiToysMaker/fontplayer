@@ -8,7 +8,7 @@ import {
   ICharacterFile,
   executeCharacterScript,
 } from '../stores/files'
-import { tips, setGlyphDraggerTool } from '../stores/global'
+import { tips, setGlyphDraggerTool, glyphDraggerTool } from '../stores/global'
 import * as R from 'ramda'
 import { genUUID, toUnicode } from '../../utils/string'
 import type {
@@ -114,6 +114,7 @@ const runFormatAllCharacters = () => {
 
   const characters = selectedFile.value.characterList || []
   let formattedCount = 0
+  let currentCharacterFormatted = false
 
   characters.forEach((character: ICharacterFile) => {
     if (!character) return
@@ -121,6 +122,10 @@ const runFormatAllCharacters = () => {
     if (changed) {
       formattedCount += 1
       emitter.emit('renderPreviewCanvasByUUID', character.uuid)
+      // 检查是否是当前编辑的字符
+      if (editCharacterFile.value && character.uuid === editCharacterFile.value.uuid) {
+        currentCharacterFormatted = true
+      }
     }
   })
 
@@ -128,6 +133,13 @@ const runFormatAllCharacters = () => {
     if (editCharacterFile.value) {
       const currentIndex = characters.findIndex((item) => item.uuid === editCharacterFile.value.uuid)
       if (currentIndex !== -1) {
+        // 如果当前编辑的字符被格式化了，清理拖拽状态
+        if (currentCharacterFormatted) {
+          // 清理拖拽状态，因为字形组件已被转换为普通组件
+          // Clear dragging state since glyph components have been converted to normal components
+          editCharacterFileOnDragging.value = null
+          setGlyphDraggerTool('')
+        }
         editCharacterFile.value = R.clone(characters[currentIndex])
         executeCharacterScript(editCharacterFile.value)
       }
@@ -154,6 +166,10 @@ const runFormatCurrentCharacter = () => {
     }
     const changed = formatCharacterGlyphComponents(character)
     if (changed) {
+      // 清理拖拽状态，因为字形组件已被转换为普通组件
+      // Clear dragging state since glyph components have been converted to normal components
+      editCharacterFileOnDragging.value = null
+      setGlyphDraggerTool('')
       const file = selectedFile.value
       if (file) {
         const index = file.characterList.findIndex((item) => item.uuid === character.uuid)
@@ -174,6 +190,10 @@ const runFormatCurrentCharacter = () => {
     }
     const changed = formatGlyphGlyphComponents(glyph)
     if (changed) {
+      // 清理拖拽状态，因为字形组件已被转换为普通组件
+      // Clear dragging state since glyph components have been converted to normal components
+      editGlyphOnDragging.value = null
+      setGlyphDraggerTool('')
       emitter.emit('renderGlyph', true)
       emitter.emit('renderGlyphPreviewCanvasByUUID', glyph.uuid)
       tips.value = `已格式化字形 ${glyph.name} 的字形组件`

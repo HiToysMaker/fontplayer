@@ -10,7 +10,7 @@
   import { getRatioOptions, ParameterType, getConstant, IParameter, IRingParameter, IParameter2, getRatioLayout, selectedParam, selectedParamType, constantGlyphMap, ConstantType, getGlyphByUUID, GlyphType, executeScript, getRatioLayout2 } from '../../stores/glyph'
   import { editStatus, Status } from '../../stores/font'
   import { useI18n } from 'vue-i18n'
-  import { canvas, dragOption, draggable, grid, GridType, checkJoints, checkRefLines, jointsCheckedMap, tips } from '../../stores/global'
+  import { canvas, dragOption, draggable, grid, GridType, checkJoints, checkRefLines, jointsCheckedMap, tips, setGlyphDraggerTool } from '../../stores/global'
   import { expandGlyphComponent } from '../../utils/formatGlyphComponents'
   import { ComputedRef, Ref, computed, onMounted, onUnmounted, ref, watch } from 'vue'
   import { emitter } from '../../Event/bus'
@@ -25,6 +25,7 @@
 	import { setSelectGlobalParamDialogVisible, setSetAsGlobalParamDialogVisible, setTipsDialogVisible } from '../../stores/dialogs'
 	import { More } from '@element-plus/icons-vue'
 	import { OpType, saveState, StoreType } from '../../stores/edit'
+  import { editCharacterFileOnDragging } from '../../stores/glyphDragger'
   const { tm, t } = useI18n()
 
 	const saveGlyphEditState = (options) => {
@@ -360,6 +361,11 @@
 		editCharacterFile.value.orderedList = newOrderedList
 		editCharacterFile.value.components = newComponentsList
 	}
+
+	// 清理拖拽状态，因为字形组件已被转换为普通组件
+	// Clear dragging state since glyph components have been converted to normal components
+	editCharacterFileOnDragging.value = null
+	setGlyphDraggerTool('')
 
 	// 然后执行脚本和渲染
 	executeCharacterScript(editCharacterFile.value)
