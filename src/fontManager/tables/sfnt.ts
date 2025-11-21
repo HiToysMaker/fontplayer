@@ -231,7 +231,17 @@ const create = async (tables: any, mark: string = '') => {
   let tablesData: Array<number> = []
 
 	// 第1步：先对keys排序（OpenType要求表目录按字母顺序）
+	// ⚠️ 特殊处理：为了 Windows PS 兼容性，确保 CPAL 在 COLR 之前
+	// 虽然 OpenType 规范允许任意顺序，但某些实现可能期望 CPAL 先于 COLR
 	keys.sort((key1, key2) => {
+		// 特殊规则：CPAL 必须在 COLR 之前
+		if (key1 === 'CPAL' && key2 === 'COLR') {
+			return -1
+		}
+		if (key1 === 'COLR' && key2 === 'CPAL') {
+			return 1
+		}
+		// 其他表按字母顺序排序
 		if (key1 > key2) {
 			return 1
 		} else {

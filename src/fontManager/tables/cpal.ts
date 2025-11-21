@@ -154,12 +154,31 @@ export function buildColorMap(characters: Array<any>): {
 export function createFromLayers(characters: Array<any>): ICPALTable {
   const { colorRecords } = buildColorMap(characters)
   
+  // ⚠️ 重要：确保至少有一个颜色记录（Windows PS 可能要求）
+  // 如果没有颜色，使用默认黑色
+  const finalColorRecords = colorRecords.length > 0 ? colorRecords : [{ red: 0, green: 0, blue: 0, alpha: 255 }]
+  
+  // ⚠️ 重要：根据 OpenType 规范，numPaletteEntries 应该等于每个调色板的颜色数
+  // 对于单个调色板，numPaletteEntries = numColorRecords
+  const numPaletteEntries = finalColorRecords.length
+  const numColorRecords = finalColorRecords.length
+  
+  // 验证：确保颜色值在有效范围内
+  for (const color of finalColorRecords) {
+    if (color.red < 0 || color.red > 255 ||
+        color.green < 0 || color.green > 255 ||
+        color.blue < 0 || color.blue > 255 ||
+        color.alpha < 0 || color.alpha > 255) {
+      console.warn(`⚠️ Warning: Color value out of range: rgba(${color.red}, ${color.green}, ${color.blue}, ${color.alpha})`)
+    }
+  }
+  
   return {
     version: 0,
-    numPaletteEntries: colorRecords.length,
+    numPaletteEntries,
     numPalettes: 1, // 目前只支持一个调色板
-    numColorRecords: colorRecords.length,
-    colorRecords,
+    numColorRecords,
+    colorRecords: finalColorRecords,
     colorRecordIndices: [0], // 第一个调色板从索引 0 开始
   }
 }
