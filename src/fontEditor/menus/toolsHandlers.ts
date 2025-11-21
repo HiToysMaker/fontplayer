@@ -8,7 +8,7 @@ import {
   ICharacterFile,
   executeCharacterScript,
 } from '../stores/files'
-import { tips } from '../stores/global'
+import { tips, setGlyphDraggerTool } from '../stores/global'
 import * as R from 'ramda'
 import { genUUID, toUnicode } from '../../utils/string'
 import type {
@@ -29,6 +29,8 @@ import { formatCharacterGlyphComponents, formatGlyphGlyphComponents } from '../u
 import paper from 'paper'
 import { genPenComponent } from '../tools/pen'
 import { createOptimizedPath, isAlreadyOptimized, mergePathsWithPrecision } from './remove_overlap'
+import { editGlyphOnDragging } from '../stores/glyphDragger_glyph'
+import { editCharacterFileOnDragging } from '../stores/glyphDragger'
 
 const generateCharFile = (data) => {
   const characterComponent = {
@@ -443,6 +445,10 @@ const removeOverlap = async () => {
     editCharacterFile.value.system_script = null
     editCharacterFile.value.orderedList = []
     editCharacterFile.value.components = []
+    // 清理拖拽状态，因为字形组件已被转换为钢笔组件
+    // Clear dragging state since glyph components have been converted to pen components
+    editCharacterFileOnDragging.value = null
+    setGlyphDraggerTool('')
     for (let i = 0; i < components.length; i++) {
       addComponentForCurrentCharacterFile(components[i])
     }
@@ -451,6 +457,10 @@ const removeOverlap = async () => {
     editGlyph.value.script = `function script_${editGlyph.value.uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t//Todo something\n}`,
     editGlyph.value.glyph_script = null
     editGlyph.value.system_script = null
+    // 清理拖拽状态，因为字形组件已被转换为钢笔组件
+    // Clear dragging state since glyph components have been converted to pen components
+    editGlyphOnDragging.value = null
+    setGlyphDraggerTool('')
     for (let i = 0; i < components.length; i++) {
       addComponentForCurrentGlyph(components[i])
     }
