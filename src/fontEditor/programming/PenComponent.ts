@@ -256,7 +256,7 @@ class PenComponent {
 				y: point.y * scale,
 			})
 		})
-		const preview_contour = genPenContour(preview_points)
+		const preview_contour = genPenContour(preview_points, true)
 
 		this.contour = contour
 		this.preview = preview_contour

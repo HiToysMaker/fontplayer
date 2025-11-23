@@ -163,14 +163,44 @@ const getComponents = (skeleton, global_params) => {
   const stroke2_beziers = FP.getCircle(skeleton_2, weight / 2 * r1)
   const { out_stroke1_start, out_stroke1_end, in_stroke1_start, in_stroke1_end } = FP.getLineContours('stroke1', { stroke1_start: skeleton_0, stroke1_end: skeleton_1 }, weight)
 
+  const { out_stroke1_curves, out_stroke1_points, in_stroke1_curves, in_stroke1_points } = FP.getCurveContours2(
+    'stroke1',
+    [
+      {
+        start: skeleton_0,
+        end: skeleton_1,
+      },
+    ],
+    weight,
+    {
+      weightsVariation: 'bezier',
+      weightsVariationFnType: 'bezierRoundHead',
+    }
+  )
+
   const pen1 = new FP.PenComponent()
   pen1.beginPath()
-  pen1.moveTo(in_stroke1_start.x, in_stroke1_start.y)
-  pen1.lineTo(in_stroke1_end.x, in_stroke1_end.y)
-  pen1.lineTo(out_stroke1_end.x, out_stroke1_end.y)
-  pen1.lineTo(out_stroke1_start.x, out_stroke1_start.y)
-  pen1.lineTo(in_stroke1_start.x, in_stroke1_start.y)
+  pen1.moveTo(in_stroke1_curves[0].start.x, in_stroke1_curves[0].start.y)
+  for (let i = 0; i < in_stroke1_curves.length; i++) {
+    const curve = in_stroke1_curves[i]
+    pen1.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
+  }
+  pen1.lineTo(out_stroke1_curves[out_stroke1_curves.length - 1].end.x, out_stroke1_curves[out_stroke1_curves.length - 1].end.y)
+  for (let i = out_stroke1_curves.length - 1; i >= 0; i--) {
+    const curve = out_stroke1_curves[i]
+    pen1.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
+  }
+  pen1.lineTo(in_stroke1_curves[0].start.x, in_stroke1_curves[0].start.y)
   pen1.closePath()
+
+  // const pen1 = new FP.PenComponent()
+  // pen1.beginPath()
+  // pen1.moveTo(in_stroke1_start.x, in_stroke1_start.y)
+  // pen1.lineTo(in_stroke1_end.x, in_stroke1_end.y)
+  // pen1.lineTo(out_stroke1_end.x, out_stroke1_end.y)
+  // pen1.lineTo(out_stroke1_start.x, out_stroke1_start.y)
+  // pen1.lineTo(in_stroke1_start.x, in_stroke1_start.y)
+  // pen1.closePath()
 
   const pen2 = new FP.PenComponent()
   pen2.beginPath()

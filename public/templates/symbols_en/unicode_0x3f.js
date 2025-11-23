@@ -6,6 +6,10 @@ const params = {
   h4: glyph.getParam('h4'),
   h5: glyph.getParam('h5'),
   w1: glyph.getParam('w1'),
+  w2: glyph.getParam('w2'),
+  w3: glyph.getParam('w3'),
+  c1: glyph.getParam('c1'),
+  c2: glyph.getParam('c2'),
 }
 const global_params = {
   weight: glyph.getParam('字重') || 40,
@@ -29,6 +33,13 @@ const getJointsMap = (data) => {
   switch (draggingJoint.name) {
     case 'skeleton_1': {
       jointsMap['skeleton_1'] = {
+        x: glyph.tempData['skeleton_1'].x + deltaX,
+        y: glyph.tempData['skeleton_1'].y,
+      }
+      break
+    }
+    case 'skeleton_2': {
+      jointsMap['skeleton_1'] = {
         x: glyph.tempData['skeleton_1'].x,
         y: glyph.tempData['skeleton_1'].y + deltaY,
       }
@@ -40,9 +51,37 @@ const getJointsMap = (data) => {
         x: glyph.tempData['skeleton_3'].x,
         y: glyph.tempData['skeleton_3'].y + deltaY,
       }
+      jointsMap['skeleton_3_c1'] = {
+        x: glyph.tempData['skeleton_3_c1'].x,
+        y: glyph.tempData['skeleton_3_c1'].y + deltaY,
+      }
+      jointsMap['skeleton_3_c2'] = {
+        x: glyph.tempData['skeleton_3_c2'].x,
+        y: glyph.tempData['skeleton_3_c2'].y + deltaY,
+      }
       jointsMap['skeleton_4'] = {
         x: glyph.tempData['skeleton_4'].x,
-        y: glyph.tempData['skeleton_4'].y + deltaY / 2,
+        y: glyph.tempData['skeleton_4'].y + deltaY,
+      }
+      jointsMap['skeleton_5'] = {
+        x: glyph.tempData['skeleton_5'].x,
+        y: glyph.tempData['skeleton_5'].y + deltaY,
+      }
+      jointsMap['skeleton_6'] = {
+        x: glyph.tempData['skeleton_6'].x,
+        y: glyph.tempData['skeleton_6'].y + deltaY,
+      }
+      jointsMap['skeleton_7'] = {
+        x: glyph.tempData['skeleton_7'].x,
+        y: glyph.tempData['skeleton_7'].y + deltaY,
+      }
+      jointsMap['skeleton_8'] = {
+        x: glyph.tempData['skeleton_8'].x,
+        y: glyph.tempData['skeleton_8'].y + deltaY,
+      }
+      jointsMap['skeleton_9'] = {
+        x: glyph.tempData['skeleton_9'].x,
+        y: glyph.tempData['skeleton_9'].y + deltaY,
       }
       break
     }
@@ -66,6 +105,20 @@ const getJointsMap = (data) => {
       jointsMap['skeleton_6'] = {
         x: glyph.tempData['skeleton_6'].x + deltaX / 2,
         y: glyph.tempData['skeleton_6'].y,
+      }
+      break
+    }
+    case 'skeleton_3_c1': {
+      jointsMap['skeleton_3_c1'] = {
+        x: glyph.tempData['skeleton_3_c1'].x + deltaX,
+        y: glyph.tempData['skeleton_3_c1'].y,
+      }
+      break
+    }
+    case 'skeleton_3_c2': {
+      jointsMap['skeleton_3_c2'] = {
+        x: glyph.tempData['skeleton_3_c2'].x,
+        y: glyph.tempData['skeleton_3_c2'].y + deltaY,
       }
       break
     }
@@ -106,19 +159,19 @@ const getJointsMap = (data) => {
     }
     case 'skeleton_7': {
       jointsMap['skeleton_6'] = {
-        x: glyph.tempData['skeleton_6'].x,
+        x: glyph.tempData['skeleton_6'].x + deltaX / 2,
         y: glyph.tempData['skeleton_6'].y + deltaY / 2,
       }
       jointsMap['skeleton_7'] = {
-        x: glyph.tempData['skeleton_7'].x,
+        x: glyph.tempData['skeleton_7'].x + deltaX,
         y: glyph.tempData['skeleton_7'].y + deltaY,
       }
       jointsMap['skeleton_8'] = {
-        x: glyph.tempData['skeleton_8'].x,
+        x: glyph.tempData['skeleton_8'].x + deltaX,
         y: glyph.tempData['skeleton_8'].y + deltaY,
       }
       jointsMap['skeleton_9'] = {
-        x: glyph.tempData['skeleton_9'].x,
+        x: glyph.tempData['skeleton_9'].x + deltaX,
         y: glyph.tempData['skeleton_9'].y + deltaY,
       }
       break
@@ -181,6 +234,10 @@ glyph.onSkeletonDragEnd = (data) => {
   glyph.setParam('h4', _params.h4)
   glyph.setParam('h5', _params.h5)
   glyph.setParam('w1', _params.w1)
+  glyph.setParam('w2', _params.w2)
+  glyph.setParam('w3', _params.w3)
+  glyph.setParam('c1', _params.c1)
+  glyph.setParam('c2', _params.c2)
   glyph.tempData = null
 }
 
@@ -194,19 +251,27 @@ const range = (value, range) => {
 }
 
 const computeParamsByJoints = (jointsMap) => {
-  const { skeleton_0, skeleton_1, skeleton_2, skeleton_3, skeleton_4, skeleton_5, skeleton_6, skeleton_7, skeleton_8, skeleton_9 } = jointsMap
+  const { skeleton_0, skeleton_1, skeleton_2, skeleton_3, skeleton_4, skeleton_5, skeleton_6, skeleton_7, skeleton_8, skeleton_9, skeleton_3_c1, skeleton_3_c2 } = jointsMap
   const h1_range = glyph.getParamRange('h1')
   const h2_range = glyph.getParamRange('h2')
   const h3_range = glyph.getParamRange('h3')
   const h4_range = glyph.getParamRange('h4')
   const h5_range = glyph.getParamRange('h5')
   const w1_range = glyph.getParamRange('w1')
+  const w2_range = glyph.getParamRange('w2')
+  const w3_range = glyph.getParamRange('w3')
+  const c1_range = glyph.getParamRange('c1')
+  const c2_range = glyph.getParamRange('c2')
   const h1 = range(skeleton_5.y - skeleton_3.y, h1_range)
   const h2 = range(skeleton_7.y - skeleton_5.y, h2_range)
   const h3 = range(skeleton_8.y - skeleton_7.y, h3_range)
   const h4 = range(skeleton_9.y - skeleton_8.y, h4_range)
-  const w1 = range(skeleton_3.x - skeleton_1.x, w1_range)
+  const w1 = range(skeleton_3.x - skeleton_0.x, w1_range)
   const h5 = range(skeleton_0.y - skeleton_1.y, h5_range)
+  const w2 = range(skeleton_5.x - skeleton_7.x, w2_range)
+  const w3 = range(skeleton_1.x - skeleton_0.x, w3_range)
+  const c1 = range((skeleton_3_c1.x - skeleton_2.x) / (skeleton_3.x - skeleton_2.x), c1_range)
+  const c2 = range((skeleton_4.y - skeleton_3_c2.y) / (skeleton_4.y - skeleton_3.y), c2_range)
   return {
     h1,
     h2,
@@ -214,6 +279,10 @@ const computeParamsByJoints = (jointsMap) => {
     h4,
     h5,
     w1,
+    w2,
+    w3,
+    c1,
+    c2,
   }
 }
 
@@ -230,7 +299,7 @@ const refline = (p1, p2, type) => {
 }
 
 const updateGlyphByParams = (params, global_params) => {
-  const { h1, h2, h3, h4, h5, w1 } = params
+  const { h1, h2, h3, h4, h5, w1, w2, w3, c1, c2 } = params
   const { weight, r1 } = global_params
 
   const skeleton_0 = new FP.Joint('skeleton_0', {
@@ -238,16 +307,24 @@ const updateGlyphByParams = (params, global_params) => {
     y: y0,
   })
   const skeleton_1 = new FP.Joint('skeleton_1', {
-    x: skeleton_0.x,
+    x: skeleton_0.x + w3,
     y: skeleton_0.y - h5,
   })
   const skeleton_2 = new FP.Joint('skeleton_2', {
-    x: skeleton_1.x + w1 / 2,
+    x: skeleton_0.x + w1 / 2,
     y: skeleton_1.y,
+  })
+  const skeleton_3_c1 = new FP.Joint('skeleton_3_c1', {
+    x: skeleton_2.x + w1 / 2 * c1,
+    y: skeleton_2.y,
   })
   const skeleton_3 = new FP.Joint('skeleton_3', {
     x: skeleton_2.x + w1 / 2,
     y: skeleton_2.y,
+  })
+  const skeleton_3_c2 = new FP.Joint('skeleton_3_c2', {
+    x: skeleton_3.x,
+    y: skeleton_3.y + h1 / 2 * (1 - c2),
   })
   const skeleton_4 = new FP.Joint('skeleton_4', {
     x: skeleton_3.x,
@@ -258,11 +335,11 @@ const updateGlyphByParams = (params, global_params) => {
     y: skeleton_4.y + h1 / 2,
   })
   const skeleton_6 = new FP.Joint('skeleton_6', {
-    x: skeleton_5.x - w1 * 0.6 * 0.5,
+    x: skeleton_5.x - w2 * 0.5,
     y: skeleton_5.y + h2 / 2,
   })
   const skeleton_7 = new FP.Joint('skeleton_7', {
-    x: skeleton_6.x - w1 * 0.6 * 0.5,
+    x: skeleton_6.x - w2 * 0.5,
     y: skeleton_6.y + h2 / 2,
   })
   const skeleton_8 = new FP.Joint('skeleton_8', {
@@ -284,12 +361,16 @@ const updateGlyphByParams = (params, global_params) => {
     skeleton_7,
     skeleton_8,
     skeleton_9,
+    skeleton_3_c1,
+    skeleton_3_c2,
   }
   
   glyph.addJoint(skeleton_0)
   glyph.addJoint(skeleton_1)
   glyph.addJoint(skeleton_2)
   glyph.addJoint(skeleton_3)
+  glyph.addJoint(skeleton_3_c1)
+  glyph.addJoint(skeleton_3_c2)
   glyph.addJoint(skeleton_4)
   glyph.addJoint(skeleton_5)
   glyph.addJoint(skeleton_6)
@@ -324,7 +405,7 @@ const getComponents = (skeleton, global_params) => {
   const { weight, serifType, serifSize, r1 } = global_params
 
   // 根据骨架计算轮廓关键点
-  const { skeleton_0, skeleton_1, skeleton_2, skeleton_3, skeleton_4, skeleton_5, skeleton_6, skeleton_7, skeleton_8, skeleton_9 } = skeleton
+  const { skeleton_0, skeleton_1, skeleton_2, skeleton_3_c1, skeleton_3_c2, skeleton_4, skeleton_5, skeleton_6, skeleton_7, skeleton_8, skeleton_9 } = skeleton
 
   // out指上侧（外侧）轮廓线
   // in指下侧（内侧）轮廓线
@@ -338,7 +419,8 @@ const getComponents = (skeleton, global_params) => {
       },
       {
         start: skeleton_2,
-        bend: skeleton_3,
+        control1: skeleton_3_c1,
+        control2: skeleton_3_c2,
         end: skeleton_4,
       },
       {

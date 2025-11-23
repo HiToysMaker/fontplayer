@@ -2269,6 +2269,7 @@ const createDict = (meta: Array<any>, attrs: Array<any>, strings: any) => {
 }
 
 const glyphToOps = (glyph: IGlyphTable) => {
+	const useRound = true
 	const { lsb, xMin } = glyph
 	const getXValue = (x) => x - xMin + lsb
 	const ops = []
@@ -2279,8 +2280,8 @@ const glyphToOps = (glyph: IGlyphTable) => {
 	for (let i = 0; i < glyph.contours.length; i ++) {
 		if (!glyph.contours[i].length) continue
 		const startPath = glyph.contours[i][0]
-		const startX = Math.round(getXValue(startPath.start.x))
-		const startY = Math.round(startPath.start.y)
+		const startX = useRound ? Math.round(getXValue(startPath.start.x)) : Math.floor(getXValue(startPath.start.x))
+		const startY = useRound ? Math.round(startPath.start.y) : Math.floor(startPath.start.y)
 		const dx = startX - x
 		const dy = startY - y
 		ops.push({name: 'dx', type: 'number', value: dx})
@@ -2292,22 +2293,22 @@ const glyphToOps = (glyph: IGlyphTable) => {
 			const path = glyph.contours[i][j]
 			switch(path.type) {
 				case PathType.LINE: {
-					const dx = Math.round(getXValue(path.end.x) - x)
-					const dy = Math.round(path.end.y - y)
+					const dx = useRound ? Math.round(getXValue(path.end.x) - x) : Math.floor(getXValue(path.end.x) - x)
+					const dy = useRound ? Math.round(path.end.y - y) : Math.floor(path.end.y - y)
 					ops.push({name: 'dx', type: 'number', value: dx})
 					ops.push({name: 'dy', type: 'number', value: dy})
 					ops.push({name: 'rlineto', type: 'op', value: 5})
-					x = Math.round(getXValue(path.end.x))
-					y = Math.round(path.end.y)
+					x = useRound ? Math.round(getXValue(path.end.x)) : Math.floor(getXValue(path.end.x))
+					y = useRound ? Math.round(path.end.y) : Math.floor(path.end.y)
 					break
 				}
 				case PathType.CUBIC_BEZIER: {
-					const dx1 = Math.round(getXValue(path.control1.x) - x)
-					const dy1 = Math.round(path.control1.y - y)
-					const dx2 = Math.round(getXValue(path.control2.x) - getXValue(path.control1.x))
-					const dy2 = Math.round(path.control2.y - path.control1.y)
-					const dx = Math.round(getXValue(path.end.x) - getXValue(path.control2.x))
-					const dy = Math.round(path.end.y - path.control2.y)
+					const dx1 = useRound ? Math.round(getXValue(path.control1.x) - x) : Math.floor(getXValue(path.control1.x) - x)
+					const dy1 = useRound ? Math.round(path.control1.y - y) : Math.floor(path.control1.y - y)
+					const dx2 = useRound ? Math.round(getXValue(path.control2.x) - getXValue(path.control1.x)) : Math.floor(getXValue(path.control2.x) - getXValue(path.control1.x))
+					const dy2 = useRound ? Math.round(path.control2.y - path.control1.y) : Math.floor(path.control2.y - path.control1.y)
+					const dx = useRound ? Math.round(getXValue(path.end.x) - getXValue(path.control2.x)) : Math.floor(getXValue(path.end.x) - getXValue(path.control2.x))
+					const dy = useRound ? Math.round(path.end.y - path.control2.y) : Math.floor(path.end.y - path.control2.y)
 					ops.push({name: 'dx1', type: 'number', value: dx1})
 					ops.push({name: 'dy1', type: 'number', value: dy1})
 					ops.push({name: 'dx2', type: 'number', value: dx2})
@@ -2315,8 +2316,8 @@ const glyphToOps = (glyph: IGlyphTable) => {
 					ops.push({name: 'dx', type: 'number', value: dx})
 					ops.push({name: 'dy', type: 'number', value: dy})
 					ops.push({name: 'rrcurveto', type: 'op', value: 8})
-					x = Math.round(getXValue(path.end.x))
-					y = Math.round(path.end.y)
+					x = useRound ? Math.round(getXValue(path.end.x)) : Math.floor(getXValue(path.end.x))
+					y = useRound ? Math.round(path.end.y) : Math.floor(path.end.y)
 				}
 			}
 		}

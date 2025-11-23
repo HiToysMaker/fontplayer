@@ -888,21 +888,6 @@ const createVarFont = async (options?: CreateFontOptions) => {
       const before = checkCubicCount(char.contours)
       const converted = convertContoursToQuadratic(char.contours, 0.5)
       const after = checkCubicCount(converted)
-
-      // if (!checkContours(fontCharacters[charIndex].contours, converted)) {
-      //   console.log(`[convertContoursToQuadratic] Contours mismatch for character ${char.unicode}`)
-      //   // console.log(`[convertContoursToQuadratic] Contours1: ${char.contours.length}`)
-      //   // console.log(`[convertContoursToQuadratic] Contours2: ${converted.length}`)
-      //   // console.log(`[convertContoursToQuadratic] Contours1: ${char.contours.join(', ')}`)
-      //   // console.log(`[convertContoursToQuadratic] Contours2: ${converted.join(', ')}`)
-      //   debugger
-      //   breakFlag = true
-      // }
-      
-      // 打印 glyph 7, 11, 12 的信息
-      if ((charIndex === 7 || charIndex === 11 || charIndex === 12)) {
-        console.log(`    Combination ${i}, Variant char ${charIndex}: cubic=${before.cubic}, quad=${before.quad}, line=${before.line} → quad=${after.quad}, line=${after.line}`)
-      }
       
       return {
         ...char,
@@ -1406,10 +1391,10 @@ const computeOverlapRemovedContours = async (options?: any) => {
             
             const pathSegment = {
               type: PathType.CUBIC_BEZIER,
-              start: { x: startX, y: startY },
-              control1: { x: curve.points[1].x, y: curve.points[1].y },
-              control2: { x: curve.points[2].x, y: curve.points[2].y },
-              end: { x: endX, y: endY },
+              start: { x: Math.floor(startX), y: Math.floor(startY) },
+              control1: { x: Math.floor(curve.points[1].x), y: Math.floor(curve.points[1].y) },
+              control2: { x: Math.floor(curve.points[2].x), y: Math.floor(curve.points[2].y) },
+              end: { x: Math.floor(endX), y: Math.floor(endY) },
             }
             contour.push(pathSegment)
           }

@@ -262,7 +262,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 							y: point.y * scale,
 						})
 					})
-					const preview_contour = genPenContour(preview_points);
+					const preview_contour = genPenContour(preview_points, true);
 
 					((component as Component).value as unknown as IPenComponent).preview = preview_contour;
 					((component as Component).value as unknown as IPenComponent).contour = contour
@@ -298,7 +298,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 							y: point.y * scale,
 						})
 					})
-					const preview_contour = genPolygonContour(preview_points);
+					const preview_contour = genPolygonContour(preview_points, true);
 
 					((component as Component).value as unknown as IPolygonComponent).preview = preview_contour;
 					((component as Component).value as unknown as IPolygonComponent).contour = contour
@@ -340,7 +340,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 							y: point.y * scale,
 						})
 					})
-					const preview_contour = genRectangleContour(preview_points);
+					const preview_contour = genRectangleContour(preview_points, true);
 
 					((component as Component).value as unknown as IRectangleComponent).preview = preview_contour;
 					((component as Component).value as unknown as IRectangleComponent).contour = contour
@@ -384,7 +384,7 @@ const componentsToContours = (components: Array<_Component>, options: {
 							y: point.y * scale,
 						})
 					})
-					const preview_contour = genEllipseContour(preview_points);
+					const preview_contour = genEllipseContour(preview_points, true);
 
 					((component as Component).value as unknown as IRectangleComponent).preview = preview_contour;
 					((component as Component).value as unknown as IRectangleComponent).contour = contour
@@ -746,7 +746,7 @@ const componentsToContours2 = (components: Array<_Component>, offset: {
 	return contours
 }
 
-const genEllipseContour = (points) => {
+const genEllipseContour = (points, useRound: boolean = false) => {
 	const contour: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve> = []
 	let curves = fitCurve(points, 2)
 	if (curves.length) {
@@ -755,20 +755,20 @@ const genEllipseContour = (points) => {
 			contour.push({
 				type: PathType.CUBIC_BEZIER,
 				start: {
-					x: Math.floor(curve[0].x),
-					y: Math.floor(curve[0].y),
+					x: useRound ? Math.round(curve[0].x) : Math.floor(curve[0].x),
+					y: useRound ? Math.round(curve[0].y) : Math.floor(curve[0].y),
 				},
 				end: {
-					x: Math.floor(curve[3].x),
-					y: Math.floor(curve[3].y),
+					x: useRound ? Math.round(curve[3].x) : Math.floor(curve[3].x),
+					y: useRound ? Math.round(curve[3].y) : Math.floor(curve[3].y),
 				},
 				control1: {
-					x: Math.floor(curve[1].x),
-					y: Math.floor(curve[1].y),
+					x: useRound ? Math.round(curve[1].x) : Math.floor(curve[1].x),
+					y: useRound ? Math.round(curve[1].y) : Math.floor(curve[1].y),
 				},
 				control2: {
-					x: Math.floor(curve[2].x),
-					y: Math.floor(curve[2].y),
+					x: useRound ? Math.round(curve[2].x) : Math.floor(curve[2].x),
+					y: useRound ? Math.round(curve[2].y) : Math.floor(curve[2].y),
 				},
 			})
 		}
@@ -776,45 +776,45 @@ const genEllipseContour = (points) => {
 	return contour
 }
 
-const genRectangleContour = (points) => {
+const genRectangleContour = (points, useRound: boolean = false) => {
 	const contour: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve> = []
 	for (let i = 0; i < points.length - 1; i++) {
 		contour.push({
 			type: PathType.LINE,
 			start: {
-				x: Math.floor(points[i].x),
-				y: Math.floor(points[i].y),
+				x: useRound ? Math.round(points[i].x) : Math.floor(points[i].x),
+				y: useRound ? Math.round(points[i].y) : Math.floor(points[i].y),
 			},
 			end: {
-				x: Math.floor(points[i + 1].x),
-				y: Math.floor(points[i + 1].y),
+				x: useRound ? Math.round(points[i + 1].x) : Math.floor(points[i + 1].x),
+				y: useRound ? Math.round(points[i + 1].y) : Math.floor(points[i + 1].y),
 			},
 		})
 	}
 	return contour
 }
 
-const genPenContour = (points, fill: boolean = false) => {
+const genPenContour = (points, useRound: boolean = false, fill: boolean = false) => {
 	const contour: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve> = []
 	for (let i = 0; i < points.length - 1; i += 3) {
 		if (i + 3 >= points.length) break
 			contour.push({
 				type: PathType.CUBIC_BEZIER,
 				start: {
-					x: Math.floor(points[i].x),
-					y: Math.floor(points[i].y),
+					x: useRound ? Math.round(points[i].x) : Math.floor(points[i].x),
+					y: useRound ? Math.round(points[i].y) : Math.floor(points[i].y),
 				},
 				end: {
-					x: Math.floor(points[i + 3].x),
-					y: Math.floor(points[i + 3].y),
+					x: useRound ? Math.round(points[i + 3].x) : Math.floor(points[i + 3].x),
+					y: useRound ? Math.round(points[i + 3].y) : Math.floor(points[i + 3].y),
 				},
 				control1: {
-					x: Math.floor(points[i + 1].x),
-					y: Math.floor(points[i + 1].y),
+					x: useRound ? Math.round(points[i + 1].x) : Math.floor(points[i + 1].x),
+					y: useRound ? Math.round(points[i + 1].y) : Math.floor(points[i + 1].y),
 				},
 				control2: {
-					x: Math.floor(points[i + 2].x),
-					y: Math.floor(points[i + 2].y),
+					x: useRound ? Math.round(points[i + 2].x) : Math.floor(points[i + 2].x),
+					y: useRound ? Math.round(points[i + 2].y) : Math.floor(points[i + 2].y),
 				},
 				fill,
 			})
@@ -822,18 +822,18 @@ const genPenContour = (points, fill: boolean = false) => {
 	return contour
 }
 
-const genPolygonContour = (points) => {
+const genPolygonContour = (points, useRound: boolean = false) => {
 	const contour: Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve> = []
 	for (let i = 0; i < points.length - 1; i++) {
 		contour.push({
 			type: PathType.LINE,
 			start: {
-				x: Math.floor(points[i].x),
-				y: Math.floor(points[i].y),
+				x: useRound ? Math.round(points[i].x) : Math.floor(points[i].x),
+				y: useRound ? Math.round(points[i].y) : Math.floor(points[i].y),
 			},
 			end: {
-				x: Math.floor(points[i + 1].x),
-				y: Math.floor(points[i + 1].y),
+				x: useRound ? Math.round(points[i + 1].x) : Math.floor(points[i + 1].x),
+				y: useRound ? Math.round(points[i + 1].y) : Math.floor(points[i + 1].y),
 			},
 		})
 	}

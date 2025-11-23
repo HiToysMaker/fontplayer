@@ -6,7 +6,7 @@ import { Skeleton } from './Skeleton'
 import { Joint } from './Joint'
 import { Character } from './Character'
 import { _fitCurve as fitCurve } from '../../features/fitCurve'
-import { bezierCurve } from '../../features/bezierCurve'
+import { bezierCurve, IPoint } from '../../features/bezierCurve'
 import * as R from 'ramda'
 
 interface IGetContoursOption {
@@ -109,6 +109,26 @@ const getLineContours = (name, skeleton, weight, options: IGetContoursOption) =>
 	return contours
 }
 
+// 辅助函数：根据给定的 x 坐标，在贝塞尔曲线上找到对应的参数 t，然后返回 y 值
+// 输入的 x 是 x 坐标（0-1），不是曲线参数 t
+const getYFromBezierByX = (bezier: Array<IPoint>, targetX: number): number => {
+	// 二分查找找到对应的参数 t，使得 bezier 的 x 坐标等于 targetX
+	let tLow = 0
+	let tHigh = 1
+	let t = 0.5
+	
+	for (let i = 0; i < 30; i++) {
+		t = (tLow + tHigh) / 2
+		const point = bezierCurve.q(bezier, t)
+		if (Math.abs(point.x - targetX) < 0.0001) break
+		if (point.x < targetX) tLow = t
+		else tHigh = t
+	}
+	
+	const point = bezierCurve.q(bezier, t)
+	return point.y
+}
+
 const bezierFn = (x: number) : number => {
 	const bezier = [
 		{ x: 0, y: 0 },
@@ -129,9 +149,26 @@ const bezier1Fn = (x: number) : number => {
 	return bezierCurve.q(bezier, x).y
 }
 
+const bezierRoundHeadFn = (x: number) : number => {
+	const bezier = [
+		{ x: 0, y: 0 },
+		{ x: 0, y: 1 },
+		{ x: 0.04, y: 1 },
+		{ x: 0.08, y: 1 },
+	]
+	if (x < 0.07) {
+		return getYFromBezierByX(bezier, x)
+	} else {
+		return 1
+	}
+	// return bezierCurve.q(bezier, x).y
+}
+
 const getBezierFn = (type: string) => {
   if (type === 'bezier1') {
 		return bezier1Fn
+	} else if (type === 'bezierRoundHead') {
+		return bezierRoundHeadFn
 	}
 	return bezierFn
 }
@@ -461,138 +498,294 @@ const getCurveContours2 = (name, skeleton, weight, options: IGetContoursOption) 
 			}
 		} else if (options.weightsVariation === 'bezier') {
 			const fn = getBezierFn(options.weightsVariationFnType)
-			// 字重变化为幂变化，options.weightsVariationPower取值范围为[0, 2]
-			if (options.weightsVariationDir === 'reverse') {
-				// 字重变化方向为由收尾到起始方向
-				const j = n - i
-				//const f = Math.pow(j / n, options.weightsVariationPower)
-				const f = fn(j / n)
-				in_weights.push(in_endWeight + (in_startWeight - in_endWeight) * f)
-				out_weights.push(out_endWeight + (out_startWeight - out_endWeight) * f)
-			} else {
-				// 字重变化为由起始到收尾方向
-				//const f = Math.pow(i / n, options.weightsVariationPower)
+
+			if (options.weightsVariationFnType === 'bezierRoundHead') {
 				const f = fn(i / n)
-				in_weights.push(in_startWeight + (in_endWeight - in_startWeight) * f)
-				out_weights.push(out_startWeight + (out_endWeight - out_startWeight) * f)
+				console.log(i, f, in_startWeight, in_endWeight)
+				console.log('startweight', startWeight, 'endweight', endWeight)
+				// in_weights.push(in_startWeight + (in_endWeight - in_startWeight) * f)
+				// out_weights.push(out_startWeight + (out_endWeight - out_startWeight) * f)
+				let bezierIndex = Math.floor(i / n)
+				if (bezierIndex >= beziers.length) {
+					bezierIndex = beziers.length - 1
+				}
+				if (i / n < 0.07) {
+          const m = 20
+					for (let j = 0; j < m; j++) {
+						const t = i / n + (j / m) / n
+						console.log('t', t, fn(t))
+						in_weights.push({
+							value: in_startWeight + (in_endWeight - in_startWeight) * fn(t),
+							t: t,
+							bezierIndex,
+						})
+						out_weights.push({
+							value: out_startWeight + (out_endWeight - out_startWeight) * fn(t),
+							t: t,
+							bezierIndex,
+						})
+					}
+				} else {
+					in_weights.push({
+						value: in_startWeight + (in_endWeight - in_startWeight) * f,
+						t: i / n,
+						bezierIndex,
+					})
+					out_weights.push({
+						value: out_startWeight + (out_endWeight - out_startWeight) * f,
+						t: i / n,
+						bezierIndex,
+					})
+				}
+			} else {
+				// 字重变化为幂变化，options.weightsVariationPower取值范围为[0, 2]
+				if (options.weightsVariationDir === 'reverse') {
+					// 字重变化方向为由收尾到起始方向
+					const j = n - i
+					//const f = Math.pow(j / n, options.weightsVariationPower)
+					const f = fn(j / n)
+					in_weights.push(in_endWeight + (in_startWeight - in_endWeight) * f)
+					out_weights.push(out_endWeight + (out_startWeight - out_endWeight) * f)
+				} else {
+					// 字重变化为由起始到收尾方向
+					//const f = Math.pow(i / n, options.weightsVariationPower)
+					const f = fn(i / n)
+					in_weights.push(in_startWeight + (in_endWeight - in_startWeight) * f)
+					out_weights.push(out_startWeight + (out_endWeight - out_startWeight) * f)
+				}
 			}
 		}
 	}
 
-	let lastPoint = bezierCurve.q(beziers[0], 0)
-	let lastK = bezierCurve.qprime(beziers[0], 0)
-	if (lastK.x === 0 && lastK.y === 0) {
-		lastK = { x: 0, y: 1 }
-	}
-	let lastAngle = Math.atan2(lastK.y, lastK.x)
-
-	for (let t = 1; t <= n * beziers.length; t++) {
-		let point = lastPoint
-		let k = lastK
-		let angle = lastAngle
-		let bezierIndex = Math.floor((t - 1) / n)
-		if (bezierIndex >= beziers.length) {
-			bezierIndex = beziers.length - 1
+	if (options?.weightsVariationFnType && options.weightsVariationFnType === 'bezierRoundHead') {
+		let lastPoint = bezierCurve.q(beziers[0], 0)
+		let lastK = bezierCurve.qprime(beziers[0], 0)
+		if (lastK.x === 0 && lastK.y === 0) {
+			lastK = { x: 0, y: 1 }
 		}
-		const bezier = beziers[bezierIndex]
-		let t_local = t % n
-		if (t_local === 0) {
-			t_local = n
-		}
-		const _inweight = in_weights.length ? in_weights[t - 1] : in_startWeight
-		const _outweight = out_weights.length ? out_weights[t - 1] : out_startWeight
-		if (t_local < (n + 1)) {
-			point = bezierCurve.q(bezier, t_local / n)
-			k = bezierCurve.qprime(bezier, t_local / n)
+		let lastAngle = Math.atan2(lastK.y, lastK.x)
+	
+		for (let t = 1; t <= in_weights.length; t++) {
+			let point = lastPoint
+			let k = lastK
+			let angle = lastAngle
+			let bezierIndex = in_weights[t - 1].bezierIndex
+			const bezier = beziers[bezierIndex]
+			let t_local = in_weights[t - 1].t
+			const _inweight = in_weights.length ? in_weights[t - 1].value : in_startWeight
+			const _outweight = out_weights.length ? out_weights[t - 1].value : out_startWeight
+			console.log('t_local', t_local, bezierIndex)
+			point = bezierCurve.q(bezier, t_local)
+			k = bezierCurve.qprime(bezier, t_local)
 			if (k.x === 0 && k.y === 0) {
 				k = { x: 0, y: 1 }
 			}
 			angle = Math.atan2(k.y, k.x)
-		}
-		if (skeletonPos === 'center' && !unticlockwise) {
-			out_points.push({
-				x: lastPoint.x + _outweight * Math.sin(lastAngle),
-				y: lastPoint.y - _outweight * Math.cos(lastAngle),
-			})
-			in_points.push({
-				x: lastPoint.x - _inweight * Math.sin(lastAngle),
-				y: lastPoint.y + _inweight * Math.cos(lastAngle),
-			})
-			if (t === n * beziers.length) {
+			if (skeletonPos === 'center' && !unticlockwise) {
 				out_points.push({
-					x: point.x + _outweight * Math.sin(angle),
-					y: point.y - _outweight * Math.cos(angle),
+					x: lastPoint.x + _outweight * Math.sin(lastAngle),
+					y: lastPoint.y - _outweight * Math.cos(lastAngle),
 				})
 				in_points.push({
-					x: point.x - _inweight * Math.sin(angle),
-					y: point.y + _inweight * Math.cos(angle),
+					x: lastPoint.x - _inweight * Math.sin(lastAngle),
+					y: lastPoint.y + _inweight * Math.cos(lastAngle),
 				})
+				console.log('test', lastPoint.x, lastPoint.y, _outweight, _inweight, lastAngle, angle, out_points[out_points.length - 1]?.x, out_points[out_points.length - 1]?.y, in_points[in_points.length - 1]?.x, in_points[in_points.length - 1]?.y)
+				debugger
+				if (t === in_weights.length) {
+					out_points.push({
+						x: point.x + _outweight * Math.sin(angle),
+						y: point.y - _outweight * Math.cos(angle),
+					})
+					in_points.push({
+						x: point.x - _inweight * Math.sin(angle),
+						y: point.y + _inweight * Math.cos(angle),
+					})
+				}
 			}
-		}
-		else if (skeletonPos === 'inner' && !unticlockwise) {
-			out_points.push({
-				x: lastPoint.x + (_outweight + _inweight)* Math.sin(lastAngle),
-				y: lastPoint.y - (_outweight + _inweight) * Math.cos(lastAngle),
-			})
-			in_points.push({
-				x: lastPoint.x,
-				y: lastPoint.y,
-			})
-			if (t === n * beziers.length) {
+			else if (skeletonPos === 'inner' && !unticlockwise) {
 				out_points.push({
-					x: point.x + (_outweight + _inweight) * Math.sin(angle),
-					y: point.y - (_outweight + _inweight) * Math.cos(angle),
+					x: lastPoint.x + (_outweight + _inweight)* Math.sin(lastAngle),
+					y: lastPoint.y - (_outweight + _inweight) * Math.cos(lastAngle),
 				})
 				in_points.push({
-					x: point.x,
-					y: point.y,
+					x: lastPoint.x,
+					y: lastPoint.y,
 				})
+				if (t === in_weights.length) {
+					out_points.push({
+						x: point.x + (_outweight + _inweight) * Math.sin(angle),
+						y: point.y - (_outweight + _inweight) * Math.cos(angle),
+					})
+					in_points.push({
+						x: point.x,
+						y: point.y,
+					})
+				}
 			}
-		}
-		else if (skeletonPos === 'center' && unticlockwise) {
-			out_points.push({
-				x: lastPoint.x - _outweight * Math.sin(lastAngle),
-				y: lastPoint.y + _outweight * Math.cos(lastAngle),
-			})
-			in_points.push({
-				x: lastPoint.x + _inweight * Math.sin(lastAngle),
-				y: lastPoint.y - _inweight * Math.cos(lastAngle),
-			})
-			if (t === n * beziers.length) {
+			else if (skeletonPos === 'center' && unticlockwise) {
 				out_points.push({
-					x: point.x - _outweight * Math.sin(angle),
-					y: point.y + _outweight * Math.cos(angle),
+					x: lastPoint.x - _outweight * Math.sin(lastAngle),
+					y: lastPoint.y + _outweight * Math.cos(lastAngle),
 				})
 				in_points.push({
-					x: point.x + _inweight * Math.sin(angle),
-					y: point.y - _inweight * Math.cos(angle),
+					x: lastPoint.x + _inweight * Math.sin(lastAngle),
+					y: lastPoint.y - _inweight * Math.cos(lastAngle),
 				})
+				if (t === in_weights.length) {
+					out_points.push({
+						x: point.x - _outweight * Math.sin(angle),
+						y: point.y + _outweight * Math.cos(angle),
+					})
+					in_points.push({
+						x: point.x + _inweight * Math.sin(angle),
+						y: point.y - _inweight * Math.cos(angle),
+					})
+				}
 			}
-		}
-		else if (skeletonPos === 'inner' && unticlockwise) {
-			out_points.push({
-				x: lastPoint.x - (_outweight + _inweight) * Math.sin(lastAngle),
-				y: lastPoint.y + (_outweight + _inweight) * Math.cos(lastAngle),
-			})
-			in_points.push({
-				x: lastPoint.x,
-				y: lastPoint.y,
-			})
-			if (t === n * beziers.length) {
+			else if (skeletonPos === 'inner' && unticlockwise) {
 				out_points.push({
-					x: point.x - (_outweight + _inweight) * Math.sin(angle),
-					y: point.y + (_outweight + _inweight) * Math.cos(angle),
+					x: lastPoint.x - (_outweight + _inweight) * Math.sin(lastAngle),
+					y: lastPoint.y + (_outweight + _inweight) * Math.cos(lastAngle),
 				})
 				in_points.push({
-					x: point.x,
-					y: point.y,
+					x: lastPoint.x,
+					y: lastPoint.y,
 				})
+				if (t === in_weights.length) {
+					out_points.push({
+						x: point.x - (_outweight + _inweight) * Math.sin(angle),
+						y: point.y + (_outweight + _inweight) * Math.cos(angle),
+					})
+					in_points.push({
+						x: point.x,
+						y: point.y,
+					})
+				}
 			}
+			lastPoint = point
+			lastK = k
+			lastAngle = angle
 		}
-		lastPoint = point
-		lastK = k
-		lastAngle = angle
+	} else {
+		let lastPoint = bezierCurve.q(beziers[0], 0)
+		let lastK = bezierCurve.qprime(beziers[0], 0)
+		if (lastK.x === 0 && lastK.y === 0) {
+			lastK = { x: 0, y: 1 }
+		}
+		let lastAngle = Math.atan2(lastK.y, lastK.x)
+	
+		for (let t = 1; t <= n * beziers.length; t++) {
+			let point = lastPoint
+			let k = lastK
+			let angle = lastAngle
+			let bezierIndex = Math.floor((t - 1) / n)
+			if (bezierIndex >= beziers.length) {
+				bezierIndex = beziers.length - 1
+			}
+			const bezier = beziers[bezierIndex]
+			let t_local = t % n
+			if (t_local === 0) {
+				t_local = n
+			}
+			const _inweight = in_weights.length ? in_weights[t - 1] : in_startWeight
+			const _outweight = out_weights.length ? out_weights[t - 1] : out_startWeight
+			if (t_local < (n + 1)) {
+				point = bezierCurve.q(bezier, t_local / n)
+				k = bezierCurve.qprime(bezier, t_local / n)
+				if (k.x === 0 && k.y === 0) {
+					k = { x: 0, y: 1 }
+				}
+				angle = Math.atan2(k.y, k.x)
+			}
+			if (skeletonPos === 'center' && !unticlockwise) {
+				out_points.push({
+					x: lastPoint.x + _outweight * Math.sin(lastAngle),
+					y: lastPoint.y - _outweight * Math.cos(lastAngle),
+				})
+				in_points.push({
+					x: lastPoint.x - _inweight * Math.sin(lastAngle),
+					y: lastPoint.y + _inweight * Math.cos(lastAngle),
+				})
+				if (t === n * beziers.length) {
+					out_points.push({
+						x: point.x + _outweight * Math.sin(angle),
+						y: point.y - _outweight * Math.cos(angle),
+					})
+					in_points.push({
+						x: point.x - _inweight * Math.sin(angle),
+						y: point.y + _inweight * Math.cos(angle),
+					})
+				}
+			}
+			else if (skeletonPos === 'inner' && !unticlockwise) {
+				out_points.push({
+					x: lastPoint.x + (_outweight + _inweight)* Math.sin(lastAngle),
+					y: lastPoint.y - (_outweight + _inweight) * Math.cos(lastAngle),
+				})
+				in_points.push({
+					x: lastPoint.x,
+					y: lastPoint.y,
+				})
+				if (t === n * beziers.length) {
+					out_points.push({
+						x: point.x + (_outweight + _inweight) * Math.sin(angle),
+						y: point.y - (_outweight + _inweight) * Math.cos(angle),
+					})
+					in_points.push({
+						x: point.x,
+						y: point.y,
+					})
+				}
+			}
+			else if (skeletonPos === 'center' && unticlockwise) {
+				out_points.push({
+					x: lastPoint.x - _outweight * Math.sin(lastAngle),
+					y: lastPoint.y + _outweight * Math.cos(lastAngle),
+				})
+				in_points.push({
+					x: lastPoint.x + _inweight * Math.sin(lastAngle),
+					y: lastPoint.y - _inweight * Math.cos(lastAngle),
+				})
+				if (t === n * beziers.length) {
+					out_points.push({
+						x: point.x - _outweight * Math.sin(angle),
+						y: point.y + _outweight * Math.cos(angle),
+					})
+					in_points.push({
+						x: point.x + _inweight * Math.sin(angle),
+						y: point.y - _inweight * Math.cos(angle),
+					})
+				}
+			}
+			else if (skeletonPos === 'inner' && unticlockwise) {
+				out_points.push({
+					x: lastPoint.x - (_outweight + _inweight) * Math.sin(lastAngle),
+					y: lastPoint.y + (_outweight + _inweight) * Math.cos(lastAngle),
+				})
+				in_points.push({
+					x: lastPoint.x,
+					y: lastPoint.y,
+				})
+				if (t === n * beziers.length) {
+					out_points.push({
+						x: point.x - (_outweight + _inweight) * Math.sin(angle),
+						y: point.y + (_outweight + _inweight) * Math.cos(angle),
+					})
+					in_points.push({
+						x: point.x,
+						y: point.y,
+					})
+				}
+			}
+			lastPoint = point
+			lastK = k
+			lastAngle = angle
+		}
 	}
+
+	console.log('out_points', out_points, 'in_points', in_points)
+
 	const { curves: out_curves } = fitCurvesByPoints(out_points)
 	const { curves: in_curves } = fitCurvesByPoints(in_points)
 	const contours = {}

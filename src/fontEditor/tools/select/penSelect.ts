@@ -360,7 +360,7 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 				y: point.y * scale,
 			})
 		})
-		const preview_contour = genPenContour(preview_points)
+		const preview_contour = genPenContour(preview_points, true)
 		modifyComponent(uuid, {
 			value: {
 				contour: contour,
