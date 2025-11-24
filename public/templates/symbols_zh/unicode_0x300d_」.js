@@ -15,8 +15,8 @@ const xHeight = 500
 const capitalHeight = 750
 const ox = 500
 const oy = 500
-const x0 = 500 + width
-const y0 = ascender - capitalHeight * 0.5
+const x0 = 500 + 260 * 0.5
+const y0 = 500 - 470 * 0.5
 
 const getJointsMap = (data) => {
   const { draggingJoint, deltaX, deltaY } = data

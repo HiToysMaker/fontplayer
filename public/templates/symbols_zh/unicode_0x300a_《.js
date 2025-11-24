@@ -286,12 +286,12 @@ const getComponents = (skeleton, global_params) => {
   ).corner
 
   const out_corner_1 = {
-    x: in_stroke1_start.x,
+    x: out_stroke1_start.x,
     y: skeleton_1.y,
   }
 
   const out_corner_2 = {
-    x: in_stroke3_start.x,
+    x: out_stroke3_start.x,
     y: skeleton_4.y,
   }
 
@@ -299,20 +299,20 @@ const getComponents = (skeleton, global_params) => {
   pen1.beginPath()
   pen1.moveTo(out_corner_1.x, out_corner_1.y)
   pen1.lineTo(skeleton_1.x, skeleton_1.y)
-  pen1.lineTo(out_stroke1_start.x, out_stroke1_start.y)
-  pen1.lineTo(out_stroke1_end.x, out_stroke1_end.y)
-  pen1.lineTo(in_stroke1_end.x, in_stroke1_end.y)
   pen1.lineTo(in_stroke1_start.x, in_stroke1_start.y)
+  pen1.lineTo(in_stroke1_end.x, in_stroke1_end.y)
+  pen1.lineTo(out_stroke1_end.x, out_stroke1_end.y)
+  pen1.lineTo(out_stroke1_start.x, out_stroke1_start.y)
   pen1.lineTo(out_corner_1.x, out_corner_1.y)
   pen1.closePath()
 
   const pen2 = new FP.PenComponent()
   pen2.beginPath()
   pen2.moveTo(out_corner_1.x, out_corner_1.y)
-  pen2.lineTo(out_stroke2_start.x, out_stroke2_start.y)
-  pen2.lineTo(out_stroke2_end.x, out_stroke2_end.y)
-  pen2.lineTo(in_stroke2_end.x, in_stroke2_end.y)
   pen2.lineTo(in_stroke2_start.x, in_stroke2_start.y)
+  pen2.lineTo(in_stroke2_end.x, in_stroke2_end.y)
+  pen2.lineTo(out_stroke2_end.x, out_stroke2_end.y)
+  pen2.lineTo(out_stroke2_start.x, out_stroke2_start.y)
   pen2.lineTo(skeleton_1.x, skeleton_1.y)
   pen2.lineTo(out_corner_1.x, out_corner_1.y)
   pen2.closePath()
@@ -321,20 +321,20 @@ const getComponents = (skeleton, global_params) => {
   pen3.beginPath()
   pen3.moveTo(out_corner_2.x, out_corner_2.y)
   pen3.lineTo(skeleton_4.x, skeleton_4.y)
-  pen3.lineTo(out_stroke3_start.x, out_stroke3_start.y)
-  pen3.lineTo(out_stroke3_end.x, out_stroke3_end.y)
-  pen3.lineTo(in_stroke3_end.x, in_stroke3_end.y)
   pen3.lineTo(in_stroke3_start.x, in_stroke3_start.y)
+  pen3.lineTo(in_stroke3_end.x, in_stroke3_end.y)
+  pen3.lineTo(out_stroke3_end.x, out_stroke3_end.y)
+  pen3.lineTo(out_stroke3_start.x, out_stroke3_start.y)
   pen3.lineTo(out_corner_2.x, out_corner_2.y)
   pen3.closePath()
 
   const pen4 = new FP.PenComponent()
   pen4.beginPath()
   pen4.moveTo(out_corner_2.x, out_corner_2.y)
-  pen4.lineTo(out_stroke4_start.x, out_stroke4_start.y)
-  pen4.lineTo(out_stroke4_end.x, out_stroke4_end.y)
-  pen4.lineTo(in_stroke4_end.x, in_stroke4_end.y)
   pen4.lineTo(in_stroke4_start.x, in_stroke4_start.y)
+  pen4.lineTo(in_stroke4_end.x, in_stroke4_end.y)
+  pen4.lineTo(out_stroke4_end.x, out_stroke4_end.y)
+  pen4.lineTo(out_stroke4_start.x, out_stroke4_start.y)
   pen4.lineTo(skeleton_4.x, skeleton_4.y)
   pen4.lineTo(out_corner_2.x, out_corner_2.y)
   pen4.closePath()

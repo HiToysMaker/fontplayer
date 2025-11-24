@@ -132,7 +132,7 @@ const updateGlyphByParams = (params, global_params) => {
   })
   const skeleton_3 = new FP.Joint('skeleton_3', {
     x: skeleton_1.x - w1,
-    y: skeleton_1.y + h2,
+    y: skeleton_1.y + h1,
   })
   const skeleton = {
     skeleton_0,

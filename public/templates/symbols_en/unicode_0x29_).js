@@ -1,6 +1,7 @@
 // 0x29 )
 const params = {
   h1: glyph.getParam('h1'),
+  h2: glyph.getParam('h2'),
   w1: glyph.getParam('w1'),
 }
 const global_params = {
@@ -24,23 +25,19 @@ const getJointsMap = (data) => {
   switch (draggingJoint.name) {
     case 'skeleton_1': {
       jointsMap['skeleton_1'] = {
-        x: glyph.tempData['skeleton_1'].x + deltaX,
-        y: glyph.tempData['skeleton_1'].y,
-      }
-      jointsMap['skeleton_2'] = {
-        x: glyph.tempData['skeleton_2'].x + deltaX,
-        y: glyph.tempData['skeleton_2'].y,
+        x: glyph.tempData['skeleton_1'].x,
+        y: glyph.tempData['skeleton_1'].y + deltaY,
       }
       jointsMap['skeleton_3'] = {
-        x: glyph.tempData['skeleton_3'].x + deltaX,
-        y: glyph.tempData['skeleton_3'].y,
+        x: glyph.tempData['skeleton_3'].x,
+        y: glyph.tempData['skeleton_3'].y - deltaY,
       }
       break
     }
     case 'skeleton_2': {
-      jointsMap['skeleton_2'] = {
-        x: glyph.tempData['skeleton_2'].x + deltaX,
-        y: glyph.tempData['skeleton_2'].y,
+      jointsMap['skeleton_1'] = {
+        x: glyph.tempData['skeleton_1'].x + deltaX,
+        y: glyph.tempData['skeleton_1'].y,
       }
       jointsMap['skeleton_2'] = {
         x: glyph.tempData['skeleton_2'].x + deltaX,
@@ -54,20 +51,12 @@ const getJointsMap = (data) => {
     }
     case 'skeleton_3': {
       jointsMap['skeleton_1'] = {
-        x: glyph.tempData['skeleton_1'].x + deltaX,
-        y: glyph.tempData['skeleton_1'].y,
-      }
-      jointsMap['skeleton_2'] = {
-        x: glyph.tempData['skeleton_2'].x + deltaX,
-        y: glyph.tempData['skeleton_2'].y + deltaY / 2,
+        x: glyph.tempData['skeleton_1'].x,
+        y: glyph.tempData['skeleton_1'].y - deltaY,
       }
       jointsMap['skeleton_3'] = {
-        x: glyph.tempData['skeleton_3'].x + deltaX,
+        x: glyph.tempData['skeleton_3'].x,
         y: glyph.tempData['skeleton_3'].y + deltaY,
-      }
-      jointsMap['skeleton_4'] = {
-        x: glyph.tempData['skeleton_4'].x,
-        y: glyph.tempData['skeleton_4'].y + deltaY,
       }
       break
     }
@@ -121,6 +110,7 @@ glyph.onSkeletonDragEnd = (data) => {
   const _params = computeParamsByJoints(jointsMap)
   updateGlyphByParams(_params, global_params)
   glyph.setParam('h1', _params.h1)
+  glyph.setParam('h2', _params.h2)
   glyph.setParam('w1', _params.w1)
   glyph.tempData = null
 }
@@ -137,12 +127,15 @@ const range = (value, range) => {
 const computeParamsByJoints = (jointsMap) => {
   const { skeleton_0, skeleton_1, skeleton_2, skeleton_3, skeleton_4 } = jointsMap
   const h1_range = glyph.getParamRange('h1')
-  const h1 = range(skeleton_3.y - skeleton_1.y, h1_range)
+  const h1 = range(skeleton_4.y - skeleton_0.y, h1_range)
   const w1_range = glyph.getParamRange('w1')
   const w1 = range(skeleton_1.x - skeleton_0.x, w1_range)
+  const h2_range = glyph.getParamRange('h2')
+  const h2 = range(skeleton_1.y - skeleton_0.y, h2_range)
   return {
     h1,
     w1,
+    h2,
   }
 }
 
@@ -159,7 +152,7 @@ const refline = (p1, p2, type) => {
 }
 
 const updateGlyphByParams = (params, global_params) => {
-  const { h1, w1 } = params
+  const { h1, w1, h2 } = params
   const { weight } = global_params
 
   const skeleton_0 = new FP.Joint('skeleton_0', {
@@ -168,20 +161,21 @@ const updateGlyphByParams = (params, global_params) => {
   })
   const skeleton_1 = new FP.Joint('skeleton_1', {
     x: skeleton_0.x + w1,
-    y: skeleton_0.y,
+    y: skeleton_0.y + h2,
   })
   const skeleton_2 = new FP.Joint('skeleton_2', {
     x: skeleton_1.x,
-    y: skeleton_1.y + h1 / 2,
+    y: skeleton_0.y + h1 / 2,
   })
   const skeleton_3 = new FP.Joint('skeleton_3', {
     x: skeleton_2.x,
-    y: skeleton_2.y + h1 / 2,
+    y: skeleton_0.y + h1 - h2,
   })
   const skeleton_4 = new FP.Joint('skeleton_4', {
     x: skeleton_3.x - w1,
-    y: skeleton_3.y,
+    y: skeleton_3.y + h2,
   })
+
   const skeleton = {
     skeleton_0,
     skeleton_1,

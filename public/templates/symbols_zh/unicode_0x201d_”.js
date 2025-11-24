@@ -18,8 +18,8 @@ const xHeight = 500
 const capitalHeight = 750
 const ox = 500
 const oy = 500
-const x0 = 500 + width / 2
-const y0 = ascender - capitalHeight * 0.35
+const x0 = 500 - 290 * 0.5
+const y0 = 500 - 262 * 0.5 + 55 * 0.5
 
 const getJointsMap = (data) => {
   const { draggingJoint, deltaX, deltaY } = data
@@ -163,10 +163,10 @@ const computeParamsByJoints = (jointsMap) => {
   const h2_range = glyph.getParamRange('h2')
   const w1_range = glyph.getParamRange('w1')
   const w2_range = glyph.getParamRange('w2')
-  const h1 = range(skeleton_0.y - skeleton_3.y, h1_range)
-  const h2 = range(skeleton_1.y - skeleton_2.y, h2_range)
-  const w1 = range(skeleton_0.x - skeleton_4.x, w1_range)
-  const w2 = range(skeleton_3.x - skeleton_2.x, w2_range)
+  const h1 = range(skeleton_3.y - skeleton_0.y, h1_range)
+  const h2 = range(skeleton_2.y - skeleton_1.y, h2_range)
+  const w1 = range(skeleton_4.x - skeleton_0.x, w1_range)
+  const w2 = range(skeleton_2.x - skeleton_3.x, w2_range)
   return {
     h1,
     h2,
@@ -196,32 +196,32 @@ const updateGlyphByParams = (params, global_params) => {
     y: y0,
   })
   const skeleton_1 = new FP.Joint('skeleton_1', {
-    x: skeleton_0.x - r1,
+    x: skeleton_0.x + r1,
     y: skeleton_0.y,
   })
   const skeleton_2 = new FP.Joint('skeleton_2', {
     x: skeleton_1.x,
-    y: skeleton_1.y - h2,
+    y: skeleton_1.y + h2,
   })
   const skeleton_3 = new FP.Joint('skeleton_3', {
-    x: skeleton_1.x + w2,
-    y: skeleton_1.y - h1,
+    x: skeleton_1.x - w2,
+    y: skeleton_1.y + h1,
   })
   const skeleton_4 = new FP.Joint('skeleton_4', {
-    x: skeleton_0.x - w1,
+    x: skeleton_0.x + w1,
     y: skeleton_0.y,
   })
-  const skeleton_5 = new FP.Joint('skeleton_1', {
-    x: skeleton_4.x - r1,
+  const skeleton_5 = new FP.Joint('skeleton_5', {
+    x: skeleton_4.x + r1,
     y: skeleton_4.y,
   })
-  const skeleton_6 = new FP.Joint('skeleton_2', {
+  const skeleton_6 = new FP.Joint('skeleton_6', {
     x: skeleton_5.x,
-    y: skeleton_5.y - h2,
+    y: skeleton_5.y + h2,
   })
-  const skeleton_7 = new FP.Joint('skeleton_3', {
-    x: skeleton_6.x + w2,
-    y: skeleton_5.y - h1,
+  const skeleton_7 = new FP.Joint('skeleton_7', {
+    x: skeleton_6.x - w2,
+    y: skeleton_5.y + h1,
   })
   const skeleton = {
     skeleton_0,

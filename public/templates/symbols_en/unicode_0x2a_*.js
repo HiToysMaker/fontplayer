@@ -132,10 +132,10 @@ const updateGlyphByParams = (params, global_params) => {
   glyph.addJoint(skeleton_4)
   glyph.addJoint(skeleton_5)
   glyph.addRefLine(refline(skeleton_0, skeleton_1))
-  glyph.addRefLine(refline(skeleton_1, skeleton_2))
-  glyph.addRefLine(refline(skeleton_2, skeleton_3))
-  glyph.addRefLine(refline(skeleton_3, skeleton_4))
-  glyph.addRefLine(refline(skeleton_4, skeleton_5))
+  glyph.addRefLine(refline(skeleton_0, skeleton_2))
+  glyph.addRefLine(refline(skeleton_0, skeleton_3))
+  glyph.addRefLine(refline(skeleton_0, skeleton_4))
+  glyph.addRefLine(refline(skeleton_0, skeleton_5))
 
   const components = getComponents(skeleton, global_params)
   for (let i = 0; i < components.length; i++) {
