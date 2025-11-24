@@ -28,19 +28,19 @@ const getJointsMap = (data) => {
   switch (draggingJoint.name) {
     case 'skeleton_1': {
       jointsMap['skeleton_1'] = {
-        x: glyph.tempData['skeleton_0'].x + deltaX,
-        y: glyph.tempData['skeleton_0'].y + deltaY,
+        x: glyph.tempData['skeleton_1'].x + deltaX,
+        y: glyph.tempData['skeleton_1'].y + deltaY,
       }
       jointsMap['skeleton_2'] = {
-        x: glyph.tempData['skeleton_1'].x - deltaX,
-        y: glyph.tempData['skeleton_1'].y + deltaY,
+        x: glyph.tempData['skeleton_2'].x - deltaX,
+        y: glyph.tempData['skeleton_2'].y + deltaY,
       }
       break
     }
     case 'skeleton_2': {
       jointsMap['skeleton_2'] = {
-        x: glyph.tempData['skeleton_0'].x + deltaX,
-        y: glyph.tempData['skeleton_0'].y + deltaY,
+        x: glyph.tempData['skeleton_2'].x + deltaX,
+        y: glyph.tempData['skeleton_2'].y + deltaY,
       }
       jointsMap['skeleton_1'] = {
         x: glyph.tempData['skeleton_1'].x - deltaX,
@@ -191,7 +191,7 @@ const computeParamsByJoints = (jointsMap) => {
   const h1_range = glyph.getParamRange('h1')
   const h1 = range(skeleton_4.y - skeleton_1.y, h1_range)
   const h2_range = glyph.getParamRange('h2')
-  const h2 = range(skeleton_6.y - skeleton_5.y, h2_range)
+  const h2 = range(skeleton_6.y - skeleton_4.y, h2_range)
   const h3_range = glyph.getParamRange('h3')
   const h3 = range(skeleton_7.y - skeleton_6.y, h3_range)
   return {

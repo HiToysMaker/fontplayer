@@ -128,7 +128,7 @@ const range = (value, range) => {
 }
 
 const computeParamsByJoints = (jointsMap) => {
-  const { skeleton_0, skeleton_1, skeleton_2, skeleton_3 } = jointsMap
+  const { skeleton_0, skeleton_1, skeleton_2, skeleton_3, skeleton_4 } = jointsMap
   const h1_range = glyph.getParamRange('h1')
   const h2_range = glyph.getParamRange('h2')
   const h3_range = glyph.getParamRange('h3')
