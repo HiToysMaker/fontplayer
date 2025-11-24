@@ -18,9 +18,10 @@
 	} from '../../../features/font'
 	import { emitter } from '../../Event/bus'
 	import { renderPreview2 } from '../../canvas/canvas'
-	import { executeScript } from '../../stores/glyph'
+	import { executeScript, ICustomGlyph } from '../../stores/glyph'
 	import { loaded, loading, total } from '../../stores/global'
-	import { addLoaded } from '@/fontEditor/menus/handlers'
+	import { addLoaded } from '../../menus/handlers'
+	import { CustomGlyph } from '../../programming/CustomGlyph'
 
 	const timerMap = new Map()
 	
@@ -231,8 +232,17 @@
 						advanceWidth: unitsPerEm,
 					}, { x: 0, y: 0 }, false, true)
 
-					const fillColors = orderedListWithItemsForCharacterFile(characterFile).map((component) => {
-						return component.value.fillColor || '#000'
+					const fillColors = []
+					orderedListWithItemsForCharacterFile(characterFile).map((component) => {
+						if (component.type === 'glyph') {
+							const glyph = (component.value as unknown as ICustomGlyph)._o ? (component.value as unknown as ICustomGlyph)._o : new CustomGlyph((component.value as unknown as ICustomGlyph))
+							const _components = glyph.components
+							_components.forEach((_component) => {
+								fillColors.push(component.value.fillColor || '#000')
+							})
+						} else {
+							fillColors.push(component.value.fillColor || '#000')
+						}
 					})
 
 					renderPreview2(canvas, contours, fillColors)

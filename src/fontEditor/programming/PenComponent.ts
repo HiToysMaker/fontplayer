@@ -145,7 +145,6 @@ class PenComponent {
 			ctx.strokeStyle = options.fillColor || '#000'
 			ctx.lineWidth = getStrokeWidth()
 			ctx.translate(mapCanvasX(options.offset.x) * scale, mapCanvasY(options.offset.y) * scale)
-			ctx.beginPath()
 			ctx.moveTo(mapCanvasX(this.points[0].x) * scale, mapCanvasY(this.points[0].y) * scale)
 			for (let i = 1; i < this.points.length; i += 3) {
 				ctx.bezierCurveTo(
@@ -155,14 +154,6 @@ class PenComponent {
 				)
 			}
 			ctx.stroke()
-			ctx.closePath()
-			if (fontRenderStyle.value === 'black') {
-				ctx.fillStyle = '#000'
-				ctx.fill()
-			} else if (fontRenderStyle.value === 'color') {
-				ctx.fillStyle = options.fillColor || '#000'
-				ctx.fill()
-			}
 			ctx.setTransform(1, 0, 0, 1, 0, 0)
 		}
 	}

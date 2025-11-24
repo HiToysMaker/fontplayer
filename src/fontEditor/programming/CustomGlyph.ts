@@ -65,6 +65,7 @@ class CustomGlyph {
 			fill: false,
 			forceUpdate: false,
 		})
+		ctx.beginPath()
 		this._components.forEach((component) => {
 			component.render(canvas, {
 				offset,
@@ -74,10 +75,12 @@ class CustomGlyph {
 		})
 		if (fontRenderStyle.value === 'black' || fill) {
 			ctx.fillStyle = '#000'
-			ctx.fill()
+			ctx.fill("nonzero")
+			ctx.closePath()
 		} else if (fontRenderStyle.value === 'color') {
 			ctx.fillStyle = fillColor || '#000'
-			ctx.fill()
+			ctx.fill("nonzero")
+			ctx.closePath()
 		}
 	}
 

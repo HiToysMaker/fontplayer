@@ -337,6 +337,7 @@
     fontRenderStyle,
   ], () => {
     render()
+    renderRefComponents()
   })
 
   // 字符改变时，重新渲染

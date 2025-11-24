@@ -985,8 +985,8 @@ const renderGlyph = (
     ctx.fillRect(0, 0, canvas.width, canvas.height)
   }
   glyph.render_forceUpdate(canvas as HTMLCanvasElement)
-  renderJoints && glyph.renderJoints(canvas as HTMLCanvasElement)
-  renderRefLines && glyph.renderJoints(canvas as HTMLCanvasElement)
+  // renderJoints && glyph.renderJoints(canvas as HTMLCanvasElement)
+  // renderRefLines && glyph.renderJoints(canvas as HTMLCanvasElement)
 }
 
 const renderPreview2 = (canvas: HTMLCanvasElement, contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>, fillColors: Array<string> = []) => {

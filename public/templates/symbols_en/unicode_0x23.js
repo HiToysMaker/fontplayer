@@ -381,6 +381,23 @@ const getComponents = (skeleton, global_params) => {
   pen4.lineTo(in_stroke4_start.x, in_stroke4_start.y)
   pen4.closePath()
 
+  const in_stroke4_start_joint = new FP.Joint('in_stroke4_start_joint', {
+    x: in_stroke4_start.x,
+    y: in_stroke4_start.y,
+  })
+  const in_stroke4_end_joint = new FP.Joint('in_stroke4_end_joint', {
+    x: in_stroke4_end.x,
+    y: in_stroke4_end.y,
+  })
+  const out_stroke4_start_joint = new FP.Joint('out_stroke4_start_joint', {
+    x: out_stroke4_start.x,
+    y: out_stroke4_start.y,
+  })
+  const out_stroke4_end_joint = new FP.Joint('out_stroke4_end_joint', {
+    x: out_stroke4_end.x,
+    y: out_stroke4_end.y,
+  })
+
   return [ pen1, pen2, pen3, pen4 ]
 }
 
