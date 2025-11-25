@@ -10,6 +10,8 @@ const global_params = {
   serifType: glyph.getParam('衬线类型') || 0,
   serifSize: glyph.getParam('衬线大小') || 2.0,
   r1: glyph.getParam('r1'),
+  penStyle: glyph.getParam('运笔样式') || 0,
+  penPressureRate: glyph.getParam('运笔压力速率') || 1.0,
 }
 const ascender = 800
 const descender = -200
@@ -214,11 +216,15 @@ const updateGlyphByParams = (params, global_params) => {
 
 const getComponents = (skeleton, global_params) => {
   // 获取骨架以外的全局风格变量
-  const { weight, serifType, serifSize, r1 } = global_params
+  const { weight, serifType, serifSize, r1, penStyle, penPressureRate } = global_params
 
   // 根据骨架计算轮廓关键点
   const { skeleton_0, skeleton_1, skeleton_2, skeleton_3, skeleton_4 } = skeleton
-
+  const options = penStyle === 1 ? {
+    weightsVariation: 'bezier',
+    weightsVariationFnType: penStyle === 1 ? 'multiBezier1' : 'bezier',
+    weightsVariationSpeed: penPressureRate,
+  } : {}
   // out指上侧（外侧）轮廓线
   // in指下侧（内侧）轮廓线
   const stroke1_beziers = FP.getCircle(skeleton_0, weight / 2 + r1)
@@ -232,7 +238,8 @@ const getComponents = (skeleton, global_params) => {
         end: skeleton_4,
       },
     ],
-    weight
+    weight,
+    options,
   )
 
   const pen1 = new FP.PenComponent()

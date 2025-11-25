@@ -6,6 +6,8 @@ const global_params = {
   weight: glyph.getParam('字重') || 40,
   serifType: glyph.getParam('衬线类型') || 0,
   serifSize: glyph.getParam('衬线大小') || 2.0,
+  penStyle: glyph.getParam('运笔样式') || 0,
+  penPressureRate: glyph.getParam('运笔压力速率') || 1.0,
 }
 const ascender = 800
 const descender = -200
@@ -133,24 +135,54 @@ const updateGlyphByParams = (params, global_params) => {
 
 const getComponents = (skeleton, global_params) => {
   // 获取骨架以外的全局风格变量
-  const { weight, serifType, serifSize, r1 } = global_params
-
+  const { weight, serifType, serifSize, r1, penStyle, penPressureRate } = global_params
+  const options = penStyle === 1 ? {
+    weightsVariation: 'bezier',
+    weightsVariationFnType: penStyle === 1 ? 'multiBezier1' : 'bezier',
+    weightsVariationSpeed: penPressureRate,
+  } : {}
   // 根据骨架计算轮廓关键点
   const { skeleton_0, skeleton_1 } = skeleton
 
   // out指上侧（外侧）轮廓线
   // in指下侧（内侧）轮廓线
   const { out_stroke1_start, out_stroke1_end, in_stroke1_start, in_stroke1_end } = FP.getLineContours('stroke1', { stroke1_start: skeleton_0, stroke1_end: skeleton_1 }, weight)
+  const { out_stroke1_curves, out_stroke1_points, in_stroke1_curves, in_stroke1_points } = FP.getCurveContours2(
+    'stroke1',
+    [
+      {
+        start: skeleton_0,
+        end: skeleton_1,
+      },
+    ],
+    weight,
+    options,
+  )
 
   const pen1 = new FP.PenComponent()
-  pen1.beginPath()
-  pen1.moveTo(in_stroke1_start.x, in_stroke1_start.y)
-  pen1.lineTo(in_stroke1_end.x, in_stroke1_end.y)
-  pen1.lineTo(out_stroke1_end.x, out_stroke1_end.y)
-  pen1.lineTo(out_stroke1_start.x, out_stroke1_start.y)
-  pen1.lineTo(in_stroke1_start.x, in_stroke1_start.y)
-  pen1.closePath()
-
+  if (penStyle === 0) {
+    pen1.beginPath()
+    pen1.moveTo(in_stroke1_start.x, in_stroke1_start.y)
+    pen1.lineTo(in_stroke1_end.x, in_stroke1_end.y)
+    pen1.lineTo(out_stroke1_end.x, out_stroke1_end.y)
+    pen1.lineTo(out_stroke1_start.x, out_stroke1_start.y)
+    pen1.lineTo(in_stroke1_start.x, in_stroke1_start.y)
+    pen1.closePath()
+  } else if (penStyle === 1) {
+    pen1.beginPath()
+    pen1.moveTo(in_stroke1_curves[0].start.x, in_stroke1_curves[0].start.y)
+    for (let i = 0; i < in_stroke1_curves.length; i++) {
+      const curve = in_stroke1_curves[i]
+      pen1.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
+    }
+    pen1.lineTo(out_stroke1_curves[out_stroke1_curves.length - 1].end.x, out_stroke1_curves[out_stroke1_curves.length - 1].end.y)
+    for (let i = out_stroke1_curves.length - 1; i >= 0; i--) {
+      const curve = out_stroke1_curves[i]
+      pen1.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
+    }
+    pen1.lineTo(in_stroke1_curves[0].start.x, in_stroke1_curves[0].start.y)
+    pen1.closePath()
+  }
   return [ pen1 ]
 }
 

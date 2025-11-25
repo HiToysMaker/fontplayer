@@ -1254,6 +1254,30 @@ const importTemplateSymbols = async () => {
         })
       }
     }
+    parameters.push({
+      uuid: genUUID(),
+      name: '运笔样式',
+      type: ParameterType.Enum,
+      value: 1,
+      options: [
+        {
+          value: 0,
+          label: '默认',
+        },
+        {
+          value: 1,
+          label: '样式1',
+        },
+      ],
+    })
+    parameters.push({
+      uuid: genUUID(),
+      name: '运笔压力速率',
+      type: ParameterType.Number,
+      value: 1.0,
+      min: 0,
+      max: 2,
+    })
     let letter_script_res = base ? await fetch(base + `/templates/symbols_en/${script_file_name}`) : await fetch(`templates/symbols_en/${script_file_name}`)
     let letter_script = await letter_script_res.text()
     const glyph = {
@@ -1319,6 +1343,30 @@ const importTemplateSymbols = async () => {
         })
       }
     }
+    parameters.push({
+      uuid: genUUID(),
+      name: '运笔样式',
+      type: ParameterType.Enum,
+      value: 1,
+      options: [
+        {
+          value: 0,
+          label: '默认',
+        },
+        {
+          value: 1,
+          label: '样式1',
+        },
+      ],
+    })
+    parameters.push({
+      uuid: genUUID(),
+      name: '运笔压力速率',
+      type: ParameterType.Number,
+      value: 1.0,
+      min: 0,
+      max: 10,
+    })
     let letter_script_res = base ? await fetch(base + `/templates/symbols_zh/${script_file_name}`) : await fetch(`templates/symbols_zh/${script_file_name}`)
     let letter_script = await letter_script_res.text()
     const glyph = {

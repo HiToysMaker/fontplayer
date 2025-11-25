@@ -15,6 +15,8 @@ const global_params = {
   weight: glyph.getParam('字重') || 40,
   serifType: glyph.getParam('衬线类型') || 0,
   serifSize: glyph.getParam('衬线大小') || 2.0,
+  penStyle: glyph.getParam('运笔样式') || 0,
+  penPressureRate: glyph.getParam('运笔压力速率') || 1.0,
 }
 const ascender = 800
 const descender = -200
@@ -782,11 +784,15 @@ const updateGlyphByParams = (params, global_params) => {
 
 const getComponents = (skeleton, global_params) => {
   // 获取骨架以外的全局风格变量
-  const { weight, serifType, serifSize } = global_params
+  const { weight, serifType, serifSize, penStyle, penPressureRate } = global_params
 
   // 根据骨架计算轮廓关键点
   const { skeleton_0, skeleton_1, skeleton_2, skeleton_3, skeleton_3_c1, skeleton_3_c2, skeleton_4, skeleton_5, skeleton_5_c1, skeleton_5_c2, skeleton_6, skeleton_7, skeleton_7_c1, skeleton_7_c2, skeleton_8, skeleton_9, skeleton_9_c1, skeleton_9_c2, skeleton_10, skeleton_11, skeleton_12, skeleton_13, skeleton_14 } = skeleton
-
+  const options = penStyle === 1 ? {
+    weightsVariation: 'bezier',
+    weightsVariationFnType: penStyle === 1 ? 'multiBezier1' : 'bezier',
+    weightsVariationSpeed: penPressureRate,
+  } : {}
   // out指上侧（外侧）轮廓线
   // in指下侧（内侧）轮廓线
   const { out_stroke1_curves, out_stroke1_points, in_stroke1_curves, in_stroke1_points } = FP.getCurveContours2(
@@ -827,9 +833,21 @@ const getComponents = (skeleton, global_params) => {
         end: skeleton_12,
       },
     ],
-    weight
+    weight,
+    options,
   )
   const { out_stroke2_start, out_stroke2_end, in_stroke2_start, in_stroke2_end } = FP.getLineContours('stroke2', { stroke2_start: skeleton_13, stroke2_end: skeleton_14 }, weight)
+  const { out_stroke2_curves, out_stroke2_points, in_stroke2_curves, in_stroke2_points } = FP.getCurveContours2(
+    'stroke2',
+    [
+      {
+        start: skeleton_13,
+        end: skeleton_14,
+      },
+    ],
+    weight,
+    options,
+  )
 
   const pen1 = new FP.PenComponent()
   pen1.beginPath()
@@ -847,13 +865,29 @@ const getComponents = (skeleton, global_params) => {
   pen1.closePath()
 
   const pen2 = new FP.PenComponent()
-  pen2.beginPath()
-  pen2.moveTo(in_stroke2_start.x, in_stroke2_start.y)
-  pen2.lineTo(in_stroke2_end.x, in_stroke2_end.y)
-  pen2.lineTo(out_stroke2_end.x, out_stroke2_end.y)
-  pen2.lineTo(out_stroke2_start.x, out_stroke2_start.y)
-  pen2.lineTo(in_stroke2_start.x, in_stroke2_start.y)
-  pen2.closePath()
+  if (penStyle === 0) {
+    pen2.beginPath()
+    pen2.moveTo(in_stroke2_start.x, in_stroke2_start.y)
+    pen2.lineTo(in_stroke2_end.x, in_stroke2_end.y)
+    pen2.lineTo(out_stroke2_end.x, out_stroke2_end.y)
+    pen2.lineTo(out_stroke2_start.x, out_stroke2_start.y)
+    pen2.lineTo(in_stroke2_start.x, in_stroke2_start.y)
+    pen2.closePath()
+  } else if (penStyle === 1) {
+    pen2.beginPath()
+    pen2.moveTo(in_stroke2_curves[0].start.x, in_stroke2_curves[0].start.y)
+    for (let i = 0; i < in_stroke2_curves.length; i++) {
+      const curve = in_stroke2_curves[i]
+      pen2.bezierTo(curve.control1.x, curve.control1.y, curve.control2.x, curve.control2.y, curve.end.x, curve.end.y)
+    }
+    pen2.lineTo(out_stroke2_curves[out_stroke2_curves.length - 1].end.x, out_stroke2_curves[out_stroke2_curves.length - 1].end.y)
+    for (let i = out_stroke2_curves.length - 1; i >= 0; i--) {
+      const curve = out_stroke2_curves[i]
+      pen2.bezierTo(curve.control2.x, curve.control2.y, curve.control1.x, curve.control1.y, curve.start.x, curve.start.y)
+    }
+    pen2.lineTo(in_stroke2_curves[0].start.x, in_stroke2_curves[0].start.y)
+    pen2.closePath()
+  }
 
   return [ pen1, pen2 ]
 }
