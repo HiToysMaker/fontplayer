@@ -59,6 +59,7 @@
   import { editing as rectangleEditing } from '../stores/rectangle'
   import { enableMultiSelect } from '../stores/files'
   import { useI18n } from 'vue-i18n'
+  import { del } from '../menus/editHandlers'
   const { tm, t, locale } = useI18n()
 
   const svg = `
@@ -103,6 +104,25 @@
 			}
 			e.preventDefault()
 			enableMultiSelect.value = true
+		}
+		// 处理删除键和退格键，防止触发浏览器后退
+		if (e.key === 'Backspace' || e.key === 'Delete') {
+			// 检查当前焦点是否在输入框、文本域或其他可编辑元素中
+			const target = e.target as HTMLElement
+			const isInputElement = target.tagName === 'INPUT' || 
+				target.tagName === 'TEXTAREA' || 
+				target.isContentEditable ||
+				target.closest('input, textarea, [contenteditable="true"]')
+			
+			// 如果不在输入框中，阻止默认行为并执行删除操作
+			if (!isInputElement) {
+				e.preventDefault()
+				e.stopPropagation()
+				// 执行删除操作
+				if (e.key === 'Delete' || e.key === 'Backspace') {
+					del()
+				}
+			}
 		}
 	}
 	const onKeyUp = (e: KeyboardEvent) => {
