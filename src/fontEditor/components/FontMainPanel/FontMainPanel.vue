@@ -17,7 +17,16 @@
   import { editStatus, Status } from '../../stores/font'
   import { selectedFile } from '../../stores/files'
   import { useI18n } from 'vue-i18n'
+  import { nextTick } from 'vue'
   const { t } = useI18n()
+
+  const handleStatusChange = async (status: Status, e: Event) => {
+    e.preventDefault()
+    e.stopPropagation()
+    editStatus.value = status
+    // 确保状态更新完成，特别是在 Tauri 环境下
+    await nextTick()
+  }
 </script>
 
 <template>
@@ -36,35 +45,35 @@
     <div class="list-switch" v-show="editStatus === Status.StrokeGlyphList || editStatus === Status.CompGlyphList || editStatus === Status.RadicalGlyphList || editStatus === Status.GlyphList || editStatus === Status.CharacterList">
       <span
         class="character-list"
-        @pointerdown="editStatus = Status.CharacterList"
+        @click="(e) => handleStatusChange(Status.CharacterList, e)"
         :class="{
           selected: editStatus === Status.CharacterList
         }"
       >{{ t('programming.character') }}</span>
       <span
         class="stroke-glyph-list"
-        @pointerdown="editStatus = Status.StrokeGlyphList"
+        @click="(e) => handleStatusChange(Status.StrokeGlyphList, e)"
         :class="{
           selected: editStatus === Status.StrokeGlyphList
         }"
       >{{ t('programming.stroke') }}</span>
       <span
         class="radical-glyph-list"
-        @pointerdown="editStatus = Status.RadicalGlyphList"
+        @click="(e) => handleStatusChange(Status.RadicalGlyphList, e)"
         :class="{
           selected: editStatus === Status.RadicalGlyphList
         }"
       >{{ t('programming.radical') }}</span>
       <span
         class="comp-glyph-list"
-        @pointerdown="editStatus = Status.CompGlyphList"
+        @click="(e) => handleStatusChange(Status.CompGlyphList, e)"
         :class="{
           selected: editStatus === Status.CompGlyphList
         }"
       >{{ t('programming.comp') }}</span>
       <span
         class="glyph-list"
-        @pointerdown="editStatus = Status.GlyphList"
+        @click="(e) => handleStatusChange(Status.GlyphList, e)"
         :class="{
           selected: editStatus === Status.GlyphList
         }"
