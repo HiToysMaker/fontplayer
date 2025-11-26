@@ -812,11 +812,11 @@ const modifySubComponent = (options) => {
 	} else {
 		let rootComponent = null
 		let subComp = null
-		const components = R.clone(characterFile.components)
+		// 直接查找并修改，而不是克隆整个数组，避免触发不必要的响应式更新导致选择状态丢失
 		for (let i = 0; i < characterFile?.selectedComponentsTree.length - 1; i++) {
 			const rootUUID = characterFile?.selectedComponentsTree[i]
 			if (!rootComponent) {
-				rootComponent = selectedItemByUUID(components, rootUUID)
+				rootComponent = selectedItemByUUID(characterFile.components, rootUUID)
 			} else {
 				rootComponent = selectedItemByUUID(rootComponent.value.components, rootUUID)
 			}
@@ -826,12 +826,14 @@ const modifySubComponent = (options) => {
 			const component = selectedItemByUUID(rootComponent.value.components, componentUUID)
 			subComp = component
 		}
+		if (!subComp) return
 		const keys = Object.keys(options)
 		for (let i = 0; i < keys.length; i++) {
 			const key = keys[i]
 			subComp[key] = options[key]
 		}
-		characterFile.components = components
+		emitter.emit('renderPreviewCanvasByUUIDOnEditing', editCharacterFileUUID.value)
+		emitter.emit('renderCharacter', true)
 	}
 }
 
@@ -847,81 +849,80 @@ const modifySubComponent = (options) => {
  */
 const modifyComponentForCurrentCharacterFile = (uuid: string, options: any) => {
 	const characterFile = editCharacterFile.value
-	const components = R.clone(characterFile.components)
-	components.forEach((component: Component) => {
-		if (component.uuid === uuid) {
-			Object.keys(options).map((key: string) => {
-				switch (key) {
-					case 'type':
-						component.type = options['type'] as string
-						break
-					case 'name':
-						component.name = options['name'] as string
-						break
-					case 'lock':
-						component.lock = options['lock'] as boolean
-						break
-					case 'visible':
-						component.visible = options['visible'] as boolean
-						break
-					case 'x':
-						(component as IComponent).x = options['x'] as number
-						break
-					case 'y':
-						(component as IComponent).y = options['y'] as number
-						break
-					case 'ox':
-						(component as IGlyphComponent).ox = options['ox'] as number
-						break
-					case 'oy':
-						(component as IGlyphComponent).oy = options['oy'] as number
-						break
-					case 'w':
-						(component as IComponent).w = options['w'] as number
-						break
-					case 'h':
-						(component as IComponent).h = options['h'] as number
-						break;
-					case 'rotation':
-						(component as IComponent).rotation = options['rotation'] as number
-						break
-					case 'flipX':
-						(component as IComponent).flipX = options['flipX'] as boolean
-						break
-					case 'flipY':
-						(component as IComponent).flipY = options['flipY'] as boolean
-						break
-					case 'usedInCharacter':
-						component.usedInCharacter = options['usedInCharacter'] as boolean
-						break
-					case 'opacity':
-						component.opacity = options['opacity'] as number
-						break
-					case 'value':
-						Object.keys(options['value']).map((sub_key: string) => {
-							//@ts-ignore
-							component.value[sub_key] = options['value'][sub_key]
-							if (sub_key === 'points') {
-								const { x, y, w, h } = getBound(options['value'][sub_key].reduce((arr: Array<{x: number, y: number }>, point: IPoint) => {
-									arr.push({
-										x: point.x,
-										y: point.y,
-									})
-									return arr
-								}, []));
-								(component as IComponent).x = x;
-								(component as IComponent).y = y;
-								(component as IComponent).w = w;
-								(component as IComponent).h = h
-							}
-						})
-						break
-				}
-			})
+	// 直接修改数组中的元素，而不是替换整个数组，避免触发不必要的响应式更新导致选择状态丢失
+	const component = characterFile.components.find((comp: Component) => comp.uuid === uuid)
+	if (!component) return
+	
+	Object.keys(options).map((key: string) => {
+		switch (key) {
+			case 'type':
+				component.type = options['type'] as string
+				break
+			case 'name':
+				component.name = options['name'] as string
+				break
+			case 'lock':
+				component.lock = options['lock'] as boolean
+				break
+			case 'visible':
+				component.visible = options['visible'] as boolean
+				break
+			case 'x':
+				(component as IComponent).x = options['x'] as number
+				break
+			case 'y':
+				(component as IComponent).y = options['y'] as number
+				break
+			case 'ox':
+				(component as IGlyphComponent).ox = options['ox'] as number
+				break
+			case 'oy':
+				(component as IGlyphComponent).oy = options['oy'] as number
+				break
+			case 'w':
+				(component as IComponent).w = options['w'] as number
+				break
+			case 'h':
+				(component as IComponent).h = options['h'] as number
+				break;
+			case 'rotation':
+				(component as IComponent).rotation = options['rotation'] as number
+				break
+			case 'flipX':
+				(component as IComponent).flipX = options['flipX'] as boolean
+				break
+			case 'flipY':
+				(component as IComponent).flipY = options['flipY'] as boolean
+				break
+			case 'usedInCharacter':
+				component.usedInCharacter = options['usedInCharacter'] as boolean
+				break
+			case 'opacity':
+				component.opacity = options['opacity'] as number
+				break
+			case 'value':
+				Object.keys(options['value']).map((sub_key: string) => {
+					//@ts-ignore
+					component.value[sub_key] = options['value'][sub_key]
+					if (sub_key === 'points') {
+						const { x, y, w, h } = getBound(options['value'][sub_key].reduce((arr: Array<{x: number, y: number }>, point: IPoint) => {
+							arr.push({
+								x: point.x,
+								y: point.y,
+							})
+							return arr
+						}, []));
+						(component as IComponent).x = x;
+						(component as IComponent).y = y;
+						(component as IComponent).w = w;
+						(component as IComponent).h = h
+					}
+				})
+				break
 		}
-		characterFile.components = components
 	})
 	emitter.emit('renderPreviewCanvasByUUIDOnEditing', editCharacterFileUUID.value)
+	emitter.emit('renderCharacter', true)
 }
 
 /**
