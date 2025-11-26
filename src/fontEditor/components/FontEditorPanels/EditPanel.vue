@@ -156,7 +156,8 @@
     emitter.off('renderCharacter')
     emitter.off('renderCharacter_forceUpdate')
     emitter.off('updateCharacterView')
-    document.removeEventListener('keydown', onKeyDown)
+    // 暂时禁用redo/undo功能
+    // document.removeEventListener('keydown', onKeyDown)
     clearState()
     if (closeTool) {
       closeTool()

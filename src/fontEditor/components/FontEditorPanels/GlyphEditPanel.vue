@@ -139,7 +139,8 @@
     emitter.off('renderGlyph')
     emitter.off('renderGlyph_forceUpdate')
     emitter.off('updateGlyphView')
-    document.removeEventListener('keydown', onKeyDown)
+    // 暂时禁用redo/undo功能
+    // document.removeEventListener('keydown', onKeyDown)
     clearState()
     editingLayout.value = false
     if (closeTool) {
