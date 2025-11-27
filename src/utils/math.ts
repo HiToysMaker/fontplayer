@@ -128,11 +128,12 @@ const transformPoints = (
     y: number,
   }) => {
     let _point = R.clone(point)
+    // 翻转应该在原始点空间内进行，相对于原始点的边界框中心
     if (flipX) {
-      _point.x = x + w / 2 + ((x + w / 2) - _point.x)
+      _point.x = origin_x + origin_w / 2 + ((origin_x + origin_w / 2) - _point.x)
     }
     if (flipY) {
-      _point.y = y + h / 2 + ((y + h / 2) - _point.y)
+      _point.y = origin_y + origin_h / 2 + ((origin_y + origin_h / 2) - _point.y)
     }
     _point = rotatePoint(_point, {
       x: origin_x + origin_w / 2,
