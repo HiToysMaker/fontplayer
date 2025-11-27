@@ -117,8 +117,10 @@ const transformPoints = (
     flipX: boolean,
     flipY: boolean,
   },
+  fixedOriginBounds?: { x: number, y: number, w: number, h: number }
 ) => {
-  const { x: origin_x, y: origin_y, w: origin_w, h: origin_h } = getBound(points)
+  // 如果提供了固定的边界框（编辑模式下），使用它；否则使用当前点的边界框
+  const { x: origin_x, y: origin_y, w: origin_w, h: origin_h } = fixedOriginBounds || getBound(points)
   const { x, y, w, h, rotation, flipX, flipY } = transform
   const _points: Array<{
     x: number,

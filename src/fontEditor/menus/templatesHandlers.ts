@@ -1258,7 +1258,7 @@ const importTemplateSymbols = async () => {
       uuid: genUUID(),
       name: '运笔样式',
       type: ParameterType.Enum,
-      value: 1,
+      value: 0,
       options: [
         {
           value: 0,
@@ -1347,7 +1347,7 @@ const importTemplateSymbols = async () => {
       uuid: genUUID(),
       name: '运笔样式',
       type: ParameterType.Enum,
-      value: 1,
+      value: 0,
       options: [
         {
           value: 0,

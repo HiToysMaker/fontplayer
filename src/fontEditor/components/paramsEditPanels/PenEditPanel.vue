@@ -48,7 +48,7 @@
         y,
       })
     } else if (editStatus.value === Status.Glyph) {
-      modifyComponentForCurrentCharacterFile(selectedComponentUUID_Glyph.value, {
+      modifyComponentForCurrentGlyph(selectedComponentUUID_Glyph.value, {
         y,
       })
     }
@@ -61,7 +61,7 @@
         w,
       })
     } else if (editStatus.value === Status.Glyph) {
-      modifyComponentForCurrentCharacterFile(selectedComponentUUID_Glyph.value, {
+      modifyComponentForCurrentGlyph(selectedComponentUUID_Glyph.value, {
         w,
       })
     }
@@ -74,7 +74,7 @@
         h,
       })
     } else if (editStatus.value === Status.Glyph) {
-      modifyComponentForCurrentCharacterFile(selectedComponentUUID_Glyph.value, {
+      modifyComponentForCurrentGlyph(selectedComponentUUID_Glyph.value, {
         h,
       })
     }
@@ -87,7 +87,7 @@
         rotation,
       })
     } else if (editStatus.value === Status.Glyph) {
-      modifyComponentForCurrentCharacterFile(selectedComponentUUID_Glyph.value, {
+      modifyComponentForCurrentGlyph(selectedComponentUUID_Glyph.value, {
         rotation,
       })
     }
@@ -113,7 +113,7 @@
         flipY,
       })
     } else if (editStatus.value === Status.Glyph) {
-      modifyComponentForCurrentGlyph(selectedComponentUUID.value, {
+      modifyComponentForCurrentGlyph(selectedComponentUUID_Glyph.value, {
         flipY,
       })
     }

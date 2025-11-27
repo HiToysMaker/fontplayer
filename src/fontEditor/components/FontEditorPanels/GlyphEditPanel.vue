@@ -102,6 +102,8 @@
       }, { x: 0, y: 0 }, false, false, true)
       render()
       renderRefComponents()
+      tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+      tool.value === 'pen' && renderPenEditor(canvas.value)
     })
     emitter.on('renderGlyph_forceUpdate', () => {
       const glyph = editGlyph.value._o ? editGlyph.value._o : new CustomGlyph(editGlyph.value)

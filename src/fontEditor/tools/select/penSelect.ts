@@ -51,6 +51,9 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 	let lastX = -1
 	let lastY = -1
 	let mousedown = false
+	// 保存进入编辑模式时的初始边界框，用于坐标映射的一致性
+	let initialOriginBounds: { x: number, y: number, w: number, h: number } | null = null
+	
 	const onMouseDown = (e: MouseEvent) => {
 		document.addEventListener('mouseup', onMouseUp)
 		canvas.addEventListener('keydown', onKeyDown)
@@ -100,11 +103,11 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 				// 	return
 				// }
 			}
-			if (!selectedComponent.value.visible) {
+			if (!selectedComponent_glyph.value || !selectedComponent_glyph.value.visible) {
 				mousedown = false
 				return
 			}
-			const { x, y, w, h, rotation, uuid} = selectedComponent.value
+			const { x, y, w, h, rotation, uuid} = selectedComponent_glyph.value
 			const { x: _x, y: _y } = rotatePoint(
 				{ x: getCoord(e.offsetX), y: getCoord(e.offsetY) },
 				{ x: x + w / 2, y: y + h / 2 },
@@ -113,6 +116,10 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 			lastX = _x
 			lastY = _y
 			setSelectionForCurrentGlyph('')
+			// 修复：清除选中点状态
+			selectPenPoint.value = ''
+			selectAnchor.value = ''
+			hoverPenPoint.value = ''
 		} else {
 			mousedown = true
 			for (let i = orderedListWithItemsForCurrentCharacterFile.value.length - 1; i >= 0; i--) {
@@ -170,21 +177,76 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 			lastX = _x
 			lastY = _y
 			setSelectionForCurrentCharacterFile('')
+			// 修复：清除选中点状态
+			selectPenPoint.value = ''
+			selectAnchor.value = ''
+			hoverPenPoint.value = ''
 		}
 	}
 
 	const onMouseMove = (e: MouseEvent) => {
 		if (glyph) {
 			if (!selectedComponent_glyph.value || !selectedComponent_glyph.value?.visible) return
-			const { x, y, w, h, rotation, uuid} = selectedComponent_glyph.value
-			const { x: _x, y: _y } = rotatePoint(
+			const { x, y, w, h, rotation, flipX, flipY, uuid} = selectedComponent_glyph.value
+			// 先反向旋转鼠标坐标，抵消canvas的rotation变换
+			let { x: _x, y: _y } = rotatePoint(
 				{ x: getCoord(e.offsetX), y: getCoord(e.offsetY) },
 				{ x: x + w / 2, y: y + h / 2 },
 				-rotation
 			)
 			const penComponentValue = selectedComponent_glyph.value.value as unknown as IPenComponent
 			const { points, closePath } = penComponentValue
+			
+			// 在首次进入编辑模式时，保存初始边界框，确保坐标映射的一致性
+			// 这样即使点被拖拽到边界框外，也不会影响其他点的变换位置
+			if (!initialOriginBounds) {
+				initialOriginBounds = getBound(
+					points.reduce((arr: Array<{x: number, y: number }>, point: IPoint) => {
+						arr.push({
+							x: point.x,
+							y: point.y,
+						})
+						return arr
+					}, [])
+				)
+				// 将固定边界框存储到模块级变量中，供transformPenPoints使用
+				editModeFixedBounds.set(uuid, initialOriginBounds)
+			}
+			
+			// 使用固定的初始边界框，而不是当前点的边界框
+			const { x: origin_x, y: origin_y, w: origin_w, h: origin_h } = initialOriginBounds
+			
 			if (mousedown) {
+				// 需要将鼠标坐标映射回原始点空间（考虑flipX/flipY）
+				// transformPoints的完整变换（当rotation=0时）：
+				//   1. 翻转：p_flipped（原始空间）
+				//   2. 平移：p_translated = p_flipped + (x - origin_x)
+				//   3. 缩放：p_final = x + (p_translated - x) * w / origin_w
+				//   完整：p_final = x + (p_flipped - origin_x) * w / origin_w
+				// 
+				// 反向映射（完全反向transformPoints的步骤）：
+				//   步骤1：反向缩放：p_translated = x + (p_final - x) * origin_w / w
+				//   步骤2：反向平移：p_flipped = p_translated - (x - origin_x)
+				//   步骤3：反向翻转：p_original
+				
+				// 直接从完整公式反向：p_final = x + (p_flipped - origin_x) * w / origin_w
+				// 反向：p_flipped = origin_x + (p_final - x) * origin_w / w
+				let flippedPoint = {
+					x: origin_x + (_x - x) * origin_w / w,
+					y: origin_y + (_y - y) * origin_h / h,
+				}
+				
+				// 反向翻转（从翻转后坐标恢复到原始坐标）
+				let mousePoint = { ...flippedPoint }
+				if (flipX) {
+					const origin_center_x = origin_x + origin_w / 2
+					mousePoint.x = 2 * origin_center_x - flippedPoint.x
+				}
+				if (flipY) {
+					const origin_center_y = origin_y + origin_h / 2
+					mousePoint.y = 2 * origin_center_y - flippedPoint.y
+				}
+				
 				const _points = R.clone(points)
 				_points.map((point: IPoint, index: number) => {
 					if (selectPenPoint.value === point.uuid) {
@@ -193,15 +255,15 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 							if (index < 2) {
 								for(let i = _points.length - 2; i < _points.length; i++) {
 									if (_points[i].type === 'anchor' && _points[i].x === point.x && _points[i].y === point.y) {
-										_points[i].x = _x
-										_points[i].y = _y
+										_points[i].x = mousePoint.x
+										_points[i].y = mousePoint.y
 									}
 								}
 							} else if (index > _points.length - 3) {
 								for(let i = 0; i < 2; i++) {
 									if (points[i].type === 'anchor' && _points[i].x === point.x && _points[i].y === point.y) {
-										_points[i].x = _x
-										_points[i].y = _y
+										_points[i].x = mousePoint.x
+										_points[i].y = mousePoint.y
 									}
 								}
 							}
@@ -210,8 +272,8 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 						// 对于闭合路径，起始控制点和收尾控制点重合，应该一致移动
 						// TODO
 
-						point.x = _x
-						point.y = _y
+						point.x = mousePoint.x
+						point.y = mousePoint.y
 					}
 					return point
 				})
@@ -222,13 +284,19 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 				})
 			}
 			if (!mousedown) {
-				points.map((point: IPoint, index) => {
+				// hover和点击检测时，需要使用变换后的点坐标来比较
+				const _points = transformPenPoints(selectedComponent_glyph.value, false)
+				_points.map((point: IPoint, index) => {
 					if (distance(_x, _y, point.x, point.y) <= d) {
-						if (point.type === 'control' && index === points.length - 1 && points.length >= 2 && point.x === points[1].x && point.y === points[1].y) {
-							// 如果未闭合路径，且最后一个控制点和第一个控制点重合，改变第一个控制点
-							return
-						} else {
-							hoverPenPoint.value = point.uuid
+						// 找到对应的原始点
+						const originalPoint = points.find(p => p.uuid === point.uuid)
+						if (originalPoint) {
+							if (originalPoint.type === 'control' && index === points.length - 1 && points.length >= 2 && originalPoint.x === points[1].x && originalPoint.y === points[1].y) {
+								// 如果未闭合路径，且最后一个控制点和第一个控制点重合，改变第一个控制点
+								return
+							} else {
+								hoverPenPoint.value = originalPoint.uuid
+							}
 						}
 					}
 				})
@@ -237,15 +305,66 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 			lastY = _y
 		} else {
 			if (!selectedComponent.value || !selectedComponent.value?.visible) return
-			const { x, y, w, h, rotation, uuid} = selectedComponent.value
-			const { x: _x, y: _y } = rotatePoint(
+			const { x, y, w, h, rotation, flipX, flipY, uuid} = selectedComponent.value
+			// 先反向旋转鼠标坐标，抵消canvas的rotation变换
+			let { x: _x, y: _y } = rotatePoint(
 				{ x: getCoord(e.offsetX), y: getCoord(e.offsetY) },
 				{ x: x + w / 2, y: y + h / 2 },
 				-rotation
 			)
 			const penComponentValue = selectedComponent.value.value as unknown as IPenComponent
 			const { points, closePath } = penComponentValue
+			
+			// 在首次进入编辑模式时，保存初始边界框，确保坐标映射的一致性
+			// 这样即使点被拖拽到边界框外，也不会影响其他点的变换位置
+			if (!initialOriginBounds) {
+				initialOriginBounds = getBound(
+					points.reduce((arr: Array<{x: number, y: number }>, point: IPoint) => {
+						arr.push({
+							x: point.x,
+							y: point.y,
+						})
+						return arr
+					}, [])
+				)
+				// 将固定边界框存储到模块级变量中，供transformPenPoints使用
+				editModeFixedBounds.set(uuid, initialOriginBounds)
+			}
+			
+			// 使用固定的初始边界框，而不是当前点的边界框
+			const { x: origin_x, y: origin_y, w: origin_w, h: origin_h } = initialOriginBounds
+			
 			if (mousedown) {
+				// 需要将鼠标坐标映射回原始点空间（考虑flipX/flipY）
+				// transformPoints的完整变换（当rotation=0时）：
+				//   1. 翻转：p_flipped（原始空间）
+				//   2. 平移：p_translated = p_flipped + (x - origin_x)
+				//   3. 缩放：p_final = x + (p_translated - x) * w / origin_w
+				//   完整：p_final = x + (p_flipped - origin_x) * w / origin_w
+				// 
+				// 反向映射（完全反向transformPoints的步骤）：
+				//   步骤1：反向缩放：p_translated = x + (p_final - x) * origin_w / w
+				//   步骤2：反向平移：p_flipped = p_translated - (x - origin_x)
+				//   步骤3：反向翻转：p_original
+				
+				// 直接从完整公式反向：p_final = x + (p_flipped - origin_x) * w / origin_w
+				// 反向：p_flipped = origin_x + (p_final - x) * origin_w / w
+				let flippedPoint = {
+					x: origin_x + (_x - x) * origin_w / w,
+					y: origin_y + (_y - y) * origin_h / h,
+				}
+				
+				// 反向翻转（从翻转后坐标恢复到原始坐标）
+				let mousePoint = { ...flippedPoint }
+				if (flipX) {
+					const origin_center_x = origin_x + origin_w / 2
+					mousePoint.x = 2 * origin_center_x - flippedPoint.x
+				}
+				if (flipY) {
+					const origin_center_y = origin_y + origin_h / 2
+					mousePoint.y = 2 * origin_center_y - flippedPoint.y
+				}
+				
 				const _points = R.clone(points)
 				_points.map((point: IPoint, index: number) => {
 					if (selectPenPoint.value === point.uuid) {
@@ -254,15 +373,15 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 							if (index < 2) {
 								for(let i = _points.length - 2; i < _points.length; i++) {
 									if (_points[i].type === 'anchor' && _points[i].x === point.x && _points[i].y === point.y) {
-										_points[i].x = _x
-										_points[i].y = _y
+										_points[i].x = mousePoint.x
+										_points[i].y = mousePoint.y
 									}
 								}
 							} else if (index > _points.length - 3) {
 								for(let i = 0; i < 2; i++) {
 									if (points[i].type === 'anchor' && _points[i].x === point.x && _points[i].y === point.y) {
-										_points[i].x = _x
-										_points[i].y = _y
+										_points[i].x = mousePoint.x
+										_points[i].y = mousePoint.y
 									}
 								}
 							}
@@ -271,8 +390,8 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 						// 对于闭合路径，起始控制点和收尾控制点重合，应该一致移动
 						// TODO
 
-						point.x = _x
-						point.y = _y
+						point.x = mousePoint.x
+						point.y = mousePoint.y
 					}
 					return point
 				})
@@ -283,13 +402,19 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 				})
 			}
 			if (!mousedown) {
-				points.map((point: IPoint, index) => {
+				// hover和点击检测时，需要使用变换后的点坐标来比较
+				const _points = transformPenPoints(selectedComponent.value, false)
+				_points.map((point: IPoint, index) => {
 					if (distance(_x, _y, point.x, point.y) <= d) {
-						if (point.type === 'control' && index === points.length - 1 && points.length >= 2 && point.x === points[1].x && point.y === points[1].y) {
-							// 如果未闭合路径，且最后一个控制点和第一个控制点重合，改变第一个控制点
-							return
-						} else {
-							hoverPenPoint.value = point.uuid
+						// 找到对应的原始点
+						const originalPoint = points.find(p => p.uuid === point.uuid)
+						if (originalPoint) {
+							if (originalPoint.type === 'control' && index === points.length - 1 && points.length >= 2 && originalPoint.x === points[1].x && originalPoint.y === points[1].y) {
+								// 如果未闭合路径，且最后一个控制点和第一个控制点重合，改变第一个控制点
+								return
+							} else {
+								hoverPenPoint.value = originalPoint.uuid
+							}
 						}
 					}
 				})
@@ -380,6 +505,14 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 		selectAnchor.value = ''
 		selectPenPoint.value = ''
 		hoverPenPoint.value = ''
+		// 重置初始边界框，以便下次进入编辑模式时重新计算
+		initialOriginBounds = null
+		// 清除模块级变量中的固定边界框
+		if (glyph && selectedComponent_glyph.value) {
+			editModeFixedBounds.delete(selectedComponent_glyph.value.uuid)
+		} else if (selectedComponent.value) {
+			editModeFixedBounds.delete(selectedComponent.value.uuid)
+		}
 	}
 	return closeSelect
 }
@@ -413,9 +546,13 @@ const renderSelectPenEditor = (canvas: HTMLCanvasElement, d: number = 10, glyph:
 	})()
 	//ctx.strokeStyle = '#79bbff'
 	ctx.strokeStyle = '#153063'
-	ctx.translate(_x + _w / 2, _y + _h / 2)
-	ctx.rotate(rotation * Math.PI / 180)
-	ctx.translate(-(_x + _w / 2), -(_y + _h / 2))
+	// transformPenPoints返回的点已经是世界坐标（考虑了x, y, w, h, flipX, flipY），只需要应用旋转
+	// 旋转中心是组件的中心
+	if (rotation !== 0) {
+		ctx.translate(_x + _w / 2, _y + _h / 2)
+		ctx.rotate(rotation * Math.PI / 180)
+		ctx.translate(-(_x + _w / 2), -(_y + _h / 2))
+	}
 	if (!selectAnchor.value) {
 		for (let i = 0; i < _points.length; i++) {
 			if (_points[i].type === 'anchor') {
@@ -478,48 +615,52 @@ const renderSelectPenEditor = (canvas: HTMLCanvasElement, d: number = 10, glyph:
 	ctx.setTransform(1, 0, 0, 1, 0, 0)
 }
 
+// 模块级变量：存储编辑模式下的固定边界框（按组件UUID索引）
+// 导出以供canvas.ts在渲染曲线时使用
+export const editModeFixedBounds: Map<string, { x: number, y: number, w: number, h: number }> = new Map()
+
 // 转换钢笔组件中的点
 // transform points
 const transformPenPoints = (component: IComponent, canvasRatio: boolean) => {
-	const { x, y, w, h, rotation, flipX, flipY, value: penComponentValue } = component
-	const { points } = penComponentValue as unknown as IPenComponent
-	const _x = canvasRatio ? mapCanvasX(x) : x
-	const _y = canvasRatio ? mapCanvasY(y) : y
-	const _w = canvasRatio ? mapCanvasWidth(w): w
-	const _h = canvasRatio ? mapCanvasHeight(h): h
-	let _points = points.map((point: IPoint) => {
-		let _point = R.clone(point)
-		if (flipX) {
-			_point.x = _x + _w / 2 + ((_x + _w / 2) - _point.x)
-		}
-		if (flipY) {
-			_point.y = _y + _h / 2 + ((_y + _h / 2) - _point.y)
-		}
-		return _point
-	})
-	const { x: origin_x, y: origin_y, w: origin_w, h: origin_h } = getBound(
-		_points.reduce((arr: Array<{x: number, y: number }>, point: IPoint) => {
+	const { x, y, w, h, rotation, flipX, flipY, value: penComponentValue, uuid } = component
+	const { points, editMode } = penComponentValue as unknown as IPenComponent
+	
+	// 在编辑模式下，使用固定的初始边界框；否则使用当前点的边界框
+	const fixedBounds = editMode ? editModeFixedBounds.get(uuid) : undefined
+	
+	// 直接使用transformPoints，确保与canvas.ts中的渲染逻辑完全一致
+	// 传入rotation: 0，因为旋转会通过ctx.rotate在renderSelectPenEditor中处理
+	let _points = transformPoints(
+		points.reduce((arr: Array<{x: number, y: number }>, point: IPoint) => {
 			arr.push({
 				x: point.x,
 				y: point.y,
 			})
 			return arr
-		}, [])
-	)
-	_points = _points.map((point: IPoint) => {
-		const _point = R.clone(point)
-		const { x: _x, y: _y } = _point
-		_point.x = x + (_x - origin_x) * w / origin_w
-		_point.y = y + (_y - origin_y) * h / origin_h
-		return _point
+		}, []),
+		{
+			x, y, w, h, rotation: 0, flipX, flipY,
+		},
+		fixedBounds
+	).map((point: { x: number, y: number }, index: number) => {
+		// 保留原始点的uuid, type, origin等属性
+		const originalPoint = points[index]
+		return {
+			...originalPoint,
+			x: point.x,
+			y: point.y,
+		}
 	})
+	
+	// 如果需要在画布坐标中渲染，应用相同的转换逻辑（与canvas.ts一致）
 	if (canvasRatio) {
+		const scale = 1 // 编辑模式下scale为1
 		_points = _points.map((point: IPoint) => {
 			return {
 				...point,
 				...mapCanvasCoords({
-					x: point.x,
-					y: point.y,
+					x: point.x * scale,
+					y: point.y * scale,
 				})
 			}
 		})

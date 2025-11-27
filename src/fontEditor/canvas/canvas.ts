@@ -26,6 +26,7 @@ import {
   getRectanglePoints,
   transformPoints,
 } from '../../utils/math'
+import { editModeFixedBounds } from '../tools/select/penSelect'
 import { mesh } from '../background/mesh'
 import { transparent } from '../background/transparent'
 import { fontRenderStyle } from '../stores/global'
@@ -266,6 +267,7 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
         fillColor,
         points,
         closePath,
+        editMode,
       } = component.value as unknown as IPenComponent
       ctx.lineWidth = getStrokeWidth()
 
@@ -273,9 +275,11 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
         ctx.beginPath()
       }
 
+      // 在编辑模式下，使用固定的初始边界框，确保曲线位置与控件点一致
+      const fixedBounds = editMode ? editModeFixedBounds.get(component.uuid) : undefined
       let _points = transformPoints(points, {
         x, y, w, h, rotation: 0, flipX, flipY,
-      })
+      }, fixedBounds)
       _points = _points.map((point: IPoint) => {
         return mapCanvasCoords({
           x: point.x * scale,
@@ -532,15 +536,18 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
         fillColor,
         points,
         closePath,
+        editMode,
       } = component.value as unknown as IPenComponent
       ctx.strokeStyle = strokeColor || '#000'
       ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
       if (fillColor === 'none') {
         ctx.fillStyle = 'rgba(0, 0, 0, 0)'
       }
+      // 在编辑模式下，使用固定的初始边界框，确保曲线位置与控件点一致
+      const fixedBounds = editMode ? editModeFixedBounds.get(component.uuid) : undefined
       let _points = transformPoints(points, {
         x, y, w, h, rotation, flipX, flipY,
-      })
+      }, fixedBounds)
       _points = _points.map((point: IPoint) => {
         const { x, y } = computeCoords(grid, translate(point))
         return mapCanvasCoords({

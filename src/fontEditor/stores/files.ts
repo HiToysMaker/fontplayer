@@ -905,17 +905,22 @@ const modifyComponentForCurrentCharacterFile = (uuid: string, options: any) => {
 					//@ts-ignore
 					component.value[sub_key] = options['value'][sub_key]
 					if (sub_key === 'points') {
-						const { x, y, w, h } = getBound(options['value'][sub_key].reduce((arr: Array<{x: number, y: number }>, point: IPoint) => {
-							arr.push({
-								x: point.x,
-								y: point.y,
-							})
-							return arr
-						}, []));
-						(component as IComponent).x = x;
-						(component as IComponent).y = y;
-						(component as IComponent).w = w;
-						(component as IComponent).h = h
+						// 在编辑模式下，不应该更新组件的边界框，避免位置重置
+						// 只有当editMode为false时才更新边界框（比如完成编辑时）
+						const penComponentValue = component.value as unknown as IPenComponent
+						if (!penComponentValue.editMode) {
+							const { x, y, w, h } = getBound(options['value'][sub_key].reduce((arr: Array<{x: number, y: number }>, point: IPoint) => {
+								arr.push({
+									x: point.x,
+									y: point.y,
+								})
+								return arr
+							}, []));
+							(component as IComponent).x = x;
+							(component as IComponent).y = y;
+							(component as IComponent).w = w;
+							(component as IComponent).h = h
+						}
 					}
 				})
 				break
