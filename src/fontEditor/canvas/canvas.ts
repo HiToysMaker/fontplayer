@@ -871,50 +871,55 @@ const formatGridComponents = (components: Array<Component>, options: IOption = {
 		// render ellipse component
     if (component.type === 'ellipse') {
       if (useSkeletonGrid) return
-      const { x, y, w, h, rotation } = component as IComponent
-      const radiusX = w / 2
-      const radiusY = h / 2
+      const comp = component as IComponent
+      const { x, y, w, h, rotation, flipX, flipY } = comp
+      const ellipseValue = component.value as unknown as IEllipseComponent
+      const radiusX = ellipseValue.radiusX || (w / 2)
+      const radiusY = ellipseValue.radiusY || (h / 2)
       const ellipseX = x
       const ellipseY = y
-
-      const p0 = {
-        x: ellipseX + radiusX,
-        y: ellipseY + radiusY,
-      }
-
-      const p1 = {
-        x: ellipseX + radiusX + radiusX,
-        y: ellipseY + radiusY + radiusY,
-      }
-      const points = [p0, p1]
+      
+      // 获取完整的椭圆点集
+      let points = getEllipsePoints(
+        radiusX,
+        radiusY,
+        1000,
+        ellipseX + radiusX,
+        ellipseY + radiusY,
+      )
+      
+      // 变换点（考虑旋转和翻转）
       let _points = transformPoints(points, {
-        x, y, w, h, rotation, flipX: false, flipY: false,
+        x, y, w, h, rotation, flipX, flipY,
       })
+      
+      // 应用网格坐标变换
       _points = _points.map((point: IPoint) => {
-        const { x, y } = computeCoords(grid, translate(point))
-        point.x = x
-        point.y = y
+        const coords = computeCoords(grid, translate(point))
+        point.x = coords.x
+        point.y = coords.y
         return point
       })
-      const _radiusX = _points[1].x - _points[0].x
-      const _radiusY = _points[1].y - _points[0].y
-      const bound = {
-        x: _points[0].x - _radiusX,
-        y: _points[0].y - radiusY,
-        w: 2 * radiusX,
-        h: 2 * radiusY,
-      };
-      (component as IComponent).x = bound.x;
-      (component as IComponent).y = bound.y;
-      (component as IComponent).w = bound.w;
-      (component as IComponent).h = bound.h;
-      (component as IComponent).rotation = 0;
-      (component as IComponent).flipX = false;
-      (component as IComponent).flipY = false;
-      ((component as IComponent).value as unknown as IEllipseComponent).radiusX = _radiusX;
-      ((component as IComponent).value as unknown as IEllipseComponent).radiusY = _radiusY;
-      ((component as IComponent).value as unknown as IEllipseComponent).contour = null;
-      ((component as IComponent).value as unknown as IEllipseComponent).preview = null;
+      
+      // 使用 getBound 计算变换后的边界框
+      const bound = getBound(_points)
+      
+      // 计算变换后的半径（基于边界框）
+      const newRadiusX = bound.w / 2
+      const newRadiusY = bound.h / 2
+      
+      // 更新组件属性
+      comp.x = bound.x
+      comp.y = bound.y
+      comp.w = bound.w
+      comp.h = bound.h
+      comp.rotation = 0
+      comp.flipX = false
+      comp.flipY = false
+      ellipseValue.radiusX = newRadiusX
+      ellipseValue.radiusY = newRadiusY
+      ellipseValue.contour = null
+      ellipseValue.preview = null
     }
 
 		// 渲染长方形组件
