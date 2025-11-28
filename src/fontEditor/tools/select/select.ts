@@ -238,8 +238,69 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 		const comp = glyph ? selectedComponent_glyph.value : selectedComponent.value
 		if (!comp || !comp.visible) {
 			mousedown = false
+			selectControl.value = 'null'
 			return
 		}
+		// 检查是否点击在组件或控制点上
+		const { x, y, w, h, rotation } = comp
+		const { x: _x, y: _y } = rotatePoint(
+			{ x: getCoord(e.offsetX), y: getCoord(e.offsetY) },
+			{ x: x + w / 2, y: y + h / 2 },
+			-rotation
+		)
+		const left_top = { x, y }
+		const left_bottom = { x, y: y + h }
+		const right_top = { x: x + w, y }
+		const right_bottom = { x: x + w, y: y + h }
+		// 检查是否点击在控制点上
+		const clickedOnScaleControl = 
+			distance(_x, _y, left_top.x, left_top.y) <= d ||
+			distance(_x, _y, right_top.x, right_top.y) <= d ||
+			distance(_x, _y, left_bottom.x, left_bottom.y) <= d ||
+			distance(_x, _y, right_bottom.x, right_bottom.y) <= d
+		const clickedOnRotateControl =
+			leftTop(_x, _y, left_top.x, left_top.y, d) ||
+			rightTop(_x, _y, right_top.x, right_top.y, d) ||
+			leftBottom(_x, _y, left_bottom.x, left_bottom.y, d) ||
+			rightBottom(_x, _y, right_bottom.x, right_bottom.y, d)
+		const clickedOnInnerArea = inComponentBound({ x: _x, y: _y }, comp)
+		
+		if (!clickedOnScaleControl && !clickedOnRotateControl && !clickedOnInnerArea) {
+			// 点击空白处，清除状态
+			mousedown = false
+			selectControl.value = 'null'
+			return
+		}
+		
+		// 初始化 lastX 和 lastY 为当前点击位置，避免使用上一次的值导致意外移动
+		lastX = _x
+		lastY = _y
+		
+		// 根据点击位置设置 selectControl.value
+		if (clickedOnScaleControl) {
+			if (distance(_x, _y, left_top.x, left_top.y) <= d) {
+				selectControl.value = 'scale-left-top'
+			} else if (distance(_x, _y, right_top.x, right_top.y) <= d) {
+				selectControl.value = 'scale-right-top'
+			} else if (distance(_x, _y, left_bottom.x, left_bottom.y) <= d) {
+				selectControl.value = 'scale-left-bottom'
+			} else if (distance(_x, _y, right_bottom.x, right_bottom.y) <= d) {
+				selectControl.value = 'scale-right-bottom'
+			}
+		} else if (clickedOnRotateControl) {
+			if (leftTop(_x, _y, left_top.x, left_top.y, d)) {
+				selectControl.value = 'rotate-left-top'
+			} else if (rightTop(_x, _y, right_top.x, right_top.y, d)) {
+				selectControl.value = 'rotate-right-top'
+			} else if (leftBottom(_x, _y, left_bottom.x, left_bottom.y, d)) {
+				selectControl.value = 'rotate-left-bottom'
+			} else if (rightBottom(_x, _y, right_bottom.x, right_bottom.y, d)) {
+				selectControl.value = 'rotate-right-bottom'
+			}
+		} else if (clickedOnInnerArea) {
+			selectControl.value = 'inner-area'
+		}
+		
 		document.addEventListener('mouseup', onMouseUp)
 		canvas.addEventListener('keydown', onKeyDown)
 	}
@@ -264,7 +325,7 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 		if (glyph) {
 			modifyComponent = modifyComponentForCurrentGlyph
 		}
-		if (mousedown) {
+		if (mousedown && selectControl.value !== 'null') {
 			switch (selectControl.value) {
 				case 'scale-left-top':
 					modifyComponent(uuid, {

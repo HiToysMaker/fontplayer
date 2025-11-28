@@ -4,6 +4,7 @@ import { loading, setGlyphDraggerTool, setTool, tool, total } from './global'
 import * as R from 'ramda'
 import { getBound } from '../../utils/math'
 import type { IPoint } from './pen'
+import { editModeFixedBounds } from '../tools/select/penSelect'
 import { globalConstants } from '../programming/global_contants'
 import { genUUID } from '../../utils/string'
 import { ConstantsMap } from '../programming/ConstantsMap'
@@ -1042,6 +1043,8 @@ const modifyComponentForCurrentGlyph = (uuid: string, options: any) => {
 			case 'value':
 				Object.keys(options['value']).map((sub_key: string) => {
 					//@ts-ignore
+					const oldValue = component.value[sub_key]
+					//@ts-ignore
 					component.value[sub_key] = options['value'][sub_key]
 					if (sub_key === 'points') {
 						// 在编辑模式下，不应该更新组件的边界框，避免位置重置
@@ -1059,6 +1062,31 @@ const modifyComponentForCurrentGlyph = (uuid: string, options: any) => {
 							(component as IComponent).y = y;
 							(component as IComponent).w = w;
 							(component as IComponent).h = h
+							// 清除固定边界框，避免渲染时使用旧的边界框
+							editModeFixedBounds.delete(component.uuid)
+						}
+					}
+					// 当 editMode 变为 false 时，清除固定边界框并重新计算边界框
+					if (sub_key === 'editMode' && component.type === 'pen') {
+						const isEditMode = options['value'][sub_key] as boolean
+						if (!isEditMode) {
+							// 关闭编辑模式，清除固定边界框并重新计算边界框
+							editModeFixedBounds.delete(component.uuid)
+							const penComponentValue = component.value as unknown as IPenComponent
+							const { points } = penComponentValue
+							if (points && points.length > 0) {
+								const { x, y, w, h } = getBound(points.reduce((arr: Array<{x: number, y: number }>, point: IPoint) => {
+									arr.push({
+										x: point.x,
+										y: point.y,
+									})
+									return arr
+								}, []));
+								(component as IComponent).x = x;
+								(component as IComponent).y = y;
+								(component as IComponent).w = w;
+								(component as IComponent).h = h
+							}
 						}
 					}
 				})

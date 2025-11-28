@@ -76,6 +76,9 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 								// 选择锚点
 								selectAnchor.value = point.uuid
 								selectPenPoint.value = point.uuid
+								// 初始化 lastX 和 lastY，避免使用上一次的值导致意外移动
+								lastX = _x
+								lastY = _y
 								return
 							} else if (selectAnchor.value) {
 								// 选择控制点
@@ -89,13 +92,26 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 								})()
 								if (i <= _index + 4 && i >= _index - 4) {
 									selectPenPoint.value = point.uuid
+									// 初始化 lastX 和 lastY，避免使用上一次的值导致意外移动
+									lastX = _x
+									lastY = _y
+									return
 								} else if (i === 1 && _index === _points.length - 1) {
 									// 最后一个锚点（和第一个锚点重合），第二个控制点为第一个锚点的第一个控制点
 									selectPenPoint.value = point.uuid
+									// 初始化 lastX 和 lastY，避免使用上一次的值导致意外移动
+									lastX = _x
+									lastY = _y
+									return
 								}
 							}
 						}
 					}
+					// 点击在组件边界框内但没有点击到锚点或控制点，清除之前的状态
+					selectPenPoint.value = ''
+					selectAnchor.value = ''
+					hoverPenPoint.value = ''
+					mousedown = false
 					return
 				}
 				// if (inComponentBound({ x: _x, y: _y }, component) && component.visible) {
@@ -120,6 +136,8 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 			selectPenPoint.value = ''
 			selectAnchor.value = ''
 			hoverPenPoint.value = ''
+			// 修复：点击空白处时，将 mousedown 设置为 false，防止之后移动点
+			mousedown = false
 		} else {
 			mousedown = true
 			for (let i = orderedListWithItemsForCurrentCharacterFile.value.length - 1; i >= 0; i--) {
@@ -139,6 +157,9 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 								// 选择锚点
 								selectAnchor.value = point.uuid
 								selectPenPoint.value = point.uuid
+								// 初始化 lastX 和 lastY，避免使用上一次的值导致意外移动
+								lastX = _x
+								lastY = _y
 								return
 							} else if (selectAnchor.value) {
 								// 选择控制点
@@ -152,13 +173,26 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 								})()
 								if (i <= _index + 4 && i >= _index - 4) {
 									selectPenPoint.value = point.uuid
+									// 初始化 lastX 和 lastY，避免使用上一次的值导致意外移动
+									lastX = _x
+									lastY = _y
+									return
 								} else if (i === 1 && _index === _points.length - 1) {
 									// 最后一个锚点（和第一个锚点重合），第二个控制点为第一个锚点的第一个控制点
 									selectPenPoint.value = point.uuid
+									// 初始化 lastX 和 lastY，避免使用上一次的值导致意外移动
+									lastX = _x
+									lastY = _y
+									return
 								}
 							}
 						}
 					}
+					// 点击在组件边界框内但没有点击到锚点或控制点，清除之前的状态
+					selectPenPoint.value = ''
+					selectAnchor.value = ''
+					hoverPenPoint.value = ''
+					mousedown = false
 					return
 				}
 				// if (inComponentBound({ x: _x, y: _y }, component) && component.visible) {
@@ -167,7 +201,10 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 				// 	return
 				// }
 			}
-			if (!selectedComponent.value.visible) return
+			if (!selectedComponent.value.visible) {
+				mousedown = false
+				return
+			}
 			const { x, y, w, h, rotation, uuid} = selectedComponent.value
 			const { x: _x, y: _y } = rotatePoint(
 				{ x: getCoord(e.offsetX), y: getCoord(e.offsetY) },
@@ -181,6 +218,8 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 			selectPenPoint.value = ''
 			selectAnchor.value = ''
 			hoverPenPoint.value = ''
+			// 修复：点击空白处时，将 mousedown 设置为 false，防止之后移动点
+			mousedown = false
 		}
 	}
 
@@ -216,7 +255,7 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 			// 使用固定的初始边界框，而不是当前点的边界框
 			const { x: origin_x, y: origin_y, w: origin_w, h: origin_h } = initialOriginBounds
 			
-			if (mousedown) {
+			if (mousedown && selectPenPoint.value) {
 				// 需要将鼠标坐标映射回原始点空间（考虑flipX/flipY）
 				// transformPoints的完整变换（当rotation=0时）：
 				//   1. 翻转：p_flipped（原始空间）
@@ -334,7 +373,7 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 			// 使用固定的初始边界框，而不是当前点的边界框
 			const { x: origin_x, y: origin_y, w: origin_w, h: origin_h } = initialOriginBounds
 			
-			if (mousedown) {
+			if (mousedown && selectPenPoint.value) {
 				// 需要将鼠标坐标映射回原始点空间（考虑flipX/flipY）
 				// transformPoints的完整变换（当rotation=0时）：
 				//   1. 翻转：p_flipped（原始空间）
@@ -505,9 +544,46 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 		selectAnchor.value = ''
 		selectPenPoint.value = ''
 		hoverPenPoint.value = ''
+
+		// 如果组件仍在编辑模式，关闭编辑模式以触发边界框重新计算
+		// 这可以防止在切换界面时，编辑模式仍然开启但边界框没有被更新的问题
+		if (glyph) {
+			// 遍历所有组件，关闭所有仍在编辑模式的钢笔组件
+			const components = orderedListWithItemsForCurrentGlyph.value
+			for (let i = 0; i < components.length; i++) {
+				const comp = components[i]
+				if (comp && comp.type === 'pen' && comp.visible) {
+					const penComponentValue = comp.value as unknown as IPenComponent
+					if (penComponentValue.editMode) {
+						modifyComponentForCurrentGlyph(comp.uuid, {
+							value: {
+								editMode: false
+							}
+						})
+					}
+				}
+			}
+		} else {
+			// 遍历所有组件，关闭所有仍在编辑模式的钢笔组件
+			const components = orderedListWithItemsForCurrentCharacterFile.value
+			for (let i = 0; i < components.length; i++) {
+				const comp = components[i]
+				if (comp && comp.type === 'pen' && comp.visible) {
+					const penComponentValue = comp.value as unknown as IPenComponent
+					if (penComponentValue.editMode) {
+						modifyComponentForCurrentCharacterFile(comp.uuid, {
+							value: {
+								editMode: false
+							}
+						})
+					}
+				}
+			}
+		}
+		
 		// 重置初始边界框，以便下次进入编辑模式时重新计算
 		initialOriginBounds = null
-		// 清除模块级变量中的固定边界框
+		// 清除模块级变量中的固定边界框（在关闭编辑模式后，这个Map中的值应该已经被清除了）
 		if (glyph && selectedComponent_glyph.value) {
 			editModeFixedBounds.delete(selectedComponent_glyph.value.uuid)
 		} else if (selectedComponent.value) {
