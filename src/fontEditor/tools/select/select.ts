@@ -273,22 +273,85 @@ const getDistanceToGlyphItemPath = (point: CanvasPoint, component: any, offset: 
 	// 处理不同类型的组件
 	switch (component.type) {
 		case 'glyph-pen': {
-			// 对于钢笔组件，采样路径点并计算最小距离
+			// 对于钢笔组件，通过采样贝塞尔曲线路径计算精确距离
 			const points = Array.isArray(component.points) ? component.points : []
 			if (!points.length) return Infinity
 			
-			let minDist = Infinity
-			for (const pt of points) {
-				if (!pt) continue
-				const ptPos = {
-					x: (pt.x || 0) + offset.x,
-					y: (pt.y || 0) + offset.y,
+			// 提取贝塞尔曲线段（每4个点一组：起点、控制点1、控制点2、终点）
+			const bezierSegments: Array<Array<{ x: number, y: number }>> = []
+			for (let i = 0; i < points.length - 1; i += 3) {
+				if (i + 3 < points.length) {
+					const p0 = points[i]
+					const p1 = points[i + 1]
+					const p2 = points[i + 2]
+					const p3 = points[i + 3]
+					if (p0 && p1 && p2 && p3) {
+						bezierSegments.push([
+							{ x: (p0.x || 0) + offset.x, y: (p0.y || 0) + offset.y },
+							{ x: (p1.x || 0) + offset.x, y: (p1.y || 0) + offset.y },
+							{ x: (p2.x || 0) + offset.x, y: (p2.y || 0) + offset.y },
+							{ x: (p3.x || 0) + offset.x, y: (p3.y || 0) + offset.y },
+						])
+					}
 				}
-				const dist = Math.sqrt(
-					(point.x - ptPos.x) ** 2 + (point.y - ptPos.y) ** 2
-				)
-				minDist = Math.min(minDist, dist)
 			}
+			
+			if (bezierSegments.length === 0) {
+				// 如果没有完整的贝塞尔曲线段，回退到点距离计算
+				let minDist = Infinity
+				for (const pt of points) {
+					if (!pt) continue
+					const ptPos = {
+						x: (pt.x || 0) + offset.x,
+						y: (pt.y || 0) + offset.y,
+					}
+					const dist = Math.sqrt(
+						(point.x - ptPos.x) ** 2 + (point.y - ptPos.y) ** 2
+					)
+					minDist = Math.min(minDist, dist)
+				}
+				return minDist
+			}
+			
+			// 对每个贝塞尔曲线段进行密集采样，计算最小距离
+			let minDist = Infinity
+			const baseSampleCount = 30 // 基础采样点数
+			
+			for (const segment of bezierSegments) {
+				// 计算曲线段的长度（近似），用于自适应采样密度
+				const segLength = Math.sqrt(
+					(segment[3].x - segment[0].x) ** 2 + (segment[3].y - segment[0].y) ** 2
+				)
+				const controlLength1 = Math.sqrt(
+					(segment[1].x - segment[0].x) ** 2 + (segment[1].y - segment[0].y) ** 2
+				)
+				const controlLength2 = Math.sqrt(
+					(segment[2].x - segment[3].x) ** 2 + (segment[2].y - segment[3].y) ** 2
+				)
+				// 根据曲线长度和弯曲程度调整采样密度
+				const sampleCount = Math.max(baseSampleCount, Math.ceil(segLength / 10) + Math.ceil((controlLength1 + controlLength2) / 20))
+				
+				for (let i = 0; i <= sampleCount; i++) {
+					const t = i / sampleCount
+					const mt = 1 - t
+					const mt2 = mt * mt
+					const mt3 = mt2 * mt
+					const t2 = t * t
+					const t3 = t2 * t
+					
+					// 三次贝塞尔曲线公式
+					const sampledPoint = {
+						x: mt3 * segment[0].x + 3 * mt2 * t * segment[1].x + 3 * mt * t2 * segment[2].x + t3 * segment[3].x,
+						y: mt3 * segment[0].y + 3 * mt2 * t * segment[1].y + 3 * mt * t2 * segment[2].y + t3 * segment[3].y,
+					}
+					
+					const dist = Math.sqrt(
+						(point.x - sampledPoint.x) ** 2 + (point.y - sampledPoint.y) ** 2
+					)
+					minDist = Math.min(minDist, dist)
+				}
+			}
+			
 			return minDist
 		}
 		case 'glyph-polygon': {
