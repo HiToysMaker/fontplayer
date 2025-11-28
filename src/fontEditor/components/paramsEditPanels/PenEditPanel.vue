@@ -16,6 +16,7 @@
   import { editStatus, Status } from '../../stores/font'
   import { useI18n } from 'vue-i18n'
   import { OpType, saveState, StoreType } from '../../stores/edit'
+  import { emitter } from '../../Event/bus'
   const { tm, t } = useI18n()
 
   const savePenEditState = () => {
@@ -136,6 +137,10 @@
       })
     }
   }
+
+  const onFillColorChange = (color: string) => {
+		emitter.emit('renderCharacter', true)
+	}
 </script>
 
 <template>
@@ -233,7 +238,7 @@
 					label-width="120px"
 				>
 					<el-form-item :label="tm('panels.paramsPanel.fillColor.label')">
-						<el-color-picker v-model="selectedComponent.value.fillColor" show-alpha/>
+						<el-color-picker v-model="selectedComponent.value.fillColor" show-alpha @change="onFillColorChange"/>
 					</el-form-item>
 				</el-form>
 			</div>

@@ -137,8 +137,8 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       if (currentPathStarted) {
         ctx.closePath()
         if (fontRenderStyle.value === 'color') {
-          ctx.fillStyle = component.fillColor || '#000'
-          ctx.strokeStyle = component.fillColor || '#000'
+          ctx.fillStyle = (component.value as unknown as IGlyphComponent).fillColor || '#000'
+          ctx.strokeStyle = (component.value as unknown as IGlyphComponent).fillColor || '#000'
           ctx.fill("nonzero")
         } else if (fontRenderStyle.value === 'black' || options.fill) {
           ctx.fillStyle = '#000'
@@ -207,8 +207,8 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       if (currentPathStarted) {
         ctx.closePath()
         if (fontRenderStyle.value === 'color') {
-          ctx.fillStyle = component.fillColor || '#000'
-          ctx.strokeStyle = component.fillColor || '#000'
+          ctx.fillStyle = (component.value as unknown as IGlyphComponent).fillColor || '#000'
+          ctx.strokeStyle = (component.value as unknown as IGlyphComponent).fillColor || '#000'
           ctx.fill("nonzero")
         } else if (fontRenderStyle.value === 'black' || options.fill) {
           ctx.fillStyle = '#000'
@@ -304,6 +304,12 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
         ctx.strokeStyle = fillColor || '#000'
         ctx.fill()
         ctx.stroke()
+      } else if (fontRenderStyle.value !== 'black') {
+        ctx.strokeStyle = (component.value as unknown as IGlyphComponent).fillColor || '#000'
+        ctx.stroke()
+      } else {
+        ctx.strokeStyle = '#000'
+        ctx.stroke()
       }
 
       ctx.setTransform(1, 0, 0, 1, 0, 0)
@@ -353,6 +359,12 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
         ctx.strokeStyle = fillColor || '#000'
         ctx.fill()
         ctx.stroke()
+      } else if (fontRenderStyle.value !== 'black') {
+        ctx.strokeStyle = (component.value as unknown as IPolygonComponent).fillColor || '#000'
+        ctx.stroke()
+      } else {
+        ctx.strokeStyle = '#000'
+        ctx.stroke()
       }
       ctx.setTransform(1, 0, 0, 1, 0, 0)
     }
@@ -392,6 +404,12 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
         ctx.fillStyle = fillColor || '#000'
         ctx.strokeStyle = fillColor || '#000'
         ctx.fill()
+        ctx.stroke()
+      } else if (fontRenderStyle.value !== 'black') {
+        ctx.strokeStyle = (component.value as unknown as IEllipseComponent).fillColor || '#000'
+        ctx.stroke()
+      } else {
+        ctx.strokeStyle = '#000'
         ctx.stroke()
       }
 
@@ -433,6 +451,12 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
         ctx.strokeStyle = fillColor || '#000'
         ctx.fill()
         ctx.stroke()
+      } else if (fontRenderStyle.value !== 'black') {
+        ctx.strokeStyle = (component.value as unknown as IRectangleComponent).fillColor || '#000'
+        ctx.stroke()
+      } else {
+        ctx.strokeStyle = '#000'
+        ctx.stroke()
       }
 
       ctx.setTransform(1, 0, 0, 1, 0, 0)
@@ -447,7 +471,7 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       ctx.fillStyle = '#000'
       ctx.fill("nonzero")
     }
-    ctx.stroke()
+    // ctx.stroke()
   }
 }
 
