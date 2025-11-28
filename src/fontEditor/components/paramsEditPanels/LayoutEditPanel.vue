@@ -7,12 +7,16 @@
 	 */
 
   import { useI18n } from 'vue-i18n'
-  import { ref, type Ref } from 'vue'
+  import { ref, type Ref, computed, watch } from 'vue'
 	import {
-		editCharacterFile, editCharacterFileUUID, modifyCharacterFile,
+		editCharacterFile, editCharacterFileUUID,
 		orderedListWithItemsForCharacterFile,
+		orderedListWithItemsForCurrentCharacterFile,
 		selectedFile,
 	} from '../../stores/files'
+	import type { IGlyphComponent } from '../../stores/glyph'
+	import type { ICustomGlyph } from '../../stores/glyph'
+	import { executeScript } from '../../stores/glyph'
 	import {
 		gridChanged,
 		gridSettings,
@@ -68,9 +72,7 @@
 			{ x1, x2, y1, y2, l: size },
 		)
 		info.layoutTree = layoutTree
-    modifyCharacterFile(editCharacterFileUUID.value, {
-      info,
-    })
+		editCharacterFile.value.info = info
 		onLayoutEdit.value = false
 	}
 	const selectedNode : Ref<null | LayoutNode> = ref(null)
@@ -93,6 +95,79 @@
 		label: 'label',
 	}
 	const editingNode = ref('')
+	
+	// 检查是否所有组件都是glyph类型且都有skeleton（通过getSkeleton方法）
+	const canUseSkeletonGrid = computed(() => {
+		if (!editCharacterFile.value) return false
+		
+		const components = orderedListWithItemsForCurrentCharacterFile.value
+		if (!components || components.length === 0) return false
+		
+		// 检查所有组件是否都是glyph类型
+		const allAreGlyphs = components.every(component => component && component.type === 'glyph')
+		if (!allAreGlyphs) return false
+		
+		// 检查所有glyph是否都有getSkeleton方法（通过glyph._o.getSkeleton）
+		const allHaveGetSkeleton = components.every(component => {
+			if (!component || component.type !== 'glyph') return false
+			const glyphComponent = component as IGlyphComponent
+			const glyph = glyphComponent.value as ICustomGlyph
+			
+			if (!glyph) return false
+			
+			// 确保glyph._o存在，如果没有则尝试执行脚本创建
+			if (!glyph._o) {
+				try {
+					executeScript(glyph)
+				} catch (e) {
+					console.error('Error executing script for glyph:', e)
+					return false
+				}
+			}
+			
+			// 检查glyph._o.getSkeleton方法是否存在（是函数且不为null）
+			// 同时检查getComponentsBySkeleton方法是否存在
+			return glyph._o && 
+			       typeof glyph._o.getSkeleton === 'function' && 
+			       typeof glyph._o.getComponentsBySkeleton === 'function'
+		})
+		
+		return allHaveGetSkeleton
+	})
+	
+	// 创建一个 computed 来绑定 useSkeletonGrid 值
+	const useSkeletonGridValue = computed({
+		get: () => {
+			return editCharacterFile.value?.info?.useSkeletonGrid || false
+		},
+		set: (value: boolean) => {
+			if (!canUseSkeletonGrid.value && value) {
+				// 如果条件不满足但尝试开启，阻止操作
+				ElMessage.warning('仅当所有组件都是字形组件且都有骨架时才能使用骨架变换')
+				return
+			}
+			const characterFile = editCharacterFile.value
+			if (!characterFile) return
+			
+			if (!characterFile.info) {
+				characterFile.info = {}
+			}
+			// 直接修改 editCharacterFile.value 的属性
+			characterFile.info.useSkeletonGrid = value
+		}
+	})
+	
+	// 监听条件变化，当条件不满足时自动关闭开关
+	watch(canUseSkeletonGrid, (newValue) => {
+		if (!newValue && editCharacterFile.value?.info?.useSkeletonGrid) {
+			// 条件不满足且开关是开启状态，自动关闭
+			if (!editCharacterFile.value.info) {
+				editCharacterFile.value.info = {}
+			}
+			editCharacterFile.value.info.useSkeletonGrid = false
+		}
+	})
+	
 	const confirmGridChange = () => {
 		// // 保存状态
 		// saveState('应用布局', [
@@ -283,7 +358,8 @@
 			</el-button>
 			<el-form-item label-width="120px" label="使用骨架变换">
 				<el-switch
-					v-model="editCharacterFile.info.useSkeletonGrid"
+					v-model="useSkeletonGridValue"
+					:disabled="!canUseSkeletonGrid"
 				/>
       </el-form-item>
 		</div>
