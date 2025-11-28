@@ -16,6 +16,7 @@ import { formatPoints, genEllipseContour } from '../../features/font'
 import { getEllipsePoints, transformPoints } from '../../utils/math'
 import { Status, editStatus } from '../stores/font'
 import { OpType, saveState, StoreType } from '../stores/edit'
+import { getStrokeWidth } from '../stores/global'
 
 // 椭圆工具初始化方法
 // initializer for ellipse tool
@@ -175,6 +176,7 @@ const renderEllipseEditor = (canvas: HTMLCanvasElement, d: number = 5) => {
 	const _radiusX = mapCanvasWidth(radiusX.value)
 	const _radiusY = mapCanvasWidth(radiusY.value)
 	ctx.strokeStyle = '#000'
+	ctx.lineWidth = getStrokeWidth()
 	ctx.beginPath()
 	ctx.ellipse(_x + _radiusX, _y + _radiusY, _radiusX, _radiusY, 0, 0, 2 * Math.PI)
 	ctx.closePath()
