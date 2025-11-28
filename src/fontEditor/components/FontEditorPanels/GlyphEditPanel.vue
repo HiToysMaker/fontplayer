@@ -603,8 +603,11 @@
     box-sizing: border-box;
     height: 32px;
   }
-  .pen-on-edit, .mirror-on-edit {
+  /* .pen-on-edit, .mirror-on-edit {
     cursor: url('@/assets/icons/pen-nib-solid.svg') 0 16, pointer;
+  } */
+  .pen-on-edit, .mirror-on-edit {
+    cursor: url('@/assets/icons/pen-cursor.cur'), pointer;
   }
   .rectangle-on-edit, .ellipse-on-edit {
     cursor: crosshair;
