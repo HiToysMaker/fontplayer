@@ -582,13 +582,9 @@ const initPenEditMode = (canvas: HTMLCanvasElement, d: number = 5, glyph: boolea
 		}
 		
 		// 重置初始边界框，以便下次进入编辑模式时重新计算
+		// 注意：不要在这里删除 editModeFixedBounds，应该在 stores 中关闭编辑模式时删除
+		// 这样才能在重新计算边界框时获取到初始边界框
 		initialOriginBounds = null
-		// 清除模块级变量中的固定边界框（在关闭编辑模式后，这个Map中的值应该已经被清除了）
-		if (glyph && selectedComponent_glyph.value) {
-			editModeFixedBounds.delete(selectedComponent_glyph.value.uuid)
-		} else if (selectedComponent.value) {
-			editModeFixedBounds.delete(selectedComponent.value.uuid)
-		}
 	}
 	return closeSelect
 }

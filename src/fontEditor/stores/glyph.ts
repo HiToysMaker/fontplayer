@@ -1071,21 +1071,73 @@ const modifyComponentForCurrentGlyph = (uuid: string, options: any) => {
 						const isEditMode = options['value'][sub_key] as boolean
 						if (!isEditMode) {
 							// 关闭编辑模式，清除固定边界框并重新计算边界框
+							// 获取初始边界框（如果还在的话），用于计算偏移
+							const initialBounds = editModeFixedBounds.get(component.uuid)
 							editModeFixedBounds.delete(component.uuid)
+							
 							const penComponentValue = component.value as unknown as IPenComponent
 							const { points } = penComponentValue
 							if (points && points.length > 0) {
-								const { x, y, w, h } = getBound(points.reduce((arr: Array<{x: number, y: number }>, point: IPoint) => {
+								// 保存组件当前的全局位置和尺寸
+								const compX = (component as IComponent).x
+								const compY = (component as IComponent).y
+								const compW = (component as IComponent).w
+								const compH = (component as IComponent).h
+								
+								// 计算新的边界框（基于点的局部坐标）
+								const newBounds = getBound(points.reduce((arr: Array<{x: number, y: number }>, point: IPoint) => {
 									arr.push({
 										x: point.x,
 										y: point.y,
 									})
 									return arr
 								}, []));
-								(component as IComponent).x = x;
-								(component as IComponent).y = y;
-								(component as IComponent).w = w;
-								(component as IComponent).h = h
+								
+								// 如果有初始边界框，说明组件之前处于编辑模式
+								// 关键理解：在编辑模式下，transformPoints使用initialBounds作为fixedBounds进行变换
+								// 关闭编辑模式后，transformPoints使用newBounds（从getBound(points)计算）进行变换
+								// 我们需要调整组件位置，使得关闭编辑模式后点的视觉位置与编辑模式结束时一致
+								if (initialBounds) {
+									// transformPoints的变换公式（忽略翻转和旋转）：
+									//   步骤1：_point.x = point.x + (x - origin_x)
+									//   步骤2：final_x = x + (_point.x - x) * w / origin_w
+									//   合并：final_x = x + (point.x - origin_x) * w / origin_w
+									
+									// 编辑模式下（使用initialBounds）：
+									//   final_x = compX + (point.x - initialBounds.x) * compW / initialBounds.w
+									
+									// 关闭编辑模式后（使用newBounds）：
+									//   final_x = newCompX + (point.x - newBounds.x) * newCompW / newBounds.w
+									
+									// 要使两者相等（对任意点point.x都成立），需要：
+									//   compX + (point.x - initialBounds.x) * compW / initialBounds.w = newCompX + (point.x - newBounds.x) * newCompW / newBounds.w
+									
+									// 重新整理，得到：
+									//   newCompX = compX + (point.x - initialBounds.x) * compW / initialBounds.w - (point.x - newBounds.x) * newCompW / newBounds.w
+									
+									// 由于对任意点都成立，我们可以用特定点来计算：
+									// 使用 newBounds.x 作为参考点，因为它会映射到组件的新位置
+									
+									// 对于点 point.x = newBounds.x：
+									//   newCompX = compX + (newBounds.x - initialBounds.x) * compW / initialBounds.w
+									
+									const comp = component as IComponent
+									const scaleX = compW / initialBounds.w
+									const scaleY = compH / initialBounds.h
+									
+									comp.x = compX + (newBounds.x - initialBounds.x) * scaleX
+									comp.y = compY + (newBounds.y - initialBounds.y) * scaleY
+									comp.w = newBounds.w
+									comp.h = newBounds.h
+								} else {
+									// 如果没有初始边界框，说明组件之前不在编辑模式
+									// 直接使用新边界框的位置和尺寸
+									const comp = component as IComponent
+									comp.x = newBounds.x
+									comp.y = newBounds.y
+									comp.w = newBounds.w
+									comp.h = newBounds.h
+								}
 							}
 						}
 					}
