@@ -1066,17 +1066,31 @@ const modifyComponentForCurrentGlyph = (uuid: string, options: any) => {
 							editModeFixedBounds.delete(component.uuid)
 						}
 					}
-					// 当 editMode 变为 false 时，清除固定边界框并重新计算边界框
+					// 当 editMode 变为 true 或 false 时，处理边界框
 					if (sub_key === 'editMode' && component.type === 'pen') {
 						const isEditMode = options['value'][sub_key] as boolean
-						if (!isEditMode) {
+						const penComponentValue = component.value as unknown as IPenComponent
+						const { points } = penComponentValue
+						
+						if (isEditMode) {
+							// 开启编辑模式时，立即保存初始边界框
+							// 这样即使不移动鼠标，也能在关闭编辑模式时正确计算位置
+							if (points && points.length > 0) {
+								const initialBounds = getBound(points.reduce((arr: Array<{x: number, y: number }>, point: IPoint) => {
+									arr.push({
+										x: point.x,
+										y: point.y,
+									})
+									return arr
+								}, []))
+								editModeFixedBounds.set(component.uuid, initialBounds)
+							}
+						} else {
 							// 关闭编辑模式，清除固定边界框并重新计算边界框
 							// 获取初始边界框（如果还在的话），用于计算偏移
 							const initialBounds = editModeFixedBounds.get(component.uuid)
 							editModeFixedBounds.delete(component.uuid)
 							
-							const penComponentValue = component.value as unknown as IPenComponent
-							const { points } = penComponentValue
 							if (points && points.length > 0) {
 								// 保存组件当前的全局位置和尺寸
 								const compX = (component as IComponent).x
