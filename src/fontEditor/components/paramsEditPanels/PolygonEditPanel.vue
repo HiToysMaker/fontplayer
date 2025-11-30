@@ -21,6 +21,7 @@
   import { OpType, saveState, StoreType } from '../../stores/edit'
   import { useI18n } from 'vue-i18n'
   import paper from 'paper'
+  import { emitter } from '../../Event/bus'
   const { tm, t } = useI18n()
 
   const savePolygonEditState = () => {
@@ -200,6 +201,10 @@
       })
     }
   }
+
+  const onFillColorChange = (color: string) => {
+		emitter.emit('renderCharacter', true)
+	}
 </script>
 
 <template>
@@ -277,7 +282,7 @@
 					label-width="120px"
 				>
 					<el-form-item :label="tm('panels.paramsPanel.fillColor.label')">
-						<el-color-picker v-model="selectedComponent.value.fillColor" show-alpha/>
+						<el-color-picker v-model="selectedComponent.value.fillColor" show-alpha @change="onFillColorChange"/>
 					</el-form-item>
 				</el-form>
 			</div>
@@ -348,17 +353,6 @@
           @pointerdown="transformToPath"
         >{{ t('panels.paramsPanel.transformToCurve.label') }}</el-button>
       </div>
-      <div class="fill-color-wrap">
-				<div class="title">{{ t('panels.paramsPanel.fillColor.title') }}</div>
-				<el-form
-					class="name-form"
-					label-width="120px"
-				>
-					<el-form-item :label="tm('panels.paramsPanel.fillColor.label')">
-						<el-color-picker v-model="selectedComponent.value.fillColor" show-alpha/>
-					</el-form-item>
-				</el-form>
-			</div>
     </div>
   </div>
 </template>

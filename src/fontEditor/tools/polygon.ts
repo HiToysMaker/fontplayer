@@ -20,6 +20,7 @@ import { formatPoints, genPolygonContour } from '@/features/font'
 import { transformPoints } from '@/utils/math'
 import { Status, editStatus } from '../stores/font'
 import { OpType, saveState, StoreType } from '../stores/edit'
+import { getStrokeWidth } from '../stores/global'
 
 // 多边形工具初始化方法
 // initializer for polygon tool
@@ -104,21 +105,25 @@ const initPolygon = (canvas: HTMLCanvasElement, glyph: boolean = false) => {
 		}
 	}
 	const onEnter = (e: KeyboardEvent) => {
+		if (!points.value.length || !editing) return
+		// 至少需要2个点才能构成多边形
+		if (points.value.length < 2) return
+		
 		const _points = R.clone(points.value)
-		if (points.value.length >= 0) {
-			const point = {
-				uuid: genUUID(),
-				x: points[0].x,
-				y: points[0].y,
-			}
-			_points.push(point)
-			setPoints(_points)
+		// 添加闭合点（第一个点的位置）
+		const point = {
+			uuid: genUUID(),
+			x: points.value[0].x,
+			y: points.value[0].y,
 		}
+		_points.push(point)
+		
 		setEditing(false)
+		// 使用已经添加闭合点的 _points 来生成组件
 		if (!glyph) {
-			addComponentForCurrentCharacterFile(genPolygonComponent(R.clone(points.value), true))
+			addComponentForCurrentCharacterFile(genPolygonComponent(_points, true))
 		} else {
-			addComponentForCurrentGlyph(genPolygonComponent(R.clone(points.value), true))
+			addComponentForCurrentGlyph(genPolygonComponent(_points, true))
 		}
 		setPoints([])
 		closePath = false
@@ -157,6 +162,7 @@ const renderPolygonEditor = (points: IPoints, canvas: HTMLCanvasElement) => {
 	if (!_points.length) return
 	const w = 10
 	ctx.strokeStyle = '#000'
+	ctx.lineWidth = getStrokeWidth()
 	ctx.fillStyle = '#000'
 	ctx.beginPath()
 	ctx.moveTo(_points[0].x, _points[0].y)

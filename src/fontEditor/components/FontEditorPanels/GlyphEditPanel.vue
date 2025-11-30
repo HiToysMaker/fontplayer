@@ -102,6 +102,8 @@
       }, { x: 0, y: 0 }, false, false, true)
       render()
       renderRefComponents()
+      tool.value === 'select' && renderSelectEditor(canvas.value, 10, true)
+      tool.value === 'pen' && renderPenEditor(canvas.value)
     })
     emitter.on('renderGlyph_forceUpdate', () => {
       const glyph = editGlyph.value._o ? editGlyph.value._o : new CustomGlyph(editGlyph.value)
@@ -139,7 +141,8 @@
     emitter.off('renderGlyph')
     emitter.off('renderGlyph_forceUpdate')
     emitter.off('updateGlyphView')
-    document.removeEventListener('keydown', onKeyDown)
+    // 暂时禁用redo/undo功能
+    // document.removeEventListener('keydown', onKeyDown)
     clearState()
     editingLayout.value = false
     if (closeTool) {
@@ -337,6 +340,7 @@
     fontRenderStyle,
   ], () => {
     render()
+    renderRefComponents()
   })
 
   // 字符改变时，重新渲染
@@ -599,8 +603,11 @@
     box-sizing: border-box;
     height: 32px;
   }
-  .pen-on-edit, .mirror-on-edit {
+  /* .pen-on-edit, .mirror-on-edit {
     cursor: url('@/assets/icons/pen-nib-solid.svg') 0 16, pointer;
+  } */
+  .pen-on-edit, .mirror-on-edit {
+    cursor: url('@/assets/icons/pen-cursor.cur'), pointer;
   }
   .rectangle-on-edit, .ellipse-on-edit {
     cursor: crosshair;

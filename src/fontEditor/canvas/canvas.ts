@@ -26,6 +26,7 @@ import {
   getRectanglePoints,
   transformPoints,
 } from '../../utils/math'
+import { editModeFixedBounds } from '../tools/select/penSelect'
 import { mesh } from '../background/mesh'
 import { transparent } from '../background/transparent'
 import { fontRenderStyle } from '../stores/global'
@@ -136,8 +137,8 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       if (currentPathStarted) {
         ctx.closePath()
         if (fontRenderStyle.value === 'color') {
-          ctx.fillStyle = component.fillColor || '#000'
-          ctx.strokeStyle = component.fillColor || '#000'
+          ctx.fillStyle = (component.value as unknown as IGlyphComponent).fillColor || '#000'
+          ctx.strokeStyle = (component.value as unknown as IGlyphComponent).fillColor || '#000'
           ctx.fill("nonzero")
         } else if (fontRenderStyle.value === 'black' || options.fill) {
           ctx.fillStyle = '#000'
@@ -206,8 +207,8 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       if (currentPathStarted) {
         ctx.closePath()
         if (fontRenderStyle.value === 'color') {
-          ctx.fillStyle = component.fillColor || '#000'
-          ctx.strokeStyle = component.fillColor || '#000'
+          ctx.fillStyle = (component.value as unknown as IGlyphComponent).fillColor || '#000'
+          ctx.strokeStyle = (component.value as unknown as IGlyphComponent).fillColor || '#000'
           ctx.fill("nonzero")
         } else if (fontRenderStyle.value === 'black' || options.fill) {
           ctx.fillStyle = '#000'
@@ -266,6 +267,7 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
         fillColor,
         points,
         closePath,
+        editMode,
       } = component.value as unknown as IPenComponent
       ctx.lineWidth = getStrokeWidth()
 
@@ -273,9 +275,11 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
         ctx.beginPath()
       }
 
+      // 在编辑模式下，使用固定的初始边界框，确保曲线位置与控件点一致
+      const fixedBounds = editMode ? editModeFixedBounds.get(component.uuid) : undefined
       let _points = transformPoints(points, {
         x, y, w, h, rotation: 0, flipX, flipY,
-      })
+      }, fixedBounds)
       _points = _points.map((point: IPoint) => {
         return mapCanvasCoords({
           x: point.x * scale,
@@ -299,6 +303,12 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
         ctx.fillStyle = fillColor || '#000'
         ctx.strokeStyle = fillColor || '#000'
         ctx.fill()
+        ctx.stroke()
+      } else if (fontRenderStyle.value !== 'black') {
+        ctx.strokeStyle = (component.value as unknown as IGlyphComponent).fillColor || '#000'
+        ctx.stroke()
+      } else {
+        ctx.strokeStyle = '#000'
         ctx.stroke()
       }
 
@@ -349,6 +359,12 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
         ctx.strokeStyle = fillColor || '#000'
         ctx.fill()
         ctx.stroke()
+      } else if (fontRenderStyle.value !== 'black') {
+        ctx.strokeStyle = (component.value as unknown as IPolygonComponent).fillColor || '#000'
+        ctx.stroke()
+      } else {
+        ctx.strokeStyle = '#000'
+        ctx.stroke()
       }
       ctx.setTransform(1, 0, 0, 1, 0, 0)
     }
@@ -388,6 +404,12 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
         ctx.fillStyle = fillColor || '#000'
         ctx.strokeStyle = fillColor || '#000'
         ctx.fill()
+        ctx.stroke()
+      } else if (fontRenderStyle.value !== 'black') {
+        ctx.strokeStyle = (component.value as unknown as IEllipseComponent).fillColor || '#000'
+        ctx.stroke()
+      } else {
+        ctx.strokeStyle = '#000'
         ctx.stroke()
       }
 
@@ -429,6 +451,12 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
         ctx.strokeStyle = fillColor || '#000'
         ctx.fill()
         ctx.stroke()
+      } else if (fontRenderStyle.value !== 'black') {
+        ctx.strokeStyle = (component.value as unknown as IRectangleComponent).fillColor || '#000'
+        ctx.stroke()
+      } else {
+        ctx.strokeStyle = '#000'
+        ctx.stroke()
       }
 
       ctx.setTransform(1, 0, 0, 1, 0, 0)
@@ -443,7 +471,7 @@ const renderCanvas = (components: Array<Component>, canvas: HTMLCanvasElement, o
       ctx.fillStyle = '#000'
       ctx.fill("nonzero")
     }
-    ctx.stroke()
+    // ctx.stroke()
   }
 }
 
@@ -532,15 +560,18 @@ const renderGridCanvas = (components: Array<Component>, canvas: HTMLCanvasElemen
         fillColor,
         points,
         closePath,
+        editMode,
       } = component.value as unknown as IPenComponent
       ctx.strokeStyle = strokeColor || '#000'
       ctx.fillStyle = fillColor || 'rgba(0, 0, 0, 0)'
       if (fillColor === 'none') {
         ctx.fillStyle = 'rgba(0, 0, 0, 0)'
       }
+      // 在编辑模式下，使用固定的初始边界框，确保曲线位置与控件点一致
+      const fixedBounds = editMode ? editModeFixedBounds.get(component.uuid) : undefined
       let _points = transformPoints(points, {
         x, y, w, h, rotation, flipX, flipY,
-      })
+      }, fixedBounds)
       _points = _points.map((point: IPoint) => {
         const { x, y } = computeCoords(grid, translate(point))
         return mapCanvasCoords({
@@ -840,50 +871,55 @@ const formatGridComponents = (components: Array<Component>, options: IOption = {
 		// render ellipse component
     if (component.type === 'ellipse') {
       if (useSkeletonGrid) return
-      const { x, y, w, h, rotation } = component as IComponent
-      const radiusX = w / 2
-      const radiusY = h / 2
+      const comp = component as IComponent
+      const { x, y, w, h, rotation, flipX, flipY } = comp
+      const ellipseValue = component.value as unknown as IEllipseComponent
+      const radiusX = ellipseValue.radiusX || (w / 2)
+      const radiusY = ellipseValue.radiusY || (h / 2)
       const ellipseX = x
       const ellipseY = y
-
-      const p0 = {
-        x: ellipseX + radiusX,
-        y: ellipseY + radiusY,
-      }
-
-      const p1 = {
-        x: ellipseX + radiusX + radiusX,
-        y: ellipseY + radiusY + radiusY,
-      }
-      const points = [p0, p1]
+      
+      // 获取完整的椭圆点集
+      let points = getEllipsePoints(
+        radiusX,
+        radiusY,
+        1000,
+        ellipseX + radiusX,
+        ellipseY + radiusY,
+      )
+      
+      // 变换点（考虑旋转和翻转）
       let _points = transformPoints(points, {
-        x, y, w, h, rotation, flipX: false, flipY: false,
+        x, y, w, h, rotation, flipX, flipY,
       })
+      
+      // 应用网格坐标变换
       _points = _points.map((point: IPoint) => {
-        const { x, y } = computeCoords(grid, translate(point))
-        point.x = x
-        point.y = y
+        const coords = computeCoords(grid, translate(point))
+        point.x = coords.x
+        point.y = coords.y
         return point
       })
-      const _radiusX = _points[1].x - _points[0].x
-      const _radiusY = _points[1].y - _points[0].y
-      const bound = {
-        x: _points[0].x - _radiusX,
-        y: _points[0].y - radiusY,
-        w: 2 * radiusX,
-        h: 2 * radiusY,
-      };
-      (component as IComponent).x = bound.x;
-      (component as IComponent).y = bound.y;
-      (component as IComponent).w = bound.w;
-      (component as IComponent).h = bound.h;
-      (component as IComponent).rotation = 0;
-      (component as IComponent).flipX = false;
-      (component as IComponent).flipY = false;
-      ((component as IComponent).value as unknown as IEllipseComponent).radiusX = _radiusX;
-      ((component as IComponent).value as unknown as IEllipseComponent).radiusY = _radiusY;
-      ((component as IComponent).value as unknown as IEllipseComponent).contour = null;
-      ((component as IComponent).value as unknown as IEllipseComponent).preview = null;
+      
+      // 使用 getBound 计算变换后的边界框
+      const bound = getBound(_points)
+      
+      // 计算变换后的半径（基于边界框）
+      const newRadiusX = bound.w / 2
+      const newRadiusY = bound.h / 2
+      
+      // 更新组件属性
+      comp.x = bound.x
+      comp.y = bound.y
+      comp.w = bound.w
+      comp.h = bound.h
+      comp.rotation = 0
+      comp.flipX = false
+      comp.flipY = false
+      ellipseValue.radiusX = newRadiusX
+      ellipseValue.radiusY = newRadiusY
+      ellipseValue.contour = null
+      ellipseValue.preview = null
     }
 
 		// 渲染长方形组件
@@ -985,8 +1021,8 @@ const renderGlyph = (
     ctx.fillRect(0, 0, canvas.width, canvas.height)
   }
   glyph.render_forceUpdate(canvas as HTMLCanvasElement)
-  renderJoints && glyph.renderJoints(canvas as HTMLCanvasElement)
-  renderRefLines && glyph.renderJoints(canvas as HTMLCanvasElement)
+  // renderJoints && glyph.renderJoints(canvas as HTMLCanvasElement)
+  // renderRefLines && glyph.renderJoints(canvas as HTMLCanvasElement)
 }
 
 const renderPreview2 = (canvas: HTMLCanvasElement, contours: Array<Array<ILine | IQuadraticBezierCurve | ICubicBezierCurve>>, fillColors: Array<string> = []) => {

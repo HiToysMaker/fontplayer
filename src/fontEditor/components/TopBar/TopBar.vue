@@ -84,6 +84,7 @@
     'template-8': TemplateEnable,
     'template-digits': TemplateEnable,
     'template-letters': TemplateEnable,
+    'template-symbols': TemplateEnable,
 	}
 
 	const web_menu_icons: IIconsMap = {

@@ -140,6 +140,24 @@ export function createFromCharacters(characters: Array<any>): ICOLRTable {
     }
   }
   
+  // ⚠️ 重要：根据 OpenType 规范，baseGlyphRecords 必须按照 glyphID 排序
+  // 这对于二分查找至关重要，Windows PS 可能严格检查这一点
+  baseGlyphRecords.sort((a, b) => a.glyphID - b.glyphID)
+  
+  // 验证：确保所有 baseGlyphRecords 的 glyphID 都在有效范围内
+  for (const baseRecord of baseGlyphRecords) {
+    if (baseRecord.glyphID < 0 || baseRecord.glyphID >= characters.length) {
+      console.warn(`⚠️ Warning: BaseGlyphRecord glyphID ${baseRecord.glyphID} is out of range [0, ${characters.length - 1}]`)
+    }
+    // 验证 firstLayerIndex 和 numLayers
+    if (baseRecord.firstLayerIndex < 0 || baseRecord.firstLayerIndex >= layerRecords.length) {
+      console.warn(`⚠️ Warning: BaseGlyphRecord firstLayerIndex ${baseRecord.firstLayerIndex} is out of range [0, ${layerRecords.length - 1}]`)
+    }
+    if (baseRecord.firstLayerIndex + baseRecord.numLayers > layerRecords.length) {
+      console.warn(`⚠️ Warning: BaseGlyphRecord layer range [${baseRecord.firstLayerIndex}, ${baseRecord.firstLayerIndex + baseRecord.numLayers}) exceeds layerRecords length ${layerRecords.length}`)
+    }
+  }
+  
   return {
     version: 0,
     numBaseGlyphRecords: baseGlyphRecords.length,
@@ -199,6 +217,49 @@ export function createFromCharactersV0(
       })
     }
   }
+  
+  // ⚠️ 重要：根据 OpenType 规范，baseGlyphRecords 必须按照 glyphID 排序
+  // 这对于二分查找至关重要，Windows PS 可能严格检查这一点
+  baseGlyphRecords.sort((a, b) => a.glyphID - b.glyphID)
+  
+  // 验证：确保所有 layerRecords 的 glyphID 都在有效范围内
+  // 图层字形应该从 characters.length 开始，到 totalGlyphs - 1 结束
+  const minLayerGlyphID = characters.length
+  const maxLayerGlyphID = totalGlyphs - 1
+  
+  console.log(`\n🔍 COLR Table Validation:`)
+  console.log(`   Base glyphs: ${characters.length} (IDs: 0-${characters.length - 1})`)
+  console.log(`   Layer glyphs: ${layerRecords.length} (IDs: ${minLayerGlyphID}-${maxLayerGlyphID})`)
+  console.log(`   BaseGlyphRecords: ${baseGlyphRecords.length}`)
+  
+  for (let i = 0; i < baseGlyphRecords.length; i++) {
+    const baseRecord = baseGlyphRecords[i]
+    console.log(`   BaseGlyph[${i}]: glyphID=${baseRecord.glyphID}, firstLayerIndex=${baseRecord.firstLayerIndex}, numLayers=${baseRecord.numLayers}`)
+    
+    if (baseRecord.glyphID < 0 || baseRecord.glyphID >= characters.length) {
+      console.warn(`   ⚠️ Warning: BaseGlyphRecord[${i}] glyphID ${baseRecord.glyphID} is out of range [0, ${characters.length - 1}]`)
+    }
+    // 验证 firstLayerIndex 和 numLayers
+    if (baseRecord.firstLayerIndex < 0 || baseRecord.firstLayerIndex >= layerRecords.length) {
+      console.warn(`   ⚠️ Warning: BaseGlyphRecord[${i}] firstLayerIndex ${baseRecord.firstLayerIndex} is out of range [0, ${layerRecords.length - 1}]`)
+    }
+    if (baseRecord.firstLayerIndex + baseRecord.numLayers > layerRecords.length) {
+      console.warn(`   ⚠️ Warning: BaseGlyphRecord[${i}] layer range [${baseRecord.firstLayerIndex}, ${baseRecord.firstLayerIndex + baseRecord.numLayers}) exceeds layerRecords length ${layerRecords.length}`)
+    }
+    
+    // 显示该 base glyph 的所有 layer records
+    for (let j = 0; j < baseRecord.numLayers; j++) {
+      const layerIdx = baseRecord.firstLayerIndex + j
+      if (layerIdx < layerRecords.length) {
+        const layerRecord = layerRecords[layerIdx]
+        console.log(`     Layer[${j}]: glyphID=${layerRecord.glyphID}, paletteIndex=${layerRecord.paletteIndex}`)
+        if (layerRecord.glyphID < minLayerGlyphID || layerRecord.glyphID > maxLayerGlyphID) {
+          console.warn(`       ⚠️ Warning: LayerRecord glyphID ${layerRecord.glyphID} is out of range [${minLayerGlyphID}, ${maxLayerGlyphID}]`)
+        }
+      }
+    }
+  }
+  console.log(`\n`)
   
   return {
     version: 0,

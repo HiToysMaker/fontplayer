@@ -65,6 +65,8 @@ class CustomGlyph {
 			fill: false,
 			forceUpdate: false,
 		})
+		// 确保清除renderCanvas可能留下的路径状态
+		ctx.beginPath()
 		this._components.forEach((component) => {
 			component.render(canvas, {
 				offset,
@@ -74,10 +76,15 @@ class CustomGlyph {
 		})
 		if (fontRenderStyle.value === 'black' || fill) {
 			ctx.fillStyle = '#000'
-			ctx.fill()
+			ctx.fill("nonzero")
+			ctx.closePath()
 		} else if (fontRenderStyle.value === 'color') {
 			ctx.fillStyle = fillColor || '#000'
-			ctx.fill()
+			ctx.fill("nonzero")
+			ctx.closePath()
+		} else {
+			// 线框模式下，确保路径被清除，避免残留
+			ctx.closePath()
 		}
 	}
 
@@ -92,6 +99,8 @@ class CustomGlyph {
 			fill: false,
 			forceUpdate: true,
 		})
+		// 确保清除renderCanvas可能留下的路径状态
+		ctx.beginPath()
 		this._components.forEach((component) => {
 			component.render(canvas, {
 				offset,
@@ -101,10 +110,15 @@ class CustomGlyph {
 		})
 		if (fontRenderStyle.value === 'black' || fill) {
 			ctx.fillStyle = '#000'
-			ctx.fill()
+			ctx.fill("nonzero")
+			ctx.closePath()
 		} else if (fontRenderStyle.value === 'color') {
 			ctx.fillStyle = fillColor || '#000'
-			ctx.fill()
+			ctx.fill("nonzero")
+			ctx.closePath()
+		} else {
+			// 线框模式下，确保路径被清除，避免残留
+			ctx.closePath()
 		}
 	}
 

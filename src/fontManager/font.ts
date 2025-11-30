@@ -497,6 +497,8 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 
 	// 定义os2表
 	// define os2 table
+	// ⚠️ 注意：对于彩色字体，确保 OS/2 表的设置符合 Windows 的要求
+	// 特别是 fsSelection 和 usWinAscent/usWinDescent 的设置
 	const os2Table = {
 		version: 0x0005,
 		xAvgCharWidth: Math.round(globals.advanceWidthAvg),
@@ -526,8 +528,12 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		sTypoAscender: globals.ascender,
 		sTypoDescender: globals.descender,
 		sTypoLineGap: _hheaTable.lineGap || 0,
-		usWinAscent: options.ascender || 800,//globals.yMax,
-		usWinDescent: -options.descender || 200,//Math.abs(globals.yMin),
+		// ⚠️ 重要：Windows 需要使用 usWinAscent 和 usWinDescent，这些值必须是正数
+		// usWinAscent 和 usWinDescent 用于 Windows 的字体渲染，必须正确设置
+		// usWinAscent: 从基线向上的距离（正数）
+		// usWinDescent: 从基线向下的距离（正数，即使 descender 是负数也要转换为正数）
+		usWinAscent: Math.max(options.ascender || 800, globals.yMax || 800),
+		usWinDescent: Math.max(Math.abs(options.descender || -200), Math.abs(globals.yMin || -200)),
 		ulCodePageRange1: (1 << 0) | (1 << 18) | (1 << 20),//1,
 		ulCodePageRange2: 0,//0,
 		sxHeight: metricsForChar(font, 'xyvw', {yMax: Math.round(globals.ascender / 2)}).yMax,
@@ -537,6 +543,19 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 		usMaxContext: 0,
 		usLowerOpticalPointSize: _os2Table.usLowerOpticalPointSize || 8,
 		usUpperOpticalPointSize: _os2Table.usUpperOpticalPointSize || 72,
+	}
+	
+	// ⚠️ 如果这是彩色字体，输出 OS/2 表的关键信息用于调试
+	if (options.isColorFont) {
+		console.log('\n📊 OS/2 Table for Color Font:')
+		console.log(`   version: 0x${os2Table.version.toString(16).padStart(4, '0')}`)
+		console.log(`   fsSelection: ${os2Table.fsSelection} (0x${os2Table.fsSelection.toString(16).padStart(4, '0')})`)
+		console.log(`   usWinAscent: ${os2Table.usWinAscent}`)
+		console.log(`   usWinDescent: ${os2Table.usWinDescent}`)
+		console.log(`   usWeightClass: ${os2Table.usWeightClass}`)
+		console.log(`   usWidthClass: ${os2Table.usWidthClass}`)
+		console.log(`   ulCodePageRange1: 0x${os2Table.ulCodePageRange1.toString(16).padStart(8, '0')}`)
+		console.log(`\n`)
 	}
 
 	// 定义hmtx表
@@ -1031,11 +1050,23 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 						const layerContours = layer.contours || [[]]
 						const layerContourNum = layerContours.length
 						
+						// ⚠️ 验证：确保图层有有效的轮廓数据（Windows PS 可能需要）
+						// 过滤掉空的轮廓（长度为0的数组）
+						const validContours = layerContours.filter(contour => contour && contour.length > 0)
+						
+						if (validContours.length === 0 && layerContourNum > 0) {
+							console.warn(`⚠️ Warning: Layer for glyph ${char.name || 'unnamed'} has no valid contours (all contours are empty)`)
+						}
+						
+						// 使用过滤后的轮廓
+						const finalContours = validContours.length > 0 ? validContours : layerContours
+						const finalContourNum = validContours.length > 0 ? validContours.length : layerContourNum
+						
 						// 计算图层的度量信息
 						const layerMetrics = getMetrics({
 							unicode: 0,
-							contours: layerContours,
-							contourNum: layerContourNum,
+							contours: finalContours,
+							contourNum: finalContourNum,
 							advanceWidth: char.advanceWidth || options.unitsPerEm,
 							leftSideBearing: undefined, // 让 getMetrics 自己计算
 						})
@@ -1045,8 +1076,8 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 						layerGlyphs.push({
 							unicode: 0, // 图层字形不需要 unicode
 							name: `layer_${layerGlyphs.length}`,
-							contours: layerContours,
-							contourNum: layerContourNum,
+							contours: finalContours,
+							contourNum: finalContourNum,
 							advanceWidth: char.advanceWidth || options.unitsPerEm,
 							leftSideBearing: layerMetrics.xMin, // 使用 xMin 作为 lsb，保持坐标不变
 							rightSideBearing: layerMetrics.rightSideBearing,
@@ -1064,22 +1095,79 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 			}
 			
 			// 创建 CPAL 表（调色板）
+			// ⚠️ 重要：CPAL 表必须在 COLR 表之前创建，因为 COLR 表需要引用 CPAL 表的颜色索引
 			console.log('⏳ Creating CPAL table...')
 			const cpalTable = createCpalTable(characters)
 			tables['CPAL'] = cpalTable
 			console.log(`✅ CPAL table created with ${cpalTable.numColorRecords} colors`)
+			console.log(`   - numPaletteEntries: ${cpalTable.numPaletteEntries}`)
+			console.log(`   - numPalettes: ${cpalTable.numPalettes}`)
 			incrementProgress('创建 CPAL 表…', 1)
 			
 			// 创建 COLR 表（彩色图层定义）
 			console.log('⏳ Creating COLR table...')
-			const colrTable = createColrTable(characters, characters.length + layerGlyphs.length)
+			const totalGlyphs = characters.length + layerGlyphs.length
+			
+			// ⚠️ 验证：确保所有有图层的 base glyph 都有有效的轮廓数据
+			// Windows PS 可能需要 baseGlyph 本身也有有效的轮廓
+			for (const char of characters) {
+				if (char.layers && char.layers.length > 0) {
+					const hasValidContours = char.contours && char.contours.length > 0 && 
+						char.contours.some(contour => contour && contour.length > 0)
+					
+					if (!hasValidContours) {
+						console.warn(`⚠️ Warning: Base glyph ${char.name || 'unnamed'} (glyphID=${characters.indexOf(char)}) has layers but no valid contours`)
+						console.warn(`   This may cause Windows PS to fail rendering the color font`)
+					}
+				}
+			}
+			
+			const colrTable = createColrTable(characters, totalGlyphs)
 			tables['COLR'] = colrTable
 			console.log(`✅ COLR table created with ${colrTable.numBaseGlyphRecords} base glyphs and ${colrTable.numLayerRecords} layers`)
+			console.log(`   - Total glyphs in font: ${totalGlyphs}`)
+			console.log(`   - Base glyphs: 0 to ${characters.length - 1}`)
+			console.log(`   - Layer glyphs: ${characters.length} to ${totalGlyphs - 1}`)
+			
+			// 验证：确保所有 layerRecords 的 paletteIndex 都在 CPAL 表的有效范围内
+			for (const layerRecord of colrTable.layerRecords) {
+				if (layerRecord.paletteIndex >= cpalTable.numColorRecords) {
+					console.warn(`⚠️ Warning: LayerRecord paletteIndex ${layerRecord.paletteIndex} is out of range [0, ${cpalTable.numColorRecords - 1}]`)
+				}
+			}
+			
+			// ⚠️ 重要提示：Windows PS 2021 可能不完全支持 COLR/CPAL 格式
+			// Photoshop 主要支持 OpenType-SVG 彩色字体格式
+			// 建议在浏览器中测试字体是否正常显示彩色效果
+			console.log(`\n⚠️ 重要提示：`)
+			console.log(`   Windows PS 2021 主要支持 OpenType-SVG 彩色字体格式`)
+			console.log(`   当前使用的是 COLR/CPAL 格式，可能在 PS 中无法显示`)
+			console.log(`   建议在浏览器（Chrome/Edge）中测试字体是否能正常显示彩色`)
+			console.log(`   如果在浏览器中可以显示，说明字体文件是正确的`)
+			console.log(`\n`)
+			
 			incrementProgress('创建 COLR 表…', 1)
 			
 			// 如果使用 CFF 格式，需要重新创建 CFF 表包含图层字形
 			if (tables['CFF ']) {
 				console.log('⏳ Updating CFF table with layer glyphs...')
+				
+				// 验证图层字形是否有有效的轮廓数据
+				for (let i = 0; i < layerGlyphs.length; i++) {
+					const layerGlyph = layerGlyphs[i]
+					const glyphID = characters.length + i
+					const hasValidContours = layerGlyph.contours && layerGlyph.contours.length > 0 && 
+						layerGlyph.contours.some(contour => contour && contour.length > 0)
+					
+					if (!hasValidContours) {
+						console.warn(`⚠️ Warning: Layer glyph ${glyphID} (${layerGlyph.name || 'unnamed'}) has no valid contours`)
+					} else {
+						// 统计轮廓数量
+						const totalPaths = layerGlyph.contours.reduce((sum, contour) => sum + (contour?.length || 0), 0)
+						console.log(`   Layer glyph ${glyphID}: ${layerGlyph.contourNum} contours, ${totalPaths} paths, bbox=[${layerGlyph.xMin}, ${layerGlyph.yMin}, ${layerGlyph.xMax}, ${layerGlyph.yMax}]`)
+					}
+				}
+				
 				const allGlyphs = [...characters, ...layerGlyphs]
 				total.value += allGlyphs.length
 				const updatedCffTable = createCffTable(allGlyphs, {
@@ -1093,6 +1181,8 @@ const createFont = async (characters: Array<ICharacter>, options: IOption) => {
 				})
 				tables['CFF '] = updatedCffTable
 				console.log(`✅ CFF table updated with ${allGlyphs.length} total glyphs`)
+				console.log(`   - Base glyphs: 0 to ${characters.length - 1}`)
+				console.log(`   - Layer glyphs: ${characters.length} to ${allGlyphs.length - 1}`)
 				
 				// 更新 maxp 表的字形数量
 				maxpTable.numGlyphs = allGlyphs.length

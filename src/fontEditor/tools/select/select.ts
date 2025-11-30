@@ -145,14 +145,13 @@ const glyphItemContainsPoint = (point: CanvasPoint, component: any, offset: Canv
 			x: offset.x + (glyphComponent.ox || 0),
 			y: offset.y + (glyphComponent.oy || 0),
 		}
+		// 对于嵌套的字形组件，使用相同的 tolerance，但不要累积
 		return glyphComponentContainsPoint(point, glyphComponent, tolerance, childOffset)
 	}
-	if (typeof component.x === 'number' && typeof component.y === 'number' && typeof component.w === 'number' && typeof component.h === 'number') {
-		const normalizedComponent = normalizeComponentWithOffset(component, offset)
-		return inComponentBound(point, normalizedComponent, tolerance)
-	}
+	// 先检查具体类型的组件（这些有精确的内容检测）
 	switch (component.type) {
 		case 'glyph-pen': {
+			// 恢复边界框检测，用于初步筛选
 			const anchors = Array.isArray(component.points)
 				? component.points.filter((item: any) => item && item.type === 'anchor')
 				: []
@@ -166,6 +165,7 @@ const glyphItemContainsPoint = (point: CanvasPoint, component: any, offset: Canv
 			const bound = getBoundingFromPoints(vertices, { x: 0, y: 0 })
 			if (!bound) return false
 			if (!isPointInBounding(point, bound, tolerance)) return false
+			// 多边形需要精确检查是否在多边形内部，不能只依赖边界框
 			return pointInPolygon(point, vertices)
 		}
 		case 'glyph-rectangle': {
@@ -173,6 +173,7 @@ const glyphItemContainsPoint = (point: CanvasPoint, component: any, offset: Canv
 			const y = (component.y || 0) + offset.y
 			const width = component.width || 0
 			const height = component.height || 0
+			// 矩形组件，检查是否在矩形内部
 			return (
 				point.x >= x - tolerance &&
 				point.x <= x + width + tolerance &&
@@ -190,22 +191,275 @@ const glyphItemContainsPoint = (point: CanvasPoint, component: any, offset: Canv
 			const dy = point.y - centerY
 			const rx = radiusX + tolerance
 			const ry = radiusY + tolerance
+			// 椭圆组件，检查是否在椭圆内部
 			return (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry) <= 1
 		}
 		default:
+			// 对于未知类型的组件，如果有边界框信息，不进行检测
+			// 因为边界框可能过大，导致误选
+			// 只检测已知类型的精确内容
 			return false
 	}
 }
 
 const glyphComponentContainsPoint = (point: CanvasPoint, component: IGlyphComponent, tolerance: number, offset?: CanvasPoint): boolean => {
 	if (!component || !component.visible) return false
+	
 	const glyph = component.value
 	if (!glyph) return false
+	
 	const baseOffset = offset || {
 		x: component.ox || 0,
 		y: component.oy || 0,
 	}
-	return glyphValueContainsPoint(point, glyph, baseOffset, tolerance)
+	
+	// 优先精确检查是否在字形内容内部，只检查字形实际的子组件内容
+	// 这是最精确的检测方式，可以避免误选其他字形组件
+	if (glyphValueContainsPoint(point, glyph, baseOffset, tolerance || 15)) {
+		return true
+	}
+	
+	// 移除边界框检测，因为它不够精确，容易导致选错组件
+	// 只依赖精确的内容检测
+	
+	return false
+}
+
+// 计算点到组件路径的距离（用于当多个组件边界框重叠时选择最近的）
+const getDistanceToComponentPath = (point: CanvasPoint, component: any, offset: CanvasPoint = { x: 0, y: 0 }): number => {
+	if (!component) return Infinity
+	
+	if (component.type === 'glyph') {
+		// 对于字形组件，计算到内部子组件的最小距离
+		const glyphComponent = component as IGlyphComponent
+		const glyph = glyphComponent.value
+		if (!glyph) return Infinity
+		
+		const baseOffset = {
+			x: offset.x + (glyphComponent.ox || 0),
+			y: offset.y + (glyphComponent.oy || 0),
+		}
+		
+		// 获取字形内部的所有子组件
+		const components = glyph._o?.components || orderedListWithItemsForGlyph(glyph)
+		let minDistance = Infinity
+		
+		for (const comp of components) {
+			if (!comp || comp.visible === false) continue
+			const dist = getDistanceToGlyphItemPath(point, comp, baseOffset)
+			minDistance = Math.min(minDistance, dist)
+		}
+		
+		return minDistance
+	}
+	
+	// 对于其他组件，直接计算距离
+	return getDistanceToGlyphItemPath(point, component, offset)
+}
+
+// 计算点到字形子组件路径的距离
+const getDistanceToGlyphItemPath = (point: CanvasPoint, component: any, offset: CanvasPoint): number => {
+	if (!component) return Infinity
+	
+	if (component.type === 'glyph') {
+		// 递归处理嵌套的字形组件
+		const glyphComponent = component as IGlyphComponent
+		return getDistanceToComponentPath(point, component, {
+			x: offset.x + (glyphComponent.ox || 0),
+			y: offset.y + (glyphComponent.oy || 0),
+		})
+	}
+	
+	// 处理不同类型的组件
+	switch (component.type) {
+		case 'glyph-pen': {
+			// 对于钢笔组件，通过采样贝塞尔曲线路径计算精确距离
+			const points = Array.isArray(component.points) ? component.points : []
+			if (!points.length) return Infinity
+			
+			// 提取贝塞尔曲线段（每4个点一组：起点、控制点1、控制点2、终点）
+			const bezierSegments: Array<Array<{ x: number, y: number }>> = []
+			for (let i = 0; i < points.length - 1; i += 3) {
+				if (i + 3 < points.length) {
+					const p0 = points[i]
+					const p1 = points[i + 1]
+					const p2 = points[i + 2]
+					const p3 = points[i + 3]
+					if (p0 && p1 && p2 && p3) {
+						bezierSegments.push([
+							{ x: (p0.x || 0) + offset.x, y: (p0.y || 0) + offset.y },
+							{ x: (p1.x || 0) + offset.x, y: (p1.y || 0) + offset.y },
+							{ x: (p2.x || 0) + offset.x, y: (p2.y || 0) + offset.y },
+							{ x: (p3.x || 0) + offset.x, y: (p3.y || 0) + offset.y },
+						])
+					}
+				}
+			}
+			
+			if (bezierSegments.length === 0) {
+				// 如果没有完整的贝塞尔曲线段，回退到点距离计算
+				let minDist = Infinity
+				for (const pt of points) {
+					if (!pt) continue
+					const ptPos = {
+						x: (pt.x || 0) + offset.x,
+						y: (pt.y || 0) + offset.y,
+					}
+					const dist = Math.sqrt(
+						(point.x - ptPos.x) ** 2 + (point.y - ptPos.y) ** 2
+					)
+					minDist = Math.min(minDist, dist)
+				}
+				return minDist
+			}
+			
+			// 对每个贝塞尔曲线段进行密集采样，计算最小距离
+			let minDist = Infinity
+			const baseSampleCount = 30 // 基础采样点数
+			
+			for (const segment of bezierSegments) {
+				// 计算曲线段的长度（近似），用于自适应采样密度
+				const segLength = Math.sqrt(
+					(segment[3].x - segment[0].x) ** 2 + (segment[3].y - segment[0].y) ** 2
+				)
+				const controlLength1 = Math.sqrt(
+					(segment[1].x - segment[0].x) ** 2 + (segment[1].y - segment[0].y) ** 2
+				)
+				const controlLength2 = Math.sqrt(
+					(segment[2].x - segment[3].x) ** 2 + (segment[2].y - segment[3].y) ** 2
+				)
+				// 根据曲线长度和弯曲程度调整采样密度
+				const sampleCount = Math.max(baseSampleCount, Math.ceil(segLength / 10) + Math.ceil((controlLength1 + controlLength2) / 20))
+				
+				for (let i = 0; i <= sampleCount; i++) {
+					const t = i / sampleCount
+					const mt = 1 - t
+					const mt2 = mt * mt
+					const mt3 = mt2 * mt
+					const t2 = t * t
+					const t3 = t2 * t
+					
+					// 三次贝塞尔曲线公式
+					const sampledPoint = {
+						x: mt3 * segment[0].x + 3 * mt2 * t * segment[1].x + 3 * mt * t2 * segment[2].x + t3 * segment[3].x,
+						y: mt3 * segment[0].y + 3 * mt2 * t * segment[1].y + 3 * mt * t2 * segment[2].y + t3 * segment[3].y,
+					}
+					
+					const dist = Math.sqrt(
+						(point.x - sampledPoint.x) ** 2 + (point.y - sampledPoint.y) ** 2
+					)
+					minDist = Math.min(minDist, dist)
+				}
+			}
+			
+			return minDist
+		}
+		case 'glyph-polygon': {
+			// 对于多边形，计算点到多边形边的最短距离
+			const vertices = toVerticesWithOffset(component.points, offset)
+			if (!vertices.length) return Infinity
+			
+			// 如果点在多边形内，距离为0
+			if (pointInPolygon(point, vertices)) return 0
+			
+			// 否则计算到各边的最短距离
+			let minDist = Infinity
+			for (let i = 0; i < vertices.length; i++) {
+				const v1 = vertices[i]
+				const v2 = vertices[(i + 1) % vertices.length]
+				const distResult = distanceAndFootPoint(v1, v2, point)
+				minDist = Math.min(minDist, distResult.distance)
+			}
+			return minDist
+		}
+		case 'glyph-rectangle': {
+			// 对于矩形，计算点到矩形边界的最短距离
+			const x = (component.x || 0) + offset.x
+			const y = (component.y || 0) + offset.y
+			const width = component.width || 0
+			const height = component.height || 0
+			
+			// 如果点在矩形内，距离为0
+			if (point.x >= x && point.x <= x + width && point.y >= y && point.y <= y + height) {
+				return 0
+			}
+			
+			// 计算到矩形边界的最短距离
+			const dx = Math.max(0, Math.max(x - point.x, point.x - (x + width)))
+			const dy = Math.max(0, Math.max(y - point.y, point.y - (y + height)))
+			return Math.sqrt(dx * dx + dy * dy)
+		}
+		case 'glyph-ellipse': {
+			// 对于椭圆，计算点到椭圆边界的最短距离（简化处理）
+			const centerX = (component.centerX || 0) + offset.x
+			const centerY = (component.centerY || 0) + offset.y
+			const radiusX = component.radiusX || 0
+			const radiusY = component.radiusY || 0
+			if (!radiusX || !radiusY) return Infinity
+			
+			const dx = point.x - centerX
+			const dy = point.y - centerY
+			const normalizedX = dx / radiusX
+			const normalizedY = dy / radiusY
+			const distFromCenter = Math.sqrt(normalizedX * normalizedX + normalizedY * normalizedY)
+			
+			// 如果点在椭圆内或边界上，距离为0
+			if (distFromCenter <= 1) return 0
+			
+			// 否则返回到椭圆边界的距离（简化：返回到中心的距离减去半径）
+			const actualDist = Math.sqrt(dx * dx + dy * dy)
+			const avgRadius = (radiusX + radiusY) / 2
+			return Math.max(0, actualDist - avgRadius)
+		}
+		default:
+			// 对于未知类型，尝试使用边界框
+			if (typeof component.x === 'number' && typeof component.y === 'number' && 
+			    typeof component.w === 'number' && typeof component.h === 'number') {
+				const normalizedComponent = normalizeComponentWithOffset(component, offset)
+				const x = normalizedComponent.x
+				const y = normalizedComponent.y
+				const w = normalizedComponent.w
+				const h = normalizedComponent.h
+				
+				// 如果点在边界框内，距离为0
+				if (point.x >= x && point.x <= x + w && point.y >= y && point.y <= y + h) {
+					return 0
+				}
+				
+				// 计算到边界框的最短距离
+				const dx = Math.max(0, Math.max(x - point.x, point.x - (x + w)))
+				const dy = Math.max(0, Math.max(y - point.y, point.y - (y + h)))
+				return Math.sqrt(dx * dx + dy * dy)
+			}
+			return Infinity
+	}
+}
+
+// 从 FPUtils 导入 distanceAndFootPoint（如果可用）
+// 如果没有，使用简化的距离计算
+const distanceAndFootPoint = (A: { x: number, y: number }, B: { x: number, y: number }, C: { x: number, y: number }) => {
+	const { x: x1, y: y1 } = A
+	const { x: x2, y: y2 } = B
+	const { x: x0, y: y0 } = C
+	
+	const dx = x2 - x1
+	const dy = y2 - y1
+	const len2 = dx * dx + dy * dy
+	
+	if (len2 === 0) {
+		// A 和 B 重合
+		const dist = Math.sqrt((x0 - x1) ** 2 + (y0 - y1) ** 2)
+		return { distance: dist, footPoint: { x: x1, y: y1 } }
+	}
+	
+	const t = Math.max(0, Math.min(1, ((x0 - x1) * dx + (y0 - y1) * dy) / len2))
+	const footPoint = {
+		x: x1 + t * dx,
+		y: y1 + t * dy,
+	}
+	
+	const dist = Math.sqrt((x0 - footPoint.x) ** 2 + (y0 - footPoint.y) ** 2)
+	return { distance: dist, footPoint }
 }
 
 // 选择组件时，初始化方法
@@ -238,8 +492,74 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 		const comp = glyph ? selectedComponent_glyph.value : selectedComponent.value
 		if (!comp || !comp.visible) {
 			mousedown = false
+			selectControl.value = 'null'
+			// 即使没有选中组件，也要添加 mouseup 监听器以便处理点击选择
+			document.addEventListener('mouseup', onMouseUp)
+			canvas.addEventListener('keydown', onKeyDown)
 			return
 		}
+		// 检查是否点击在组件或控制点上
+		const { x, y, w, h, rotation } = comp
+		const { x: _x, y: _y } = rotatePoint(
+			{ x: getCoord(e.offsetX), y: getCoord(e.offsetY) },
+			{ x: x + w / 2, y: y + h / 2 },
+			-rotation
+		)
+		const left_top = { x, y }
+		const left_bottom = { x, y: y + h }
+		const right_top = { x: x + w, y }
+		const right_bottom = { x: x + w, y: y + h }
+		// 检查是否点击在控制点上
+		const clickedOnScaleControl = 
+			distance(_x, _y, left_top.x, left_top.y) <= d ||
+			distance(_x, _y, right_top.x, right_top.y) <= d ||
+			distance(_x, _y, left_bottom.x, left_bottom.y) <= d ||
+			distance(_x, _y, right_bottom.x, right_bottom.y) <= d
+		const clickedOnRotateControl =
+			leftTop(_x, _y, left_top.x, left_top.y, d) ||
+			rightTop(_x, _y, right_top.x, right_top.y, d) ||
+			leftBottom(_x, _y, left_bottom.x, left_bottom.y, d) ||
+			rightBottom(_x, _y, right_bottom.x, right_bottom.y, d)
+		const clickedOnInnerArea = inComponentBound({ x: _x, y: _y }, comp)
+		
+		if (!clickedOnScaleControl && !clickedOnRotateControl && !clickedOnInnerArea) {
+			// 点击空白处，清除状态，但仍需要添加 mouseup 监听器以便处理点击选择
+			mousedown = false
+			selectControl.value = 'null'
+			document.addEventListener('mouseup', onMouseUp)
+			canvas.addEventListener('keydown', onKeyDown)
+			return
+		}
+		
+		// 初始化 lastX 和 lastY 为当前点击位置，避免使用上一次的值导致意外移动
+		lastX = _x
+		lastY = _y
+		
+		// 根据点击位置设置 selectControl.value
+		if (clickedOnScaleControl) {
+			if (distance(_x, _y, left_top.x, left_top.y) <= d) {
+				selectControl.value = 'scale-left-top'
+			} else if (distance(_x, _y, right_top.x, right_top.y) <= d) {
+				selectControl.value = 'scale-right-top'
+			} else if (distance(_x, _y, left_bottom.x, left_bottom.y) <= d) {
+				selectControl.value = 'scale-left-bottom'
+			} else if (distance(_x, _y, right_bottom.x, right_bottom.y) <= d) {
+				selectControl.value = 'scale-right-bottom'
+			}
+		} else if (clickedOnRotateControl) {
+			if (leftTop(_x, _y, left_top.x, left_top.y, d)) {
+				selectControl.value = 'rotate-left-top'
+			} else if (rightTop(_x, _y, right_top.x, right_top.y, d)) {
+				selectControl.value = 'rotate-right-top'
+			} else if (leftBottom(_x, _y, left_bottom.x, left_bottom.y, d)) {
+				selectControl.value = 'rotate-left-bottom'
+			} else if (rightBottom(_x, _y, right_bottom.x, right_bottom.y, d)) {
+				selectControl.value = 'rotate-right-bottom'
+			}
+		} else if (clickedOnInnerArea) {
+			selectControl.value = 'inner-area'
+		}
+		
 		document.addEventListener('mouseup', onMouseUp)
 		canvas.addEventListener('keydown', onKeyDown)
 	}
@@ -264,7 +584,7 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 		if (glyph) {
 			modifyComponent = modifyComponentForCurrentGlyph
 		}
-		if (mousedown) {
+		if (mousedown && selectControl.value !== 'null') {
 			switch (selectControl.value) {
 				case 'scale-left-top':
 					modifyComponent(uuid, {
@@ -369,56 +689,74 @@ const initSelect = (canvas: HTMLCanvasElement, d: number = 10, glyph: boolean = 
 				x: getCoord(e.offsetX),
 				y: getCoord(e.offsetY),
 			}
-			if (!glyph) {
-				for (let i = orderedListWithItemsForCurrentCharacterFile.value.length - 1; i >= 0; i--) {
-					const component = orderedListWithItemsForCurrentCharacterFile.value[i]
-					if (!component || !component.type || component.type === 'group' || component.visible === false) continue
-					if (component.type === 'glyph') {
-						const glyphComponent = component as IGlyphComponent
-						const contains = glyphComponentContainsPoint(clickPoint, glyphComponent, 20)
-						if (!contains) continue
-						if (selectedComponentUUID.value === glyphComponent.uuid) return
-						setSelectionForCurrentCharacterFile(glyphComponent.uuid)
-						mousedown = false
-						mousemove = false
-						selectControl.value = 'null'
-						return
-					}
-					if (selectedComponentUUID.value === component.uuid && inComponentBound(clickPoint, component, 20)) return
-					if (inComponentBound(clickPoint, component, 20)) {
-						setSelectionForCurrentCharacterFile(component.uuid)
-						mousedown = false
-						mousemove = false
-						selectControl.value = 'null'
+			
+			// 收集所有边界框包含点击点的组件
+			const candidateComponents: Array<{ component: any, distance: number }> = []
+			const componentList = glyph ? orderedListWithItemsForCurrentGlyph.value : orderedListWithItemsForCurrentCharacterFile.value
+			
+			for (let i = componentList.length - 1; i >= 0; i--) {
+				const component = componentList[i]
+				if (!component || !component.type || component.type === 'group' || component.visible === false) continue
+				
+				let isInBounds = false
+				
+				if (component.type === 'glyph') {
+					const glyphComponent = component as IGlyphComponent
+					// 对于字形组件，先检查边界框（通过字形内容检测）
+					// 使用较大的 tolerance 进行边界框检测
+					isInBounds = glyphComponentContainsPoint(clickPoint, glyphComponent, 20)
+				} else {
+					// 对于其他组件，检查边界框
+					isInBounds = inComponentBound(clickPoint, component, 20)
+				}
+				
+				if (isInBounds) {
+					// 计算到组件路径的距离
+					const dist = getDistanceToComponentPath(clickPoint, component)
+					candidateComponents.push({ component, distance: dist })
+				}
+			}
+			
+			// 如果点击的是已选中的组件，不切换
+			const currentSelectedUUID = glyph ? selectedComponentUUID_glyph.value : selectedComponentUUID.value
+			if (currentSelectedUUID) {
+				const currentSelected = candidateComponents.find(c => c.component.uuid === currentSelectedUUID)
+				if (currentSelected) {
+					// 已选中组件在候选列表中，检查是否应该保持选中
+					// 如果点击在已选中组件上且没有其他更近的组件，保持选中
+					if (currentSelected.distance <= 20) {
+						document.removeEventListener('mouseup', onMouseUp)
+						canvas.removeEventListener('keydown', onKeyDown)
 						return
 					}
 				}
-				setSelectionForCurrentCharacterFile('')
-			} else {
-				for (let i = orderedListWithItemsForCurrentGlyph.value.length - 1; i >= 0; i--) {
-					const component = orderedListWithItemsForCurrentGlyph.value[i]
-					if (!component || !component.type || component.type === 'group' || component.visible === false) continue
-					if (component.type === 'glyph') {
-						const glyphComponent = component as IGlyphComponent
-						const contains = glyphComponentContainsPoint(clickPoint, glyphComponent, 20)
-						if (!contains) continue
-						if (selectedComponentUUID_glyph.value === glyphComponent.uuid) return
-						setSelectionForCurrentGlyph(glyphComponent.uuid)
-						mousedown = false
-						mousemove = false
-						selectControl.value = 'null'
-						return
-					}
-					if (selectedComponentUUID_glyph.value === component.uuid && inComponentBound(clickPoint, component, 20)) return
-					if (inComponentBound(clickPoint, component, 20)) {
-						setSelectionForCurrentGlyph(component.uuid)
-						mousedown = false
-						mousemove = false
-						selectControl.value = 'null'
-						return
-					}
+			}
+			
+			// 如果有候选组件，选择距离最近的
+			if (candidateComponents.length > 0) {
+				// 按距离排序，选择最近的
+				candidateComponents.sort((a, b) => a.distance - b.distance)
+				const closestComponent = candidateComponents[0].component
+				
+				if (glyph) {
+					setSelectionForCurrentGlyph(closestComponent.uuid)
+				} else {
+					setSelectionForCurrentCharacterFile(closestComponent.uuid)
 				}
+				
+				mousedown = false
+				mousemove = false
+				selectControl.value = 'null'
+				document.removeEventListener('mouseup', onMouseUp)
+				canvas.removeEventListener('keydown', onKeyDown)
+				return
+			}
+			
+			// 没有找到任何组件，清除选择
+			if (glyph) {
 				setSelectionForCurrentGlyph('')
+			} else {
+				setSelectionForCurrentCharacterFile('')
 			}
 			document.removeEventListener('mouseup', onMouseUp)
 			canvas.removeEventListener('keydown', onKeyDown)

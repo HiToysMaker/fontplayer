@@ -16,6 +16,7 @@
   import { editStatus, Status } from '../../stores/font'
   import { useI18n } from 'vue-i18n'
   import { OpType, saveState, StoreType } from '../../stores/edit'
+  import { emitter } from '../../Event/bus'
   const { tm, t } = useI18n()
 
   const savePenEditState = () => {
@@ -48,7 +49,7 @@
         y,
       })
     } else if (editStatus.value === Status.Glyph) {
-      modifyComponentForCurrentCharacterFile(selectedComponentUUID_Glyph.value, {
+      modifyComponentForCurrentGlyph(selectedComponentUUID_Glyph.value, {
         y,
       })
     }
@@ -61,7 +62,7 @@
         w,
       })
     } else if (editStatus.value === Status.Glyph) {
-      modifyComponentForCurrentCharacterFile(selectedComponentUUID_Glyph.value, {
+      modifyComponentForCurrentGlyph(selectedComponentUUID_Glyph.value, {
         w,
       })
     }
@@ -74,7 +75,7 @@
         h,
       })
     } else if (editStatus.value === Status.Glyph) {
-      modifyComponentForCurrentCharacterFile(selectedComponentUUID_Glyph.value, {
+      modifyComponentForCurrentGlyph(selectedComponentUUID_Glyph.value, {
         h,
       })
     }
@@ -87,7 +88,7 @@
         rotation,
       })
     } else if (editStatus.value === Status.Glyph) {
-      modifyComponentForCurrentCharacterFile(selectedComponentUUID_Glyph.value, {
+      modifyComponentForCurrentGlyph(selectedComponentUUID_Glyph.value, {
         rotation,
       })
     }
@@ -113,7 +114,7 @@
         flipY,
       })
     } else if (editStatus.value === Status.Glyph) {
-      modifyComponentForCurrentGlyph(selectedComponentUUID.value, {
+      modifyComponentForCurrentGlyph(selectedComponentUUID_Glyph.value, {
         flipY,
       })
     }
@@ -136,6 +137,10 @@
       })
     }
   }
+
+  const onFillColorChange = (color: string) => {
+		emitter.emit('renderCharacter', true)
+	}
 </script>
 
 <template>
@@ -233,7 +238,7 @@
 					label-width="120px"
 				>
 					<el-form-item :label="tm('panels.paramsPanel.fillColor.label')">
-						<el-color-picker v-model="selectedComponent.value.fillColor" show-alpha/>
+						<el-color-picker v-model="selectedComponent.value.fillColor" show-alpha @change="onFillColorChange"/>
 					</el-form-item>
 				</el-form>
 			</div>
@@ -321,17 +326,6 @@
           </el-form-item>
         </el-form>
       </div>
-      <div class="fill-color-wrap">
-				<div class="title">{{ t('panels.paramsPanel.fillColor.title') }}</div>
-				<el-form
-					class="name-form"
-					label-width="120px"
-				>
-					<el-form-item :label="tm('panels.paramsPanel.fillColor.label')">
-						<el-color-picker v-model="selectedComponent_Glyph.value.fillColor" show-alpha/>
-					</el-form-item>
-				</el-form>
-			</div>
     </div>
   </div>
 </template>

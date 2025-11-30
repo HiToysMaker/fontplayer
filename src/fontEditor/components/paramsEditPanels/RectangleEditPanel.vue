@@ -15,6 +15,7 @@
   } from '../../stores/glyph'
   import { editStatus, Status } from '../../stores/font'
   import { OpType, saveState, StoreType } from '../../stores/edit'
+  import { emitter } from '../../Event/bus'
   const { tm, t } = useI18n()
 
   const saveRectangleEditState = () => {
@@ -90,6 +91,10 @@
       })
     }
   }
+
+  const onFillColorChange = (color: string) => {
+		emitter.emit('renderCharacter', true)
+	}
 </script>
 
 <template>
@@ -158,7 +163,7 @@
 					label-width="120px"
 				>
 					<el-form-item :label="tm('panels.paramsPanel.fillColor.label')">
-						<el-color-picker v-model="selectedComponent.value.fillColor" show-alpha/>
+						<el-color-picker v-model="selectedComponent.value.fillColor" show-alpha @change="onFillColorChange"/>
 					</el-form-item>
 				</el-form>
 			</div>
@@ -220,17 +225,6 @@
           </el-form-item>
         </el-form>
       </div>
-      <div class="fill-color-wrap">
-				<div class="title">{{ t('panels.paramsPanel.fillColor.title') }}</div>
-				<el-form
-					class="name-form"
-					label-width="120px"
-				>
-					<el-form-item :label="tm('panels.paramsPanel.fillColor.label')">
-						<el-color-picker v-model="selectedComponent.value.fillColor" show-alpha/>
-					</el-form-item>
-				</el-form>
-			</div>
     </div>
   </div>
 </template>

@@ -92,6 +92,7 @@
     'template-8': TemplateEnable,
     'template-digits': TemplateEnable,
     'template-letters': TemplateEnable,
+    'template-symbols': TemplateEnable,
     'remove_overlap': enableAtCharacterEdit,
     'format-all-characters': enableAtList,
     'format-current-character': enableAtCharacterEdit,

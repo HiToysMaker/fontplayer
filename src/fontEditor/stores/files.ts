@@ -5,6 +5,7 @@ import { ref, computed, type Ref, reactive, nextTick } from 'vue'
 import localForage from 'localforage'
 import { getBound } from '../../utils/math'
 import type { IPoint } from './pen'
+import { editModeFixedBounds } from '../tools/select/penSelect'
 import { ICustomGlyph, IGlyphComponent, constants, constantsMap, executeScript } from './glyph'
 import { Character } from '../programming/Character'
 import { emitter } from '../Event/bus'
@@ -812,11 +813,11 @@ const modifySubComponent = (options) => {
 	} else {
 		let rootComponent = null
 		let subComp = null
-		const components = R.clone(characterFile.components)
+		// 直接查找并修改，而不是克隆整个数组，避免触发不必要的响应式更新导致选择状态丢失
 		for (let i = 0; i < characterFile?.selectedComponentsTree.length - 1; i++) {
 			const rootUUID = characterFile?.selectedComponentsTree[i]
 			if (!rootComponent) {
-				rootComponent = selectedItemByUUID(components, rootUUID)
+				rootComponent = selectedItemByUUID(characterFile.components, rootUUID)
 			} else {
 				rootComponent = selectedItemByUUID(rootComponent.value.components, rootUUID)
 			}
@@ -826,12 +827,14 @@ const modifySubComponent = (options) => {
 			const component = selectedItemByUUID(rootComponent.value.components, componentUUID)
 			subComp = component
 		}
+		if (!subComp) return
 		const keys = Object.keys(options)
 		for (let i = 0; i < keys.length; i++) {
 			const key = keys[i]
 			subComp[key] = options[key]
 		}
-		characterFile.components = components
+		emitter.emit('renderPreviewCanvasByUUIDOnEditing', editCharacterFileUUID.value)
+		emitter.emit('renderCharacter', true)
 	}
 }
 
@@ -847,81 +850,178 @@ const modifySubComponent = (options) => {
  */
 const modifyComponentForCurrentCharacterFile = (uuid: string, options: any) => {
 	const characterFile = editCharacterFile.value
-	const components = R.clone(characterFile.components)
-	components.forEach((component: Component) => {
-		if (component.uuid === uuid) {
-			Object.keys(options).map((key: string) => {
-				switch (key) {
-					case 'type':
-						component.type = options['type'] as string
-						break
-					case 'name':
-						component.name = options['name'] as string
-						break
-					case 'lock':
-						component.lock = options['lock'] as boolean
-						break
-					case 'visible':
-						component.visible = options['visible'] as boolean
-						break
-					case 'x':
-						(component as IComponent).x = options['x'] as number
-						break
-					case 'y':
-						(component as IComponent).y = options['y'] as number
-						break
-					case 'ox':
-						(component as IGlyphComponent).ox = options['ox'] as number
-						break
-					case 'oy':
-						(component as IGlyphComponent).oy = options['oy'] as number
-						break
-					case 'w':
-						(component as IComponent).w = options['w'] as number
-						break
-					case 'h':
-						(component as IComponent).h = options['h'] as number
-						break;
-					case 'rotation':
-						(component as IComponent).rotation = options['rotation'] as number
-						break
-					case 'flipX':
-						(component as IComponent).flipX = options['flipX'] as boolean
-						break
-					case 'flipY':
-						(component as IComponent).flipY = options['flipY'] as boolean
-						break
-					case 'usedInCharacter':
-						component.usedInCharacter = options['usedInCharacter'] as boolean
-						break
-					case 'opacity':
-						component.opacity = options['opacity'] as number
-						break
-					case 'value':
-						Object.keys(options['value']).map((sub_key: string) => {
-							//@ts-ignore
-							component.value[sub_key] = options['value'][sub_key]
-							if (sub_key === 'points') {
-								const { x, y, w, h } = getBound(options['value'][sub_key].reduce((arr: Array<{x: number, y: number }>, point: IPoint) => {
+	// 直接修改数组中的元素，而不是替换整个数组，避免触发不必要的响应式更新导致选择状态丢失
+	const component = characterFile.components.find((comp: Component) => comp.uuid === uuid)
+	if (!component) return
+	
+	Object.keys(options).map((key: string) => {
+		switch (key) {
+			case 'type':
+				component.type = options['type'] as string
+				break
+			case 'name':
+				component.name = options['name'] as string
+				break
+			case 'lock':
+				component.lock = options['lock'] as boolean
+				break
+			case 'visible':
+				component.visible = options['visible'] as boolean
+				break
+			case 'x':
+				(component as IComponent).x = options['x'] as number
+				break
+			case 'y':
+				(component as IComponent).y = options['y'] as number
+				break
+			case 'ox':
+				(component as IGlyphComponent).ox = options['ox'] as number
+				break
+			case 'oy':
+				(component as IGlyphComponent).oy = options['oy'] as number
+				break
+			case 'w':
+				(component as IComponent).w = options['w'] as number
+				break
+			case 'h':
+				(component as IComponent).h = options['h'] as number
+				break;
+			case 'rotation':
+				(component as IComponent).rotation = options['rotation'] as number
+				break
+			case 'flipX':
+				(component as IComponent).flipX = options['flipX'] as boolean
+				break
+			case 'flipY':
+				(component as IComponent).flipY = options['flipY'] as boolean
+				break
+			case 'usedInCharacter':
+				component.usedInCharacter = options['usedInCharacter'] as boolean
+				break
+			case 'opacity':
+				component.opacity = options['opacity'] as number
+				break
+			case 'value':
+				Object.keys(options['value']).map((sub_key: string) => {
+					//@ts-ignore
+					const oldValue = component.value[sub_key]
+					//@ts-ignore
+					component.value[sub_key] = options['value'][sub_key]
+					if (sub_key === 'points') {
+						// 在编辑模式下，不应该更新组件的边界框，避免位置重置
+						// 只有当editMode为false时才更新边界框（比如完成编辑时）
+						const penComponentValue = component.value as unknown as IPenComponent
+						if (!penComponentValue.editMode) {
+							const { x, y, w, h } = getBound(options['value'][sub_key].reduce((arr: Array<{x: number, y: number }>, point: IPoint) => {
+								arr.push({
+									x: point.x,
+									y: point.y,
+								})
+								return arr
+							}, []));
+							(component as IComponent).x = x;
+							(component as IComponent).y = y;
+							(component as IComponent).w = w;
+							(component as IComponent).h = h
+							// 清除固定边界框，避免渲染时使用旧的边界框
+							editModeFixedBounds.delete(component.uuid)
+						}
+					}
+					// 当 editMode 变为 true 或 false 时，处理边界框
+					if (sub_key === 'editMode' && component.type === 'pen') {
+						const isEditMode = options['value'][sub_key] as boolean
+						const penComponentValue = component.value as unknown as IPenComponent
+						const { points } = penComponentValue
+						
+						if (isEditMode) {
+							// 开启编辑模式时，立即保存初始边界框
+							// 这样即使不移动鼠标，也能在关闭编辑模式时正确计算位置
+							if (points && points.length > 0) {
+								const initialBounds = getBound(points.reduce((arr: Array<{x: number, y: number }>, point: IPoint) => {
+									arr.push({
+										x: point.x,
+										y: point.y,
+									})
+									return arr
+								}, []))
+								editModeFixedBounds.set(component.uuid, initialBounds)
+							}
+						} else {
+							// 关闭编辑模式，清除固定边界框并重新计算边界框
+							// 获取初始边界框（如果还在的话），用于计算偏移
+							const initialBounds = editModeFixedBounds.get(component.uuid)
+							editModeFixedBounds.delete(component.uuid)
+							
+							if (points && points.length > 0) {
+								// 保存组件当前的全局位置和尺寸
+								const compX = (component as IComponent).x
+								const compY = (component as IComponent).y
+								const compW = (component as IComponent).w
+								const compH = (component as IComponent).h
+								
+								// 计算新的边界框（基于点的局部坐标）
+								const newBounds = getBound(points.reduce((arr: Array<{x: number, y: number }>, point: IPoint) => {
 									arr.push({
 										x: point.x,
 										y: point.y,
 									})
 									return arr
 								}, []));
-								(component as IComponent).x = x;
-								(component as IComponent).y = y;
-								(component as IComponent).w = w;
-								(component as IComponent).h = h
+								
+								// 如果有初始边界框，说明组件之前处于编辑模式
+								// 关键理解：在编辑模式下，transformPoints使用initialBounds作为fixedBounds进行变换
+								// 关闭编辑模式后，transformPoints使用newBounds（从getBound(points)计算）进行变换
+								// 我们需要调整组件位置，使得关闭编辑模式后点的视觉位置与编辑模式结束时一致
+								if (initialBounds) {
+									// transformPoints的变换公式（忽略翻转和旋转）：
+									//   步骤1：_point.x = point.x + (x - origin_x)
+									//   步骤2：final_x = x + (_point.x - x) * w / origin_w
+									//   合并：final_x = x + (point.x - origin_x) * w / origin_w
+									
+									// 编辑模式下（使用initialBounds）：
+									//   final_x = compX + (point.x - initialBounds.x) * compW / initialBounds.w
+									
+									// 关闭编辑模式后（使用newBounds）：
+									//   final_x = newCompX + (point.x - newBounds.x) * newCompW / newBounds.w
+									
+									// 要使两者相等（对任意点point.x都成立），需要：
+									//   compX + (point.x - initialBounds.x) * compW / initialBounds.w = newCompX + (point.x - newBounds.x) * newCompW / newBounds.w
+									
+									// 重新整理，得到：
+									//   newCompX = compX + (point.x - initialBounds.x) * compW / initialBounds.w - (point.x - newBounds.x) * newCompW / newBounds.w
+									
+									// 由于对任意点都成立，我们可以用特定点来计算：
+									// 使用 newBounds.x 作为参考点，因为它会映射到组件的新位置
+									
+									// 对于点 point.x = newBounds.x：
+									//   newCompX = compX + (newBounds.x - initialBounds.x) * compW / initialBounds.w
+									
+									const comp = component as IComponent
+									const scaleX = compW / initialBounds.w
+									const scaleY = compH / initialBounds.h
+									
+									comp.x = compX + (newBounds.x - initialBounds.x) * scaleX
+									comp.y = compY + (newBounds.y - initialBounds.y) * scaleY
+									comp.w = newBounds.w
+									comp.h = newBounds.h
+								} else {
+									// 如果没有初始边界框，说明组件之前不在编辑模式
+									// 直接使用新边界框的位置和尺寸
+									const comp = component as IComponent
+									comp.x = newBounds.x
+									comp.y = newBounds.y
+									comp.w = newBounds.w
+									comp.h = newBounds.h
+								}
 							}
-						})
-						break
-				}
-			})
+						}
+					}
+				})
+				break
 		}
-		characterFile.components = components
 	})
 	emitter.emit('renderPreviewCanvasByUUIDOnEditing', editCharacterFileUUID.value)
+	emitter.emit('renderCharacter', true)
 }
 
 /**

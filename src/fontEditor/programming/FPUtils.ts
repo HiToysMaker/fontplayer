@@ -6,7 +6,7 @@ import { Skeleton } from './Skeleton'
 import { Joint } from './Joint'
 import { Character } from './Character'
 import { _fitCurve as fitCurve } from '../../features/fitCurve'
-import { bezierCurve } from '../../features/bezierCurve'
+import { bezierCurve, multiBezierCurve, IPoint } from '../../features/bezierCurve'
 import * as R from 'ramda'
 
 interface IGetContoursOption {
@@ -22,6 +22,7 @@ interface IGetContoursOption {
 	in_endWeight?: number;
 	out_startWeight?: number;
 	out_endWeight?: number;
+	weightsVariationSpeed?: number;
 }
 
 const getLineContours = (name, skeleton, weight, options: IGetContoursOption) => {
@@ -109,6 +110,113 @@ const getLineContours = (name, skeleton, weight, options: IGetContoursOption) =>
 	return contours
 }
 
+// 辅助函数：根据给定的 x 坐标，在贝塞尔曲线上找到对应的参数 t，然后返回 y 值
+// 输入的 x 是 x 坐标（0-1），不是曲线参数 t
+const getYFromBezierByX = (bezier: Array<IPoint>, targetX: number): number => {
+	// 二分查找找到对应的参数 t，使得 bezier 的 x 坐标等于 targetX
+	let tLow = 0
+	let tHigh = 1
+	let t = 0.5
+	
+	for (let i = 0; i < 30; i++) {
+		t = (tLow + tHigh) / 2
+		const point = bezierCurve.q(bezier, t)
+		if (Math.abs(point.x - targetX) < 0.0001) break
+		if (point.x < targetX) tLow = t
+		else tHigh = t
+	}
+	
+	const point = bezierCurve.q(bezier, t)
+	return point.y
+}
+
+// 辅助函数：根据给定的 x 坐标，在高阶贝塞尔曲线上找到对应的参数 t，然后返回 y 值
+// 输入的 x 是 x 坐标（0-1），不是曲线参数 t
+const getYFromMultiBezierByX = (bezier: Array<IPoint>, targetX: number, speed: number = 1.0): number => {
+	// 二分查找找到对应的参数 t，使得 bezier 的 x 坐标等于 targetX
+	let tLow = 0
+	let tHigh = 1
+	let t = 0.5
+	
+	for (let i = 0; i < 30; i++) {
+		t = (tLow + tHigh) / 2
+		const point = multiBezierCurve.q(bezier, t)
+		if (Math.abs(point.x - targetX) < 0.0001) break
+		if (point.x < targetX) tLow = t
+		else tHigh = t
+	}
+	
+	const remappedT = remapParameter(t, speed)
+  const point = multiBezierCurve.q(bezier, remappedT)
+	return point.y
+}
+
+// Sigmoid 重映射 - 控制变化的平滑度和速度
+// k 控制变化速度：k 越大，变化越快（更陡），k 越小，变化越慢（更平缓）
+// center 控制中心点位置（0-1）
+const sigmoidRemap = (t: number, k: number = 1.0, center: number = 0.5): number => {
+  // 边界处理
+  if (t <= 0) return 0
+  if (t >= 1) return 1
+  
+  // 将 t 映射到 sigmoid 曲线
+  const shifted = (t - center) * k
+  return 1 / (1 + Math.exp(-shifted))
+}
+
+// 归一化 sigmoid 到 [0, 1] 范围
+// k 控制变化速度：k > 1 变化更快，k < 1 变化更慢，k = 1 线性映射
+const normalizedSigmoidRemap = (t: number, k: number = 1.0): number => {
+  // 如果 k 为 1 或接近 1，直接返回线性映射
+  if (Math.abs(k - 1.0) < 0.001) {
+    return Math.max(0, Math.min(1, t))
+  }
+  
+  // 边界处理
+  if (t <= 0) return 0
+  if (t >= 1) return 1
+  
+  const sigmoid = sigmoidRemap(t, k, 0.5)
+  const min = sigmoidRemap(0, k, 0.5)
+  const max = sigmoidRemap(1, k, 0.5)
+  
+  // 防止除零
+  const range = max - min
+  if (Math.abs(range) < 1e-10) {
+    return t
+  }
+  
+  const result = (sigmoid - min) / range
+  // 确保结果在 [0, 1] 范围内
+  return Math.max(0, Math.min(1, result))
+}
+
+// 参数重映射函数 - 控制变化速度（对称版本）
+// speed 参数：> 1 表示变化更快（更陡），< 1 表示变化更慢（更平缓）
+// 保证 t=0 和 t=1 两端的变化速率一致
+const remapParameter = (t: number, speed: number = 1.0): number => {
+  // speed = 1: 线性映射（不变）
+  if (speed === 1.0) return t
+  
+  // 边界处理
+  if (t <= 0) return 0
+  if (t >= 1) return 1
+  
+  // 使用对称映射：将 [0, 1] 分成两半，分别应用相同的变换
+  // 这样保证两端的变化速率一致
+  if (t < 0.5) {
+    // 前半段：将 [0, 0.5] 映射到 [0, 0.5]，使用幂函数
+    const normalized = t * 2  // 映射到 [0, 1]
+    const remapped = Math.pow(normalized, speed)
+    return remapped * 0.5  // 映射回 [0, 0.5]
+  } else {
+    // 后半段：将 [0.5, 1] 映射到 [0.5, 1]，使用相同的变换（对称）
+    const normalized = (1 - t) * 2  // 映射到 [1, 0]，然后反转
+    const remapped = Math.pow(normalized, speed)
+    return 1 - remapped * 0.5  // 映射回 [0.5, 1]
+  }
+}
+
 const bezierFn = (x: number) : number => {
 	const bezier = [
 		{ x: 0, y: 0 },
@@ -129,9 +237,42 @@ const bezier1Fn = (x: number) : number => {
 	return bezierCurve.q(bezier, x).y
 }
 
+const bezierRoundHeadFn = (x: number) : number => {
+	const bezier = [
+		{ x: 0, y: 0 },
+		{ x: 0, y: 1 },
+		{ x: 0.04, y: 1 },
+		{ x: 0.08, y: 1 },
+	]
+	if (x < 0.07) {
+		return getYFromBezierByX(bezier, x)
+	} else {
+		return 1
+	}
+	// return bezierCurve.q(bezier, x).y
+}
+
+const multiBezierFn1 = (x: number, speed: number = 1.0) : number => {
+	const bezier = [
+		{ x: 0, y: 0 },
+		{ x: 0, y: 2.5 },
+		{ x: 0.2, y: 2.5 },
+		{ x: 0.25, y: 0 },
+		{ x: 0.75, y: 0 },
+		{ x: 0.8, y: 2.5 },
+		{ x: 1, y: 2.5 },
+		{ x: 1, y: 0 },
+	]
+	return getYFromMultiBezierByX(bezier, x, speed)
+}
+
 const getBezierFn = (type: string) => {
   if (type === 'bezier1') {
 		return bezier1Fn
+	} else if (type === 'bezierRoundHead') {
+		return bezierRoundHeadFn
+	} else if (type === 'multiBezier1') {
+		return multiBezierFn1
 	}
 	return bezierFn
 }
@@ -419,13 +560,13 @@ const getCurveContours2 = (name, skeleton, weight, options: IGetContoursOption) 
 			// 字重为线性变化
 			if (options.weightsVariationDir === 'reverse') {
 				// 字重变化方向为由收尾到起始方向
-				const j = n - i
-				const f = j / n
+				const j = n * beziers.length - i
+				const f = j / (n * beziers.length)
 				in_weights.push(in_endWeight + (in_startWeight - in_endWeight) * f)
 				out_weights.push(out_endWeight + (out_startWeight - out_endWeight) * f)
 			} else {
 				// 字重变化为由起始到收尾方向
-				const f = i / n
+				const f = i / (n * beziers.length)
 				in_weights.push(in_startWeight + (in_endWeight - in_startWeight) * f)
 				out_weights.push(out_startWeight + (out_endWeight - out_startWeight) * f)
 			}
@@ -433,13 +574,13 @@ const getCurveContours2 = (name, skeleton, weight, options: IGetContoursOption) 
 			// 字重变化为幂变化，options.weightsVariationPower取值范围为[0, 2]
 			if (options.weightsVariationDir === 'reverse') {
 				// 字重变化方向为由收尾到起始方向
-				const j = n - i
-				const f = Math.pow(j / n, options.weightsVariationPower)
+				const j = n * beziers.length - i
+				const f = Math.pow(j / (n * beziers.length), options.weightsVariationPower)
 				in_weights.push(in_endWeight + (in_startWeight - in_endWeight) * f)
 				out_weights.push(out_endWeight + (out_startWeight - out_endWeight) * f)
 			} else {
 				// 字重变化为由起始到收尾方向
-				const f = Math.pow(i / n, options.weightsVariationPower)
+				const f = Math.pow(i / (n * beziers.length), options.weightsVariationPower)
 				in_weights.push(in_startWeight + (in_endWeight - in_startWeight) * f)
 				out_weights.push(out_startWeight + (out_endWeight - out_startWeight) * f)
 			}
@@ -447,34 +588,50 @@ const getCurveContours2 = (name, skeleton, weight, options: IGetContoursOption) 
 			// 字重变化为幂变化，options.weightsVariationPower取值范围为[0, 2]
 			if (options.weightsVariationDir === 'reverse') {
 				// 字重变化方向为由收尾到起始方向
-				const j = n - i
+				const j = n * beziers.length - i
 				//const f = Math.pow(j / n, options.weightsVariationPower)
-				const f = Math.pow(Math.log(j / n + 1) / Math.log(2), options.weightsVariationPower)
+				const f = Math.pow(Math.log(j / (n * beziers.length) + 1) / Math.log(2), options.weightsVariationPower)
 				in_weights.push(in_endWeight + (in_startWeight - in_endWeight) * f)
 				out_weights.push(out_endWeight + (out_startWeight - out_endWeight) * f)
 			} else {
 				// 字重变化为由起始到收尾方向
 				//const f = Math.pow(i / n, options.weightsVariationPower)
-				const f = Math.pow(Math.log(i / n + 1) / Math.log(2), options.weightsVariationPower)
+				const f = Math.pow(Math.log(i / (n * beziers.length) + 1) / Math.log(2), options.weightsVariationPower)
 				in_weights.push(in_startWeight + (in_endWeight - in_startWeight) * f)
 				out_weights.push(out_startWeight + (out_endWeight - out_startWeight) * f)
 			}
 		} else if (options.weightsVariation === 'bezier') {
-			const fn = getBezierFn(options.weightsVariationFnType)
+			let fn = getBezierFn(options.weightsVariationFnType)
+
 			// 字重变化为幂变化，options.weightsVariationPower取值范围为[0, 2]
+			// 获取速度参数，默认为 1.0
+			const speed = options.weightsVariationSpeed !== undefined ? options.weightsVariationSpeed : 1.0
+			
 			if (options.weightsVariationDir === 'reverse') {
 				// 字重变化方向为由收尾到起始方向
-				const j = n - i
+				const j = n * beziers.length - i
 				//const f = Math.pow(j / n, options.weightsVariationPower)
-				const f = fn(j / n)
-				in_weights.push(in_endWeight + (in_startWeight - in_endWeight) * f)
-				out_weights.push(out_endWeight + (out_startWeight - out_endWeight) * f)
+				if (options.weightsVariationFnType === 'multiBezier1') {
+					const f = fn(j / (n * beziers.length), speed)
+					in_weights.push(weight / 2 * f)
+					out_weights.push(weight / 2 * f)
+				} else {
+					const f = fn(j / (n * beziers.length))
+					in_weights.push(in_endWeight + (in_startWeight - in_endWeight) * f)
+					out_weights.push(out_endWeight + (out_startWeight - out_endWeight) * f)
+				}
 			} else {
 				// 字重变化为由起始到收尾方向
 				//const f = Math.pow(i / n, options.weightsVariationPower)
-				const f = fn(i / n)
-				in_weights.push(in_startWeight + (in_endWeight - in_startWeight) * f)
-				out_weights.push(out_startWeight + (out_endWeight - out_startWeight) * f)
+				if (options.weightsVariationFnType === 'multiBezier1') {
+					const f = fn(i / (n * beziers.length), speed)
+					in_weights.push(weight / 2 * f)
+					out_weights.push(weight / 2 * f)
+				} else {
+					const f = fn(i / (n * beziers.length))
+					in_weights.push(in_startWeight + (in_endWeight - in_startWeight) * f)
+					out_weights.push(out_startWeight + (out_endWeight - out_startWeight) * f)
+				}
 			}
 		}
 	}
@@ -486,7 +643,7 @@ const getCurveContours2 = (name, skeleton, weight, options: IGetContoursOption) 
 	}
 	let lastAngle = Math.atan2(lastK.y, lastK.x)
 
-	for (let t = 1; t <= n * beziers.length; t++) {
+	for (let t = 1; t <= n * beziers.length + 1; t++) {
 		let point = lastPoint
 		let k = lastK
 		let angle = lastAngle
@@ -593,6 +750,7 @@ const getCurveContours2 = (name, skeleton, weight, options: IGetContoursOption) 
 		lastK = k
 		lastAngle = angle
 	}
+
 	const { curves: out_curves } = fitCurvesByPoints(out_points)
 	const { curves: in_curves } = fitCurvesByPoints(in_points)
 	const contours = {}

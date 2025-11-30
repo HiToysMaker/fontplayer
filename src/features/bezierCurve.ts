@@ -63,6 +63,76 @@ const bezierCurve = {
 	},
 }
 
+// 计算组合数 C(n, k)
+const binomialCoefficient = (n: number, k: number): number => {
+	if (k < 0 || k > n) return 0
+	if (k === 0 || k === n) return 1
+	if (k > n - k) k = n - k // 利用对称性优化
+	
+	let result = 1
+	for (let i = 0; i < k; i++) {
+		result = result * (n - i) / (i + 1)
+	}
+	return result
+}
+
+// 多阶贝塞尔曲线（支持 bezier.length >= 3）
+const multiBezierCurve = {
+	q: (bezier: Array<IPoint>, t: number) => {
+		const n = bezier.length - 1 // 阶数
+		if (n < 2) {
+			throw new Error('Bezier curve requires at least 3 control points')
+		}
+		
+		let x = 0
+		let y = 0
+		for (let i = 0; i <= n; i++) {
+			const binom = binomialCoefficient(n, i)
+			const basis = binom * Math.pow(t, i) * Math.pow(1 - t, n - i)
+			x += bezier[i].x * basis
+			y += bezier[i].y * basis
+		}
+		return { x, y }
+	},
+	qprime: (bezier: Array<IPoint>, t: number) => {
+		const n = bezier.length - 1 // 阶数
+		if (n < 2) {
+			throw new Error('Bezier curve requires at least 3 control points')
+		}
+		
+		let x = 0
+		let y = 0
+		for (let i = 0; i < n; i++) {
+			const binom = binomialCoefficient(n - 1, i)
+			const basis = binom * Math.pow(t, i) * Math.pow(1 - t, n - 1 - i)
+			const diffX = bezier[i + 1].x - bezier[i].x
+			const diffY = bezier[i + 1].y - bezier[i].y
+			x += n * diffX * basis
+			y += n * diffY * basis
+		}
+		return { x, y }
+	},
+	qprimeprime: (bezier: Array<IPoint>, t: number) => {
+		const n = bezier.length - 1 // 阶数
+		if (n < 2) {
+			throw new Error('Bezier curve requires at least 3 control points')
+		}
+		
+		let x = 0
+		let y = 0
+		for (let i = 0; i <= n - 2; i++) {
+			const binom = binomialCoefficient(n - 2, i)
+			const basis = binom * Math.pow(t, i) * Math.pow(1 - t, n - 2 - i)
+			const diffX = bezier[i + 2].x - 2 * bezier[i + 1].x + bezier[i].x
+			const diffY = bezier[i + 2].y - 2 * bezier[i + 1].y + bezier[i].y
+			x += n * (n - 1) * diffX * basis
+			y += n * (n - 1) * diffY * basis
+		}
+		return { x, y }
+	},
+}
+
 export {
 	bezierCurve,
+	multiBezierCurve,
 }

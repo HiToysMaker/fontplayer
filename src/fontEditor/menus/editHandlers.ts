@@ -14,11 +14,13 @@ import * as R from 'ramda'
 import { genUUID } from '../../utils/string'
 
 const undo = () => {
-  _undo()
+  // 暂时禁用redo/undo功能
+  // _undo()
 }
 
 const redo = () => {
-  _redo()
+  // 暂时禁用redo/undo功能
+  // _redo()
 }
 
 const copy = () => {

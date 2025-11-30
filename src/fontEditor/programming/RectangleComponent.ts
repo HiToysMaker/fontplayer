@@ -43,17 +43,8 @@ class RectangleComponent {
 		ctx.strokeStyle = options.fillColor || '#000'
 		ctx.lineWidth = getStrokeWidth()
 		ctx.translate(mapCanvasX(options.offset.x) * scale, mapCanvasY(options.offset.y) * scale)
-		ctx.beginPath()
 		ctx.rect(mapCanvasX(this.x) * scale, mapCanvasY(this.y) * scale, mapCanvasX(this.width) * scale, mapCanvasY(this.height) * scale)
 		ctx.stroke()
-		ctx.closePath()
-		if (fontRenderStyle.value === 'black') {
-			ctx.fillStyle = '#000'
-			ctx.fill()
-		} else if (fontRenderStyle.value === 'color') {
-			ctx.fillStyle = options.fillColor || '#000'
-			ctx.fill()
-		}
 		ctx.setTransform(1, 0, 0, 1, 0, 0)
 	}
 

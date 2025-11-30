@@ -409,7 +409,7 @@ const genPenComponent = (
 			y: point.y * scale,
 		})
 	})
-	const preview_contour = genPenContour(preview_points)
+	const preview_contour = genPenContour(preview_points, true)
 
 	return {
 		uuid: genUUID(),

@@ -16,6 +16,7 @@ import { formatPoints, genRectangleContour } from '../../features/font'
 import { getRectanglePoints, transformPoints } from '../../utils/math'
 import { Status, editStatus } from '../stores/font'
 import { OpType, saveState, StoreType } from '../stores/edit'
+import { getStrokeWidth } from '../stores/global'
 
 // 长方形工具初始化方法
 // initializer for rectangle tool
@@ -173,6 +174,7 @@ const renderRectangleEditor = (canvas: HTMLCanvasElement, d: number = 5) => {
 	const _w = mapCanvasWidth(w)
 	const _h = mapCanvasHeight(h)
 	ctx.strokeStyle = '#000'
+	ctx.lineWidth = getStrokeWidth()
 	ctx.strokeRect(_x, _y, _w, _h)
 	ctx.strokeStyle = '#79bbff'
 	ctx.strokeRect(_x, _y, _w, _h)

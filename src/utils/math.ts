@@ -117,8 +117,10 @@ const transformPoints = (
     flipX: boolean,
     flipY: boolean,
   },
+  fixedOriginBounds?: { x: number, y: number, w: number, h: number }
 ) => {
-  const { x: origin_x, y: origin_y, w: origin_w, h: origin_h } = getBound(points)
+  // 如果提供了固定的边界框（编辑模式下），使用它；否则使用当前点的边界框
+  const { x: origin_x, y: origin_y, w: origin_w, h: origin_h } = fixedOriginBounds || getBound(points)
   const { x, y, w, h, rotation, flipX, flipY } = transform
   const _points: Array<{
     x: number,
@@ -128,11 +130,12 @@ const transformPoints = (
     y: number,
   }) => {
     let _point = R.clone(point)
+    // 翻转应该在原始点空间内进行，相对于原始点的边界框中心
     if (flipX) {
-      _point.x = x + w / 2 + ((x + w / 2) - _point.x)
+      _point.x = origin_x + origin_w / 2 + ((origin_x + origin_w / 2) - _point.x)
     }
     if (flipY) {
-      _point.y = y + h / 2 + ((y + h / 2) - _point.y)
+      _point.y = origin_y + origin_h / 2 + ((origin_y + origin_h / 2) - _point.y)
     }
     _point = rotatePoint(_point, {
       x: origin_x + origin_w / 2,

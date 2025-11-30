@@ -36,6 +36,7 @@ import { strokeFnMap } from '../templates/strokeFnMap'
 import { instanceGlyph, updateParameters } from './fileHandlers'
 import { generateCharFile } from './toolsHandlers'
 import { thumbnail } from './importHandlers'
+import { symbols_en, symbols_zh } from '../templates/symbols'
 
 const importTemplates = () => {
   setImportTemplatesDialogVisible(true)
@@ -1210,6 +1211,190 @@ const importTemplateLetters = async () => {
   setEditStatus(Status.GlyphList)
 }
 
+const importTemplateSymbols = async () => {
+  for (let i = 0; i < symbols_en.length; i++) {
+    loaded.value += 1
+    const symbol = symbols_en[i]
+    const { name, params, globalParams, script_file_name } = symbol
+    const uuid = genUUID()
+    const parameters: Array<IParameter> = []
+    for (let j = 0; j < params.length; j++) {
+      const param = params[j]
+      parameters.push({
+        uuid: genUUID(),
+        name: param.name,
+        type: ParameterType.Number,
+        value: param.default,
+        min: param.min || 0,
+        max: param.max || 1000,
+      })
+    }
+    for (let j = 0; j < globalParams.length; j++) {
+      const param = globalParams[j]
+      // @ts-ignore
+      if (param.type === ParameterType.Enum) {
+        parameters.push({
+          uuid: genUUID(),
+          name: param.name,
+          // @ts-ignore
+          type: ParameterType.Enum,
+          value: param.default,
+          // @ts-ignore
+          options: param.options,
+        })
+      } else {
+        parameters.push({
+          uuid: genUUID(),
+          name: param.name,
+          // @ts-ignore
+          type: param.type || ParameterType.Number,
+          value: param.default,
+          min: param.min || 0,
+          max: param.max || 1000,
+        })
+      }
+    }
+    parameters.push({
+      uuid: genUUID(),
+      name: '运笔样式',
+      type: ParameterType.Enum,
+      value: 0,
+      options: [
+        {
+          value: 0,
+          label: '默认',
+        },
+        {
+          value: 1,
+          label: '样式1',
+        },
+      ],
+    })
+    parameters.push({
+      uuid: genUUID(),
+      name: '运笔压力速率',
+      type: ParameterType.Number,
+      value: 1.0,
+      min: 0,
+      max: 2,
+    })
+    let letter_script_res = base ? await fetch(base + `/templates/symbols_en/${script_file_name}`) : await fetch(`templates/symbols_en/${script_file_name}`)
+    let letter_script = await letter_script_res.text()
+    const glyph = {
+      uuid,
+      type: 'system',
+      name,
+      components: [],
+      groups: [],
+      orderedList: [],
+      selectedComponentsUUIDs: [],
+      view: {
+        zoom: 100,
+        translateX: 0,
+        translateY: 0,
+      },
+      parameters: new ParametersMap(parameters),
+      joints: [],
+      style: '字玩符号模板',
+      script: `function script_${uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t${letter_script}\n}`,
+    }
+    addGlyph(glyph, Status.GlyphList)
+    addGlyphTemplate(glyph, Status.GlyphList)
+  }
+  for (let i = 0; i < symbols_zh.length; i++) {
+    loaded.value += 1
+    const symbol = symbols_zh[i]
+    const { name, params, globalParams, script_file_name } = symbol
+    const uuid = genUUID()
+    const parameters: Array<IParameter> = []
+    for (let j = 0; j < params.length; j++) {
+      const param = params[j]
+      parameters.push({
+        uuid: genUUID(),
+        name: param.name,
+        type: ParameterType.Number,
+        value: param.default,
+        min: param.min || 0,
+        max: param.max || 1000,
+      })
+    }
+    for (let j = 0; j < globalParams.length; j++) {
+      const param = globalParams[j]
+      // @ts-ignore
+      if (param.type === ParameterType.Enum) {
+        parameters.push({
+          uuid: genUUID(),
+          name: param.name,
+          // @ts-ignore
+          type: ParameterType.Enum,
+          value: param.default,
+          // @ts-ignore
+          options: param.options,
+        })
+      } else {
+        parameters.push({
+          uuid: genUUID(),
+          name: param.name,
+          // @ts-ignore
+          type: param.type || ParameterType.Number,
+          value: param.default,
+          min: param.min || 0,
+          max: param.max || 1000,
+        })
+      }
+    }
+    parameters.push({
+      uuid: genUUID(),
+      name: '运笔样式',
+      type: ParameterType.Enum,
+      value: 0,
+      options: [
+        {
+          value: 0,
+          label: '默认',
+        },
+        {
+          value: 1,
+          label: '样式1',
+        },
+      ],
+    })
+    parameters.push({
+      uuid: genUUID(),
+      name: '运笔压力速率',
+      type: ParameterType.Number,
+      value: 1.0,
+      min: 0,
+      max: 10,
+    })
+    let letter_script_res = base ? await fetch(base + `/templates/symbols_zh/${script_file_name}`) : await fetch(`templates/symbols_zh/${script_file_name}`)
+    let letter_script = await letter_script_res.text()
+    const glyph = {
+      uuid,
+      type: 'system',
+      name,
+      components: [],
+      groups: [],
+      orderedList: [],
+      selectedComponentsUUIDs: [],
+      view: {
+        zoom: 100,
+        translateX: 0,
+        translateY: 0,
+      },
+      parameters: new ParametersMap(parameters),
+      joints: [],
+      style: '字玩符号模板',
+      script: `function script_${uuid.replaceAll('-', '_')} (glyph, constants, FP) {\n\t${letter_script}\n}`,
+    }
+    addGlyph(glyph, Status.GlyphList)
+    addGlyphTemplate(glyph, Status.GlyphList)
+  }
+  await nextTick()
+  emitter.emit('renderGlyphPreviewCanvas')
+  setEditStatus(Status.GlyphList)
+}
+
 const importTemplate1 = async () => {
   if (files.value && files.value.length) {
     tips.value = '导入模板会覆盖当前工程，请关闭当前工程再导入。注意，关闭工程前请保存工程以避免数据丢失。'
@@ -1647,4 +1832,5 @@ export {
   importTemplate8,
   importTemplateDigits,
   importTemplateLetters,
+  importTemplateSymbols,
 }

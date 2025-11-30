@@ -88,6 +88,7 @@ import {
   importTemplate8,
   importTemplateDigits,
   importTemplateLetters,
+  importTemplateSymbols,
 } from './templatesHandlers'
 
 const openPlayground = () => {
@@ -156,6 +157,7 @@ const tauri_handlers: IHandlerMap = {
   'template-8': importTemplate8,
   'template-digits': importTemplateDigits,
   'template-letters': importTemplateLetters,
+  'template-symbols': importTemplateSymbols,
   'remove_overlap': removeOverlap,
   'format-all-characters': formatAllCharacters,
   'format-current-character': formatCurrentCharacter,
@@ -201,6 +203,7 @@ const web_handlers: IHandlerMap = {
   'template-8': importTemplate8,
   'template-digits': importTemplateDigits,
   'template-letters': importTemplateLetters,
+  'template-symbols': importTemplateSymbols,
   'remove_overlap': removeOverlap,
   'format-all-characters': formatAllCharacters,
   'format-current-character': formatCurrentCharacter,

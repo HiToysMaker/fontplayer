@@ -44,7 +44,7 @@ import { i18n } from '../../i18n'
 import { base64ToArrayBuffer, mapToObject, nativeSaveBinary, nativeSaveText, plainGlyph } from './fileHandlers'
 import JSZip from 'jszip'
 import { createOptimizedPath, isAlreadyOptimized, mergePathsWithPrecision } from './remove_overlap'
-import { removeOverlapWithWasm } from '@/utils/overlap-remover'
+import { removeOverlapWithWasm } from '../../utils/overlap-remover'
 import { PathType } from '../../fontManager'
 
 interface CreateFontOptions {
@@ -888,21 +888,6 @@ const createVarFont = async (options?: CreateFontOptions) => {
       const before = checkCubicCount(char.contours)
       const converted = convertContoursToQuadratic(char.contours, 0.5)
       const after = checkCubicCount(converted)
-
-      // if (!checkContours(fontCharacters[charIndex].contours, converted)) {
-      //   console.log(`[convertContoursToQuadratic] Contours mismatch for character ${char.unicode}`)
-      //   // console.log(`[convertContoursToQuadratic] Contours1: ${char.contours.length}`)
-      //   // console.log(`[convertContoursToQuadratic] Contours2: ${converted.length}`)
-      //   // console.log(`[convertContoursToQuadratic] Contours1: ${char.contours.join(', ')}`)
-      //   // console.log(`[convertContoursToQuadratic] Contours2: ${converted.join(', ')}`)
-      //   debugger
-      //   breakFlag = true
-      // }
-      
-      // 打印 glyph 7, 11, 12 的信息
-      if ((charIndex === 7 || charIndex === 11 || charIndex === 12)) {
-        console.log(`    Combination ${i}, Variant char ${charIndex}: cubic=${before.cubic}, quad=${before.quad}, line=${before.line} → quad=${after.quad}, line=${after.line}`)
-      }
       
       return {
         ...char,
@@ -1386,16 +1371,66 @@ const computeOverlapRemovedContours = async (options?: any) => {
         for (let j = 0; j < path.curves.length; j++) {
           const curve = path.curves[j]
           if (curve.points.length >= 4) {
+            // 获取当前曲线段的起点和终点
+            let startX = curve.points[0].x
+            let startY = curve.points[0].y
+            let endX = curve.points[3].x
+            let endY = curve.points[3].y
+            
+            // 确保路径段正确连接：当前段的起点应该等于前一段的终点
+            if (j > 0 && contour.length > 0) {
+              const prevSegment = contour[contour.length - 1]
+              // 如果前一段的终点与当前段的起点不重合，使用前一段的终点作为当前段的起点
+              const dx = Math.abs(prevSegment.end.x - startX)
+              const dy = Math.abs(prevSegment.end.y - startY)
+              if (dx > 0.001 || dy > 0.001) {
+                startX = prevSegment.end.x
+                startY = prevSegment.end.y
+              }
+            }
+            
             const pathSegment = {
               type: PathType.CUBIC_BEZIER,
-              start: { x: curve.points[0].x, y: curve.points[0].y },
-              control1: { x: curve.points[1].x, y: curve.points[1].y },
-              control2: { x: curve.points[2].x, y: curve.points[2].y },
-              end: { x: curve.points[3].x, y: curve.points[3].y },
+              start: { x: Math.floor(startX), y: Math.floor(startY) },
+              control1: { x: Math.floor(curve.points[1].x), y: Math.floor(curve.points[1].y) },
+              control2: { x: Math.floor(curve.points[2].x), y: Math.floor(curve.points[2].y) },
+              end: { x: Math.floor(endX), y: Math.floor(endY) },
             }
             contour.push(pathSegment)
           }
         }
+        
+        // 如果路径是闭合的，确保最后一个路径段的终点精确等于第一个路径段的起点
+        if (contour.length > 0 && path.closed) {
+          const firstSegment = contour[0]
+          const lastSegment = contour[contour.length - 1]
+          // 强制最后一个路径段的终点等于第一个路径段的起点（不考虑容差，确保精确闭合）
+          const endX = lastSegment.end.x
+          const endY = lastSegment.end.y
+          const startX = firstSegment.start.x
+          const startY = firstSegment.start.y
+          
+          // 如果终点不等于起点，修正终点
+          if (endX !== startX || endY !== startY) {
+            // 计算需要调整的差值
+            const dx = startX - endX
+            const dy = startY - endY
+            
+            // 修正最后一个路径段的终点
+            lastSegment.end.x = startX
+            lastSegment.end.y = startY
+            
+            // 同时调整 control2，保持切线方向不变（如果需要保持切线连贯）
+            // 计算原始 control2 到 end 的方向向量
+            const origControl2ToEndX = endX - lastSegment.control2.x
+            const origControl2ToEndY = endY - lastSegment.control2.y
+            
+            // 调整 control2，使新的 control2 到新的 end 的方向保持不变
+            lastSegment.control2.x = startX - origControl2ToEndX
+            lastSegment.control2.y = startY - origControl2ToEndY
+          }
+        }
+        
         if (contour.length > 0) {
           contours.push(contour)
         }

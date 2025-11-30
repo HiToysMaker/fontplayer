@@ -2269,6 +2269,7 @@ const createDict = (meta: Array<any>, attrs: Array<any>, strings: any) => {
 }
 
 const glyphToOps = (glyph: IGlyphTable) => {
+	const useRound = true
 	const { lsb, xMin } = glyph
 	const getXValue = (x) => x - xMin + lsb
 	const ops = []
@@ -2279,33 +2280,35 @@ const glyphToOps = (glyph: IGlyphTable) => {
 	for (let i = 0; i < glyph.contours.length; i ++) {
 		if (!glyph.contours[i].length) continue
 		const startPath = glyph.contours[i][0]
-		const dx = Math.round(getXValue(startPath.start.x) - x)
-		const dy = Math.round(startPath.start.y - y)
+		const startX = useRound ? Math.round(getXValue(startPath.start.x)) : Math.floor(getXValue(startPath.start.x))
+		const startY = useRound ? Math.round(startPath.start.y) : Math.floor(startPath.start.y)
+		const dx = startX - x
+		const dy = startY - y
 		ops.push({name: 'dx', type: 'number', value: dx})
 		ops.push({name: 'dy', type: 'number', value: dy})
 		ops.push({name: 'rmoveto', type: 'op', value: 21})
-		x = Math.round(getXValue(startPath.start.x))
-		y = Math.round(startPath.start.y)
+		x = startX
+		y = startY
 		for (let j = 0; j < glyph.contours[i].length; j++) {
 			const path = glyph.contours[i][j]
 			switch(path.type) {
 				case PathType.LINE: {
-					const dx = Math.round(getXValue(path.end.x) - x)
-					const dy = Math.round(path.end.y - y)
+					const dx = useRound ? Math.round(getXValue(path.end.x) - x) : Math.floor(getXValue(path.end.x) - x)
+					const dy = useRound ? Math.round(path.end.y - y) : Math.floor(path.end.y - y)
 					ops.push({name: 'dx', type: 'number', value: dx})
 					ops.push({name: 'dy', type: 'number', value: dy})
 					ops.push({name: 'rlineto', type: 'op', value: 5})
-					x = Math.round(getXValue(path.end.x))
-					y = Math.round(path.end.y)
+					x = useRound ? Math.round(getXValue(path.end.x)) : Math.floor(getXValue(path.end.x))
+					y = useRound ? Math.round(path.end.y) : Math.floor(path.end.y)
 					break
 				}
 				case PathType.CUBIC_BEZIER: {
-					const dx1 = Math.round(getXValue(path.control1.x) - x)
-					const dy1 = Math.round(path.control1.y - y)
-					const dx2 = Math.round(getXValue(path.control2.x) - getXValue(path.control1.x))
-					const dy2 = Math.round(path.control2.y - path.control1.y)
-					const dx = Math.round(getXValue(path.end.x) - getXValue(path.control2.x))
-					const dy = Math.round(path.end.y - path.control2.y)
+					const dx1 = useRound ? Math.round(getXValue(path.control1.x) - x) : Math.floor(getXValue(path.control1.x) - x)
+					const dy1 = useRound ? Math.round(path.control1.y - y) : Math.floor(path.control1.y - y)
+					const dx2 = useRound ? Math.round(getXValue(path.control2.x) - getXValue(path.control1.x)) : Math.floor(getXValue(path.control2.x) - getXValue(path.control1.x))
+					const dy2 = useRound ? Math.round(path.control2.y - path.control1.y) : Math.floor(path.control2.y - path.control1.y)
+					const dx = useRound ? Math.round(getXValue(path.end.x) - getXValue(path.control2.x)) : Math.floor(getXValue(path.end.x) - getXValue(path.control2.x))
+					const dy = useRound ? Math.round(path.end.y - path.control2.y) : Math.floor(path.end.y - path.control2.y)
 					ops.push({name: 'dx1', type: 'number', value: dx1})
 					ops.push({name: 'dy1', type: 'number', value: dy1})
 					ops.push({name: 'dx2', type: 'number', value: dx2})
@@ -2313,10 +2316,31 @@ const glyphToOps = (glyph: IGlyphTable) => {
 					ops.push({name: 'dx', type: 'number', value: dx})
 					ops.push({name: 'dy', type: 'number', value: dy})
 					ops.push({name: 'rrcurveto', type: 'op', value: 8})
-					x = Math.round(getXValue(path.end.x))
-					y = Math.round(path.end.y)
+					x = useRound ? Math.round(getXValue(path.end.x)) : Math.floor(getXValue(path.end.x))
+					y = useRound ? Math.round(path.end.y) : Math.floor(path.end.y)
 				}
 			}
+		}
+		// 确保轮廓闭合：如果最后一个路径段的终点不等于第一个路径段的起点，添加一个rlineto来闭合
+		const endX = x
+		const endY = y
+		const closeDx = startX - endX
+		const closeDy = startY - endY
+		// 如果差值不为0（考虑舍入误差，使用更严格的容差），添加闭合线段
+		// 由于我们在提取轮廓时已经确保了精确闭合，这里主要是处理舍入误差
+		if (Math.abs(closeDx) > 0.1 || Math.abs(closeDy) > 0.1) {
+			ops.push({name: 'dx', type: 'number', value: closeDx})
+			ops.push({name: 'dy', type: 'number', value: closeDy})
+			ops.push({name: 'rlineto', type: 'op', value: 5})
+			x = startX
+			y = startY
+		} else if (closeDx !== 0 || closeDy !== 0) {
+			// 即使差值很小，如果不是完全相等，也添加闭合线段以确保精确闭合
+			ops.push({name: 'dx', type: 'number', value: closeDx})
+			ops.push({name: 'dy', type: 'number', value: closeDy})
+			ops.push({name: 'rlineto', type: 'op', value: 5})
+			x = startX
+			y = startY
 		}
 	}
 	ops.push({name: 'endchar', type: 'op', value: 14})
